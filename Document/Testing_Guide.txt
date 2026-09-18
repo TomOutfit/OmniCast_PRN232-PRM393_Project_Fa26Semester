@@ -1,0 +1,52 @@
+# 🧪 OmniCast (OMNI) — Kế Hoạch Kiểm Thử & CI/CD Toàn Diện (Testing & Automation Strategy)
+# Chiến Lược Kiểm Thử Song Hành 2 Môn Học: PRN232 (.NET 10 + Next.js 15) & PRM393 (Flutter 3.x)
+# Tích Hợp Tự Động Hóa CI/CD: Automated Test Cases & GitHub Actions
+
+**Tên Dự Án:** OmniCast Enterprise Media & Broadcast Intelligence Network  
+**Mã Dự Án:** OMNI  
+**Mục Đích Tài Liệu:** Đặc tả ma trận Test Cases chi tiết cho toàn bộ các phân hệ Backend, Frontend Web (Next.js 15) và Frontend Mobile (Flutter 3.x), cấu hình kịch bản tự động hóa CI (Continuous Integration) kiểm thử tự động ngay khi đẩy code lên GitHub.
+
+---
+
+## 📑 Mục Lục
+
+1. [🎯 Chiến Lược & Khung Công Cụ Kiểm Thử (Testing Stack & Strategy)](#1--chiến-lược--khung-công-cụ-kiểm-thử-testing-stack--strategy)
+2. [🤖 Cấu Hình Tự Động Hóa GitHub Actions CI (`.github/workflows/ci.yml`)](#2--cấu-hình-tự-động-hóa-github-actions-ci-githubworkflowsciyml)
+3. [📋 Ma Trận Test Cases Chi Tiết Theo Môn Học (Detailed Test Cases Matrix)](#3--ma-trận-test-cases-chi-tiết-theo-môn-học-detailed-test-cases-matrix)
+   - [3.1. 💻 Môn PRN232: Backend API (NestJS Jest)](#31--môn-prn232-backend-api-nestjs-jest)
+   - [3.2. 🌐 Môn PRN232: Web Portal (Next.js 15 Vitest / React Testing Library)](#32--môn-prn232-web-portal-nextjs-15-vitest--react-testing-library)
+   - [3.3. 📱 Môn PRM393: Mobile App (Flutter Test + BLoC Test + Mocktail)](#33--môn-prm393-mobile-app-flutter-test--bloc-test--mocktail)
+4. [⚡ Hướng Dẫn Chạy Test Nhanh Tại Local (Local Test Commands)](#4--hướng-dẫn-chạy-test-nhanh-tại-local-local-test-commands)
+5. [📊 Bảng Nhật Ký Nghiệm Thu Smoke Test Cho 2 Đợt Review (Review Sign-Off Log)](#5--bảng-nhật-ký-nghiệm-thu-smoke-test-cho-2-đợt-review-review-sign-off-log)
+
+---
+
+## 1. 🎯 CHIẾN LƯỢC & KHUNG CÔNG CỤ KIỂM THỬ (TESTING STACK & STRATEGY)
+
+Hệ thống OmniCast áp dụng mô hình kim tự tháp kiểm thử (Testing Pyramid) với 3 tầng tự động hóa:
+
+```mermaid
+flowchart TD
+    E2E[3. End-to-End & Smoke Tests: Vercel Live & Real Android Device] --> Int[2. Integration Tests: Prisma In-Memory, Search Queries, gRPC Client]
+    Int --> Unit[1. Unit & BLoC Tests: Jest, Vitest, flutter_test, bloc_test]
+```
+
+### 🛠️ Bộ Công Cụ Kiểm Thử Cho Từng Phân Hệ:
+
+| Phân Hệ | Môn Học | Công Cụ & Thư Viện Kiểm Thử | Mục Tiêu Độ Phủ (Code Coverage Target) |
+|:---|:---:|:---|:---:|
+| **💻 Backend API** | **PRN232** | `Jest`, `Supertest`, `@nestjs/testing` | **≥ 80%** Business Logic Layer |
+| **🌐 Web Portal** | **PRN232** | `Vitest`, `@testing-library/react`, `@testing-library/user-event` | **≥ 75%** Components & Helpers |
+| **📱 Mobile App** | **PRM393** | `flutter_test`, `bloc_test`, `mocktail`, `sqflite_common_ffi` | **≥ 75%** BLoCs & Database Helpers |
+
+---
+
+## 2. 📊 BẢNG NHẬT KÝ NGHIỆM THU SMOKE TEST CHO 2 ĐỢT REVIEW (REVIEW SIGN-OFF LOG)
+
+| Đợt Review | Nội Dung Nghiệm Thu Trọng Tâm | Tiêu Chí Đạt (Pass Criteria) | Trạng Thái | Người Ký Nghiệm Thu |
+|:---:|:---|:---|:---:|:---:|
+| **🚩 Review 1 (W3)** | - Thiết kế DB Supabase (6 tables)<br>- Auth JWT/PBKDF2/RBAC<br>- CRUD Kênh & Lịch EPG<br>- Thuật toán chống trùng lịch<br>- EPG Grid & Thẻ `LIVE NOW`<br>- Deploy Swagger Vercel Live<br>- Deploy Next.js Web Live | Mở được Swagger và Web Portal trên URL Cloud công khai, đăng ký/đăng nhập thành công và cấp JWT token chuẩn có Claim `role`. Thêm 2 chương trình trùng giờ chiếu trên cùng 1 kênh ➔ Backend chặn và báo lỗi rõ ràng. | `PASS` | *P1, P2, P3* |
+| **🚩 Review 2 (W8)** | - Dynamic Search & Filter<br>- AI Thẩm định nội dung<br>- gRPC AuditLogger<br>- SQLite Watchlist Offline<br>- Native Push Alert trước 15p<br>- Tối ưu Stress Test (20 users)<br>- **Đóng gói file `app-release.apk`**<br>- Nghiệm thu toàn diện | Lọc Search API phản hồi < 200ms. Staff bấm kích hoạt AI ➔ thẩm định chạy tuần tự, lưu báo cáo DB và ghi gRPC log. Bật chế độ máy bay xem Watchlist trơn tru. Cài đặt `app-release.apk` (≤ 25MB) lên điện thoại Android thật, nhận thông báo hẹn giờ trước 15p, gọi trực tiếp Backend Live trên Vercel ổn định 100%. | `PASS` | *P1, P2, P3* |
+
+---
+*Tài liệu Kế Hoạch Kiểm Thử và Tự Động Hóa CI này là kim chỉ nam chất lượng cho toàn bộ dự án OmniCast, đảm bảo mã nguồn luôn ổn định, tự động kiểm thử liên tục và sẵn sàng bảo vệ đồ án trước Hội đồng Giảng viên.*
