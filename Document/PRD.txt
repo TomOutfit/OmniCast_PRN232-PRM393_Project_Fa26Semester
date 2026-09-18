@@ -1,0 +1,175 @@
+# 📺 Product Requirements Document: OmniCast (OMNI)
+# Enterprise Media & Broadcast Intelligence Network
+
+**Tên Dự Án (Project Name):** OmniCast Enterprise Media & Broadcast Intelligence Network  
+**Mã Dự Án (Project Code):** OMNI  
+**Phiên Bản Tài Liệu (Document Version):** 4.0 (Modern Cloud Architecture Edition)  
+**Môn Học Áp Dụng (Target Courses):** PRN232 (Modern Web API Core & Web Application) & PRM393 (Mobile App Development with Flutter)  
+**Khung Công Nghệ (Target Frameworks):**  
+- 💻 **Backend Web API:** NestJS 11+ (TypeScript) — Modular Architecture, Prisma ORM, `@nestjs/swagger`  
+- 🌐 **Web Front-End:** Next.js 15 (App Router, React 19, TypeScript, Modern CSS/Tailwind Cinema Dark)  
+- 📱 **Mobile Front-End:** Flutter 3.x / Dart 3.x — BLoC Pattern + Offline-First SQLite Local Storage  
+**Cơ Sở Dữ Liệu & Storage:** PostgreSQL & Supabase Storage (Triển khai trên Cloud Supabase)  
+**Hạ Tầng Triển Khai (Cloud Deployment):**  
+- 🚀 **Backend Web API (NestJS):** Triển khai trên **Vercel** (`https://omnicast-api.vercel.app/swagger`)  
+- ⚡ **Web Front-End (Next.js):** Triển khai Production trên **Vercel** (`https://omnicast-fe.vercel.app`)  
+- 📱 **Mobile App (Flutter):** Bản cài đặt chính thức `app-release.apk` chạy trên thiết bị Android thật  
+**Thời Gian & Quy Mô (Timeline & Team):** 8 - 10 Tuần | **2 Đợt Review Tiến độ** (Review 1 Tuần 5-6: Thiết kế & MVP, bắt đầu code từ Tuần 1-4 | Review 2 Tuần 8: Sản phẩm hoàn chỉnh) | Nhóm 4 thành viên  
+**Cập Nhật Lần Cuối (Last Updated):** 2026  
+
+---
+
+## 📑 Mục Lục (Table of Contents)
+1. [🎯 Tổng Quan Sản Phẩm & Định Danh Hệ Thống Quyền Hạn (System Roles)](#-tổng-quan-sản-phẩm--định-danh-hệ-thống-quyền-hạn-system-roles)
+2. [👥 Chân Dung Người Dùng & Phân Định Vai Trò Theo Mã Số Role](#-chân-dung-người-dùng--phân-định-vai-trò-theo-mã-số-role)
+3. [📋 Ma Trận Yêu Cầu Tính Năng Chi Tiết (Feature Requirements Matrix)](#-ma-trận-yêu-cầu-tính-năng-chi-tiết-feature-requirements-matrix)
+4. [🔄 Luồng Người Dùng Nghiệp Vụ & Sơ Đồ Kiến Trúc Hệ Thống (User Flows & Architecture)](#-luồng-người-dùng-nghiệp-vụ--sơ-đồ-kiến-trúc-hệ-thống-user-flows--architecture)
+5. [🗓️ Lộ Trình 2 Đợt Review Tiến Độ Chuẩn (Review Milestones)](#️-lộ-trình-2-đợt-review-tiến-độ-chuẩn-review-milestones)
+6. [👥 Phân Chia Đầu Việc Cân Bằng (4 Người — Member 4 Chuyên Trách PRN232)](#-phân-chia-đầu-việc-cân-bằng-4-người--member-4-chuyên-trách-prn232)
+7. [🛡️ Yêu Cầu Phi Chức Năng (Non-Functional Requirements)](#️-yêu-cầu-phi-chức-năng-non-functional-requirements)
+8. [🏗️ Đặc Tả Kỹ Thuật Các Phân Hệ (Technical Specifications)](#️-đặc-tả-kỹ-thuật-các-phân-hệ-technical-specifications)
+9. [🤖 Đặc Tả AI Thẩm Định & gRPC Protocol (AI & gRPC Specs)](#-đặc-tả-ai-thẩm-định--grpc-protocol-ai--grpc-specs)
+10. [🗄️ Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema Specifications)](#️-thiết-kế-cơ-sở-dữ-liệu-chi-tiết-database-schema-specifications)
+11. [☁️ Chiến Lược Triển Khai Cloud: Vercel & Supabase (Deployment Strategy)](#️-chiến-lược-triển-khai-cloud-vercel--supabase-deployment-strategy)
+12. [📊 Đo Lường & Giám Sát Hệ Thống (Analytics & Monitoring)](#-đo-lường--giám-sát-hệ-thống-analytics--monitoring)
+13. [🚀 Kế Hoạch Phát Hành & Nghiệm Thu (Release Planning)](#-kế-hoạch-phát-hành--nghiệm-thu-release-planning)
+14. [❓ Câu Hỏi Mở & Giả Định Thiết Kế (Open Questions & Assumptions)](#-câu-hỏi-mở--giả-định-thiết-kế-open-questions--assumptions)
+15. [📚 Phụ Lục & Bảng Thuật Ngữ (Appendix & Glossary)](#-phụ-lục--bảng-thuật-ngữ-appendix--glossary)
+
+---
+
+## 🎯 Tổng Quan Sản Phẩm & Định Danh Hệ Thống Quyền Hạn (System Roles)
+
+### 1.1. Tầm Nhìn Sản Phẩm (Product Vision)
+**OmniCast (OMNI)** là hệ sinh thái quản trị phát sóng truyền thông đa kênh (Broadcast & Digital Media) kết hợp mạng lưới tri thức nhân tạo (Broadcast Intelligence Network). Hệ thống vận hành đồng bộ trên các trụ cột công nghệ hiện đại:
+1. **Core Back-End API:** **NestJS 11+ (TypeScript)** kiến trúc Modular Enterprise, Prisma ORM, tích hợp `@nestjs/swagger`, triển khai trên **Vercel** kết nối **Supabase Cloud PostgreSQL**.
+2. **AI Intelligence & Audit Logger:** Tích hợp OpenAI GPT-4o & TMDB API thẩm định nội dung, kèm microservice gRPC ghi vết kiểm toán.
+3. **Web Front-End Portal:** Ứng dụng **Next.js 15** (App Router, React 19, TypeScript, Tailwind Cinema Dark) triển khai trên **Vercel** phục vụ Trung tâm Điều hành Phát sóng và Khán giả Web.
+4. **Mobile Front-End App:** Ứng dụng **Flutter 3.x** cho khán giả di động với cơ chế **Offline-First SQLite** và thông báo đẩy Native hẹn giờ xem trước 15 phút.
+
+### 1.2. 🛡️ BẢNG ĐỊNH DANH MÃ SỐ ROLE CHUẨN TOÀN HỆ THỐNG (SYSTEM ROLES SPECIFICATION)
+
+| Mã Số Role (`int`) | Định Danh Role (`string`) | Tên Vai Trò Thực Tế | Phạm Vi Quyền Hạn (Permission Scope) | Điểm Đến Sau Đăng Nhập (Login Redirect) |
+|:---:|:---|:---|:---|:---|
+| **`Role = 1`** | **`Staff`** | **Biên Tập Viên Phát Sóng (Editorial Staff / Curator)** | - CRUD Kênh truyền hình (`BroadcastChannels`)<br>- CRUD Chương trình & Lập lịch EPG (`BroadcastPrograms`)<br>- **Kích hoạt thẩm định AI nội dung**<br>- Xuất bản/Hạ lịch phát sóng trên EPG | **Web Next.js:** `/studio/curator` (Editorial Studio)<br>**Mobile Flutter:** `StaffCuratorScreen` |
+| **`Role = 2`** | **`Viewer`** | **Khán Giả Đã Đăng Ký (Registered Audience)** | - Xem lịch phát sóng EPG thời gian thực (`LIVE NOW`)<br>- Tìm kiếm, lọc chương trình động theo thể loại, thời lượng<br>- Xem video trailer HD<br>- **Lưu Watchlist cá nhân ngoại tuyến (SQLite)**<br>- **Hẹn giờ thông báo native trước 15 phút** | **Web Next.js:** `/epg` (EPG Timeline Grid)<br>**Mobile Flutter:** `HomeScreen` |
+| **`Role = 3`** | **`Admin`** | **Quản Trị Viên Hệ Thống (System Administrator)** | - Quản lý tài khoản toàn hệ thống (`UserAccounts` CRUD)<br>- Cấp quyền/Đổi vai trò giữa Staff (1) và Viewer (2)<br>- **Giám sát nhật ký kiểm toán gRPC (`AuditLogs`)**<br>- Giám sát kết nối Supabase Cloud & Vercel API | **Web Next.js:** `/admin/dashboard` (Admin Hub)<br>**Mobile Flutter:** `AdminHubScreen` |
+| **`Role = 0`** *(Khách)* | **`Guest`** | **Khách Vãng Lai (Unauthenticated Visitor)** | - Xem trước danh mục kênh và lịch EPG công khai<br>- Xem trailer chương trình<br>- *Không thể kích hoạt AI, không thể tạo lịch, không thể lưu Watchlist đám mây* | **Web Next.js:** `/` (Trang Landing Page)<br>**Mobile Flutter:** `LoginScreen` / `GuestFeed` |
+
+> 🔒 **Nguyên Tắc Bảo Mật RBAC:**
+> 1. Mã số Role được nhúng trực tiếp vào JWT Payload dưới dạng Claim: `role` = `1` | `2` | `3`.
+> 2. Backend NestJS kiểm tra quyền bằng Guards chặt chẽ: `@Roles('Staff')` (`Role = 1`), `@Roles('Admin')` (`Role = 3`), `@Roles('Staff', 'Admin')`.
+> 3. Cấm tuyệt đối việc Admin tự xóa tài khoản của chính mình hoặc tạo thêm một tài khoản Admin khác từ giao diện.
+
+---
+
+## 👥 Chân Dung Người Dùng & Phân Định Vai Trò Theo Mã Số Role
+
+### 👤 Persona 1: Admin (`Role = 3` — System Administrator)
+- **Thông tin:** Kỹ sư hệ thống hoặc trưởng phòng công nghệ đài truyền hình; thành thạo quản trị hệ thống; quản lý bảo mật và tính toàn vẹn của dữ liệu.
+- **Mục tiêu:** Quản trị tài khoản người dùng; giám sát vết kiểm toán gRPC `AuditLogs`.
+- **Hành trình Người dùng:** Mở Web Portal Next.js → Đăng nhập `admin@omnicast.tv` → Hệ thống nhận diện `Role = 3` chuyển thẳng `/admin/dashboard` → Xem vết kiểm toán & quản lý User.
+
+### 👤 Persona 2: Staff (`Role = 1` — Broadcast Editorial Staff)
+- **Thông tin:** Biên tập viên chương trình truyền hình; chịu trách nhiệm xếp lịch phát sóng EPG, phân loại thể loại và kiểm định nội dung.
+- **Mục tiêu:** Quản lý danh mục Kênh & Lịch chiếu (có chống trùng giờ); Kích hoạt thẩm định AI; Xuất bản EPG.
+- **Hành trình Người dùng:** Đăng nhập Staff → Vào `/studio/curator` → Tạo chương trình → Bấm "Kích hoạt Thẩm định AI" → Nhận kết quả và xuất bản EPG.
+
+### 👤 Persona 3: Viewer (`Role = 2` — Registered Audience)
+- **Thông tin:** Khán giả yêu thích truyền hình và điện ảnh trên thiết bị di động và máy tính.
+- **Mục tiêu:** Xem lịch EPG 24h `LIVE NOW`; Xem trailer HD; Lưu Watchlist xem ngoại tuyến (SQLite); Đặt thông báo nhắc trước 15 phút.
+
+---
+
+## 📋 Ma Trận Yêu Cầu Tính Năng Chi Tiết (Feature Requirements Matrix)
+
+| Mã Tính Năng | Tên Tính Năng | Mô Tả Nghiệp Vụ & Kỹ Thuật | Phân Quyền Phù Hợp |
+|:---:|:---|:---|:---:|
+| **FR-01** | **Xác Thực & Phân Quyền** | Băm mật khẩu Argon2/PBKDF2, sinh cặp Access Token (JWT) & Refresh Token, cấp quyền RBAC số hóa (1, 2, 3) | Toàn hệ thống |
+| **FR-02** | **Quản Lý Kênh & EPG Grid** | CRUD Kênh, lập lịch chương trình, bảng lưới EPG 24h và huy hiệu `LIVE NOW` nhấp nháy đỏ | Staff (1), Viewer (2) |
+| **FR-03** | **Chống Xung Đột Lịch Chiếu** | Thuật toán chặn trùng giờ: `[airDateTime, airDateTime + durationMinutes]` trên cùng kênh ➔ HTTP 409 Conflict | Staff (1) |
+| **FR-04** | **Tìm Kiếm & Dynamic Filter** | Dynamic Query Builder lọc theo thời lượng, thể loại, khoảng ngày chiếu | Viewer (2), Guest (0) |
+| **FR-05** | **AI Curator Thẩm Định** | Quy trình thẩm định (Sentiment ➔ Compliance ➔ Editorial JSON) + TMDB Reviews + OpenAI | Staff (1) |
+| **FR-06** | **gRPC Audit Logger** | Dịch vụ gRPC ghi nhật ký kiểm toán các thao tác nhạy cảm vào Supabase | Admin (3) |
+| **FR-07** | **Offline SQLite Watchlist** | Lưu danh sách yêu thích vào database SQLite nội bộ `omnicast_local.db`, Offline Banner khi mất mạng | Viewer (2) |
+| **FR-08** | **Native Alarm Reminder 15p** | Thông báo Native trước giờ chiếu 15 phút (`AirDateTime - 15m`), tap thông báo mở màn hình chi tiết | Viewer (2) |
+
+---
+
+## 👥 Phân Chia Đầu Việc Cân Bằng (4 Người — Member 4 Chuyên Trách PRN232)
+
+> ⚖️ **Nguyên Tắc Phân Bổ Công Bằng & Hợp Lý:**  
+> - **Member 1, 2, 3:** Đảm nhận cân bằng **50% PRN232** (NestJS / Next.js) và **50% PRM393** (Flutter Mobile App) — mỗi người ~50 tasks.
+> - **Member 4 (Đã qua môn PRM393):** Chuyên trách **PRN232** (~95-100% khối lượng tập trung vào gRPC AuditLogger Microservice, Cloud Vercel CI/CD Deployment, Seeding Data toàn diện, Rate Limiting Security, Stress Testing & QA) — tổng ~50 tasks. Không đụng / đụng rất ít vào Flutter Mobile.
+
+- **👤 Member 1 (Tech Lead & Search Engine | 50 tasks):**
+  - 💻 *Backend & Web (PRN232):* NestJS Setup, Prisma Schema Supabase (6 Models), Auth Module JWT/Argon2/RBAC, Search/Filter Engine (`$filter`, `$orderby`), Next.js Base Auth + Trang Tìm Kiếm (`app/search`).
+  - 📱 *Flutter Mobile (PRM393):* Flutter BLoC Architecture, Auth Flow, `DioClient`, Secure Storage, Search BLoC & Màn hình Tìm kiếm Nâng cao.
+- **👤 Member 2 (Broadcast Content & Notifications | 50 tasks):**
+  - 💻 *Backend & Web (PRN232):* CRUD Kênh & Chương trình, **Thuật toán chống trùng lịch** (`ConflictException`), DTOs, Next.js EPG Grid Schedule 24h & Trailer Player.
+  - 📱 *Flutter Mobile (PRM393):* Flutter EPG Timeline `LIVE NOW`, Featured Carousel, **Native Local Notification hẹn giờ trước 15 phút**, Hero Animation.
+- **👤 Member 3 (AI Integration & Mobile Offline Storage | 50 tasks):**
+  - 💻 *Backend & Web (PRN232):* NestJS `AiCuratorModule` (kết nối OpenAI/TMDB & lưu Supabase Transaction), Next.js AI Curator Studio (`app/studio/curator`), Profile Page & AI Badges.
+  - 📱 *Flutter Mobile (PRM393):* Flutter AI Curator Studio, **SQLite Local Storage (`omnicast_local.db`)**, Watchlist BLoC, Offline Banner Alert, **Đóng gói bản cài đặt APK Release (`app-release.apk`)**.
+- **👤 Member 4 (gRPC, DevOps Vercel, Data Seed & Security | 50 tasks — Chuyên trách PRN232):**
+  - 💻 *Backend & Web (PRN232):* gRPC AuditLogger Service & `audit_logger.proto`, `seed.ts` nạp dữ liệu mẫu toàn diện, Next.js Admin Audit Logs Dashboard, Cấu hình Vercel CI/CD cho Backend API & Frontend Web, Rate Limiting Throttler, Helmet, Stress Test (k6) & Unit Tests.
+  - 📱 *Flutter Mobile (PRM393 Support):* Cấu hình Base URL API Live Vercel cho Mobile Team, hỗ trợ Smoke Test API Contract.
+
+---
+
+## 🛡️ Yêu Cầu Phi Chức Năng (Non-Functional Requirements)
+
+1. **Hiệu Năng (Performance):** Mọi API thông thường phản hồi **≤ 200ms**. Toàn bộ chuỗi AI Thẩm định hoàn tất và lưu DB trong **≤ 25 giây**.
+2. **An Toàn & Bảo Mật (Security):** Mật khẩu băm an toàn (Argon2 / PBKDF2), Token lưu an toàn (Secure Storage trên Mobile, HTTP-only Cookie trên Web), Parameterized Queries chống SQL Injection 100%.
+3. **Độ Tin Cậy & Ngoại Tuyến (Reliability & Offline-First):** Khi mất mạng, Mobile chuyển sang chế độ Offline, đọc Watchlist từ SQLite trơn tru không gây crash.
+
+---
+
+## 🏗️ Đặc Tả Kỹ Thuật Các Phân Hệ (Technical Specifications)
+
+1. **`backend/`:** NestJS 11+ (TypeScript), Prisma ORM, `@nestjs/swagger`, PostgreSQL Supabase, Vercel Serverless / Cloud API (`https://omnicast-api.vercel.app/swagger`).
+2. **`frontend/`:** Next.js 15 (App Router, React 19, TypeScript, Tailwind CSS Cinema Dark), Vercel Live Deployment (`https://omnicast-fe.vercel.app`).
+3. **`mobile/`:** Flutter 3.x / Dart 3.x, BLoC Pattern, SQLite (`sqflite`), Native Scheduled Notifications (`flutter_local_notifications`), Build `app-release.apk`.
+
+---
+
+## 🤖 Đặc Tả AI Thẩm Định & gRPC Protocol (AI & gRPC Specs)
+
+### 1. Chuỗi 3 Agent Thẩm Định AI
+- **Agent 1 (Sentiment Analyst):** Đánh giá cảm xúc và thị hiếu từ reviews của TMDB API.
+- **Agent 2 (Compliance Auditor):** Đánh giá độ tuổi và đề xuất khung giờ phát sóng (`PRIME TIME`, `STANDARD`, `RESTRICTED`).
+- **Agent 3 (Editorial Director):** Ép khuôn JSON nghiêm ngặt:
+```json
+{
+  "broadcastSuitability": "PRIME TIME | STANDARD | RESTRICTED",
+  "suggestedTimeSlot": "20:00 - 22:00",
+  "targetAudienceVibe": "Gia đình và giới trẻ yêu thích phiêu lưu",
+  "riskWarnings": "Phù hợp mọi lứa tuổi (PG)",
+  "aiModelVersion": "gpt-4o-omnicast-v3"
+}
+```
+
+---
+
+## 🗄️ Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema Specifications)
+
+**Tên Cơ Sở Dữ Liệu:** `OmniCastDb` (PostgreSQL trên Supabase Cloud)  
+**ORM:** Prisma ORM, 6 Models:
+1. `UserAccount`: `accountId`, `fullName`, `email`, `passwordHash`, `role` (1, 2, 3), `refreshToken`, `refreshTokenExpiry`, `createdAt`.
+2. `BroadcastChannel`: `channelId`, `channelName`, `channelCode`, `description`, `logoUrl`, `isActive`, `createdById`.
+3. `BroadcastProgram`: `programId`, `externalApiId`, `title`, `synopsis`, `bannerUrl`, `videoTrailerUrl`, `durationMinutes`, `airDateTime`, `channelId`, `createdById`, `isPublished`.
+4. `ProductionTag` & `ProgramTag`: Phân loại thể loại chương trình (Quan hệ N-N).
+5. `BroadcastAiReport`: `reportId`, `programId` (1-1 với BroadcastProgram), `broadcastSuitability`, `suggestedTimeSlot`, `targetAudienceVibe`, `riskWarnings`, `aiModelVersion`, `createdAt`.
+6. `AuditLog`: `logId`, `userId`, `action`, `targetEntity`, `detailPayload`, `timestamp`.
+
+---
+
+## ☁️ Chiến Lược Triển Khai Cloud: Vercel & Supabase (Deployment Strategy)
+
+- **NestJS Core API:** Triển khai trên Vercel (`https://omnicast-api.vercel.app/swagger`).
+- **Next.js Web Portal:** Triển khai trên Vercel (`https://omnicast-fe.vercel.app`).
+- **Supabase Cloud:** Quản lý cơ sở dữ liệu PostgreSQL và lưu trữ media.
+- **Flutter Mobile:** Build `app-release.apk` (≤ 25MB), cài đặt trực tiếp trên thiết bị Android thật.
+
+---
+*Tài liệu PRD v4.0 chuẩn hóa toàn diện mô hình NestJS 11 + Next.js 15 + Flutter 3.x + Vercel & Supabase Cloud cho nhóm 4 thành viên trong 10 tuần.*
