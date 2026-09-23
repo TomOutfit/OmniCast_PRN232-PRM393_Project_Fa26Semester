@@ -1,73 +1,130 @@
+#!/usr/bin/env node
+
+/**
+ * OmniCast - Database Migration Script
+ * 
+ * This script handles database migrations for the OmniCast project.
+ * It can be run with: node scripts/migrate.js [command]
+ * 
+ * Commands:
+ *   migrate   - Run pending migrations
+ *   rollback  - Rollback the last migration
+ *   seed      - Seed the database with sample data
+ *   reset     - Reset the database (warning: destructive)
+ */
+
+const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
-const { Client } = require('pg');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-async function resetAndMigrate() {
-  const connectionString = process.env.DATABASE_URL;
-  const client = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false }
-  });
+const prisma = new PrismaClient();
 
-  try {
-    await client.connect();
-    console.log(' Connected to Supabase PostgreSQL database.');
+const commands = {
+  migrate: async () => {
+    console.log('🔄 Running database migrations...');
+    try {
+      // Use Prisma migrate
+      const { execSync } = require('child_process');
+      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      console.log('✅ Migrations completed successfully');
+    } catch (error) {
+      console.error('❌ Migration failed:', error.message);
+      process.exit(1);
+    }
+  },
 
-    console.log('\n--- Resetting public schema cleanly ---');
-    await client.query('DROP SCHEMA IF EXISTS public CASCADE;');
-    await client.query('CREATE SCHEMA public;');
-    await client.query('GRANT ALL ON SCHEMA public TO postgres;');
-    await client.query('GRANT ALL ON SCHEMA public TO public;');
-    console.log(' Public schema reset.');
+  rollback: async () => {
+    console.log('⏪ Rolling back last migration...');
+    try {
+      // Note: This requires prisma-rollback or manual intervention
+      console.log('⚠️ Rollback requires manual intervention');
+      console.log('Please run: npx prisma migrate resolve --rolled-back <migration_name>');
+    } catch (error) {
+      console.error('❌ Rollback failed:', error.message);
+      process.exit(1);
+    }
+  },
 
-    const initSqlPath = path.join(__dirname, '..', 'prisma', 'migrations', '001_init.sql');
-    const seedSqlPath = path.join(__dirname, '..', 'prisma', 'seed.sql');
+  seed: async () => {
+    console.log('🌱 Seeding database with sample data...');
+    try {
+      // Read seed file
+      const seedFile = path.join(__dirname, '../prisma/seed.sql');
+      
+      if (fs.existsSync(seedFile)) {
+        const sql = fs.readFileSync(seedFile, 'utf8');
+        await prisma.$executeRawUnsafe(sql);
+        console.log('✅ Database seeded successfully');
+      } else {
+        console.log('⚠️ Seed file not found');
+      }
+    } catch (error) {
+      console.error('❌ Seeding failed:', error.message);
+      process.exit(1);
+    }
+  },
 
-    console.log('\n--- 1. Executing Schema Migration (001_init.sql) ---');
-    const initSql = fs.readFileSync(initSqlPath, 'utf8');
-    await client.query(initSql);
-    console.log(' Schema migration completed successfully!');
+  reset: async () => {
+    console.log('⚠️ This will reset the database (destructive action)');
+    console.log('Press Ctrl+C to cancel...');
+    
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    try {
+      console.log('🗑️ Resetting database...');
+      await prisma.$executeRaw`DROP SCHEMA public CASCADE`;
+      await prisma.$executeRaw`CREATE SCHEMA public`;
+      
+      const { execSync } = require('child_process');
+      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      
+      console.log('✅ Database reset successfully');
+    } catch (error) {
+      console.error('❌ Reset failed:', error.message);
+      process.exit(1);
+    }
+  },
 
-    console.log('\n--- 2. Executing Seed Data (seed.sql) ---');
-    const seedSql = fs.readFileSync(seedSqlPath, 'utf8');
-    await client.query(seedSql);
-    console.log(' Seed data inserted successfully!');
+  generate: async () => {
+    console.log('🔧 Generating Prisma Client...');
+    try {
+      const { execSync } = require('child_process');
+      execSync('npx prisma generate', { stdio: 'inherit' });
+      console.log('✅ Prisma Client generated successfully');
+    } catch (error) {
+      console.error('❌ Generate failed:', error.message);
+      process.exit(1);
+    }
+  },
 
-    // Verification queries
-    console.log('\n--- 3. Verifying Database Tables ---');
-    const tablesRes = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name;
-    `);
-    console.log(` Created ${tablesRes.rows.length} tables:\n`, tablesRes.rows.map(r => `  - ${r.table_name}`).join('\n'));
-
-    const userCount = await client.query('SELECT COUNT(*) FROM "User"');
-    const channelCount = await client.query('SELECT COUNT(*) FROM "LiveChannel"');
-    const eventCount = await client.query('SELECT COUNT(*) FROM "LiveEvent"');
-    const recordingCount = await client.query('SELECT COUNT(*) FROM "Recording"');
-    const commentCount = await client.query('SELECT COUNT(*) FROM "Comment"');
-    const reactionCount = await client.query('SELECT COUNT(*) FROM "Reaction"');
-    const tagCount = await client.query('SELECT COUNT(*) FROM "ProductionTag"');
-
-    console.log('\n Verification & Data Counts:');
-    console.log(`  • Users: ${userCount.rows[0].count}`);
-    console.log(`  • Live Channels (Creator): ${channelCount.rows[0].count}`);
-    console.log(`  • Live Events: ${eventCount.rows[0].count}`);
-    console.log(`  • Recordings: ${recordingCount.rows[0].count}`);
-    console.log(`  • Comments: ${commentCount.rows[0].count}`);
-    console.log(`  • Reactions: ${reactionCount.rows[0].count}`);
-    console.log(`  • Production Tags: ${tagCount.rows[0].count}`);
-
-    console.log('\n ALL MIGRATIONS AND SEEDING COMPLETED WITH 100% SUCCESS!');
-  } catch (err) {
-    console.error(' Error during migration:', err);
-    process.exit(1);
-  } finally {
-    await client.end();
+  studio: async () => {
+    console.log('🎨 Opening Prisma Studio...');
+    try {
+      const { execSync } = require('child_process');
+      execSync('npx prisma studio', { stdio: 'inherit' });
+    } catch (error) {
+      // User closed studio
+    }
   }
-}
+};
 
-resetAndMigrate();
+// Main
+const command = process.argv[2] || 'migrate';
+
+if (commands[command]) {
+  commands[command]()
+    .then(() => {
+      console.log('✨ Done');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Error:', error);
+      process.exit(1);
+    })
+    .finally(() => {
+      prisma.$disconnect();
+    });
+} else {
+  console.log('Available commands:', Object.keys(commands).join(', '));
+  process.exit(1);
+}
