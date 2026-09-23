@@ -4,6 +4,8 @@
   "description": "OmniCast Backend Service",
   "main": "index.js",
   "scripts": {
+    "validate": "prisma validate",
+    "generate": "prisma generate",
     "migrate": "node scripts/migrate.js",
     "db:push": "prisma db push",
     "db:seed": "node scripts/seed.js"
