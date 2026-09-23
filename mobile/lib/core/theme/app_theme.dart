@@ -1,6 +1,5 @@
-// OmniCast - App Theme Configuration
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppColors {
   // Primary Brand Colors
@@ -58,7 +57,7 @@ class AppTheme {
         centerTitle: false,
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.dark800,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -121,7 +120,7 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.dark400,
         indicatorColor: AppColors.primary,

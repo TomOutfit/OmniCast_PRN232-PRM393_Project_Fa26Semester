@@ -3,13 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:dio/dio.dart';
 
 import 'core/di/injection.dart';
-import 'core/network/dio_client.dart';
 import 'core/theme/app_theme.dart';
-import 'core/utils/connectivity_service.dart';
 import 'logic/auth/auth_bloc.dart';
 import 'logic/channels/channels_bloc.dart';
 import 'logic/programs/programs_bloc.dart';
@@ -78,11 +74,6 @@ class OmniCastApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.dark,
             routerConfig: AppRouter.router,
-            builder: (context, child) {
-              return OverlaySupport.global(
-                child: child ?? const SizedBox(),
-              );
-            },
           );
         },
       ),
