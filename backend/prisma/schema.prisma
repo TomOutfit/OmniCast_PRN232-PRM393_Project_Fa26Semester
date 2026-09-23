@@ -1,0 +1,485 @@
+// ============================================================
+// OmniCast - Prisma Schema Specification
+// Version: 2.1 (Live Streaming & Creator Channels)
+// Database: PostgreSQL (Supabase)
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  GUEST
+  VIEWER
+  STAFF
+  ADMIN
+}
+
+enum LiveCategory {
+  SPORTS
+  SHOW
+  ENTERTAINMENT
+  CINE
+  DRAMA
+  NEWS
+  MUSIC
+  KIDS
+  DOCUMENTARY
+  GAMING
+  TECH
+  PODCAST
+  MUSIC
+  EDUCATION
+  LIFESTYLE
+  FOOD
+  TRAVEL
+  ART
+  BUSINESS
+  HEALTH
+}
+
+enum ContentSource {
+  EXTERNAL
+  UPLOADED
+  GENERATED
+}
+
+enum ExternalPlatform {
+  YOUTUBE
+  VIMEO
+  TWITCH
+  FACEBOOK
+  TIKTOK
+  DAILYMOTION
+  CUSTOM_HLS
+  CUSTOM_RTMP
+  CUSTOM_MP4
+  EMBED_IFRAME
+}
+
+enum EventStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+  ON_DEMAND
+}
+
+enum ContentType {
+  VIDEO
+  AUDIO
+  LIVE
+}
+
+enum StreamQuality {
+  AUTO
+  SD_480P
+  HD_720P
+  FULL_HD_1080P
+  QHD_1440P
+  UHD_4K
+}
+
+enum TagType {
+  GENRE
+  COUNTRY
+  RATING
+  FEATURE
+}
+
+enum ReactionType {
+  HEART
+  FIRE
+  CLAP
+  WOW
+  SAD
+  ANGRY
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  NEW_VIDEO
+  LIVE_START
+  LIVE_ENDED
+  COMMENT_REPLY
+  COMMENT_MENTION
+  REACTION
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum WatchSource {
+  CHANNEL_PAGE
+  SEARCH
+  RECOMMENDATION
+  DIRECT_LINK
+  SOCIAL_SHARE
+}
+
+// ============================================================
+// MODULE 1: AUTH & USER MANAGEMENT
+// ============================================================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  fullName        String
+  avatarUrl       String?
+  bio             String?   @db.VarChar(500)
+  role            UserRole  @default(VIEWER)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  refreshTokens    RefreshToken[]
+  notifications    Notification[]
+  followedChannels Follow[]
+  comments         Comment[]
+  reactions        Reaction[]
+  watchHistory     WatchHistory[]
+  ownedChannels    LiveChannel[]
+  commentLikes     CommentLike[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============================================================
+// MODULE 2: PRODUCTION TAGS
+// ============================================================
+
+model ProductionTag {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(100)
+  slug      String   @unique @db.VarChar(100)
+  color     String?  @db.VarChar(20)
+  type      TagType
+
+  @@index([type])
+}
+
+// ============================================================
+// MODULE 3: LIVE STREAMING & VOD (CREATOR CHANNELS)
+// ============================================================
+
+model LiveChannel {
+  id              String       @id @default(uuid())
+  name            String       @db.VarChar(255)
+  slug            String       @unique @db.VarChar(255)
+  description     String?      @db.VarChar(1500)
+  logoUrl         String?      @db.VarChar(500)
+  badgeUrl        String?      @db.VarChar(500)
+  avatarUrl       String?      @db.VarChar(500)
+  coverUrl        String?      @db.VarChar(500)
+  bannerColor     String?      @db.VarChar(20)
+  tagline         String?      @db.VarChar(200)
+  category        LiveCategory
+  subcategory     String?      @db.VarChar(100)
+  language        String       @default("vi") @db.VarChar(10)
+  region          String?      @db.VarChar(100)
+  followerCount   Int          @default(0)
+  totalViews      BigInt       @default(0)
+  totalVideos     Int          @default(0)
+  subscriberCount Int          @default(0)
+  isVerified      Boolean      @default(false)
+  isActive        Boolean      @default(true)
+  isFeatured      Boolean      @default(false)
+  ownerId         String?
+  owner           User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  isPublic        Boolean      @default(true)
+  allowComments   Boolean      @default(true)
+  requireSub      Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  liveEvents      LiveEvent[]
+  recordings      Recording[]
+  podcasts        Podcast[]
+  followers       Follow[]
+
+  @@index([category])
+  @@index([slug])
+  @@index([isFeatured, followerCount])
+  @@index([ownerId])
+}
+
+model LiveEvent {
+  id               String           @id @default(uuid())
+  title            String           @db.VarChar(255)
+  description      String?          @db.VarChar(3000)
+  thumbnailUrl     String?          @db.VarChar(500)
+  streamSource     ContentSource    @default(EXTERNAL)
+  externalPlatform ExternalPlatform?
+  externalId       String?          @db.VarChar(255)
+  externalUrl      String?          @db.VarChar(500)
+  embedCode        String?          @db.Text
+  streamUrl        String?          @db.VarChar(500)
+  streamKey        String?          @db.VarChar(255)
+  isPrivate        Boolean          @default(false)
+  streamPassword   String?          @db.VarChar(255)
+  quality          StreamQuality    @default(AUTO)
+  language         String           @default("vi") @db.VarChar(10)
+  status           EventStatus      @default(SCHEDULED)
+  scheduledAt      DateTime
+  startedAt        DateTime?
+  endedAt          DateTime?
+  duration         Int?
+  viewerCount      Int              @default(0)
+  peakViewers      Int              @default(0)
+  likeCount        Int              @default(0)
+  commentCount     Int              @default(0)
+  shareCount       Int              @default(0)
+  channelId        String
+  channel          LiveChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  tags             String[]
+  autoRecord       Boolean          @default(true)
+  slowMode         Boolean          @default(false)
+  chatEnabled      Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([channelId, status])
+  @@index([status, startedAt])
+}
+
+model Recording {
+  id                   String           @id @default(uuid())
+  title                String           @db.VarChar(255)
+  description          String?          @db.VarChar(3000)
+  thumbnailUrl         String?          @db.VarChar(500)
+  contentSource        ContentSource    @default(EXTERNAL)
+  externalPlatform     ExternalPlatform?
+  externalId           String?          @db.VarChar(255)
+  externalUrl          String?          @db.VarChar(500)
+  embedCode            String?          @db.Text
+  videoUrl             String?          @db.VarChar(500)
+  videoBucketPath      String?          @db.VarChar(500)
+  fileSize             BigInt?
+  generatedFromEventId String?          @unique
+  duration             Int
+  quality              StreamQuality    @default(HD_720P)
+  language             String           @default("vi") @db.VarChar(10)
+  audioUrl             String?          @db.VarChar(500)
+  audioBucketPath      String?          @db.VarChar(500)
+  viewCount            BigInt           @default(0)
+  likeCount            Int              @default(0)
+  commentCount         Int              @default(0)
+  shareCount           Int              @default(0)
+  downloadCount        Int              @default(0)
+  contentType          ContentType      @default(VIDEO)
+  channelId            String
+  channel              LiveChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  isPublished          Boolean          @default(true)
+  isFeatured           Boolean          @default(false)
+  isAgeRestricted      Boolean          @default(false)
+  tags                 String[]
+  category             LiveCategory?
+  chapters             Json?
+  subtitles            Json?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  publishedAt          DateTime         @default(now())
+
+  comments             Comment[]
+  reactions            Reaction[]
+  watchHistory         WatchHistory[]
+
+  @@index([channelId])
+  @@index([contentSource])
+  @@index([contentType])
+  @@index([viewCount])
+  @@index([isFeatured, publishedAt])
+}
+
+// ============================================================
+// MODULE 4: PODCAST & AUDIO
+// ============================================================
+
+model Podcast {
+  id            String           @id @default(uuid())
+  title         String           @db.VarChar(255)
+  slug          String           @unique @db.VarChar(255)
+  description   String?          @db.VarChar(2000)
+  coverUrl      String?          @db.VarChar(500)
+  category      LiveCategory     @default(PODCAST)
+  tags          String[]
+  channelId     String
+  channel       LiveChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  totalEpisodes Int              @default(0)
+  totalListens  BigInt           @default(0)
+  isExplicit    Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  episodes      PodcastEpisode[]
+
+  @@index([channelId])
+}
+
+model PodcastEpisode {
+  id            String    @id @default(uuid())
+  title         String    @db.VarChar(255)
+  description   String?   @db.VarChar(2000)
+  episodeNumber Int?
+  seasonNumber  Int?      @default(1)
+  duration      Int
+  audioUrl      String    @db.VarChar(500)
+  coverUrl      String?   @db.VarChar(500)
+  listenCount   BigInt    @default(0)
+  podcastId     String
+  podcast       Podcast   @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  publishedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([podcastId])
+}
+
+// ============================================================
+// MODULE 5: SOCIAL & ENGAGEMENT
+// ============================================================
+
+model Follow {
+  id         String      @id @default(uuid())
+  followerId String
+  follower   User        @relation(fields: [followerId], references: [id], onDelete: Cascade)
+  channelId  String
+  channel    LiveChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@unique([followerId, channelId])
+  @@index([followerId])
+  @@index([channelId])
+}
+
+model Comment {
+  id          String      @id @default(uuid())
+  content     String      @db.VarChar(1000)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordingId String
+  recording   Recording   @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]   @relation("CommentReplies")
+  likeCount   Int         @default(0)
+  isPinned    Boolean     @default(false)
+  isEdited    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  likes       CommentLike[]
+
+  @@index([recordingId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+}
+
+model Reaction {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        ReactionType
+  recordingId String
+  recording   Recording    @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+
+  @@unique([userId, recordingId, type])
+  @@index([recordingId])
+}
+
+model WatchHistory {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordingId      String
+  recording        Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  progressSeconds  Int       @default(0)
+  completedPercent Int       @default(0)
+  isCompleted      Boolean   @default(false)
+  lastWatchedAt    DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+
+  @@unique([userId, recordingId])
+  @@index([userId, lastWatchedAt])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String           @db.VarChar(255)
+  message     String?          @db.VarChar(500)
+  actionUrl   String?          @db.VarChar(500)
+  actorId     String?
+  eventId     String?
+  recordingId String?
+  channelId   String?
+
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// ============================================================
+// MODULE 6: AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  userEmail   String?  @db.VarChar(255)
+  action      String   @db.VarChar(100)
+  entityType  String?  @db.VarChar(100)
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?  @db.VarChar(50)
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}
