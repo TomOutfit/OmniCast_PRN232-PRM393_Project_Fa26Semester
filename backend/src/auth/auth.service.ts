@@ -15,6 +15,8 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
 import { TokenPayload } from './interfaces';
 
+import { UserRole } from '@prisma/client';
+
 @Injectable()
 export class AuthService {
   private readonly refreshTokenExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -119,7 +121,7 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
-    role: string,
+    role: UserRole,
   ) {
     const payload: TokenPayload = {
       sub: userId,
