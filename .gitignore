@@ -24,6 +24,7 @@ out/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+.metadata
 *.lock
 
 # IDE & OS files

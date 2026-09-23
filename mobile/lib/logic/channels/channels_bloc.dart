@@ -17,11 +17,12 @@ abstract class ChannelsEvent extends Equatable {
 class LoadChannels extends ChannelsEvent {
   final String? category;
   final bool refresh;
+  final bool isFeatured;
 
-  const LoadChannels({this.category, this.refresh = false});
+  const LoadChannels({this.category, this.refresh = false, this.isFeatured = false});
 
   @override
-  List<Object?> get props => [category, refresh];
+  List<Object?> get props => [category, refresh, isFeatured];
 }
 
 class LoadChannelDetails extends ChannelsEvent {
