@@ -21,7 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ChannelsService } from './channels.service';
-import { CreateChannelDto, UpdateChannelDto } from './dto';
+import { CreateChannelDto, UpdateChannelDto } from './dto/channel.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

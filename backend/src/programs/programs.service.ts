@@ -15,7 +15,7 @@ import {
   UpdateLiveEventDto,
   CreateRecordingDto,
   UpdateRecordingDto,
-} from './dto';
+} from './dto/program.dto';
 import { EventStatus } from '@prisma/client';
 
 @Injectable()
