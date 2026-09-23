@@ -2,7 +2,7 @@
 // OmniCast - AI Curator DTOs
 // ============================================================
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsBoolean, IsOptional } from 'class-validator';
 
 export class CurateContentDto {

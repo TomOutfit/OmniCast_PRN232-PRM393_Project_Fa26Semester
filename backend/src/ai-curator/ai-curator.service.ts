@@ -39,7 +39,7 @@ export class AiCuratorService {
     private readonly auditLogger: AuditLoggerService,
   ) {
     this.openai = new OpenAI({
-      apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+      apiKey: this.configService.get<string>('OPENAI_API_KEY') || 'dummy-key',
     });
   }
 
@@ -68,9 +68,9 @@ export class AiCuratorService {
         orderBy: { createdAt: 'desc' },
       });
 
-      if (existingReport) {
+      if (existingReport && typeof existingReport.newValues === 'object' && existingReport.newValues !== null) {
         return {
-          ...existingReport.newValues,
+          ...(existingReport.newValues as Record<string, any>),
           cached: true,
         };
       }
@@ -110,6 +110,7 @@ export class AiCuratorService {
       ...compliance,
       ...editorial,
       aiModelVersion: 'gpt-4o-omnicast-v3',
+      processingTimeMs: 0,
     };
   }
 
@@ -141,9 +142,9 @@ export class AiCuratorService {
         const parsed = JSON.parse(content);
         return {
           sentimentAnalysis: {
-            overallSentiment: parsed.overallSentiment || 'neutral',
-            hypeLevel: parsed.hypeLevel || 'medium',
-            audienceEngagement: parsed.audienceEngagement || 50,
+            overallSentiment: (parsed.overallSentiment || 'neutral') as 'positive' | 'neutral' | 'negative',
+            hypeLevel: (parsed.hypeLevel || 'medium') as 'low' | 'medium' | 'high',
+            audienceEngagement: Number(parsed.audienceEngagement) || 50,
           },
         };
       }
@@ -154,8 +155,8 @@ export class AiCuratorService {
     // Fallback
     return {
       sentimentAnalysis: {
-        overallSentiment: 'neutral',
-        hypeLevel: 'medium',
+        overallSentiment: 'neutral' as const,
+        hypeLevel: 'medium' as const,
         audienceEngagement: 50,
       },
     };
@@ -189,10 +190,10 @@ export class AiCuratorService {
         const parsed = JSON.parse(content);
         return {
           complianceAssessment: {
-            isAgeRestricted: parsed.isAgeRestricted || false,
-            ageRating: parsed.ageRating || 'PG',
-            flaggedContent: parsed.flaggedContent || [],
-            recommendedBroadcastWindow: parsed.recommendedBroadcastWindow || 'EVENING',
+            isAgeRestricted: Boolean(parsed.isAgeRestricted),
+            ageRating: (parsed.ageRating || 'PG') as 'PG' | 'T13' | 'T16' | 'T18',
+            flaggedContent: Array.isArray(parsed.flaggedContent) ? parsed.flaggedContent : [],
+            recommendedBroadcastWindow: (parsed.recommendedBroadcastWindow || 'EVENING') as 'DAY' | 'EVENING' | 'LATE_NIGHT',
           },
         };
       }
@@ -204,9 +205,9 @@ export class AiCuratorService {
     return {
       complianceAssessment: {
         isAgeRestricted: false,
-        ageRating: 'PG',
+        ageRating: 'PG' as const,
         flaggedContent: [],
-        recommendedBroadcastWindow: 'EVENING',
+        recommendedBroadcastWindow: 'EVENING' as const,
       },
     };
   }
@@ -242,7 +243,7 @@ export class AiCuratorService {
       if (content) {
         const parsed = JSON.parse(content);
         return {
-          broadcastSuitability: parsed.broadcastSuitability || 'STANDARD',
+          broadcastSuitability: (parsed.broadcastSuitability || 'STANDARD') as 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED',
           suggestedTimeSlot: parsed.suggestedTimeSlot || '20:00 - 22:00',
           targetAudienceVibe: parsed.targetAudienceVibe || 'General audience',
           riskWarnings: parsed.riskWarnings || 'Suitable for all ages',
@@ -254,7 +255,7 @@ export class AiCuratorService {
 
     // Fallback
     return {
-      broadcastSuitability: 'STANDARD',
+      broadcastSuitability: 'STANDARD' as const,
       suggestedTimeSlot: '20:00 - 22:00',
       targetAudienceVibe: 'General audience',
       riskWarnings: 'Suitable for all ages',
