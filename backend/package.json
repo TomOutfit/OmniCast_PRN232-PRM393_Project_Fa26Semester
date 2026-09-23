@@ -1,0 +1,18 @@
+{
+  "name": "omnicast-backend",
+  "version": "1.0.0",
+  "description": "OmniCast Backend Service",
+  "main": "index.js",
+  "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "db:push": "prisma db push",
+    "db:seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}
