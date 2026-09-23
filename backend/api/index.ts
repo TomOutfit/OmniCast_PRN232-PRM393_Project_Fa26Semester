@@ -9,7 +9,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import express, { Express, Request, Response } from 'express';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { setupSwagger } from '../src/common/swagger/swagger.config';
 
 const server: Express = express();
 let isInitialized = false;
@@ -17,7 +17,7 @@ let isInitialized = false;
 // Root & Health direct routes on express
 server.get('/', (req, res) => {
   res.json({
-    name: 'OmniCast API',
+    name: 'OmniCast Broadcast API',
     version: '1.0.0',
     status: 'ONLINE',
     swagger: '/swagger',
@@ -61,31 +61,8 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger Documentation with CDN assets for Serverless compatibility
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('OmniCast API')
-    .setDescription(
-      'Enterprise Media & Broadcast Intelligence Network API Documentation',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Authentication & Authorization')
-    .addTag('channels', 'Broadcast Channels Management')
-    .addTag('programs', 'Broadcast Programs & EPG Management')
-    .addTag('search', 'Search & Filter Engine')
-    .addTag('ai-curator', 'AI Content Curator')
-    .addTag('audit-logger', 'Audit Logging')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('swagger', app, document, {
-    customCssUrl:
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
-    customJs: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js',
-    ],
-  });
+  // Setup Swagger UI with custom dark glassmorphism styling
+  setupSwagger(app);
 
   await app.init();
   isInitialized = true;
