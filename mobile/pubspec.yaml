@@ -53,6 +53,17 @@ dev_dependencies:
   json_serializable: ^6.7.1
   bloc_test: ^9.1.5
   mocktail: ^1.0.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/launcher_icon.png"
+  adaptive_icon_background: "#090D16"
+  adaptive_icon_foreground: "assets/icons/launcher_icon.png"
+  web:
+    generate: true
+    image_path: "assets/icons/launcher_icon.png"
 
 flutter:
   uses-material-design: true

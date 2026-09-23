@@ -39,15 +39,20 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.accentCyan],
-                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.tv, color: Colors.white, size: 24),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/images/omnicast_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.tv, color: Colors.white, size: 24),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Text(
