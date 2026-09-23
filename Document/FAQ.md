@@ -110,35 +110,33 @@ Hệ thống tự động phát hiện khi:
 
 ---
 
-## 4. AI Content Analysis
+## 4. AI Content Analysis & Curator Studio
 
-### 4.1 AI Analysis làm gì?
-Hệ thống AI đa agent phân tích nội dung chương trình:
-- **Content Suitability Agent:** Đánh giá độ tuổi phù hợp
-- **Context Agent:** Phân tích ngữ cảnh và chủ đề
-- **Recommendation Agent:** Gợi ý chương trình liên quan
+### 4.1 AI Curator là gì và sử dụng công nghệ nào?
+**AI Curator** là hệ thống thẩm định phát sóng thông minh tích hợp trong NestJS (`AiCuratorModule`), kết hợp:
+- **LLM Engine:** OpenAI GPT-4o / GPT-4o-mini với OpenAI Structured Outputs (JSON Schema).
+- **Dữ liệu đánh giá:** TMDB API (The Movie Database) trích xuất reviews và metadata thực tế.
+- **Microservice & DB:** Supabase PostgreSQL (`BroadcastAiReport`) và gRPC AuditLogger ghi vết kiểm toán.
 
-### 4.2 Làm sao kích hoạt AI Analysis?
-**Chỉ Staff/Admin mới có quyền:**
-1. Đăng nhập với tài khoản Staff+
-2. Chọn chương trình cần phân tích
-3. Click "Run AI Analysis"
-4. Đợi kết quả (thường 5-30 giây)
+### 4.2 Kiến trúc Chuỗi 3 Agent hoạt động như thế nào?
+Hệ thống sử dụng luồng multi-agent tuần tự:
+1. **Agent 1 (Sentiment Analyst):** Đọc reviews từ TMDB, phân tích cảm xúc khán giả và độ lan tỏa (hype/buzz).
+2. **Agent 2 (Compliance Auditor):** Đánh giá kiểm duyệt nội dung, xếp loại độ tuổi và gợi ý phân loại khung giờ (`PRIME TIME`, `STANDARD`, `RESTRICTED`).
+3. **Agent 3 (Editorial Director):** Tổng hợp nhận định và ép khuôn Structured JSON nghiêm ngặt lưu vào cơ sở dữ liệu.
 
-### 4.3 AI Analysis mất bao lâu?
-| Loại phân tích | Thời gian |
-|:---|:---:|
-| Quick Analysis | 5-10 giây |
-| Full Analysis | 30-60 giây |
-| Batch Analysis (10+) | 2-5 phút |
+### 4.3 Làm sao kích hoạt AI Analysis?
+**Dành cho Biên tập viên (Staff - Role 1) & Quản trị viên (Admin - Role 3):**
+1. Đăng nhập tài khoản Staff, truy cập **AI Curator Studio** (`/studio/curator` trên Web hoặc `StaffCuratorScreen` trên Mobile).
+2. Chọn chương trình cần duyệt và click **"Kích hoạt Thẩm định AI"**.
+3. Hệ thống hiển thị hiệu ứng **Shimmer Loading** và trả về kết quả kèm Badge phát sáng trong ≤ 25 giây.
+4. Staff có thể xem chi tiết cảnh báo rủi ro, đối tượng khán giả và bấm **"Xuất bản ngay"**.
 
-### 4.4 AI timeout xử lý thế nào?
-- **Timeout:** 60 giây
-- **Fallback:** Polling mechanism cho realtime features
-- **Retry:** Tự động retry 3 lần nếu fail
+### 4.4 Thời gian xử lý và cơ chế Fallback?
+- **Thời gian phản hồi:** Chuỗi 3 Agent hoàn tất và lưu DB trong **≤ 25 giây**.
+- **Cơ chế Fallback:** Nếu chương trình nội bộ chưa có trên TMDB hoặc không có user reviews, hệ thống tự động fallback sử dụng metadata gốc (`Title + Synopsis + Duration + Tags`) để phân tích, đảm bảo quy trình không bị gián đoạn.
 
-### 4.5 AI Analysis có chính xác không?
-AI được train để đưa ra gợi ý, không phải đánh giá tuyệt đối. Staff nên xem xét kết quả trước khi áp dụng.
+### 4.5 Khán giả (Viewer) có xem được thông tin AI không?
+✅ **Có** - Tại trang chi tiết chương trình (`/programs/[id]` trên Web và `ProgramDetailScreen` trên Flutter), khán giả sẽ thấy thẻ **AI Curation Insights** hiển thị vibe khán giả, khuyến nghị lứa tuổi và lý do xem.
 
 ---
 
