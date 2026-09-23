@@ -1,8 +1,6 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  
   images: {
     remotePatterns: [
       {
@@ -19,20 +17,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
+        source: '/api/v1/:path*',
         destination: process.env.NEXT_PUBLIC_API_URL 
-          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
-          : 'http://localhost:3000/api/:path*',
+          ? `${process.env.NEXT_PUBLIC_API_URL}/v1/:path*`
+          : 'http://localhost:3000/api/v1/:path*',
       },
     ];
-  },
-
-  experimental: {
-    typedRoutes: true,
   },
 };
 
