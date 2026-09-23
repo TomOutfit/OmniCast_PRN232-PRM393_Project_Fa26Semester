@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: 📦 Install Backend Dependencies
-        run: npm ci
+        run: npm install
 
       - name: 🔍 Validate Prisma Schema
         run: npx prisma validate --schema=prisma/schema.prisma
