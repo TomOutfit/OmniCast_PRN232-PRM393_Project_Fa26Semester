@@ -142,10 +142,23 @@
 
 ## 🤖 Đặc Tả AI Thẩm Định & gRPC Protocol (AI & gRPC Specs)
 
-### 1. Chuỗi 3 Agent Thẩm Định AI
-- **Agent 1 (Sentiment Analyst):** Đánh giá cảm xúc và thị hiếu từ reviews của TMDB API.
-- **Agent 2 (Compliance Auditor):** Đánh giá độ tuổi và đề xuất khung giờ phát sóng (`PRIME TIME`, `STANDARD`, `RESTRICTED`).
-- **Agent 3 (Editorial Director):** Ép khuôn JSON nghiêm ngặt:
+### 1. Danh Mục Công Cụ & Dịch Vụ AI (Tech Stack)
+- **LLM Engine:** OpenAI GPT-4o (kết nối qua OpenAI API SDK / `@nestjs/config` và `openai` package).
+- **Data Enrichment:** TMDB API (The Movie Database) cung cấp tóm tắt gốc, thể loại, điểm rating và user reviews thực tế làm Ground Truth đầu vào.
+- **Backend Orchestrator:** NestJS `AiCuratorModule` (`AiCuratorService`, `AiCuratorController`) điều phối chuỗi prompt, xử lý transaction và kiểm soát rate limiting.
+- **Data Formatting:** OpenAI Structured Outputs / JSON Schema đảm bảo định dạng JSON 100% không bị lệch schema.
+- **Kiểm toán & Lưu trữ:** Prisma ORM `$transaction` lưu vào PostgreSQL Supabase (`BroadcastAiReport`) và kích hoạt gRPC AuditLogger ghi vết kiểm toán.
+
+### 2. Chuỗi 3 Agent Thẩm Định AI (Multi-Agent Pipeline)
+1. **Agent 1 (Sentiment Analyst - Phân tích thị hiếu & cảm xúc):**
+   - **Đầu vào:** Tên chương trình, synopsis, danh sách reviews người dùng thực tế lấy từ TMDB API.
+   - **Nhiệm vụ:** Phân tích cảm xúc, mức độ thu hút (hype/buzz) và dự đoán đối tượng khán giả quan tâm.
+2. **Agent 2 (Compliance Auditor - Kiểm toán viên tuân thủ & kiểm duyệt):**
+   - **Đầu vào:** Báo cáo từ Agent 1, thể loại (`ProductionTag`), thời lượng và khung giờ dự kiến.
+   - **Nhiệm vụ:** Đánh giá kiểm duyệt nội dung (bạo lực, ngôn từ, nhạy cảm), phân loại độ tuổi và xếp hạng khung giờ phát sóng (`PRIME TIME`, `STANDARD`, `RESTRICTED`).
+3. **Agent 3 (Editorial Director - Tổng biên tập & Chuẩn hóa cấu trúc):**
+   - **Đầu vào:** Tổng hợp dữ liệu từ Agent 1 & Agent 2.
+   - **Nhiệm vụ:** Ra quyết định biên tập cuối cùng và ép khuôn JSON nghiêm ngặt:
 ```json
 {
   "broadcastSuitability": "PRIME TIME | STANDARD | RESTRICTED",
@@ -155,6 +168,14 @@
   "aiModelVersion": "gpt-4o-omnicast-v3"
 }
 ```
+
+### 3. Cơ Chế Fallback & Hiệu Năng
+- **Fallback Metadata Nội bộ:** Khi TMDB API không có reviews hoặc chương trình nội bộ, hệ thống tự động fallback sử dụng metadata (`Title + Synopsis + Duration + Tags`) để phân tích mà không làm gián đoạn luồng.
+- **Hiệu năng (NFR):** Toàn bộ chuỗi 3 Agent xử lý và hoàn tất lưu cơ sở dữ liệu trong **≤ 25 giây**.
+
+### 4. Tích Hợp Giao Diện (UI/UX)
+- **Web Next.js (`/studio/curator`):** Nút "Kích hoạt Thẩm định AI" cho Staff, hiệu ứng Shimmer Loading khi AI đang chạy, Modal xem chi tiết và huy hiệu phát sáng `AiBadge.tsx` (Vàng Gold cho Prime Time, Xanh Cyan cho Standard, Đỏ Ruby cho Restricted).
+- **Mobile Flutter (`StaffCuratorScreen` & `ProgramDetailScreen`):** Quản lý trạng thái qua BLoC (`AiCuratorBloc`), thẻ nhận định AI `AiReportCard.dart` hiển thị trực quan cho người dùng.
 
 ---
 
