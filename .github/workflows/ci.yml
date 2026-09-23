@@ -1,142 +1,180 @@
-name: OmniCast CI Pipeline
+// ============================================================
+// OmniCast - GitHub Actions CI/CD Workflow
+// ============================================================
+
+name: OmniCast CI/CD
 
 on:
   push:
-    branches: [ main, master, dev ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, master, dev ]
-  workflow_dispatch:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20.x'
 
 jobs:
   # ============================================================
-  # 1. Backend & Database Schema Validation Job
+  # Backend Tests & Build
   # ============================================================
-  backend-validation:
-    name: 🚀 Backend & Database Validation
+  backend:
+    name: Backend (NestJS)
     runs-on: ubuntu-latest
-
+    
     defaults:
       run:
         working-directory: backend
-
-    env:
-      DATABASE_URL: "postgresql://postgres:dummy@localhost:5432/postgres"
-      DIRECT_URL: "postgresql://postgres:dummy@localhost:5432/postgres"
-
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
-
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: omnicast_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: ⚙️ Setup Node.js ${{ matrix.node-version }}
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
-
-      - name: 📦 Install Backend Dependencies
-        run: npm install
-
-      - name: 🔍 Validate Prisma Schema
-        run: npx prisma validate --schema=prisma/schema.prisma
-
-      - name: 🛠️ Generate Prisma Client
-        run: npx prisma generate --schema=prisma/schema.prisma
-
-      - name: 📜 Validate SQL Migration Syntax (001_init.sql)
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const sql = fs.readFileSync(path.join('prisma', 'migrations', '001_init.sql'), 'utf8');
-            if (!sql || sql.length < 500) throw new Error('001_init.sql is empty or invalid');
-            console.log('✅ 001_init.sql migration file size: ' + sql.length + ' bytes');
-          "
-
-      - name: 🌱 Validate Seed Script Structure (seed.sql)
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const seed = fs.readFileSync(path.join('prisma', 'seed.sql'), 'utf8');
-            if (!seed || seed.length < 500) throw new Error('seed.sql is empty or invalid');
-            const channels = (seed.match(/Omni /g) || []).length;
-            console.log('✅ seed.sql contains ' + channels + ' OmniCast channel references');
-          "
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/omnicast_test
+      
+      - name: Run tests
+        run: npm run test:cov
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/omnicast_test
+          JWT_SECRET: test-jwt-secret-key
+          JWT_EXPIRES_IN: 1h
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/dist
 
   # ============================================================
-  # 2. Design Assets & Logo System Validation Job
+  # Frontend Tests & Build
   # ============================================================
-  assets-validation:
-    name: 🎨 Channel Logos & Asset Integrity
+  frontend:
+    name: Frontend (Next.js)
     runs-on: ubuntu-latest
-
+    
+    defaults:
+      run:
+        working-directory: frontend
+    
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: ⚙️ Setup Node.js
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: 🔍 Verify 12 OmniCast Channel Vector Logos
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const logoDir = path.join('Document', 'Channel_Logos');
-            const channels = [
-              '01-omni-sport-1', '02-omni-sport-2', '03-omni-show',
-              '04-omni-entertain', '05-omni-cine', '06-omni-drama',
-              '07-omni-news', '08-omni-music', '09-omni-kids',
-              '10-omni-tech', '11-omni-food', '12-omni-discovery'
-            ];
-            
-            let missing = 0;
-            channels.forEach(ch => {
-              const badge = path.join(logoDir, ch + '-badge.svg');
-              const icon = path.join(logoDir, ch + '-icon.svg');
-              if (!fs.existsSync(badge)) { console.error('❌ Missing badge: ' + badge); missing++; }
-              if (!fs.existsSync(icon)) { console.error('❌ Missing icon: ' + icon); missing++; }
-            });
-
-            if (missing > 0) process.exit(1);
-            console.log('✅ All 24 SVG logo files (12 Badges + 12 Icons) verified successfully!');
-          "
-
-      - name: 📑 Verify Documentation Files
-        run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const requiredDocs = [
-              'Document/DATABASE_DESIGN.md',
-              'Document/PRD.md',
-              'Document/Work_Breakdown.md',
-              'Document/QUICK_START.md',
-              'Document/Channel_Logos/README.md'
-            ];
-            requiredDocs.forEach(f => {
-              if (!fs.existsSync(f)) throw new Error('Missing documentation: ' + f);
-              console.log('✅ Verified: ' + f);
-            });
-          "
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm run test -- --coverage
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://omnicast-api.vercel.app/api
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next
 
   # ============================================================
-  # 3. Overall CI Pipeline Summary
+  # Mobile Build (Android)
   # ============================================================
-  ci-status:
-    name: 🏁 CI Pipeline Summary
-    needs: [backend-validation, assets-validation]
+  mobile:
+    name: Mobile (Flutter)
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: mobile
+    
     steps:
-      - name: 🎉 CI Success Notification
-        run: |
-          echo "============================================================"
-          echo "🎉 All OmniCast CI checks passed with 100% SUCCESS!"
-          echo "============================================================"
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Analyze code
+        run: flutter analyze
+      
+      - name: Build APK
+        run: flutter build apk --debug
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+
+  # ============================================================
+  # Deploy to Vercel (Production)
+  # ============================================================
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy Backend
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+          working-directory: backend
+      
+      - name: Deploy Frontend
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+          vercel-args: '--env=NEXT_PUBLIC_API_URL=${{ secrets.VERCEL_API_URL }}'
+          working-directory: frontend
