@@ -6,7 +6,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
-import { CurateContentDto } from './dto';
+import { CurateContentDto } from './dto/ai-curator.dto';
 import OpenAI from 'openai';
 
 export interface AiCuratorReport {

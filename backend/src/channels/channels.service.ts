@@ -8,7 +8,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateChannelDto, UpdateChannelDto } from './dto';
+import { CreateChannelDto, UpdateChannelDto } from './dto/channel.dto';
 import { LiveCategory } from '@prisma/client';
 
 @Injectable()

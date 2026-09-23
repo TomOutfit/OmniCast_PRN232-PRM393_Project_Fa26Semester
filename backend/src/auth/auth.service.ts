@@ -12,8 +12,8 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
-import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
-import { TokenPayload } from './interfaces';
+import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { TokenPayload } from './interfaces/auth.interface';
 
 import { UserRole } from '@prisma/client';
 
