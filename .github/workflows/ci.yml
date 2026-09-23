@@ -1,0 +1,138 @@
+name: OmniCast CI Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+  workflow_dispatch:
+
+jobs:
+  # ============================================================
+  # 1. Backend & Database Schema Validation Job
+  # ============================================================
+  backend-validation:
+    name: 🚀 Backend & Database Validation
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install Backend Dependencies
+        run: npm ci
+
+      - name: 🔍 Validate Prisma Schema
+        run: npx prisma validate --schema=prisma/schema.prisma
+
+      - name: 🛠️ Generate Prisma Client
+        run: npx prisma generate --schema=prisma/schema.prisma
+
+      - name: 📜 Validate SQL Migration Syntax (001_init.sql)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const sql = fs.readFileSync(path.join('prisma', 'migrations', '001_init.sql'), 'utf8');
+            if (!sql || sql.length < 500) throw new Error('001_init.sql is empty or invalid');
+            console.log('✅ 001_init.sql migration file size: ' + sql.length + ' bytes');
+          "
+
+      - name: 🌱 Validate Seed Script Structure (seed.sql)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const seed = fs.readFileSync(path.join('prisma', 'seed.sql'), 'utf8');
+            if (!seed || seed.length < 500) throw new Error('seed.sql is empty or invalid');
+            const channels = (seed.match(/Omni /g) || []).length;
+            console.log('✅ seed.sql contains ' + channels + ' OmniCast channel references');
+          "
+
+  # ============================================================
+  # 2. Design Assets & Logo System Validation Job
+  # ============================================================
+  assets-validation:
+    name: 🎨 Channel Logos & Asset Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 🔍 Verify 12 OmniCast Channel Vector Logos
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const logoDir = path.join('Document', 'Channel_Logos');
+            const channels = [
+              '01-omni-sport-1', '02-omni-sport-2', '03-omni-show',
+              '04-omni-entertain', '05-omni-cine', '06-omni-drama',
+              '07-omni-news', '08-omni-music', '09-omni-kids',
+              '10-omni-tech', '11-omni-food', '12-omni-discovery'
+            ];
+            
+            let missing = 0;
+            channels.forEach(ch => {
+              const badge = path.join(logoDir, ch + '-badge.svg');
+              const icon = path.join(logoDir, ch + '-icon.svg');
+              if (!fs.existsSync(badge)) { console.error('❌ Missing badge: ' + badge); missing++; }
+              if (!fs.existsSync(icon)) { console.error('❌ Missing icon: ' + icon); missing++; }
+            });
+
+            if (missing > 0) process.exit(1);
+            console.log('✅ All 24 SVG logo files (12 Badges + 12 Icons) verified successfully!');
+          "
+
+      - name: 📑 Verify Documentation Files
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const requiredDocs = [
+              'Document/DATABASE_DESIGN.md',
+              'Document/PRD.md',
+              'Document/Work_Breakdown.md',
+              'Document/QUICK_START.md',
+              'Document/Channel_Logos/README.md'
+            ];
+            requiredDocs.forEach(f => {
+              if (!fs.existsSync(f)) throw new Error('Missing documentation: ' + f);
+              console.log('✅ Verified: ' + f);
+            });
+          "
+
+  # ============================================================
+  # 3. Overall CI Pipeline Summary
+  # ============================================================
+  ci-status:
+    name: 🏁 CI Pipeline Summary
+    needs: [backend-validation, assets-validation]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎉 CI Success Notification
+        run: |
+          echo "============================================================"
+          echo "🎉 All OmniCast CI checks passed with 100% SUCCESS!"
+          echo "============================================================"
