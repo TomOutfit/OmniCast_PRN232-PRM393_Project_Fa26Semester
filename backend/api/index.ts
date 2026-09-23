@@ -14,6 +14,18 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 const server: Express = express();
 let isInitialized = false;
 
+// Root & Health direct routes on express
+server.get('/', (req, res) => {
+  res.json({
+    name: 'OmniCast API',
+    version: '1.0.0',
+    status: 'ONLINE',
+    swagger: '/swagger',
+    api: '/api/v1',
+    time: new Date().toISOString(),
+  });
+});
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
@@ -49,7 +61,7 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger Documentation
+  // Swagger Documentation with CDN assets for Serverless compatibility
   const swaggerConfig = new DocumentBuilder()
     .setTitle('OmniCast API')
     .setDescription(
@@ -66,15 +78,31 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('swagger', app, document);
+  SwaggerModule.setup('swagger', app, document, {
+    customCssUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
+    customJs: [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js',
+    ],
+  });
 
   await app.init();
   isInitialized = true;
 }
 
 export default async function handler(req: Request, res: Response) {
-  if (!isInitialized) {
-    await bootstrap();
+  try {
+    if (!isInitialized) {
+      await bootstrap();
+    }
+    server(req, res);
+  } catch (error: any) {
+    console.error('Serverless Handler Error:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Internal Server Error during serverless execution',
+      error: error?.message || String(error),
+    });
   }
-  server(req, res);
 }
