@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npx nest build --path tsconfig.json",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "devCommand": "npm run start:dev",
+  "framework": "nestjs"
+}
