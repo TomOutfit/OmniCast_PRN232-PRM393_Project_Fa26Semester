@@ -11,6 +11,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggerService } from './common/utils/logger.service';
 
+import { setupSwagger } from './common/swagger/swagger.config';
+
 async function bootstrap() {
   const logger = new LoggerService();
 
@@ -54,24 +56,8 @@ async function bootstrap() {
   // Global Response Interceptor
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger Documentation
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('OmniCast API')
-    .setDescription(
-      'Enterprise Media & Broadcast Intelligence Network API Documentation',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Authentication & Authorization')
-    .addTag('channels', 'Broadcast Channels Management')
-    .addTag('programs', 'Broadcast Programs & EPG Management')
-    .addTag('search', 'Search & Filter Engine')
-    .addTag('ai-curator', 'AI Content Curator')
-    .addTag('audit-logger', 'Audit Logging')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('swagger', app, document);
+  // Swagger Documentation Setup
+  setupSwagger(app);
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
