@@ -40,14 +40,25 @@
 
 ## 🎯 Tổng Quan Sản Phẩm & Định Danh Hệ Thống Quyền Hạn (System Roles)
 
-### 1.1. Tầm Nhìn Sản Phẩm (Product Vision)
-**OmniCast (OMNI)** là hệ sinh thái quản trị phát sóng truyền thông đa kênh (Broadcast & Digital Media) kết hợp mạng lưới tri thức nhân tạo (Broadcast Intelligence Network). Hệ thống vận hành đồng bộ trên các trụ cột công nghệ hiện đại:
-1. **Core Back-End API:** **NestJS 11+ (TypeScript)** kiến trúc Modular Enterprise, Prisma ORM, tích hợp `@nestjs/swagger`, triển khai trên **Vercel** kết nối **Supabase Cloud PostgreSQL**.
-2. **AI Intelligence & Audit Logger:** Tích hợp OpenAI GPT-4o & TMDB API thẩm định nội dung, kèm microservice gRPC ghi vết kiểm toán.
-3. **Web Front-End Portal:** Ứng dụng **Next.js 15** (App Router, React 19, TypeScript, Tailwind Cinema Dark) triển khai trên **Vercel** phục vụ Trung tâm Điều hành Phát sóng và Khán giả Web.
-4. **Mobile Front-End App:** Ứng dụng **Flutter 3.x** cho khán giả di động với cơ chế **Offline-First SQLite** và thông báo đẩy Native hẹn giờ xem trước 15 phút.
+### 1.1. Bối Cảnh Thực Tế Ngành Truyền Hình & Tập Đoàn Truyền Thông (Industry Background & Real-World Context)
+Trong kỷ nguyên chuyển đổi số, các đài phát thanh - truyền hình số (VTV, HTV, BBC...) và các tập đoàn truyền thông đa phương tiện lớn (VTVcab, FPT Play, Viettel Media, K+, Netflix, Warner Bros. Discovery) đang đối mặt với sự dịch chuyển mạnh mẽ từ mô hình truyền hình tuyến tính (Linear TV) sang mô hình lai đa nền tảng (**Hybrid OTT / IPTV / FAST — Free Ad-supported Streaming TV**). 
 
-### 1.2. 🛡️ BẢNG ĐỊNH DANH MÃ SỐ ROLE CHUẨN TOÀN HỆ THỐNG (SYSTEM ROLES SPECIFICATION)
+Quá trình vận hành trung tâm phát sóng thực tế tại các doanh nghiệp này gặp phải **4 thách thức cốt lõi (Core Pain Points)**:
+1. **Xung đột lịch phát sóng & nguy cơ gián đoạn luồng phát (EPG Overlap & Airtime Collision):** Vận hành hàng chục kênh truyền hình phát sóng liên tục 24/7 với hàng ngàn giờ nội dung mỗi tuần khiến việc lập lịch thủ công dễ xảy ra lỗi giao thoa thời gian chiếu (`Airtime Conflict`), gây sự cố đè sóng, gián đoạn truyền dẫn và thiệt hại hợp đồng quảng cáo giờ vàng.
+2. **Điểm nghẽn kiểm duyệt nội dung & tuân thủ pháp lý (Content Compliance & Censorship Bottleneck):** Khối lượng phim và chương trình nhập khẩu khổng lồ đòi hỏi quy trình kiểm duyệt gắt gao theo Luật Báo chí & Phát thanh Truyền hình (phân loại lứa tuổi P, K, T13, T16, T18, sàng lọc yếu tố bạo lực, nhạy cảm). Thẩm định thủ công gây quá tải biên tập viên và tiềm ẩn rủi ro vi phạm pháp lý nghiêm trọng.
+3. **Tối ưu hóa doanh thu khung giờ vàng (Prime-Time Scheduling Optimization):** Biên tập viên đài truyền hình thiếu công cụ phân tích thị hiếu khán giả theo thời gian thực để xếp các chương trình có sức hút lớn (High-Buzz) vào đúng khung giờ vàng (`PRIME TIME 20:00 - 22:00`), dẫn đến lãng phí tài nguyên phát sóng.
+4. **Phân mảnh trải nghiệm đa nền tảng của khán giả (Omnichannel Audience Experience Gap):** Người xem hiện đại liên tục chuyển đổi giữa Web Portal (trên máy tính/Smart TV) và Mobile App (trên điện thoại thông minh). Khán giả yêu cầu thông tin lịch phát sóng EPG phải tức thì, có cơ chế hẹn giờ thông minh trước giờ phát và xem được danh sách lưu trữ cá nhân ngay cả khi mất kết nối mạng.
+
+👉 **OmniCast (OMNI)** được thiết kế như một **Enterprise Media & Broadcast Intelligence Network** chuẩn doanh nghiệp, giải quyết toàn diện chuỗi giá trị: *Tự động hóa chống trùng lịch EPG $\rightarrow$ Trợ lý AI Curator thẩm định nội dung 3 Agent $\rightarrow$ Vết kiểm toán độc lập gRPC $\rightarrow$ Trải nghiệm Web & Mobile Offline-First.*
+
+### 1.2. Tầm Nhìn Sản Phẩm (Product Vision)
+Hệ sinh thái OmniCast vận hành đồng bộ trên 4 trụ cột công nghệ hiện đại:
+1. **Core Back-End API:** **NestJS 11+ (TypeScript)** kiến trúc Modular Enterprise, Prisma ORM, tích hợp `@nestjs/swagger`, thuật toán chống xung đột lịch chiếu, triển khai trên **Vercel** kết nối **Supabase Cloud PostgreSQL**.
+2. **AI Intelligence & Audit Logger:** Tích hợp OpenAI GPT-4o & TMDB API thẩm định nội dung 3 Agent (Sentiment, Compliance, Editorial), kèm microservice gRPC ghi vết kiểm toán Supabase.
+3. **Web Front-End Portal:** Ứng dụng **Next.js 15** (App Router, React 19, TypeScript, Tailwind Cinema Dark) triển khai trên **Vercel** phục vụ Trung tâm Điều hành Phát sóng (Curator Studio) và Khán giả Web.
+4. **Mobile Front-End App:** Ứng dụng **Flutter 3.x** cho khán giả di động với cơ chế **Offline-First SQLite** (`omnicast_local.db`) và thông báo đẩy Native hẹn giờ xem trước 15 phút.
+
+### 1.3. 🛡️ BẢNG ĐỊNH DANH MÃ SỐ ROLE CHUẨN TOÀN HỆ THỐNG (SYSTEM ROLES SPECIFICATION)
 
 | Mã Số Role (`int`) | Định Danh Role (`string`) | Tên Vai Trò Thực Tế | Phạm Vi Quyền Hạn (Permission Scope) | Điểm Đến Sau Đăng Nhập (Login Redirect) |
 |:---:|:---|:---|:---|:---|
