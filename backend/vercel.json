@@ -1,7 +1,15 @@
 {
-  "buildCommand": "npx nest build --path tsconfig.json",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "devCommand": "npm run start:dev",
-  "framework": "nestjs"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.ts"
+    }
+  ]
 }
