@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ChannelLogo } from '@/components/ui/channel-logo';
 
 export default function HomePage() {
   return (
@@ -135,9 +136,15 @@ export default function HomePage() {
                 href={`/channels/${channel.slug}`}
                 className="group"
               >
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-dark-800 border border-dark-700 group-hover:border-primary-500 transition-colors">
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-dark-800 border border-dark-700 group-hover:border-primary-500 transition-colors p-3">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Tv className="w-12 h-12 text-dark-600" />
+                    <ChannelLogo 
+                      slug={channel.slug}
+                      name={channel.name}
+                      category={channel.category}
+                      size="lg"
+                      className="rounded-xl"
+                    />
                   </div>
                   {channel.isLive && (
                     <div className="absolute top-2 right-2">
@@ -230,10 +237,16 @@ const features = [
 ];
 
 const channels = [
-  { id: '1', name: 'Omni Sport 1', slug: 'omni-sport-1', category: 'Thể thao', isLive: true },
-  { id: '2', name: 'Omni Sport 2', slug: 'omni-sport-2', category: 'Thể thao', isLive: false },
-  { id: '3', name: 'Omni Show', slug: 'omni-show', category: 'Giải trí', isLive: true },
-  { id: '4', name: 'Omni Entertain', slug: 'omni-entertain', category: 'Giải trí', isLive: false },
-  { id: '5', name: 'Omni Cine', slug: 'omni-cine', category: 'Điện ảnh', isLive: false },
-  { id: '6', name: 'Omni Drama', slug: 'omni-drama', category: 'Phim truyện', isLive: true },
+  { id: '1', name: 'Omni Sport 1', slug: 'omni-sport-1', category: 'SPORTS', isLive: true },
+  { id: '2', name: 'Omni Sport 2', slug: 'omni-sport-2', category: 'SPORTS', isLive: false },
+  { id: '3', name: 'Omni Show', slug: 'omni-show', category: 'SHOW', isLive: true },
+  { id: '4', name: 'Omni Entertain', slug: 'omni-entertain', category: 'ENTERTAINMENT', isLive: false },
+  { id: '5', name: 'Omni Cine', slug: 'omni-cine', category: 'CINE', isLive: false },
+  { id: '6', name: 'Omni Drama', slug: 'omni-drama', category: 'DRAMA', isLive: true },
+  { id: '7', name: 'Omni News', slug: 'omni-news', category: 'NEWS', isLive: true },
+  { id: '8', name: 'Omni Music', slug: 'omni-music', category: 'MUSIC', isLive: true },
+  { id: '9', name: 'Omni Kids', slug: 'omni-kids', category: 'KIDS', isLive: false },
+  { id: '10', name: 'Omni Tech', slug: 'omni-tech', category: 'TECH', isLive: true },
+  { id: '11', name: 'Omni Food', slug: 'omni-food', category: 'FOOD', isLive: false },
+  { id: '12', name: 'Omni Discovery', slug: 'omni-discovery', category: 'DOCUMENTARY', isLive: true },
 ];
