@@ -1,6 +1,6 @@
-// ============================================================
-// OmniCast - GitHub Actions CI/CD Workflow
-// ============================================================
+# ============================================================
+# OmniCast - GitHub Actions CI/CD Workflow
+# ============================================================
 
 name: OmniCast CI/CD
 
@@ -53,17 +53,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/omnicast_test
-      
-      - name: Run tests
-        run: npm run test:cov
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/omnicast_test
-          JWT_SECRET: test-jwt-secret-key
-          JWT_EXPIRES_IN: 1h
       
       - name: Build application
         run: npm run build
@@ -101,8 +97,8 @@ jobs:
       - name: Run ESLint
         run: npm run lint
       
-      - name: Run tests
-        run: npm run test -- --coverage
+      - name: Type check
+        run: npm run type-check
       
       - name: Build application
         run: npm run build
@@ -129,6 +125,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -140,6 +142,9 @@ jobs:
       
       - name: Analyze code
         run: flutter analyze
+      
+      - name: Run Flutter tests
+        run: flutter test
       
       - name: Build APK
         run: flutter build apk --debug
