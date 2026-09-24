@@ -146,7 +146,7 @@ class ChannelLogo extends StatelessWidget {
 
 /// Compact version của ChannelLogo cho những nơi có không gian hạn chế
 class ChannelLogoCompact extends StatelessWidget {
-  final ChannelModel channel;
+  final dynamic channel;
   final double size;
   final bool showLiveIndicator;
 
@@ -159,7 +159,28 @@ class ChannelLogoCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = ChannelLogo._getCategoryColor(channel.category);
+    String category = 'ENTERTAINMENT';
+    String? logoUrl;
+    String name = '';
+    bool isLive = false;
+
+    if (channel is ChannelModel) {
+      final m = channel as ChannelModel;
+      category = m.category;
+      logoUrl = m.logoUrl;
+      name = m.name;
+      isLive = m.isLive;
+    } else {
+      try {
+        final dynamic dyn = channel;
+        name = dyn.name?.toString() ?? '';
+        logoUrl = dyn.logoUrl?.toString();
+        category = dyn.category?.toString() ?? 'ENTERTAINMENT';
+        isLive = dyn.isLive == true;
+      } catch (_) {}
+    }
+
+    final categoryColor = ChannelLogo._getCategoryColor(category);
 
     return Stack(
       children: [
@@ -170,19 +191,19 @@ class ChannelLogoCompact extends StatelessWidget {
             color: categoryColor.withOpacity(0.2),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: channel.logoUrl != null
+          child: logoUrl != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
-                    imageUrl: channel.logoUrl!,
+                    imageUrl: logoUrl,
                     fit: BoxFit.cover,
                     errorWidget: (_, __, ___) =>
-                        _buildInitials(categoryColor),
+                        _buildInitials(categoryColor, name),
                   ),
                 )
-              : _buildInitials(categoryColor),
+              : _buildInitials(categoryColor, name),
         ),
-        if (showLiveIndicator && channel.isLive)
+        if (showLiveIndicator && isLive)
           Positioned(
             top: -1,
             right: -1,
@@ -203,8 +224,8 @@ class ChannelLogoCompact extends StatelessWidget {
     );
   }
 
-  Widget _buildInitials(Color categoryColor) {
-    final initials = _getInitials(channel.name);
+  Widget _buildInitials(Color categoryColor, String name) {
+    final initials = _getInitials(name);
     return Center(
       child: Text(
         initials,

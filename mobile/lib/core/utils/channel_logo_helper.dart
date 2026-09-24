@@ -67,6 +67,6 @@ class ChannelLogoHelper {
   // Get initial letter for fallback display
   static String getInitial(String name) {
     if (name.isEmpty) return '?';
-    return name.charAt(0).toUpperCase();
+    return name[0].toUpperCase();
   }
 }
