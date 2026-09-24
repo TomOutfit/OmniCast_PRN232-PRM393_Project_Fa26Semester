@@ -154,4 +154,26 @@ export class ProgramsController {
   async findRecordingById(@Param('id') id: string) {
     return this.programsService.findRecordingById(id);
   }
+
+  @Patch('recordings/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('STAFF', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update recording/VOD (Staff/Admin only)' })
+  async updateRecording(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateRecordingDto,
+    @Request() req: any,
+  ) {
+    return this.programsService.updateRecording(id, updateDto, req.user.sub);
+  }
+
+  @Delete('recordings/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('STAFF', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete recording/VOD (Staff/Admin only)' })
+  async deleteRecording(@Param('id') id: string, @Request() req: any) {
+    return this.programsService.deleteRecording(id, req.user.sub);
+  }
 }
