@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/di/injection.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/notification_service.dart';
 import 'logic/auth/auth_bloc.dart';
 import 'logic/channels/channels_bloc.dart';
 import 'logic/programs/programs_bloc.dart';
@@ -35,6 +36,10 @@ void main() async {
 
   // Initialize dependencies
   await initDependencies();
+
+  // Initialize notification service
+  await getIt<NotificationService>().initialize();
+  await getIt<NotificationService>().requestPermissions();
 
   runApp(const OmniCastApp());
 }
