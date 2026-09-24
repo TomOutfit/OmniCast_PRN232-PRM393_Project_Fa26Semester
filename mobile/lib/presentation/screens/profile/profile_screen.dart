@@ -112,6 +112,14 @@ class ProfileScreen extends StatelessWidget {
                     label: 'Thông báo',
                     onTap: () {},
                   ),
+                  // Staff/Admin only - AI Curator
+                  if (user.isStaff || user.isAdmin)
+                    _MenuItem(
+                      icon: Icons.auto_awesome,
+                      label: 'AI Curator',
+                      onTap: () => context.push('/ai-curator'),
+                      highlight: true,
+                    ),
                   _MenuItem(
                     icon: Icons.lock_outline,
                     label: 'Đổi mật khẩu',
@@ -220,11 +228,13 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool highlight;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.highlight = false,
   });
 
   @override
@@ -232,18 +242,27 @@ class _MenuItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppColors.dark800,
+        color: highlight ? AppColors.primary.withOpacity(0.1) : AppColors.dark800,
         borderRadius: BorderRadius.circular(12),
+        border: highlight
+            ? Border.all(color: AppColors.primary.withOpacity(0.3))
+            : null,
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.dark300),
+        leading: Icon(
+          icon,
+          color: highlight ? AppColors.primary : AppColors.dark300,
+        ),
         title: Text(
           label,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: highlight ? AppColors.primary : Colors.white,
+            fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.chevron_right,
-          color: AppColors.dark500,
+          color: highlight ? AppColors.primary : AppColors.dark500,
         ),
         onTap: onTap,
       ),
