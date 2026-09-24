@@ -12,9 +12,14 @@ import '../../presentation/screens/auth/register_screen.dart';
 import '../../presentation/screens/epg/epg_screen.dart';
 import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/channels/channels_screen.dart';
+import '../../presentation/screens/channels/channel_detail_screen.dart';
+import '../../presentation/screens/channels/program_detail_screen.dart';
 import '../../presentation/screens/watchlist/watchlist_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
+import '../../presentation/screens/studio/ai_curator_screen.dart';
 import '../../presentation/screens/main_screen.dart';
+import '../../data/models/channel_model.dart';
+import '../../data/models/program_model.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -62,6 +67,22 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
+      // Detail screens outside shell for full-screen experience
+      GoRoute(
+        path: '/channel/:id',
+        builder: (context, state) {
+          final channelId = state.pathParameters['id']!;
+          return ChannelDetailScreen(channelId: channelId);
+        },
+      ),
+      GoRoute(
+        path: '/program/:id',
+        builder: (context, state) {
+          final programId = state.pathParameters['id']!;
+          return ProgramDetailScreen(programId: programId);
+        },
+      ),
+      // Shell route with bottom navigation
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainScreen(child: child),
@@ -103,6 +124,11 @@ class AppRouter {
             ),
           ),
         ],
+      ),
+      // Staff/Admin routes
+      GoRoute(
+        path: '/ai-curator',
+        builder: (context, state) => const AICuratorScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

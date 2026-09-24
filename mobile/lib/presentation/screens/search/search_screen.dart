@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../logic/search/search_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/channel_logo.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -153,15 +154,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           ...state.channels.map((channel) => ListTile(
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.dark700,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.tv, color: AppColors.dark500),
-                ),
+                leading: ChannelLogoCompact(channel: channel, size: 48),
                 title: Text(
                   channel.name,
                   style: const TextStyle(color: Colors.white),
@@ -233,15 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
         ...results.channels.map((channel) => ListTile(
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.dark700,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.tv, color: AppColors.dark500),
-              ),
+              leading: ChannelLogoCompact(channel: channel, size: 48),
               title: Text(
                 channel.name,
                 style: const TextStyle(color: Colors.white),
