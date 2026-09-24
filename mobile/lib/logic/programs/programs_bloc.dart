@@ -35,6 +35,15 @@ class LoadProgramDetails extends ProgramsEvent {
   List<Object?> get props => [programId];
 }
 
+class LoadChannelPrograms extends ProgramsEvent {
+  final String channelId;
+
+  const LoadChannelPrograms(this.channelId);
+
+  @override
+  List<Object?> get props => [channelId];
+}
+
 // States
 abstract class ProgramsState extends Equatable {
   const ProgramsState();
@@ -49,15 +58,17 @@ class ProgramsLoading extends ProgramsState {}
 
 class ProgramsLoaded extends ProgramsState {
   final List<LiveEventModel> programs;
+  final List<LiveEventModel> liveEvents;
   final bool isLiveNow;
 
   const ProgramsLoaded({
     required this.programs,
+    this.liveEvents = const [],
     this.isLiveNow = false,
   });
 
   @override
-  List<Object?> get props => [programs, isLiveNow];
+  List<Object?> get props => [programs, liveEvents, isLiveNow];
 }
 
 class ProgramDetailsLoaded extends ProgramsState {
@@ -88,6 +99,7 @@ class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
     on<LoadPrograms>(_onLoadPrograms);
     on<LoadLiveNow>(_onLoadLiveNow);
     on<LoadProgramDetails>(_onLoadProgramDetails);
+    on<LoadChannelPrograms>(_onLoadChannelPrograms);
   }
 
   Future<void> _onLoadPrograms(
@@ -113,7 +125,11 @@ class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
     emit(ProgramsLoading());
     try {
       final liveEvents = await _programsRepository.getLiveNow();
-      emit(ProgramsLoaded(programs: liveEvents, isLiveNow: true));
+      emit(ProgramsLoaded(
+        programs: liveEvents,
+        liveEvents: liveEvents,
+        isLiveNow: true,
+      ));
     } catch (e) {
       emit(ProgramsError(e.toString()));
     }
@@ -127,6 +143,27 @@ class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
     try {
       final program = await _programsRepository.getProgramById(event.programId);
       emit(ProgramDetailsLoaded(program));
+    } catch (e) {
+      emit(ProgramsError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadChannelPrograms(
+    LoadChannelPrograms event,
+    Emitter<ProgramsState> emit,
+  ) async {
+    emit(ProgramsLoading());
+    try {
+      final programs = await _programsRepository.getPrograms(
+        channelId: event.channelId,
+      );
+      // Filter to show only scheduled and live events
+      final liveEvents = programs.where((p) => p.isLive || p.isScheduled).toList();
+      emit(ProgramsLoaded(
+        programs: programs,
+        liveEvents: liveEvents,
+        isLiveNow: liveEvents.any((p) => p.isLive),
+      ));
     } catch (e) {
       emit(ProgramsError(e.toString()));
     }
