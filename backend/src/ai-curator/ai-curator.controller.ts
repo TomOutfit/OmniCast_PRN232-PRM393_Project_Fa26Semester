@@ -26,6 +26,15 @@ export class AiCuratorController {
     return this.aiCuratorService.curateContent(curateDto, req.user.sub);
   }
 
+  @Post('analyze/:programId')
+  @Roles('STAFF', 'ADMIN')
+  @ApiOperation({
+    summary: 'Analyze program with AI curator (Staff/Admin only) - Alias for /curate',
+  })
+  async analyzeContent(@Param('programId') programId: string, @Request() req: any) {
+    return this.aiCuratorService.curateContent({ programId, forceRefresh: false }, req.user.sub);
+  }
+
   @Get('history/:programId')
   @Roles('STAFF', 'ADMIN')
   @ApiOperation({ summary: 'Get curation history for a program' })

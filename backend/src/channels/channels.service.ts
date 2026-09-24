@@ -6,6 +6,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChannelDto, UpdateChannelDto } from './dto/channel.dto';
@@ -14,6 +15,10 @@ import { LiveCategory } from '@prisma/client';
 @Injectable()
 export class ChannelsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ============================================================
+  // CHANNEL CRUD
+  // ============================================================
 
   async create(createChannelDto: CreateChannelDto, userId?: string) {
     // Check for duplicate slug
@@ -199,5 +204,171 @@ export class ChannelsService {
         },
       },
     });
+  }
+
+  // ============================================================
+  // FOLLOW/UNFOLLOW
+  // ============================================================
+
+  async followChannel(channelId: string, userId: string) {
+    const channel = await this.prisma.liveChannel.findUnique({
+      where: { id: channelId },
+    });
+
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
+    }
+
+    if (!channel.isPublic && channel.ownerId !== userId) {
+      throw new BadRequestException('Cannot follow private channel');
+    }
+
+    // Check if already following
+    const existingFollow = await this.prisma.follow.findUnique({
+      where: {
+        followerId_channelId: {
+          followerId: userId,
+          channelId,
+        },
+      },
+    });
+
+    if (existingFollow) {
+      throw new ConflictException('Already following this channel');
+    }
+
+    // Create follow
+    await this.prisma.follow.create({
+      data: {
+        followerId: userId,
+        channelId,
+      },
+    });
+
+    // Increment follower count
+    await this.prisma.liveChannel.update({
+      where: { id: channelId },
+      data: { followerCount: { increment: 1 } },
+    });
+
+    return { message: 'Successfully followed channel', channelId };
+  }
+
+  async unfollowChannel(channelId: string, userId: string) {
+    const channel = await this.prisma.liveChannel.findUnique({
+      where: { id: channelId },
+    });
+
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
+    }
+
+    const existingFollow = await this.prisma.follow.findUnique({
+      where: {
+        followerId_channelId: {
+          followerId: userId,
+          channelId,
+        },
+      },
+    });
+
+    if (!existingFollow) {
+      throw new BadRequestException('Not following this channel');
+    }
+
+    // Delete follow
+    await this.prisma.follow.delete({
+      where: { id: existingFollow.id },
+    });
+
+    // Decrement follower count
+    await this.prisma.liveChannel.update({
+      where: { id: channelId },
+      data: { followerCount: { decrement: 1 } },
+    });
+
+    return { message: 'Successfully unfollowed channel', channelId };
+  }
+
+  async getFollowedChannels(userId: string, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 20 } = options || {};
+
+    const [follows, total] = await Promise.all([
+      this.prisma.follow.findMany({
+        where: { followerId: userId },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          channel: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logoUrl: true,
+              category: true,
+              followerCount: true,
+              description: true,
+            },
+          },
+        },
+      }),
+      this.prisma.follow.count({ where: { followerId: userId } }),
+    ]);
+
+    return {
+      data: follows.map(f => f.channel),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getFollowers(channelId: string, options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 20 } = options || {};
+
+    const channel = await this.prisma.liveChannel.findUnique({
+      where: { id: channelId },
+    });
+
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
+    }
+
+    const [follows, total] = await Promise.all([
+      this.prisma.follow.findMany({
+        where: { channelId },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          follower: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      this.prisma.follow.count({ where: { channelId } }),
+    ]);
+
+    return {
+      data: follows.map(f => f.follower),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async isFollowing(channelId: string, userId: string) {
+    const follow = await this.prisma.follow.findUnique({
+      where: {
+        followerId_channelId: {
+          followerId: userId,
+          channelId,
+        },
+      },
+    });
+
+    return { isFollowing: !!follow };
   }
 }
