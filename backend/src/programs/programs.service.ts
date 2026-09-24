@@ -321,6 +321,67 @@ export class ProgramsService {
     });
   }
 
+  async updateRecording(
+    id: string,
+    updateDto: UpdateRecordingDto,
+    userId: string,
+  ) {
+    const recording = await this.prisma.recording.findUnique({ where: { id } });
+    if (!recording) {
+      throw new NotFoundException('Recording not found');
+    }
+
+    const updated = await this.prisma.recording.update({
+      where: { id },
+      data: updateDto,
+      include: {
+        channel: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+    });
+
+    await this.auditLogger.log({
+      userId,
+      action: 'UPDATE_RECORDING',
+      entityType: 'Recording',
+      entityId: id,
+      oldValues: recording,
+      newValues: updated,
+    });
+
+    return updated;
+  }
+
+  async deleteRecording(id: string, userId: string) {
+    const recording = await this.prisma.recording.findUnique({
+      where: { id },
+      include: { channel: true },
+    });
+
+    if (!recording) {
+      throw new NotFoundException('Recording not found');
+    }
+
+    await this.prisma.recording.delete({ where: { id } });
+
+    // Decrement channel total videos count
+    await this.prisma.liveChannel.update({
+      where: { id: recording.channelId },
+      data: { totalVideos: { decrement: 1 } },
+    });
+
+    await this.auditLogger.log({
+      userId,
+      action: 'DELETE_RECORDING',
+      entityType: 'Recording',
+      entityId: id,
+      oldValues: recording,
+    });
+
+    return { message: 'Recording deleted successfully' };
+  }
+
   // ============================================================
   // SCHEDULE CONFLICT DETECTION ALGORITHM
   // ============================================================
