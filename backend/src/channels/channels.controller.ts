@@ -78,10 +78,66 @@ export class ChannelsController {
     return this.channelsService.findBySlug(slug);
   }
 
+  @Get('followed')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get channels followed by current user' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getFollowedChannels(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.channelsService.getFollowedChannels(req.user.sub, {
+      page: Number(page),
+      limit: Number(limit),
+    });
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get channel by ID' })
   async findOne(@Param('id') id: string) {
     return this.channelsService.findOne(id);
+  }
+
+  @Get(':id/followers')
+  @ApiOperation({ summary: 'Get followers of a channel' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getFollowers(
+    @Param('id') id: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.channelsService.getFollowers(id, {
+      page: Number(page),
+      limit: Number(limit),
+    });
+  }
+
+  @Post(':id/follow')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Follow a channel' })
+  async followChannel(@Param('id') id: string, @Request() req: any) {
+    return this.channelsService.followChannel(id, req.user.sub);
+  }
+
+  @Post(':id/unfollow')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unfollow a channel' })
+  async unfollowChannel(@Param('id') id: string, @Request() req: any) {
+    return this.channelsService.unfollowChannel(id, req.user.sub);
+  }
+
+  @Get(':id/is-following')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check if current user is following a channel' })
+  async isFollowing(@Param('id') id: string, @Request() req: any) {
+    return this.channelsService.isFollowing(id, req.user.sub);
   }
 
   @Patch(':id')
