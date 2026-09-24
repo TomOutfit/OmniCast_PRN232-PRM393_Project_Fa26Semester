@@ -30,6 +30,17 @@ class AppColors {
 
   // Live Badge
   static const Color liveRed = Color(0xFFDC2626);
+
+  // Category Colors
+  static const Color sports = Color(0xFF22C55E);      // Xanh lá - Thể thao
+  static const Color entertainment = Color(0xFFFF6B6B); // Đỏ coral - Giải trí
+  static const Color news = Color(0xFF3B82F6);          // Xanh dương - Tin tức
+  static const Color music = Color(0xFFA855F7);         // Tím - Âm nhạc
+  static const Color cinema = Color(0xFFF59E0B);         // Cam - Điện ảnh
+  static const Color kids = Color(0xFFEC4899);          // Hồng - Thiếu nhi
+  static const Color tech = Color(0xFF06B6D4);          // Cyan - Công nghệ
+  static const Color food = Color(0xFFF97316);           // Cam nhạt - Ẩm thực
+  static const Color education = Color(0xFF8B5CF6);      // Tím nhạt - Giáo dục
 }
 
 class AppTheme {

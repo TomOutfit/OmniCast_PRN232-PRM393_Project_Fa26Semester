@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 
 import '../network/dio_client.dart';
+import '../services/notification_service.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/channels_repository.dart';
 import '../../data/repositories/programs_repository.dart';
@@ -28,6 +29,11 @@ Future<void> initDependencies() async {
   );
 
   getIt.registerLazySingleton<Dio>(() => Dio());
+
+  // Services
+  getIt.registerLazySingleton<NotificationService>(
+    () => NotificationService(),
+  );
 
   // Network
   getIt.registerLazySingleton<DioClient>(
