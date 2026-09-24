@@ -3,9 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 
 class ChannelsScreen extends StatefulWidget {
@@ -165,6 +167,7 @@ class _ChannelCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // Navigate to channel details
+        context.push('/channel/${channel.id}');
       },
       child: Container(
         decoration: BoxDecoration(
@@ -185,8 +188,22 @@ class _ChannelCard extends StatelessWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.dark700,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(ChannelLogoHelper.getFallbackColor(channel.category)),
+                        Color(ChannelLogoHelper.getFallbackColor(channel.category)).withOpacity(0.7),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(ChannelLogoHelper.getFallbackColor(channel.category)).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: channel.logoUrl != null
                       ? ClipRRect(
@@ -194,16 +211,27 @@ class _ChannelCard extends StatelessWidget {
                           child: CachedNetworkImage(
                             imageUrl: channel.logoUrl!,
                             fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => const Icon(
-                              Icons.tv,
-                              color: AppColors.dark500,
+                            errorWidget: (_, __, ___) => Center(
+                              child: Text(
+                                ChannelLogoHelper.getInitial(channel.name),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         )
-                      : const Icon(
-                          Icons.tv,
-                          color: AppColors.dark500,
-                          size: 32,
+                      : Center(
+                          child: Text(
+                            ChannelLogoHelper.getInitial(channel.name),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                 ),
                 if (channel.isLive)
