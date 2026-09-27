@@ -64,8 +64,8 @@ export class ProgramsController {
     @Query('toDate') toDate?: string,
   ) {
     return this.programsService.findAllLiveEvents({
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       channelId,
       status: status as any,
       fromDate: fromDate ? new Date(fromDate) : undefined,
@@ -140,8 +140,8 @@ export class ProgramsController {
     @Query('search') search?: string,
   ) {
     return this.programsService.findAllRecordings({
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       channelId,
       category,
       isFeatured,

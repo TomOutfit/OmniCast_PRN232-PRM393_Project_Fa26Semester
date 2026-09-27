@@ -69,9 +69,9 @@ export class ProgramsService {
     fromDate?: Date;
     toDate?: Date;
   }) {
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 20);
     const {
-      page = 1,
-      limit = 20,
       channelId,
       status,
       fromDate,
@@ -246,9 +246,9 @@ export class ProgramsService {
     isFeatured?: boolean;
     search?: string;
   }) {
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 20);
     const {
-      page = 1,
-      limit = 20,
       channelId,
       category,
       isFeatured,

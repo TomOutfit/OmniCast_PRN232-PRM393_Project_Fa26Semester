@@ -114,11 +114,13 @@ class ChannelsBloc extends Bloc<ChannelsEvent, ChannelsState> {
   ) async {
     emit(ChannelsLoading());
     try {
-      final channels = await _channelsRepository.getChannels(
+      final page = await _channelsRepository.getChannels(
         category: event.category,
+        isFeatured: event.isFeatured ? true : null,
+        isActive: true,
       );
       emit(ChannelsLoaded(
-        channels: channels,
+        channels: page.items,
         selectedCategory: event.category,
       ));
     } catch (e) {
