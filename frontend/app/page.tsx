@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import {
   Tv,
@@ -9,12 +11,68 @@ import {
   Zap,
   ChevronRight,
   Star,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChannelLogo } from '@/components/ui/channel-logo';
+import { LiveBadge } from '@/components/ui/live-badge';
+import { useChannels } from '@/lib/hooks/useChannels';
+import { useLiveNow } from '@/lib/hooks/usePrograms';
+
+const features = [
+  {
+    icon: Tv,
+    title: 'EPG Grid 24h',
+    description:
+      'Lịch phát sóng chi tiết 24 giờ với khả năng xem nhanh chương trình đang phát',
+  },
+  {
+    icon: Radio,
+    title: 'Live Streaming',
+    description:
+      'Phát sóng trực tiếp chất lượng cao với độ trễ thấp và độ ổn định cao',
+  },
+  {
+    icon: Search,
+    title: 'Tìm kiếm thông minh',
+    description:
+      'Tìm kiếm nhanh chóng với bộ lọc theo thể loại, thời gian và kênh',
+  },
+  {
+    icon: Users,
+    title: 'Cộng đồng',
+    description:
+      'Kết nối với những người yêu thích cùng nội dung, bình luận và chia sẻ',
+  },
+  {
+    icon: Shield,
+    title: 'An toàn & Bảo mật',
+    description:
+      'Nội dung được kiểm duyệt kỹ lưỡng, phân loại độ tuổi rõ ràng',
+  },
+  {
+    icon: Zap,
+    title: 'AI Curator',
+    description:
+      'Trợ lý AI thẩm định nội dung thông minh, đề xuất thời gian phát sóng tối ưu',
+  },
+];
 
 export default function HomePage() {
+  const { data: featuredData, isLoading: loadingChannels } = useChannels({
+    isFeatured: true,
+    isActive: true,
+    limit: 12,
+  });
+  const { data: liveEvents, isLoading: loadingLive } = useLiveNow();
+
+  const channels = featuredData?.data ?? [];
+  const liveList = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
+  const liveChannelIds = new Set(
+    liveList.map((e: any) => e.channelId),
+  );
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -64,19 +122,18 @@ export default function HomePage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20">
-            {[
-              { label: 'Kênh truyền hình', value: '12+' },
-              { label: 'Chương trình/ngày', value: '100+' },
-              { label: 'Người xem', value: '1M+' },
-              { label: 'Độ khả dụng', value: '99.9%' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-dark-400 text-sm">{stat.label}</div>
-              </div>
-            ))}
+            <StatBox label="Kênh truyền hình" value={String(channels.length || 12) + '+'} />
+            <StatBox
+              label="Chương trình/ngày"
+              value={(liveEvents?.length ?? 0) > 0 ? `${(liveEvents?.length ?? 0) * 5}+` : '100+'}
+            />
+            <StatBox
+              label="Tổng người theo dõi"
+              value={`${formatCompact(
+                channels.reduce((sum, c) => sum + c.followerCount, 0),
+              )}+`}
+            />
+            <StatBox label="Độ khả dụng" value="99.9%" />
           </div>
         </div>
       </section>
@@ -129,36 +186,50 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {channels.map((channel) => (
-              <Link
-                key={channel.id}
-                href={`/channels/${channel.slug}`}
-                className="group"
-              >
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-dark-800 border border-dark-700 group-hover:border-primary-500 transition-colors p-3">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ChannelLogo 
-                      slug={channel.slug}
-                      name={channel.name}
-                      category={channel.category}
-                      size="lg"
-                      className="rounded-xl"
-                    />
-                  </div>
-                  {channel.isLive && (
-                    <div className="absolute top-2 right-2">
-                      <span className="badge-live">Live</span>
+          {loadingChannels || loadingLive ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
+            </div>
+          ) : channels.length === 0 ? (
+            <div className="text-center py-16 text-dark-400">
+              Chưa có kênh nổi bật nào.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {channels.map((channel) => {
+                const isLive = liveChannelIds.has(channel.id);
+                return (
+                  <Link
+                    key={channel.id}
+                    href={`/channels/${channel.slug}`}
+                    className="group"
+                  >
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-dark-800 border border-dark-700 group-hover:border-primary-500 transition-colors p-3">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <ChannelLogo
+                          slug={channel.slug}
+                          logoUrl={channel.logoUrl}
+                          name={channel.name}
+                          category={channel.category}
+                          size="lg"
+                          className="rounded-xl"
+                        />
+                      </div>
+                      {isLive && (
+                        <div className="absolute top-2 right-2">
+                          <LiveBadge size="sm" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <p className="mt-2 text-sm font-medium text-white truncate group-hover:text-primary-400 transition-colors">
-                  {channel.name}
-                </p>
-                <p className="text-xs text-dark-500">{channel.category}</p>
-              </Link>
-            ))}
-          </div>
+                    <p className="mt-2 text-sm font-medium text-white truncate group-hover:text-primary-400 transition-colors">
+                      {channel.name}
+                    </p>
+                    <p className="text-xs text-dark-500">{channel.category}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -188,7 +259,7 @@ export default function HomePage() {
               variant="outline"
               className="text-lg px-8 border-white text-white hover:bg-white hover:text-primary-700"
             >
-              <Link href="/contact">Liên hệ</Link>
+              <Link href="/login">Đăng nhập</Link>
             </Button>
           </div>
         </div>
@@ -197,56 +268,17 @@ export default function HomePage() {
   );
 }
 
-const features = [
-  {
-    icon: Tv,
-    title: 'EPG Grid 24h',
-    description:
-      'Lịch phát sóng chi tiết 24 giờ với khả năng xem nhanh chương trình đang phát',
-  },
-  {
-    icon: Radio,
-    title: 'Live Streaming',
-    description:
-      'Phát sóng trực tiếp chất lượng cao với độ trễ thấp và độ ổn định cao',
-  },
-  {
-    icon: Search,
-    title: 'Tìm kiếm thông minh',
-    description:
-      'Tìm kiếm nhanh chóng với bộ lọc theo thể loại, thời gian và kênh',
-  },
-  {
-    icon: Users,
-    title: 'Cộng đồng',
-    description:
-      'Kết nối với những người yêu thích cùng nội dung, bình luận và chia sẻ',
-  },
-  {
-    icon: Shield,
-    title: 'An toàn & Bảo mật',
-    description:
-      'Nội dung được kiểm duyệt kỹ lưỡng, phân loại độ tuổi rõ ràng',
-  },
-  {
-    icon: Zap,
-    title: 'AI Curator',
-    description:
-      'Trợ lý AI thẩm định nội dung thông minh, đề xuất thời gian phát sóng tối ưu',
-  },
-];
+function StatBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-3xl md:text-4xl font-bold text-white mb-1">{value}</div>
+      <div className="text-dark-400 text-sm">{label}</div>
+    </div>
+  );
+}
 
-const channels = [
-  { id: '1', name: 'Omni Sport 1', slug: 'omni-sport-1', category: 'SPORTS', isLive: true },
-  { id: '2', name: 'Omni Sport 2', slug: 'omni-sport-2', category: 'SPORTS', isLive: false },
-  { id: '3', name: 'Omni Show', slug: 'omni-show', category: 'SHOW', isLive: true },
-  { id: '4', name: 'Omni Entertain', slug: 'omni-entertain', category: 'ENTERTAINMENT', isLive: false },
-  { id: '5', name: 'Omni Cine', slug: 'omni-cine', category: 'CINE', isLive: false },
-  { id: '6', name: 'Omni Drama', slug: 'omni-drama', category: 'DRAMA', isLive: true },
-  { id: '7', name: 'Omni News', slug: 'omni-news', category: 'NEWS', isLive: true },
-  { id: '8', name: 'Omni Music', slug: 'omni-music', category: 'MUSIC', isLive: true },
-  { id: '9', name: 'Omni Kids', slug: 'omni-kids', category: 'KIDS', isLive: false },
-  { id: '10', name: 'Omni Tech', slug: 'omni-tech', category: 'TECH', isLive: true },
-  { id: '11', name: 'Omni Food', slug: 'omni-food', category: 'FOOD', isLive: false },
-  { id: '12', name: 'Omni Discovery', slug: 'omni-discovery', category: 'DOCUMENTARY', isLive: true },
-];
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return String(n);
+}

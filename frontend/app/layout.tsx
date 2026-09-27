@@ -57,8 +57,9 @@ export const metadata: Metadata = {
     description: 'Enterprise Media & Broadcast Intelligence Network',
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
   },
 };
 
