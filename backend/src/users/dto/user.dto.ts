@@ -3,7 +3,7 @@
 // ============================================================
 
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, MaxLength, IsUrl } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
   @ApiProperty({ example: 'John Doe', required: false })
@@ -24,3 +24,16 @@ export class UpdateUserDto {
   @MaxLength(500)
   bio?: string;
 }
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'OldPassword123!' })
+  @IsString()
+  @MinLength(6)
+  currentPassword: string;
+
+  @ApiProperty({ example: 'NewPassword456!', minLength: 6 })
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+

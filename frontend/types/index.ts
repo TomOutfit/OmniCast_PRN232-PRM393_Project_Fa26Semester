@@ -164,6 +164,98 @@ export interface SearchResult {
   totalResults: number;
 }
 
+// Recording / VOD Types
+export interface Recording {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  contentSource: ContentSource;
+  externalUrl?: string;
+  videoUrl?: string;
+  duration: number;
+  viewCount: number | string;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  quality: StreamQuality;
+  language: string;
+  tags: string[];
+  isPublished: boolean;
+  isFeatured: boolean;
+  isAgeRestricted: boolean;
+  category?: LiveCategory;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  channel?: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl?: string;
+    category?: LiveCategory;
+  };
+}
+
+// Comment & Reaction Types
+export type ReactionTypeValue = 'HEART' | 'FIRE' | 'CLAP' | 'WOW' | 'SAD' | 'ANGRY';
+
+export interface CommentAuthor {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  role: UserRole;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  userId: string;
+  recordingId: string;
+  parentId?: string | null;
+  likeCount: number;
+  isPinned: boolean;
+  isEdited: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: CommentAuthor;
+  replies?: Comment[];
+  _count?: { replies: number; likes: number };
+}
+
+export interface ReactionSummary {
+  data: Partial<Record<ReactionTypeValue, number>>;
+  total: number;
+}
+
+// Audit log Types
+export interface AuditLogEntry {
+  id: string;
+  userId?: string | null;
+  userEmail?: string | null;
+  action: string;
+  entityType?: string | null;
+  entityId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  oldValues?: any;
+  newValues?: any;
+  createdAt: string;
+}
+
+// User stats
+export interface UserStats {
+  role: UserRole;
+  memberSince: string;
+  followedChannels: number;
+  commentsPosted: number;
+  reactionsGiven: number;
+  totalWatchMinutes: number;
+  totalWatchHours: number;
+  programsReviewed: number;
+  aiReportsGenerated: number;
+}
+
 // AI Curator Types
 export interface AiCuratorReport {
   broadcastSuitability: 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED';

@@ -48,7 +48,7 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email, user.role, user);
   }
 
   async login(loginDto: LoginDto) {
@@ -79,7 +79,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email, user.role, user);
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
@@ -103,7 +103,7 @@ export class AuthService {
     });
 
     const user = storedToken.user;
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email, user.role, user);
   }
 
   async logout(userId: string) {
@@ -122,6 +122,14 @@ export class AuthService {
     userId: string,
     email: string,
     role: UserRole,
+    userRecord?: {
+      fullName: string;
+      avatarUrl?: string | null;
+      bio?: string | null;
+      isActive: boolean;
+      emailVerified: boolean;
+      createdAt: Date;
+    },
   ) {
     const payload: TokenPayload = {
       sub: userId,
@@ -143,6 +151,27 @@ export class AuthService {
         expiresAt,
       },
     });
+
+    if (userRecord) {
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          id: userId,
+          email,
+          fullName: userRecord.fullName,
+          avatarUrl: userRecord.avatarUrl ?? undefined,
+          bio: userRecord.bio ?? undefined,
+          role,
+          isActive: userRecord.isActive,
+          emailVerified: userRecord.emailVerified,
+          createdAt:
+            userRecord.createdAt instanceof Date
+              ? userRecord.createdAt.toISOString()
+              : String(userRecord.createdAt),
+        },
+      };
+    }
 
     return {
       accessToken,
