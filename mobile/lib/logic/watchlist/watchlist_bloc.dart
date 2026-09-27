@@ -3,6 +3,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../../core/services/notification_service.dart';
 import '../../../data/datasources/local/database_helper.dart';
 import '../../../data/models/watchlist_item_model.dart';
 
@@ -84,9 +85,13 @@ class WatchlistError extends WatchlistState {
 // BLoC
 class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
   final DatabaseHelper _databaseHelper;
+  final NotificationService _notificationService;
 
-  WatchlistBloc({required DatabaseHelper databaseHelper})
-      : _databaseHelper = databaseHelper,
+  WatchlistBloc({
+    required DatabaseHelper databaseHelper,
+    required NotificationService notificationService,
+  })  : _databaseHelper = databaseHelper,
+        _notificationService = notificationService,
         super(WatchlistInitial()) {
     on<LoadWatchlist>(_onLoadWatchlist);
     on<AddToWatchlist>(_onAddToWatchlist);
@@ -113,6 +118,13 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
   ) async {
     try {
       await _databaseHelper.insertWatchlistItem(event.item);
+      // If reminder was enabled, schedule it
+      if (event.item.reminderEnabled && event.item.reminderTime != null) {
+        await _notificationService.scheduleReminder(
+          item: event.item,
+          minutesBefore: 15,
+        );
+      }
       add(LoadWatchlist());
     } catch (e) {
       emit(WatchlistError(e.toString()));
@@ -124,6 +136,18 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
     Emitter<WatchlistState> emit,
   ) async {
     try {
+      // Cancel any scheduled notification first
+      final items = await _databaseHelper.getWatchlistItems();
+      WatchlistItemModel? item;
+      for (final i in items) {
+        if (i.id == event.itemId) {
+          item = i;
+          break;
+        }
+      }
+      if (item != null) {
+        await _notificationService.cancelReminder(item.programId);
+      }
       await _databaseHelper.deleteWatchlistItem(event.itemId);
       add(LoadWatchlist());
     } catch (e) {
@@ -136,7 +160,28 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
     Emitter<WatchlistState> emit,
   ) async {
     try {
-      await _databaseHelper.updateReminderTime(event.itemId, event.reminderTime);
+      await _databaseHelper.updateReminderTime(
+        event.itemId,
+        event.reminderTime,
+      );
+
+      // Schedule or cancel notification based on new state
+      if (event.reminderTime != null) {
+        final items = await _databaseHelper.getWatchlistItems();
+        WatchlistItemModel? item;
+        for (final i in items) {
+          if (i.id == event.itemId) {
+            item = i;
+            break;
+          }
+        }
+        if (item != null) {
+          await _notificationService.scheduleReminder(
+            item: item,
+            minutesBefore: 15,
+          );
+        }
+      }
       add(LoadWatchlist());
     } catch (e) {
       emit(WatchlistError(e.toString()));
