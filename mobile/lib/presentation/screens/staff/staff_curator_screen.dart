@@ -3,8 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../logic/auth/auth_bloc.dart';
@@ -146,7 +144,7 @@ class _StaffCuratorScreenState extends State<StaffCuratorScreen>
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.pop(),
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Quay lại'),
             ),
           ],
