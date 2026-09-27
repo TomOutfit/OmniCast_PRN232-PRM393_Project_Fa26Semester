@@ -13,14 +13,14 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Hồ sơ'),
-        backgroundColor: AppColors.dark950,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            tooltip: 'Cài đặt',
+            onPressed: () => context.push('/settings'),
           ),
         ],
       ),
@@ -96,6 +96,11 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.person_outline,
                     label: 'Chỉnh sửa hồ sơ',
                     onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: Icons.settings_outlined,
+                    label: 'Cài đặt',
+                    onTap: () => context.push('/settings'),
                   ),
                   _MenuItem(
                     icon: Icons.history,
