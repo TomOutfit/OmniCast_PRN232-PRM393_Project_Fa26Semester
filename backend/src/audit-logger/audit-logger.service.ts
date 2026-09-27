@@ -48,9 +48,9 @@ export class AuditLoggerService {
     fromDate?: Date;
     toDate?: Date;
   }) {
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 50);
     const {
-      page = 1,
-      limit = 50,
       userId,
       action,
       entityType,
@@ -93,7 +93,8 @@ export class AuditLoggerService {
   }
 
   async findByUser(userId: string, options?: { page?: number; limit?: number }) {
-    const { page = 1, limit = 50 } = options || {};
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 50);
 
     return this.prisma.auditLog.findMany({
       where: { userId },
