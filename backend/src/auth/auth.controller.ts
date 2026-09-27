@@ -58,7 +58,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and invalidate refresh token' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   async logout(@Request() req: any) {
-    return this.authService.logout(req.user.userId);
+    return this.authService.logout(req.user.sub);
   }
 
   @Get('me')
@@ -68,6 +68,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@Request() req: any) {
-    return this.authService.validateUser(req.user.userId);
+    return this.authService.validateUser(req.user.sub);
   }
 }
