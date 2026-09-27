@@ -61,9 +61,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
                 return GestureDetector(
                   onTap: () {
-                    setState(() => _selectedCategory = category['value'] as String?);
+                    setState(() => _selectedCategory = category['value']);
                     context.read<ChannelsBloc>().add(
-                          LoadChannels(category: category['value'] as String?),
+                          LoadChannels(category: category['value']),
                         );
                   },
                   child: Container(
