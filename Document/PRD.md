@@ -29,12 +29,13 @@
 7. [🛡️ Yêu Cầu Phi Chức Năng (Non-Functional Requirements)](#️-yêu-cầu-phi-chức-năng-non-functional-requirements)
 8. [🏗️ Đặc Tả Kỹ Thuật Các Phân Hệ (Technical Specifications)](#️-đặc-tả-kỹ-thuật-các-phân-hệ-technical-specifications)
 9. [🤖 Đặc Tả AI Thẩm Định & gRPC Protocol (AI & gRPC Specs)](#-đặc-tả-ai-thẩm-định--grpc-protocol-ai--grpc-specs)
-10. [🗄️ Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema Specifications)](#️-thiết-kế-cơ-sở-dữ-liệu-chi-tiết-database-schema-specifications)
-11. [☁️ Chiến Lược Triển Khai Cloud: Vercel & Supabase (Deployment Strategy)](#️-chiến-lược-triển-khai-cloud-vercel--supabase-deployment-strategy)
-12. [📊 Đo Lường & Giám Sát Hệ Thống (Analytics & Monitoring)](#-đo-lường--giám-sát-hệ-thống-analytics--monitoring)
-13. [🚀 Kế Hoạch Phát Hành & Nghiệm Thu (Release Planning)](#-kế-hoạch-phát-hành--nghiệm-thu-release-planning)
-14. [❓ Câu Hỏi Mở & Giả Định Thiết Kế (Open Questions & Assumptions)](#-câu-hỏi-mở--giả-định-thiết-kế-open-questions--assumptions)
-15. [📚 Phụ Lục & Bảng Thuật Ngữ (Appendix & Glossary)](#-phụ-lục--bảng-thuật-ngữ-appendix--glossary)
+10. [🌐 Nguồn Dữ Liệu Chương Trình Từ Bên Ngoài (External Ingest Sources)](#-nguồn-dữ-liệu-chương-trình-từ-bên-ngoài-external-ingest-sources)
+11. [🗄️ Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema Specifications)](#️-thiết-kế-cơ-sở-dữ-liệu-chi-tiết-database-schema-specifications)
+12. [☁️ Chiến Lược Triển Khai Cloud: Vercel & Supabase (Deployment Strategy)](#️-chiến-lược-triển-khai-cloud-vercel--supabase-deployment-strategy)
+13. [📊 Đo Lường & Giám Sát Hệ Thống (Analytics & Monitoring)](#-đo-lường--giám-sát-hệ-thống-analytics--monitoring)
+14. [🚀 Kế Hoạch Phát Hành & Nghiệm Thu (Release Planning)](#-kế-hoạch-phát-hành--nghiệm-thu-release-planning)
+15. [❓ Câu Hỏi Mở & Giả Định Thiết Kế (Open Questions & Assumptions)](#-câu-hỏi-mở--giả-định-thiết-kế-open-questions--assumptions)
+16. [📚 Phụ Lục & Bảng Thuật Ngữ (Appendix & Glossary)](#-phụ-lục--bảng-thuật-ngữ-appendix--glossary)
 
 ---
 
@@ -200,6 +201,52 @@ Hệ sinh thái OmniCast vận hành đồng bộ trên 4 trụ cột công ngh�
 4. `ProductionTag` & `ProgramTag`: Phân loại thể loại chương trình (Quan hệ N-N).
 5. `BroadcastAiReport`: `reportId`, `programId` (1-1 với BroadcastProgram), `broadcastSuitability`, `suggestedTimeSlot`, `targetAudienceVibe`, `riskWarnings`, `aiModelVersion`, `createdAt`.
 6. `AuditLog`: `logId`, `userId`, `action`, `targetEntity`, `detailPayload`, `timestamp`.
+
+---
+
+## 🌐 Nguồn Dữ Liệu Chương Trình Từ Bên Ngoài (External Ingest Sources)
+
+OmniCast hỗ trợ đồng bộ lịch phát sóng và metadata chương trình từ 3 nguồn trực tuyến miễn phí (free tier) để giảm phụ thuộc vào việc nhập liệu thủ công. Tất cả worker chạy trong NestJS với `@nestjs/schedule` và ghi log qua `AuditLoggerService`.
+
+### 1. YouTube Data API v3 — Lịch live stream thực
+- **Endpoint:** `GET /youtube/v3/videos?part=snippet,liveStreamingDetails&id=...`
+- **Cron:** `0 */15 * * * *` (mỗi 15 phút).
+- **Idempotency:** `@@unique([channelId, externalPlatform, externalId])` trên bảng `LiveEvent`.
+- **Ánh xạ trường:** `scheduledStartTime` → `scheduledAt`, `actualStartTime` → `startedAt`, `actualEndTime` → `endedAt`, `concurrentViewers` → `viewerCount`, `snippet.thumbnails.maxres` → `thumbnailUrl`, `snippet.title` → `title`.
+- **ENV:** `YOUTUBE_API_KEY` (Google Cloud Console → YouTube Data API v3).
+- **Skip an toàn:** Nếu key không được cấu hình, worker ghi audit log `INGEST_YOUTUBE_SKIPPED` và thoát — không throw.
+
+### 2. Twitch Helix — Lịch segments của broadcaster
+- **OAuth:** Client Credentials Grant tại `https://id.twitch.tv/oauth2/token`, token cache cho đến khi còn 5 phút trước khi hết hạn.
+- **Endpoint:** `GET /helix/schedule?broadcaster_id=...&start_time=YYYY-MM-DDT00:00:00Z`
+- **Cron:** `0 */30 * * * *` (mỗi 30 phút).
+- **Ánh xạ kênh:** Cột `LiveChannel.twitchBroadcasterId` (VARCHAR 100, nullable, indexed) — admin nhập khi tạo/sửa kênh.
+- **Ánh xạ segments:** Mỗi segment → một bản ghi `LiveEvent` với `externalPlatform = TWITCH`, `externalId = segmentId`, `duration = (end - start) / 60s`, `tags = [category.name]`.
+- **ENV:** `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.
+
+### 3. TMDB (themoviedb.org) — Metadata enrichment cho phim/series
+- **Endpoint:** `GET /3/search/movie?query=...&year=...&language=vi-VN` (fallback sang `search/tv`).
+- **Trigger:** On-demand — fire-and-forget sau `POST /programs/live-events` và `POST /programs/recordings`. Có thể tắt bằng `INGEST_TMDB_AUTO_ENRICH=false`.
+- **Heuristic:** Bỏ qua tiêu đề listicle (`Top 10`, `Tổng Hợp`, `Trực Tiếp`); trích năm trong ngoặc `(YYYY)` để tăng độ chính xác tìm kiếm.
+- **Ánh xạ:** `overview` → `description`, `poster_path` (URL `https://image.tmdb.org/t/p/w500{path}`) → `thumbnailUrl`.
+- **ENV:** `TMDB_API_KEY` (themoviedb.org/settings/api, free tier 50 req/giây).
+
+### 4. Admin Trigger
+Các endpoint thủ công (yêu cầu JWT + role `ADMIN`):
+- `POST /api/programs/ingest/youtube` — chạy ngay 1 lần YouTube ingest.
+- `POST /api/programs/ingest/twitch` — chạy ngay 1 lần Twitch ingest.
+- `POST /api/programs/ingest/tmdb/event` (body: `{ eventId }`) — enrich 1 LiveEvent.
+- `POST /api/programs/ingest/tmdb/recording` (body: `{ recordingId }`) — enrich 1 Recording.
+
+### 5. Nguồn KHÔNG dùng
+- Scraper HTML từ vtv.vn / htv.com.vn / vieon.vn (vi phạm TOS).
+- Pirate IPTV XMLTV feed (rủi ro pháp lý cho đồ án học thuật).
+- Telegram bot scrape EPG (không ổn định).
+
+### 6. Bảng mới & chỉ mục (Migration 002)
+- `LiveChannel.twitchBroadcasterId VARCHAR(100) NULL` + index.
+- `LiveChannel.youtubeChannelId VARCHAR(100) NULL` + index (cho tương lai — mapping kênh YouTube thật sang Omni channel).
+- `LiveEvent` unique index `(channelId, externalPlatform, externalId)` tên `channel_platform_external_unique` — cho phép NULL externalId không vi phạm unique.
 
 ---
 
