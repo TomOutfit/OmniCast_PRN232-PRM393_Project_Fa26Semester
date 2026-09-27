@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
+import '../../widgets/channel_logo.dart';
 
 class ChannelsScreen extends StatefulWidget {
   const ChannelsScreen({super.key});
@@ -197,76 +198,13 @@ class _ChannelCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(ChannelLogoHelper.getFallbackColor(channel.category)),
-                        Color(ChannelLogoHelper.getFallbackColor(channel.category)).withOpacity(0.7),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(ChannelLogoHelper.getFallbackColor(channel.category)).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: channel.logoUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: CachedNetworkImage(
-                            imageUrl: AppConstants.resolveAssetUrl(channel.logoUrl),
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Center(
-                              child: Text(
-                                ChannelLogoHelper.getInitial(channel.name),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Center(
-                          child: Text(
-                            ChannelLogoHelper.getInitial(channel.name),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                ),
-                if (channel.isLive)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.liveRed,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.dark800,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            Hero(
+              tag: 'channel_logo_${channel.id}',
+              child: ChannelLogo(
+                channel: channel,
+                size: 60,
+                showLiveIndicator: channel.isLive,
+              ),
             ),
             const SizedBox(height: 8),
             Padding(

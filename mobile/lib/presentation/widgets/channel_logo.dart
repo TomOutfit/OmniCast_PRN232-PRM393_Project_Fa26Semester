@@ -1,20 +1,22 @@
-// OmniCast - Channel Logo Widget
-// Displays channel logo with category-based color
+// OmniCast - Channel Logo & Badge Widgets
+// Displays official 25 channel SVG logos, badges, and fallback branding
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 
-/// Widget hiển thị logo kênh với màu theo category
-/// Thay thế cho Icons.tv khi hiển thị thông tin kênh
+/// Standard Channel Logo with category border & SVG/Network support
 class ChannelLogo extends StatelessWidget {
-  final ChannelModel channel;
+  final dynamic channel; // ChannelModel or object with slug/logoUrl/category
   final double size;
   final double? fontSize;
   final bool showLiveIndicator;
+  final bool preferBadge;
   final BoxFit fit;
 
   const ChannelLogo({
@@ -23,44 +25,72 @@ class ChannelLogo extends StatelessWidget {
     this.size = 40,
     this.fontSize,
     this.showLiveIndicator = false,
-    this.fit = BoxFit.cover,
+    this.preferBadge = false,
+    this.fit = BoxFit.contain,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Get category color
-    final categoryColor = _getCategoryColor(channel.category);
+    String? slug;
+    String? logoUrl;
+    String? category;
+    String name = '';
+    bool isLive = false;
+
+    if (channel is ChannelModel) {
+      final m = channel as ChannelModel;
+      slug = m.slug;
+      logoUrl = preferBadge ? (m.badgeUrl ?? m.logoUrl) : m.logoUrl;
+      category = m.category;
+      name = m.name;
+      isLive = m.isLive;
+    } else {
+      try {
+        final dynamic dyn = channel;
+        slug = dyn.slug?.toString();
+        logoUrl = preferBadge
+            ? (dyn.badgeUrl?.toString() ?? dyn.logoUrl?.toString())
+            : dyn.logoUrl?.toString();
+        category = dyn.category?.toString();
+        name = dyn.name?.toString() ?? '';
+        isLive = dyn.isLive == true;
+      } catch (_) {}
+    }
+
+    final categoryColor = Color(ChannelLogoHelper.getFallbackColor(category));
+    final localAsset = ChannelLogoHelper.resolveLocalAsset(
+      logoUrl: logoUrl,
+      slug: slug,
+      preferBadge: preferBadge,
+    );
 
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        // Logo container
         Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: categoryColor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(size * 0.2),
+            color: categoryColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(size * 0.22),
             border: Border.all(
-              color: categoryColor.withOpacity(0.3),
-              width: 1,
+              color: categoryColor.withOpacity(0.4),
+              width: 1.2,
             ),
           ),
-          child: channel.logoUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(size * 0.2),
-                  child: CachedNetworkImage(
-                    imageUrl: AppConstants.resolveAssetUrl(channel.logoUrl),
-                    fit: fit,
-                    placeholder: (context, url) => _buildPlaceholder(categoryColor),
-                    errorWidget: (context, url, error) =>
-                        _buildPlaceholder(categoryColor),
-                  ),
-                )
-              : _buildPlaceholder(categoryColor),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(size * 0.2),
+            child: _buildLogoImage(
+              localAsset: localAsset,
+              remoteUrl: logoUrl,
+              categoryColor: categoryColor,
+              name: name,
+            ),
+          ),
         ),
 
         // Live indicator
-        if (showLiveIndicator && channel.isLive)
+        if (showLiveIndicator && isLive)
           Positioned(
             top: -2,
             right: -2,
@@ -76,7 +106,7 @@ class ChannelLogo extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.liveRed.withOpacity(0.5),
+                    color: AppColors.liveRed.withOpacity(0.6),
                     blurRadius: 4,
                     spreadRadius: 1,
                   ),
@@ -88,186 +118,218 @@ class ChannelLogo extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder(Color categoryColor) {
-    // Hiển thị chữ cái đầu của tên kênh thay vì icon TV
-    final initials = _getInitials(channel.name);
-    final calculatedFontSize = fontSize ?? (size * 0.4);
+  Widget _buildLogoImage({
+    String? localAsset,
+    String? remoteUrl,
+    required Color categoryColor,
+    required String name,
+  }) {
+    // 1. Try local SVG asset first (instant loading, highest fidelity)
+    if (localAsset != null) {
+      return SvgPicture.asset(
+        localAsset,
+        width: size,
+        height: size,
+        fit: fit,
+        placeholderBuilder: (_) => _buildPlaceholder(categoryColor, name),
+      );
+    }
 
-    return Center(
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: categoryColor,
-          fontSize: calculatedFontSize,
-          fontWeight: FontWeight.bold,
+    // 2. Try remote URL
+    if (remoteUrl != null && remoteUrl.isNotEmpty) {
+      final resolvedUrl = AppConstants.resolveAssetUrl(remoteUrl);
+      if (resolvedUrl.toLowerCase().endsWith('.svg')) {
+        return SvgPicture.network(
+          resolvedUrl,
+          width: size,
+          height: size,
+          fit: fit,
+          placeholderBuilder: (_) => _buildPlaceholder(categoryColor, name),
+        );
+      } else {
+        return CachedNetworkImage(
+          imageUrl: resolvedUrl,
+          width: size,
+          height: size,
+          fit: fit,
+          placeholder: (_, __) => _buildPlaceholder(categoryColor, name),
+          errorWidget: (_, __, ___) => _buildPlaceholder(categoryColor, name),
+        );
+      }
+    }
+
+    // 3. Fallback initials
+    return _buildPlaceholder(categoryColor, name);
+  }
+
+  Widget _buildPlaceholder(Color categoryColor, String name) {
+    final initial = ChannelLogoHelper.getInitial(name);
+    final calculatedFontSize = fontSize ?? (size * 0.42);
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            categoryColor.withOpacity(0.3),
+            categoryColor.withOpacity(0.1),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: calculatedFontSize,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  /// Lấy 2 chữ cái đầu của tên kênh
-  String _getInitials(String name) {
-    final words = name.trim().split(RegExp(r'\s+'));
-    if (words.isEmpty) return '?';
-    if (words.length == 1) {
-      return words[0].substring(0, words[0].length.clamp(0, 2)).toUpperCase();
-    }
-    return '${words[0][0]}${words[1][0]}'.toUpperCase();
-  }
-
-  /// Lấy màu theo category — Brand Guidelines 19 Category
-  static Color _getCategoryColor(String category) {
-    switch (category.toUpperCase()) {
-      // === 12 category ban đầu ===
-      case 'SPORTS':
-        return AppColors.sports;
-      case 'ENTERTAINMENT':
-        return AppColors.entertainment;
-      case 'NEWS':
-        return AppColors.news;
-      case 'MUSIC':
-        return AppColors.music;
-      case 'CINE':
-      case 'DRAMA':
-        return AppColors.cinema;
-      case 'KIDS':
-        return AppColors.kids;
-      case 'TECH':
-        return AppColors.tech;
-      case 'FOOD':
-        return AppColors.food;
-      case 'SHOW':
-        return AppColors.show;
-      case 'EDUCATION':
-        return AppColors.education;
-      case 'DOCUMENTARY':
-        return AppColors.documentary;
-      // === 8 category mở rộng ===
-      case 'GAMING':
-        return AppColors.gaming;
-      case 'PODCAST':
-        return AppColors.podcast;
-      case 'LIFESTYLE':
-        return AppColors.lifestyle;
-      case 'TRAVEL':
-        return AppColors.travel;
-      case 'ART':
-        return AppColors.art;
-      case 'BUSINESS':
-        return AppColors.business;
-      case 'HEALTH':
-        return AppColors.health;
-      default:
-        return AppColors.primary;
-    }
+  /// Lấy màu theo category
+  static Color getCategoryColor(String? category) {
+    return Color(ChannelLogoHelper.getFallbackColor(category));
   }
 }
 
-/// Compact version của ChannelLogo cho những nơi có không gian hạn chế
+/// Compact version của ChannelLogo cho danh sách, row, chip
 class ChannelLogoCompact extends StatelessWidget {
   final dynamic channel;
   final double size;
   final bool showLiveIndicator;
+  final bool preferBadge;
 
   const ChannelLogoCompact({
     super.key,
     required this.channel,
     this.size = 32,
     this.showLiveIndicator = false,
+    this.preferBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    String category = 'ENTERTAINMENT';
-    String? logoUrl;
+    return ChannelLogo(
+      channel: channel,
+      size: size,
+      showLiveIndicator: showLiveIndicator,
+      preferBadge: preferBadge,
+      fit: BoxFit.contain,
+    );
+  }
+}
+
+/// Channel Badge widget (for wider horizontal or badge displays)
+class ChannelBadge extends StatelessWidget {
+  final dynamic channel;
+  final double width;
+  final double height;
+
+  const ChannelBadge({
+    super.key,
+    required this.channel,
+    this.width = 120,
+    this.height = 40,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String? slug;
+    String? badgeUrl;
+    String? category;
     String name = '';
-    bool isLive = false;
 
     if (channel is ChannelModel) {
       final m = channel as ChannelModel;
+      slug = m.slug;
+      badgeUrl = m.badgeUrl ?? m.logoUrl;
       category = m.category;
-      logoUrl = m.logoUrl;
       name = m.name;
-      isLive = m.isLive;
     } else {
       try {
         final dynamic dyn = channel;
+        slug = dyn.slug?.toString();
+        badgeUrl = dyn.badgeUrl?.toString() ?? dyn.logoUrl?.toString();
+        category = dyn.category?.toString();
         name = dyn.name?.toString() ?? '';
-        logoUrl = dyn.logoUrl?.toString();
-        category = dyn.category?.toString() ?? 'ENTERTAINMENT';
-        isLive = dyn.isLive == true;
       } catch (_) {}
     }
 
-    final categoryColor = ChannelLogo._getCategoryColor(category);
-
-    return Stack(
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: categoryColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: logoUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: CachedNetworkImage(
-                    imageUrl: AppConstants.resolveAssetUrl(logoUrl),
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) =>
-                        _buildInitials(categoryColor, name),
-                  ),
-                )
-              : _buildInitials(categoryColor, name),
-        ),
-        if (showLiveIndicator && isLive)
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: size * 0.35,
-              height: size * 0.35,
-              decoration: BoxDecoration(
-                color: AppColors.liveRed,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.dark950,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-      ],
+    final localAsset = ChannelLogoHelper.resolveLocalAsset(
+      logoUrl: badgeUrl,
+      slug: slug,
+      preferBadge: true,
     );
+
+    final categoryColor = Color(ChannelLogoHelper.getFallbackColor(category));
+
+    if (localAsset != null) {
+      return SvgPicture.asset(
+        localAsset,
+        width: width,
+        height: height,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => _buildFallback(categoryColor, name),
+      );
+    }
+
+    if (badgeUrl != null && badgeUrl.isNotEmpty) {
+      final resolvedUrl = AppConstants.resolveAssetUrl(badgeUrl);
+      if (resolvedUrl.toLowerCase().endsWith('.svg')) {
+        return SvgPicture.network(
+          resolvedUrl,
+          width: width,
+          height: height,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => _buildFallback(categoryColor, name),
+        );
+      } else {
+        return CachedNetworkImage(
+          imageUrl: resolvedUrl,
+          width: width,
+          height: height,
+          fit: BoxFit.contain,
+          errorWidget: (_, __, ___) => _buildFallback(categoryColor, name),
+        );
+      }
+    }
+
+    return _buildFallback(categoryColor, name);
   }
 
-  Widget _buildInitials(Color categoryColor, String name) {
-    final initials = _getInitials(name);
-    return Center(
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: categoryColor,
-          fontSize: size * 0.35,
-          fontWeight: FontWeight.bold,
+  Widget _buildFallback(Color categoryColor, String name) {
+    return Container(
+      width: width,
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: categoryColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: categoryColor.withOpacity(0.4)),
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name : 'OmniCast',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
   }
-
-  String _getInitials(String name) {
-    final words = name.trim().split(RegExp(r'\s+'));
-    if (words.isEmpty) return '?';
-    if (words.length == 1) {
-      return words[0].substring(0, words[0].length.clamp(0, 2)).toUpperCase();
-    }
-    return '${words[0][0]}${words[1][0]}'.toUpperCase();
-  }
 }
 
-/// Widget hiển thị tên kênh với logo (dùng trong list items)
+/// Widget hiển thị tên kênh với logo
 class ChannelInfo extends StatelessWidget {
   final ChannelModel channel;
   final double logoSize;
@@ -280,7 +342,7 @@ class ChannelInfo extends StatelessWidget {
   const ChannelInfo({
     super.key,
     required this.channel,
-    this.logoSize = 24,
+    this.logoSize = 28,
     this.nameStyle,
     this.categoryStyle,
     this.mainAxisAlignment = MainAxisAlignment.start,
