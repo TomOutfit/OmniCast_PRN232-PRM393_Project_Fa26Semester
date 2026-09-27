@@ -215,6 +215,9 @@ model LiveChannel {
   isPublic        Boolean      @default(true)
   allowComments   Boolean      @default(true)
   requireSub      Boolean      @default(false)
+  // Ingest source mapping (e.g. Twitch broadcaster id)
+  twitchBroadcasterId String?  @db.VarChar(100)
+  youtubeChannelId    String?  @db.VarChar(100)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -227,6 +230,7 @@ model LiveChannel {
   @@index([slug])
   @@index([isFeatured, followerCount])
   @@index([ownerId])
+  @@index([twitchBroadcasterId])
 }
 
 model LiveEvent {
@@ -264,6 +268,7 @@ model LiveEvent {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
+  @@unique([channelId, externalPlatform, externalId], name: "channel_platform_external_unique")
   @@index([status, scheduledAt])
   @@index([channelId, status])
   @@index([status, startedAt])
@@ -468,7 +473,7 @@ model Notification {
 
 model AuditLog {
   id          String   @id @default(uuid())
-  userId      String?
+  userId      String?  @db.Text
   userEmail   String?  @db.VarChar(255)
   action      String   @db.VarChar(100)
   entityType  String?  @db.VarChar(100)

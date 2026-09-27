@@ -6,7 +6,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/programs/programs_bloc.dart';
-import '../../../logic/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
