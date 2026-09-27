@@ -1,12 +1,22 @@
 // ============================================================
 // OmniCast - Prisma Seed Script
-// Diversified Format Live Channels: Sport 1, Sport 2, Show, Entertain, Cine, Drama, News, Music, Kids, Tech, Food, Discovery
+// Diversified Format Live Channels: 25 Channels across 19 categories
 // ============================================================
 
 import { PrismaClient, LiveCategory, UserRole, EventStatus, ContentSource, StreamQuality, ContentType, TagType } from '@prisma/client';
+import { createHash } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+/**
+ * Sinh UUID deterministic từ chuỗi bất kỳ — đảm bảo re-run seed
+ * sẽ upsert cùng một record thay vì tạo trùng lặp.
+ */
+function deterministicUUID(seed: string): string {
+  const hash = createHash('md5').update(seed).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+}
 
 async function main() {
   console.log('🌱 Starting OmniCast seed...');
@@ -308,6 +318,243 @@ async function main() {
       followerCount: 195000,
       totalViews: 23000000,
       totalVideos: 320,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    // ============================================================
+    // 13 KÊNH MỚI — Mở rộng 19/19 LiveCategory
+    // ============================================================
+    {
+      id: '11111111-1111-1111-1111-111111111113',
+      name: 'Omni Esports',
+      slug: 'esports',
+      description: 'Kênh thể thao điện tử chuyên nghiệp - Trực tiếp giải đấu Liên Minh Huyền Thoại, Valorant, Dota 2 quốc tế với bình luận viên Việt Nam hàng đầu.',
+      tagline: 'Đấu Trường Esports Đỉnh Cao Châu Á',
+      logoUrl: '/Channel_Logos/13-omni-esports-icon.svg',
+      badgeUrl: '/Channel_Logos/13-omni-esports-badge.svg',
+      bannerColor: '#dc2626',
+      category: LiveCategory.GAMING,
+      language: 'vi',
+      followerCount: 280000,
+      totalViews: 32000000,
+      totalVideos: 540,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111114',
+      name: 'Omni Indie Games',
+      slug: 'indie-games',
+      description: 'Kênh game indie sáng tạo - Trực tiếp khám phá các tựa game độc lập đột phá, pixel art đầy mê hoặc và những câu chuyện game indie đầy cảm hứng.',
+      tagline: 'Nghệ Thuật Game Độc Lập & Sáng Tạo',
+      logoUrl: '/Channel_Logos/14-omni-indie-games-icon.svg',
+      badgeUrl: '/Channel_Logos/14-omni-indie-games-badge.svg',
+      bannerColor: '#06b6d4',
+      category: LiveCategory.GAMING,
+      language: 'vi',
+      followerCount: 145000,
+      totalViews: 18000000,
+      totalVideos: 380,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111115',
+      name: 'Omni Podcast',
+      slug: 'podcast',
+      description: 'Kênh talkshow & podcast đa chủ đề - Những cuộc trò chuyện chân thực, chuyên sâu từ công nghệ, đời sống đến kinh doanh và tâm lý con người.',
+      tagline: 'Câu Chuyện Kể Mỗi Ngày Từ OmniCast',
+      logoUrl: '/Channel_Logos/15-omni-podcast-icon.svg',
+      badgeUrl: '/Channel_Logos/15-omni-podcast-badge.svg',
+      bannerColor: '#f59e0b',
+      category: LiveCategory.PODCAST,
+      language: 'vi',
+      followerCount: 175000,
+      totalViews: 21000000,
+      totalVideos: 290,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111116',
+      name: 'Omni Audiobook',
+      slug: 'audiobook',
+      description: 'Thư viện sách nói khổng lồ - Từ tiểu thuyết kinh điển đến sách self-help hiện đại, được đọc bởi các MC chuyên nghiệp với chất lượng studio.',
+      tagline: 'Tri Thức Trong Tầm Tai Bạn',
+      logoUrl: '/Channel_Logos/16-omni-audiobook-icon.svg',
+      badgeUrl: '/Channel_Logos/16-omni-audiobook-badge.svg',
+      bannerColor: '#d97706',
+      category: LiveCategory.PODCAST,
+      language: 'vi',
+      followerCount: 132000,
+      totalViews: 15000000,
+      totalVideos: 410,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111117',
+      name: 'Omni Academy',
+      slug: 'academy',
+      description: 'Kênh giáo dục trực tuyến - Khóa học chất lượng cao từ toán, lý, hóa đến lập trình, ngoại ngữ với giáo viên top đầu Việt Nam và quốc tế.',
+      tagline: 'Nền Tảng Học Tập Mở Cho Mọi Người',
+      logoUrl: '/Channel_Logos/17-omni-academy-icon.svg',
+      badgeUrl: '/Channel_Logos/17-omni-academy-badge.svg',
+      bannerColor: '#6366f1',
+      category: LiveCategory.EDUCATION,
+      language: 'vi',
+      followerCount: 320000,
+      totalViews: 41000000,
+      totalVideos: 680,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111118',
+      name: 'Omni Skill Lab',
+      slug: 'skill-lab',
+      description: 'Phòng thí nghiệm kỹ năng thực hành - Workshop hands-on về lập trình, thiết kế, marketing, nhiếp ảnh dành cho người đi làm muốn nâng cao năng lực.',
+      tagline: 'Rèn Kỹ Năng Qua Thực Hành Thực Tế',
+      logoUrl: '/Channel_Logos/18-omni-skill-lab-icon.svg',
+      badgeUrl: '/Channel_Logos/18-omni-skill-lab-badge.svg',
+      bannerColor: '#10b981',
+      category: LiveCategory.EDUCATION,
+      language: 'vi',
+      followerCount: 168000,
+      totalViews: 19000000,
+      totalVideos: 420,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111119',
+      name: 'Omni Wellness',
+      slug: 'wellness',
+      description: 'Kênh sống khỏe & chăm sóc bản thân - Yoga buổi sáng, thiền định, dinh dưỡng cân bằng và hành trình cải thiện sức khỏe tinh thần mỗi ngày.',
+      tagline: 'Sống Khỏe, Sống Đẹp, Sống Có Ý Nghĩa',
+      logoUrl: '/Channel_Logos/19-omni-wellness-icon.svg',
+      badgeUrl: '/Channel_Logos/19-omni-wellness-badge.svg',
+      bannerColor: '#f43f5e',
+      category: LiveCategory.LIFESTYLE,
+      language: 'vi',
+      followerCount: 215000,
+      totalViews: 24000000,
+      totalVideos: 450,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111120',
+      name: 'Omni Fashion',
+      slug: 'fashion',
+      description: 'Kênh thời trang & phong cách sống - Trực tiếp runway show quốc tế, lookbook mùa mới và bí quyết phối đồ từ các stylist hàng đầu.',
+      tagline: 'Định Hình Phong Cách Cá Nhân',
+      logoUrl: '/Channel_Logos/20-omni-fashion-icon.svg',
+      badgeUrl: '/Channel_Logos/20-omni-fashion-badge.svg',
+      bannerColor: '#d946ef',
+      category: LiveCategory.LIFESTYLE,
+      language: 'vi',
+      followerCount: 198000,
+      totalViews: 22000000,
+      totalVideos: 380,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111121',
+      name: 'Omni Travel VN',
+      slug: 'travel-vn',
+      description: 'Kênh du lịch Việt Nam chuyên sâu - Khám phá 63 tỉnh thành từ hang động Sơn Đoòng đến ruộng bậc thang Sapa, food tour đường phố và homestay độc đáo.',
+      tagline: 'Việt Nam Đẹp Từ Trên Xuống Dưới',
+      logoUrl: '/Channel_Logos/21-omni-travel-vn-icon.svg',
+      badgeUrl: '/Channel_Logos/21-omni-travel-vn-badge.svg',
+      bannerColor: '#14b8a6',
+      category: LiveCategory.TRAVEL,
+      language: 'vi',
+      followerCount: 245000,
+      totalViews: 28000000,
+      totalVideos: 510,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111122',
+      name: 'Omni Travel World',
+      slug: 'travel-world',
+      description: 'Kênh du lịch thế giới - Vlog hành trình tại Tokyo, Bali, Iceland, Thổ Nhĩ Kỳ cùng hướng dẫn visa, lịch trình chi tiết và tips tiết kiệm.',
+      tagline: 'Vòng Quanh Thế Giới Trong Tầm Tay',
+      logoUrl: '/Channel_Logos/22-omni-travel-world-icon.svg',
+      badgeUrl: '/Channel_Logos/22-omni-travel-world-badge.svg',
+      bannerColor: '#0ea5e9',
+      category: LiveCategory.TRAVEL,
+      language: 'vi',
+      followerCount: 188000,
+      totalViews: 21000000,
+      totalVideos: 460,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111123',
+      name: 'Omni Art & Design',
+      slug: 'art-design',
+      description: 'Kênh nghệ thuật & thiết kế sáng tạo - Behance review, Figma tutorial, ngôn ngữ thị giác và quy trình làm việc của các designer hàng đầu Việt Nam.',
+      tagline: 'Cảm Hứng & Quy Trình Thiết Kế Chuyên Nghiệp',
+      logoUrl: '/Channel_Logos/23-omni-art-design-icon.svg',
+      badgeUrl: '/Channel_Logos/23-omni-art-design-badge.svg',
+      bannerColor: '#e11d48',
+      category: LiveCategory.ART,
+      language: 'vi',
+      followerCount: 142000,
+      totalViews: 17000000,
+      totalVideos: 340,
+      isFeatured: false,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111124',
+      name: 'Omni Business',
+      slug: 'business',
+      description: 'Kênh tài chính & khởi nghiệp - Phân tích thị trường chứng khoán, founder story, chiến lược tăng trưởng startup và bài học từ các tỷ phú thế giới.',
+      tagline: 'Kinh Doanh Thông Minh & Bền Vững',
+      logoUrl: '/Channel_Logos/24-omni-business-icon.svg',
+      badgeUrl: '/Channel_Logos/24-omni-business-badge.svg',
+      bannerColor: '#1e40af',
+      category: LiveCategory.BUSINESS,
+      language: 'vi',
+      followerCount: 205000,
+      totalViews: 25000000,
+      totalVideos: 470,
+      isFeatured: true,
+      isVerified: true,
+      ownerId: staffUser.id,
+    },
+    {
+      id: '11111111-1111-1111-1111-111111111125',
+      name: 'Omni Health',
+      slug: 'health',
+      description: 'Kênh y khoa & sức khỏe cộng đồng - Tư vấn từ bác sĩ chuyên khoa, cập nhật y học mới nhất, phòng bệnh thông minh và hành trình điều trị thực tế.',
+      tagline: 'Sức Khỏe Là Vốn Quý Của Bạn',
+      logoUrl: '/Channel_Logos/25-omni-health-icon.svg',
+      badgeUrl: '/Channel_Logos/25-omni-health-badge.svg',
+      bannerColor: '#10b981',
+      category: LiveCategory.HEALTH,
+      language: 'vi',
+      followerCount: 232000,
+      totalViews: 27000000,
+      totalVideos: 520,
       isFeatured: true,
       isVerified: true,
       ownerId: staffUser.id,
@@ -861,6 +1108,334 @@ async function main() {
     recordings.push(item);
   }
   console.log('✅ Recordings (VOD) created:', recordings.length);
+
+  // ============================================================
+  // 4b. EXTENDED PROGRAMS — 520 programs cho 13 kênh mới
+  //    20 LiveEvents + 20 Recordings / kênh × 13 = 520
+  //    ID deterministic từ hash để upsert idempotent.
+  // ============================================================
+
+  const newChannels = channels.filter(c =>
+    !['sport-1','sport-2','show','entertain','cine','drama','news','music','kids','tech','food','discovery'].includes(c.slug),
+  );
+
+  // Tiêu đề & tags theo category để sinh chương trình đa dạng
+  const titlesByCategory: Record<string, string[]> = {
+    GAMING: [
+      'Vòng Bảng Giải Đấu Esports Khu Vực Đông Nam Á',
+      'Trận Chung Kết Liên Minh Huyền Thoại Mùa Xuân',
+      'Tournament Valorant Champions Tour 2026',
+      'Showmatch Game Thủ Nổi Tiếng vs Đội Tuyển Quốc Gia',
+      'Phân Tích Meta Mới Của Dota 2 Patch 7.40',
+      'Speedrun Hollow Knight: Silksong Dưới 30 Phút',
+      'Top 10 Game Indie Hay Nhất 2026 Bạn Nên Thử',
+      'Live Stream Khám Phá Thế Giới Mở Elden Ring DLC',
+      'Thử Thách 24h Chơi Game Không Lặp Lại',
+      'Game Dev Nhật Ký: Xây Dựng Game Pixel Art Đầu Tiên',
+      'Hướng Dẫn Leo Rank Valorant Lên Radiant',
+      'Bình Luận Trực Tiếp Chung Kết PUBG Global Series',
+      'Retro Game Night: Chơi Lại Game Huyền Thoại PS1',
+      'Cosplay & Lore: Lịch Sử Thế Giới Game Final Fantasy',
+      'Phỏng Vấn Nhà Phát Triển Game Indie Việt Nam',
+      'Workshop Thiết Kế Nhân Vật Game 2D Bằng Procreate',
+      'Phân Tích Kịch Bản Trong Game AAA 2026',
+      'Live Thi Đấu Mobile Legends Bang Bang Quốc Tế',
+      'Khám Phá Game Roguelike Đang Được Yêu Thích Nhất',
+      'Đêm Gala Game Thủ Việt Nam 2026',
+    ],
+    PODCAST: [
+      'Talk Show: Chuyện Chưa Kể Của Founder Startup Kỳ Lân',
+      'Phỏng Vấn Độc Quyền CEO Công Ty Công Nghệ Hàng Đầu',
+      'Khám Phá Khoa Học Não Bộ Và Tâm Lý Con Người',
+      'Hành Trình 10 Năm Của Một Nhà Báo Chiến Trường',
+      'Tọa Đàm: Tương Lai Trí Tuệ Nhân Tạo Tại Việt Nam',
+      'Podcast Đêm Khuya: Những Câu Chuyện Truyền Cảm Hứng',
+      'Review Sách Kinh Điển "Nhà Giả Kim" Phiên Bản 2026',
+      'Sách Nói: Đắc Nhân Tâm - Nghệ Thuật Thu Phục Lòng Người',
+      'Đọc Sách: Sapiens - Lược Sử Loài Người',
+      'Tâm Sự Nghề Nghiệp: Từ Lập Trình Viên Đến Giám Đốc',
+      'Phỏng Vấn Hot Tiktoker: Hành Trình 5 Triệu Followers',
+      'Chuyện Nghề Phi Công: 10 Năm Bay Trên Bầu Trời',
+      'Podcast Kỹ Năng: 7 Thói Quen Của Người Thành Đạt',
+      'Sách Nói Tiếng Anh: Atomic Habits Song Ngữ',
+      'Chuyện Lạ Việt Nam: Những Ngôi Đền Bí Ẩn',
+      'Phỏng Vấn Bác Sĩ: Sức Khỏe Tinh Thần Thời Hiện Đại',
+      'Tọa Đàm Giáo Dục: Con Đường Du Học Hay Ở Lại',
+      'Podcast Kinh Doanh: 5 Sai Lầm Chết Người Khi Khởi Nghiệp',
+      'Khám Phá Văn Hóa Trà Đạo Và Thiền Định',
+      'Sách Nói: Tư Duy Nhanh Và Chậm - Daniel Kahneman',
+    ],
+    EDUCATION: [
+      'Ôn Thi THPT Quốc Gia 2026 - Môn Toán Chuyên Đề Hàm Số',
+      'Lớp Học Lập Trình Python Từ Zero Tới Hero',
+      'Workshop Toán Tư Dy Cho Trẻ Em 8-12 Tuổi',
+      'Khóa Học Tiếng Anh Giao Tiếp Cơ Bản Trong 30 Ngày',
+      'Hướng Dẫn Làm Bài Thi IELTS Speaking Đạt 7.5+',
+      'Luyện Thi Đại Học - Môn Vật Lý Chuyên Đề Điện Xoay Chiều',
+      'Khóa Học Thiết Kế Đồ Họa Canva Trong 7 Ngày',
+      'Bài Giảng Lịch Sử Việt Nam: Các Triều Đại Phong Kiến',
+      'Ôn Thi Học Kỳ 2 - Môn Ngữ Văn Lớp 12',
+      'Học Excel Từ Cơ Bản Đến Nâng Cao Cho Dân Văn Phòng',
+      'Khóa Học Photoshop Từ A-Z: Biến Ảnh Thường Thành Tác Phẩm',
+      'Workshop Luyện Viết Chữ Đẹp Theo Phong Cách Hiện Đại',
+      'Lớp Học Hóa Học Vui: Thí Nghiệm Tại Nhà An Toàn',
+      'Khóa Học Tiếng Trung Giao Tiếp Cho Người Mới Bắt Đầu',
+      'Hướng Dẫn Làm Đồ Án Tốt Nghiệp Ngành Marketing',
+      'Bài Giảng Triết Học Mác - Lênin Dễ Hiểu',
+      'Ôn Thi SAT/ACT Cho Học Sinh Muốn Du Học Mỹ',
+      'Workshop Kỹ Năng Thuyết Trình Trước Đám Đông',
+      'Khóa Học Digital Marketing Tổng Thể Cho Người Mới',
+      'Lớp Học Nấu Ăn Quốc Tế: Ẩm Thực Ý Và Pháp',
+    ],
+    LIFESTYLE: [
+      'Yoga Buổi Sáng 30 Phút Cho Người Mới Bắt Đầu',
+      'Hướng Dẫn Thiền Định Mindfulness Trong 21 Ngày',
+      'Thực Đơn Eat Clean 7 Ngày Cho Dân Văn Phòng',
+      'Workout Tại Nhà Không Cần Dụng Cụ Trong 4 Tuần',
+      'Trực Tiếp Lễ Hội Âm Nhạc Ultra Việt Nam 2026',
+      'Runway Show Bộ Sưu Tập Thu Đông Từ NTK Việt',
+      'Hướng Dẫn Chăm Sóc Da Mụn Đúng Cách Từ Bác Sĩ',
+      'Lookbook Mùa Xuân 2026: Phong Cách Tối Giản Hàn Quốc',
+      'Phỏng Vấn Stylist Nổi Tiếng: Cách Xây Dựng Tủ Đồ Capsule',
+      'Workshop Trang Điểm Tự Nhiên Đi Làm Mỗi Ngày',
+      'Hành Trình Giảm 20kg An Toàn Trong 6 Tháng',
+      'Hướng Dẫn Detox Cơ Thể Sau Tết Trong 14 Ngày',
+      'Live Concert Nhạc Acoustic Cuối Tuần Tại Đà Lạt',
+      'Phong Cách Thời Trang Công Sở Cho Quý Cô U40',
+      'Sống Tối Giản: Bỏ Đi 80% Đồ Đạc Trong Nhà',
+      'Workshop Pha Chế Mocktail Healthy Tại Nhà',
+      'Live Show Thời Trang Bền Vững & Thân Thiện Môi Trường',
+      'Hướng Dẫn Self-Care Mỗi Tối Trước Khi Ngủ',
+      'Podcast Cùng Chuyên Gia Tâm Lý: Vượt Qua Trầm Cảm',
+      'Workshop Làm Nến Thơm Handmade Tặng Người Thương',
+    ],
+    TRAVEL: [
+      'Tour Ẩm Thực Đường Phố Hà Nội Một Ngày Ăn Gì',
+      'Khám Phá Hang Sơn Đoòng - Hang Động Lớn Nhất Thế Giới',
+      'Vlog Du Lịch Bali 5 Ngày 4 Đêm Dưới 15 Triệu',
+      'Hướng Dẫn Xin Visa Nhật Bản Tự Túc Thành Công 100%',
+      'Review Khách Sạn 5 Sao Phú Quốc Mùa Hè 2026',
+      'Phượt Tây Bắc 7 Ngày: Sapa - Fansipan - Mù Cang Chải',
+      'Khám Phá Iceland Mùa Cực Quang Tháng 12',
+      'Du Lịch Thổ Nhĩ Kỳ 10 Ngày: Istanbul - Cappadocia - Antalya',
+      'Tour Trekking Fansipan 2 Ngày 1 Đêm Cùng Local Guide',
+      'Review Resort Biển Đảo Lý Sơn - Việt Nam',
+      'Hướng Dẫn Đi Thái Lan Tự Túc 5 Ngày Siêu Tiết Kiệm',
+      'Food Tour Tokyo: 10 Món Ăn Phải Thử ở Shibuya',
+      'Du Lịch Singapore 4 Ngày Cho Gia Đình Có Trẻ Nhỏ',
+      'Khám Phá Phú Yên - Hoa Vàng Trên Cỏ Xanh',
+      'Vlog Đi Bộ Xuyên Rừng Cúc Phương 3 Ngày 2 Đêm',
+      'Hướng Dẫn Đặt Vé Máy Bay Giá Rẻ Trong Mùa Cao Điểm',
+      'Khám Phá Côn Đảo - Địa Ngục Trần Gian Thành Thiên Đường',
+      'Tour Châu Âu 14 Ngày: Pháp - Ý - Thụy Sĩ',
+      'Du Lịch Đà Nẵng - Hội An - Huế Trong 5 Ngày',
+      'Review Tour Du Thuyền Hạ Long 2 Ngày 1 Đêm Sang Trọng',
+    ],
+    ART: [
+      'Workshop Vẽ Màu Nước Cơ Bản Cho Người Mới',
+      'Hướng Dẫn Sử Dụng Figma Từ A-Z Cho Designer',
+      'Behance Review: 10 Portfolio Thiết Kế Ấn Tượng Tuần Qua',
+      'Phỏng Vấn Nghệ Sĩ Đường Phố Nổi Tiếng Hà Nội',
+      'Hướng Dẫn Thiết Kế Logo Chuyên Nghiệp Trong 60 Phút',
+      'Workshop Chụp Ảnh Sản Phẩm Bằng Điện Thoại',
+      'Phân Tích Typography Trong Các Thương Hiệu Lớn',
+      'Triển Lãm Tranh Nghệ Thuật Đương Đại Tại TP.HCM',
+      'Hướng Dẫn Làm Phim Hoạt Hình 2D Bằng Adobe Animate',
+      'Workshop Vẽ Chân Dung Bằng Chì Than Cơ Bản',
+      'Lịch Sử Nghệ Thuật Baroque Và Những Tác Phẩm Vĩ Đại',
+      'Hướng Dẫn Thiết Kế UI/UX Cho Ứng Dụng Mobile',
+      'Workshop Sculpture Đất Sét Tạo Hình Nghệ Thuật',
+      'Phỏng Vấn Illustrator Việt Nam Được Quốc Tế Công Nhận',
+      'Hướng Dẫn Dựng Video Motion Graphics Bằng After Effects',
+      'Phân Tích Màu Sắc Trong Các Bộ Phim Đoạt Giải Oscar',
+      'Workshop Nhiếp Ảnh Phong Cảnh Với Thiết Bị Giá Rẻ',
+      'Hướng Dẫn Làm Short Film Quay Bằng Điện Thoại',
+      'Phỏng Vấn Nhà Thiết Kế Thời Trang Trẻ Tuổi Triển Vọng',
+      'Workshop Điêu Khắc Đá Cơ Bản Cho Người Mới Bắt Đầu',
+    ],
+    BUSINESS: [
+      'Phân Tích Thị Trường Chứng Khoán Tuần 27/09/2026',
+      'Founder Story: Từ 2 Triệu Vốn Đến Startup 100 Triệu USD',
+      'Workshop Lập Kế Hoạch Kinh Doanh 5 Năm',
+      'Phỏng Vấn CEO Tập Đoàn Bất Động Sản Hàng Đầu',
+      'Chiến Lược Marketing 0 Đồng Cho Startup Giai Đoạn Đầu',
+      'Hướng Dẫn Đàm Phán Lương Thành Công Tăng 50%',
+      'Phân Tích Báo Cáo Tài Chính Doanh Nghiệp Niêm Yết',
+      'Bài Học Khởi Nghiệp Từ Các Tỷ Phú Jack Ma, Elon Musk',
+      'Workshop Xây Dựng Đội Ngũ High-Performance Cho SME',
+      'Hướng Dẫn Gọi Vốn Series A Thành Công Từ Quỹ Nước Ngoài',
+      'Phỏng Vấn CFO: Chiến Lược Tài Chính Trong Khủng Hoảng',
+      'Workshop E-Commerce: Bán Hàng Trên Shopee Hiệu Quả',
+      'Phân Tích Xu Hướng Đầu Tư Bất Động Sản 2026',
+      'Hướng Dẫn Xây Dựng Thương Hiệu Cá Nhân Trên LinkedIn',
+      'Workshop Quản Lý Dòng Tiền Cho Doanh Nghiệp Nhỏ',
+      'Phỏng Vấn Shark Tank: Đánh Giá Cơ Hội Đầu Tư 2026',
+      'Hướng Dẫn Áp Dụng AI Trong Vận Hành Doanh Nghiệp',
+      'Chiến Lược IPO Của Các Startup Kỳ Lân Đông Nam Á',
+      'Workshop Thu Hút Khách Hàng Trung Thành Qua CRM',
+      'Phân Tích Tăng Trưởng Kinh Tế Việt Nam Quý 3/2026',
+    ],
+    HEALTH: [
+      'Tư Vấn Sức Khỏe: Phòng Ngừa Ung Thư Vú Ở Phụ Nữ',
+      'Hướng Dẫn Cai Thuốc Lá Trong 30 Ngày Hiệu Quả',
+      'Tư Vấn Dinh Dưỡng Cho Trẻ Biếng Ăn Từ Chuyên Gia',
+      'Bài Tập Phục Hồi Chức Năng Sau Tai Biến Tại Nhà',
+      'Phòng Ngừa Bệnh Tim Mạch Qua Chế Độ Ăn Mediterranean',
+      'Tư Vấn Sức Khỏe Tinh Thần: Vượt Qua Rối Loạn Lo Âu',
+      'Khám Phá Công Nghệ Phẫu Thuật Robot 2026',
+      'Hướng Dẫn Sơ Cứu Khi Gặp Tai Nạn Giao Thông',
+      'Tư Vấn Mang Thai An Toàn Cho Mẹ Bầu Lần Đầu',
+      'Phân Tích Tác Dụng Phụ Của Vaccine HPV',
+      'Workshop Hô Hấp Đúng Cách Cho Người Hen Suyễn',
+      'Cập Nhật Phác Đồ Điều Trị Ung Thư Mới Nhất 2026',
+      'Hướng Dẫn Chăm Sóc Người Già Tại Nhà',
+      'Tư Vấn Sức Khỏe Sinh Sản: Vô Sinh Hiếm Muộn',
+      'Workshop Sơ Cứu Trẻ Em: Sốt Cao Co Giật',
+      'Phỏng Vấn Bác Sĩ: Thực Phẩm Chức Năng Có Thật Sự Cần Thiết',
+      'Hướng Dẫn Phục Hồi Sau Phẫu Thuật Nội Soi',
+      'Tư Vấn Dinh Dưỡng Cho Vận Động Viên Chuyên Nghiệp',
+      'Phòng Ngừa Đột Quỵ Vào Mùa Lạnh Cho Người Cao Tuổi',
+      'Hướng Dẫn Kiểm Soát Đường Huyết Cho Người Tiểu Đường',
+    ],
+  };
+
+  const tagsPoolByCategory: Record<string, string[]> = {
+    GAMING: ['Gaming', 'Esports', 'Indie', 'Multiplayer', 'Speedrun', 'PC', 'Console', 'Mobile'],
+    PODCAST: ['Podcast', 'Audio', 'Talkshow', 'Sách Nói', 'Phỏng Vấn', 'Review', 'Tâm Sự'],
+    EDUCATION: ['Education', 'Lập Trình', 'Tiếng Anh', 'Ôn Thi', 'THPT', 'IELTS', 'Excel', 'Marketing'],
+    LIFESTYLE: ['Lifestyle', 'Yoga', 'Wellness', 'Fashion', 'Nấu Ăn', 'Self-Care', 'Trang Điểm'],
+    TRAVEL: ['Travel', 'Việt Nam', 'World', 'Food Tour', 'Visa', 'Review', 'Phượt', 'Khách Sạn'],
+    ART: ['Art', 'Design', 'Figma', 'Photoshop', 'Nhiếp Ảnh', 'Vẽ', 'Triển Lãm', 'UI/UX'],
+    BUSINESS: ['Business', 'Startup', 'Khởi Nghiệp', 'Marketing', 'Tài Chính', 'Chứng Khoán', 'IPO', 'CEO'],
+    HEALTH: ['Health', 'Y Khoa', 'Dinh Dưỡng', 'Phòng Bệnh', 'Sức Khỏe', 'Bác Sĩ', 'Tâm Lý'],
+  };
+
+  const qualities = [StreamQuality.SD_480P, StreamQuality.HD_720P, StreamQuality.FULL_HD_1080P, StreamQuality.QHD_1440P, StreamQuality.UHD_4K];
+
+  let totalNewLiveEvents = 0;
+  let totalNewRecordings = 0;
+
+  for (const ch of newChannels) {
+    const titles = titlesByCategory[ch.category] || [];
+    const tagPool = tagsPoolByCategory[ch.category] || [];
+    const tagSlug = ch.slug.replace(/-/g, '_');
+
+    // 20 LiveEvents / kênh
+    for (let i = 0; i < 20; i++) {
+      const idx = i + 1;
+      const title = `${titles[i % titles.length]} #${idx}`;
+      const externalId = `live_${tagSlug}_${String(idx).padStart(3, '0')}`;
+      const id = deterministicUUID(`${ch.id}-event-${idx}`);
+      // Trộn status: 3 LIVE, 12 SCHEDULED, 5 ENDED
+      let status: EventStatus;
+      let scheduledAt: Date;
+      let startedAt: Date | undefined;
+      let endedAt: Date | undefined;
+      let duration: number;
+      let viewerCount = 0;
+      let peakViewers = 0;
+
+      const baseDate = new Date('2026-09-27T08:00:00Z');
+      if (i < 3) {
+        // LIVE hiện tại
+        status = EventStatus.LIVE;
+        scheduledAt = new Date(baseDate.getTime() - (i + 1) * 3600 * 1000);
+        startedAt = new Date(scheduledAt.getTime());
+        duration = 7200 + i * 1800;
+        viewerCount = 5000 + Math.floor(Math.random() * 15000);
+        peakViewers = viewerCount + Math.floor(Math.random() * 8000);
+      } else if (i < 15) {
+        // SCHEDULED trong 14 ngày tới
+        status = EventStatus.SCHEDULED;
+        scheduledAt = new Date(baseDate.getTime() + (i - 2) * 86400 * 1000);
+        duration = 5400 + Math.floor(Math.random() * 9000);
+      } else {
+        // ENDED trong quá khứ
+        status = EventStatus.ENDED;
+        scheduledAt = new Date(baseDate.getTime() - (i - 14) * 86400 * 1000);
+        startedAt = new Date(scheduledAt.getTime());
+        endedAt = new Date(startedAt.getTime() + 7200 * 1000);
+        duration = 7200;
+        peakViewers = 8000 + Math.floor(Math.random() * 22000);
+      }
+
+      const pickedTags = tagPool.slice(0, 3 + (i % 3)).map(t => `${t}#${idx}`);
+
+      const eventData = {
+        id,
+        title,
+        description: `${title} - phát sóng trực tiếp trên ${ch.name}. Đừng bỏ lỡ chương trình hấp dẫn này!`,
+        streamSource: ContentSource.EXTERNAL,
+        externalPlatform: 'YOUTUBE' as const,
+        externalId,
+        status,
+        scheduledAt,
+        startedAt,
+        endedAt,
+        duration,
+        viewerCount,
+        peakViewers,
+        channelId: ch.id,
+        tags: pickedTags,
+        autoRecord: true,
+      };
+
+      await prisma.liveEvent.upsert({
+        where: { id },
+        update: eventData as any,
+        create: eventData as any,
+      });
+      totalNewLiveEvents += 1;
+    }
+
+    // 20 Recordings / kênh
+    for (let i = 0; i < 20; i++) {
+      const idx = i + 1;
+      const title = `${titles[i % titles.length]} (Recording #${idx})`;
+      const externalId = `rec_${tagSlug}_${String(idx).padStart(3, '0')}`;
+      const id = deterministicUUID(`${ch.id}-rec-${idx}`);
+      const isUploaded = i % 5 !== 0; // 80% UPLOADED, 20% EXTERNAL
+      const isAudio = ch.category === LiveCategory.PODCAST && i % 2 === 0;
+      const contentType = isAudio ? ContentType.AUDIO : ContentType.VIDEO;
+      const quality = qualities[i % qualities.length];
+      const duration = 600 + Math.floor(Math.random() * 6600); // 10min - 2h
+      const viewCount = 10000 + Math.floor(Math.random() * 490000);
+      const likeCount = Math.floor(viewCount * (0.03 + Math.random() * 0.05));
+      const commentCount = Math.floor(likeCount * (0.05 + Math.random() * 0.1));
+      const publishedAt = new Date('2026-09-27T00:00:00Z').getTime() - (20 - i) * 86400 * 1000;
+      const pickedTags = tagPool.slice(0, 3 + (i % 3));
+
+      const recData = {
+        id,
+        title,
+        description: `${title} - tổng hợp trọn vẹn trên ${ch.name}.`,
+        contentSource: isUploaded ? ContentSource.UPLOADED : ContentSource.EXTERNAL,
+        externalPlatform: isUploaded ? null : 'YOUTUBE',
+        externalId,
+        duration,
+        quality,
+        contentType,
+        viewCount,
+        likeCount,
+        commentCount,
+        channelId: ch.id,
+        tags: pickedTags,
+        category: ch.category,
+        isFeatured: i % 7 === 0,
+        publishedAt: new Date(publishedAt),
+      };
+
+      await prisma.recording.upsert({
+        where: { id },
+        update: recData as any,
+        create: recData as any,
+      });
+      totalNewRecordings += 1;
+    }
+  }
+
+  console.log(`✅ Extended Live Events added: ${totalNewLiveEvents}`);
+  console.log(`✅ Extended Recordings added: ${totalNewRecordings}`);
 
   // ============================================================
   // 5. SAMPLE COMMENTS
