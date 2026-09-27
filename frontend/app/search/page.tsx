@@ -74,9 +74,9 @@ export default function SearchPage() {
     sortBy: selectedSort as 'relevance' | 'recent' | 'popular',
   });
 
-  const channels = data?.channels ?? [];
-  const liveEvents = data?.liveEvents ?? [];
-  const recordings = data?.recordings ?? [];
+  const channels = useMemo(() => data?.channels ?? [], [data?.channels]);
+  const liveEvents = useMemo(() => data?.liveEvents ?? [], [data?.liveEvents]);
+  const recordings = useMemo(() => data?.recordings ?? [], [data?.recordings]);
   const total = data?.totalResults ?? 0;
   const liveChannelIds = useMemo(() => new Set(liveEvents.map((e) => e.channelId)), [liveEvents]);
 
@@ -260,7 +260,7 @@ export default function SearchPage() {
           <>
             <p className="text-dark-400 mb-6">
               Tìm thấy <span className="text-white font-medium">{total}</span> kết
-              quả cho "{debouncedQuery}"
+              quả cho &ldquo;{debouncedQuery}&rdquo;
             </p>
 
             {/* Programs Results */}
