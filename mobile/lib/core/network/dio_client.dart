@@ -131,7 +131,6 @@ class _AuthInterceptor extends Interceptor {
 
 class _RetryInterceptor extends Interceptor {
   final Dio _dio;
-  static const int maxRetries = 1;
 
   _RetryInterceptor(this._dio);
 

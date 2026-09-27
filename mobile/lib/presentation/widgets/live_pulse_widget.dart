@@ -2,7 +2,6 @@
 // Red pulsing indicator for live content
 
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 import '../../../core/theme/app_theme.dart';
 
