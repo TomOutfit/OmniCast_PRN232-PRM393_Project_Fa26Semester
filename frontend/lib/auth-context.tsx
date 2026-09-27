@@ -1,7 +1,26 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
+// ============================================================
+// OmniCast - Auth Context (JWT + localStorage)
+// ============================================================
+
+'use client';
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { apiClient } from './api';
-import type { User, LoginRequest, RegisterRequest, AuthResponse } from '@/types';
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  User,
+} from '@/types';
+
+const ACCESS_TOKEN_KEY = 'accessToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 interface AuthContextType {
   user: User | null;
@@ -10,99 +29,91 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<AuthResponse>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function storeTokens(accessToken: string, refreshToken: string) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Hydrate user from server on mount when access token exists
   useEffect(() => {
-    if (status === 'loading') return;
-    
-    if (session?.user) {
-      setUser(session.user as unknown as User);
-    } else {
-      setUser(null);
+    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
-  }, [session, status]);
+    apiClient
+      .get<User>('/users/me')
+      .then((res) => setUser(res.data))
+      .catch(() => {
+        clearTokens();
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const login = async (data: LoginRequest): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>('/auth/login', data);
-      const { accessToken, refreshToken, user: userData } = response.data;
-      
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      setUser(userData);
-      
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const res = await apiClient.post<AuthResponse>('/auth/login', data);
+    const { accessToken, refreshToken, user: userData } = res.data;
+    storeTokens(accessToken, refreshToken);
+    setUser(userData);
+    return res.data;
   };
 
   const register = async (data: RegisterRequest): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>('/auth/register', data);
-      const { accessToken, refreshToken, user: userData } = response.data;
-      
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      setUser(userData);
-      
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const res = await apiClient.post<AuthResponse>('/auth/register', data);
+    const { accessToken, refreshToken, user: userData } = res.data;
+    storeTokens(accessToken, refreshToken);
+    setUser(userData);
+    return res.data;
   };
 
   const logout = async (): Promise<void> => {
     try {
-      await apiClient.post('/auth/logout');
+      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+        await apiClient.post('/auth/logout');
+      }
+    } catch {
+      // ignore network errors on logout
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      clearTokens();
       setUser(null);
-      await nextAuthSignOut({ callbackUrl: '/' });
     }
   };
 
-  const refreshToken = async (): Promise<void> => {
-    const refreshTokenValue = localStorage.getItem('refreshToken');
-    if (!refreshTokenValue) {
-      throw new Error('No refresh token available');
-    }
-
-    try {
-      const response = await apiClient.post<{ accessToken: string; refreshToken: string }>(
-        '/auth/refresh',
-        { refreshToken: refreshTokenValue }
-      );
-      
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-    } catch (error) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      throw error;
-    }
+  const refresh = async (): Promise<void> => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) throw new Error('No refresh token');
+    const res = await apiClient.post<{ accessToken: string; refreshToken: string }>(
+      '/auth/refresh',
+      { refreshToken },
+    );
+    storeTokens(res.data.accessToken, res.data.refreshToken);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isLoading: status === 'loading' || isLoading,
-        isAuthenticated: !!session,
+        isLoading,
+        isAuthenticated: !!user,
         login,
         register,
         logout,
-        refreshToken,
+        refresh,
       }}
     >
       {children}
@@ -111,9 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
+  const ctx = useContext(AuthContext);
+  if (ctx === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  return ctx;
 }
