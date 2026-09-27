@@ -6,6 +6,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Body,
   Query,
@@ -14,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { UpdateUserDto } from './dto/user.dto';
+import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -32,10 +33,38 @@ export class UsersController {
     return this.usersService.findById(req.user.sub);
   }
 
+  @Get('me/stats')
+  @ApiOperation({ summary: 'Get current user statistics (viewer or staff)' })
+  async getMyStats(@Request() req: any) {
+    return this.usersService.getUserStats(req.user.sub);
+  }
+
+  @Get('me/follows')
+  @ApiOperation({ summary: 'Get channels followed by current user' })
+  async getMyFollows(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.usersService.getFollowedChannels(req.user.sub, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+    });
+  }
+
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   async updateProfile(@Request() req: any, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(req.user.sub, updateUserDto);
+  }
+
+  @Post('me/change-password')
+  @ApiOperation({ summary: 'Change current user password' })
+  async changePassword(
+    @Request() req: any,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(req.user.sub, dto);
   }
 
   @Get()
@@ -50,8 +79,8 @@ export class UsersController {
     @Query('role') role?: string,
   ) {
     return this.usersService.findAll({
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       role,
     });
   }
