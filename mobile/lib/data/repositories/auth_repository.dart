@@ -3,18 +3,26 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/network/dio_client.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/constants/app_constants.dart';
+import '../datasources/local/database_helper.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {
   final DioClient _dioClient;
   final FlutterSecureStorage _secureStorage;
+  final DatabaseHelper _databaseHelper;
+  final NotificationService _notificationService;
 
   AuthRepository({
     required DioClient dioClient,
     required FlutterSecureStorage secureStorage,
+    required DatabaseHelper databaseHelper,
+    required NotificationService notificationService,
   })  : _dioClient = dioClient,
-        _secureStorage = secureStorage;
+        _secureStorage = secureStorage,
+        _databaseHelper = databaseHelper,
+        _notificationService = notificationService;
 
   Future<AuthResponse> login({
     required String email,
@@ -87,6 +95,20 @@ class AuthRepository {
       await _secureStorage.delete(key: AppConstants.accessTokenKey);
       await _secureStorage.delete(key: AppConstants.refreshTokenKey);
       await _secureStorage.delete(key: AppConstants.userKey);
+
+      // Clear all local data (watchlist + cache) for security on logout
+      try {
+        await _databaseHelper.clearAllData();
+      } catch (_) {
+        // Don't fail logout on local storage error
+      }
+
+      // Cancel all pending notifications
+      try {
+        await _notificationService.cancelAllReminders();
+      } catch (_) {
+        // Don't fail logout on notification cleanup error
+      }
     }
   }
 
