@@ -5,8 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/network/dio_client.dart';
-import '../../../core/constants/app_constants.dart';
 
 class AICuratorScreen extends StatefulWidget {
   const AICuratorScreen({super.key});
@@ -21,7 +19,6 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
   String? _error;
 
   // Filters
-  String? _selectedChannel;
   String? _selectedTimeRange;
   final List<String> _timeRanges = [
     '24 giờ qua',
