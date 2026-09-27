@@ -2,14 +2,17 @@
 // OmniCast - Programs Service
 // ============================================================
 
+import { Prisma } from '@prisma/client';
 import {
   Injectable,
   NotFoundException,
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
+import { TmdbEnrichmentService } from './ingest/tmdb-enrichment.service';
 import {
   CreateLiveEventDto,
   UpdateLiveEventDto,
@@ -20,9 +23,19 @@ import { EventStatus } from '@prisma/client';
 
 @Injectable()
 export class ProgramsService {
+  /**
+   * Default slot length (in minutes) used when an event is created without
+   * an explicit `duration`. Must stay in sync with the implicit assumption in
+   * `checkScheduleConflict`.
+   */
+  private static readonly DEFAULT_DURATION_MINUTES = 120;
+  private readonly defaultDurationMinutes = ProgramsService.DEFAULT_DURATION_MINUTES;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
+    private readonly tmdbEnrichment: TmdbEnrichmentService,
+    private readonly configService: ConfigService,
   ) {}
 
   // ============================================================
@@ -37,7 +50,7 @@ export class ProgramsService {
     await this.checkScheduleConflict(
       createLiveEventDto.channelId,
       new Date(createLiveEventDto.scheduledAt),
-      createLiveEventDto.duration || 120,
+      createLiveEventDto.duration ?? this.defaultDurationMinutes,
     );
 
     const event = await this.prisma.liveEvent.create({
@@ -57,6 +70,9 @@ export class ProgramsService {
       entityId: event.id,
       newValues: event,
     });
+
+    // Fire-and-forget TMDB enrichment (skipped automatically when no API key)
+    this.maybeEnrichTmdbEvent(event.id);
 
     return event;
   }
@@ -141,7 +157,7 @@ export class ProgramsService {
       const newStart = updateDto.scheduledAt
         ? new Date(updateDto.scheduledAt)
         : event.scheduledAt;
-      const newDuration = updateDto.duration || 120;
+      const newDuration = updateDto.duration ?? this.defaultDurationMinutes;
 
       await this.checkScheduleConflict(
         updateDto.channelId || event.channelId,
@@ -234,6 +250,9 @@ export class ProgramsService {
       entityId: recording.id,
       newValues: recording,
     });
+
+    // Fire-and-forget TMDB enrichment (skipped automatically when no API key)
+    this.maybeEnrichTmdbRecording(recording.id);
 
     return recording;
   }
@@ -396,42 +415,57 @@ export class ProgramsService {
       startTime.getTime() + durationMinutes * 60 * 1000,
     );
 
-    const where: any = {
-      channelId,
-      status: { in: ['SCHEDULED', 'LIVE'] },
-      OR: [
-        // New event starts during existing event
-        {
-          scheduledAt: { lte: startTime },
-          endedAt: { gt: startTime },
-        },
-        // New event ends during existing event
-        {
-          scheduledAt: { lt: endTime },
-          endedAt: { gte: endTime },
-        },
-        // New event completely contains existing event
-        {
-          scheduledAt: { gte: startTime },
-          endedAt: { lte: endTime },
-        },
-      ],
-    };
+    // Use raw SQL so we can compute the *effective* end time of an existing
+    // event as max("endedAt", "scheduledAt" + duration). The naive Prisma
+    // `where` would skip events whose `endedAt` is still NULL (i.e. SCHEDULED
+    // events that have not actually finished), causing false negatives.
+    const conflictRows = await this.prisma.$queryRaw<
+      Array<{ id: string; title: string; scheduled_at: Date }>
+    >(Prisma.sql`
+      SELECT id, title, "scheduledAt" AS scheduled_at
+      FROM "LiveEvent"
+      WHERE "channelId" = ${channelId}
+        AND status IN ('SCHEDULED', 'LIVE')
+        AND "scheduledAt" < ${endTime}
+        AND (
+          COALESCE("endedAt", "scheduledAt" + (COALESCE("duration", ${this.defaultDurationMinutes}) || ' minutes')::interval)
+          > ${startTime}
+        )
+        ${excludeEventId ? Prisma.sql`AND id <> ${excludeEventId}` : Prisma.empty}
+    `);
 
-    if (excludeEventId) {
-      where.NOT = { id: excludeEventId };
-    }
-
-    const conflicts = await this.prisma.liveEvent.findMany({
-      where,
-      select: { id: true, title: true, scheduledAt: true },
-    });
-
-    if (conflicts.length > 0) {
+    if (conflictRows.length > 0) {
+      const conflicts = conflictRows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        scheduledAt: row.scheduled_at,
+      }));
       throw new ConflictException({
         message: 'Schedule conflict detected',
         conflicts,
       });
     }
+  }
+
+  // ============================================================
+  // TMDB ENRICHMENT (fire-and-forget, gated by INGEST_TMDB_AUTO_ENRICH)
+  // ============================================================
+
+  private maybeEnrichTmdbEvent(eventId: string): void {
+    if (!this.isTmdbAutoEnrichEnabled()) return;
+    // Detached promise — never awaited, never throws to caller.
+    void this.tmdbEnrichment.enrichLiveEvent(eventId).catch(() => undefined);
+  }
+
+  private maybeEnrichTmdbRecording(recordingId: string): void {
+    if (!this.isTmdbAutoEnrichEnabled()) return;
+    void this.tmdbEnrichment
+      .enrichRecording(recordingId)
+      .catch(() => undefined);
+  }
+
+  private isTmdbAutoEnrichEnabled(): boolean {
+    const raw = this.configService.get<string>('INGEST_TMDB_AUTO_ENRICH');
+    return raw === undefined ? true : raw.toLowerCase() === 'true';
   }
 }
