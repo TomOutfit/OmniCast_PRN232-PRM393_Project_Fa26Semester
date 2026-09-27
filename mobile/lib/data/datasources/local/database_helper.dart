@@ -186,6 +186,14 @@ class DatabaseHelper {
     );
   }
 
+  // Clear ALL local data (watchlist + cache) - used on logout
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete('watchlist');
+    await db.delete('cached_channels');
+    await db.delete('cached_programs');
+  }
+
   Future<void> close() async {
     final db = await database;
     await db.close();
