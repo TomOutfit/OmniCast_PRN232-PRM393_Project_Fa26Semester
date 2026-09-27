@@ -307,9 +307,6 @@ class _EpgTimelineList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group events by channel
-    final eventsByChannel = _groupEventsByChannel(events);
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: events.length,
@@ -321,17 +318,6 @@ class _EpgTimelineList extends StatelessWidget {
         );
       },
     );
-  }
-
-  Map<String?, List<LiveEventModel>> _groupEventsByChannel(
-    List<LiveEventModel> events,
-  ) {
-    final grouped = <String?, List<LiveEventModel>>{};
-    for (final event in events) {
-      final channelName = event.channel?.name ?? 'Unknown';
-      grouped.putIfAbsent(channelName, () => []).add(event);
-    }
-    return grouped;
   }
 }
 
