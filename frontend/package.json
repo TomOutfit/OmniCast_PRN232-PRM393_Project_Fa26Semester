@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 next dev",
+    "dev:clean": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 node scripts/dev-clean.js",
+    "dev:3000": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 next dev -p 3000",
     "build": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 next build",
+    "build:clean": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 node scripts/build-clean.js",
     "start": "cross-env NODE_OPTIONS=--no-deprecation=DEP0060 next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
