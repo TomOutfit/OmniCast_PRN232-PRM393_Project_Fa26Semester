@@ -1,6 +1,11 @@
-// ============================================================
-// OmniCast - Application Bootstrap
-// ============================================================
+// Ensure Supabase connection uses port 6543 (transaction pooler) in serverless environments
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('pooler.supabase.com')) {
+  let url = process.env.DATABASE_URL
+    .replace(':5432/', ':6543/')
+    .replace('?pgbouncer=true', '')
+    .replace('&pgbouncer=true', '');
+  process.env.DATABASE_URL = url + (url.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
+}
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
@@ -14,6 +19,14 @@ import { LoggerService } from './common/utils/logger.service';
 
 import { setupSwagger } from './common/swagger/swagger.config';
 
+// Global BigInt JSON serialization support
+if (typeof (BigInt.prototype as any).toJSON !== 'function') {
+  (BigInt.prototype as any).toJSON = function () {
+    const int = Number.parseInt(this.toString(), 10);
+    return Number.isSafeInteger(int) ? int : this.toString();
+  };
+}
+
 async function bootstrap() {
   const logger = new LoggerService();
 
@@ -26,6 +39,14 @@ async function bootstrap() {
   const express = require('express');
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  // Rewrite any /api/* missing /v1 to /api/v1/* automatically
+  app.use((req: any, res: any, next: any) => {
+    if (req.url.startsWith('/api/') && !req.url.startsWith('/api/v1/')) {
+      req.url = req.url.replace('/api/', '/api/v1/');
+    }
+    next();
+  });
 
   // Security headers with Helmet
   app.use(
