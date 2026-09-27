@@ -50,6 +50,8 @@ Future<void> initDependencies() async {
     () => AuthRepository(
       dioClient: getIt<DioClient>(),
       secureStorage: getIt<FlutterSecureStorage>(),
+      databaseHelper: getIt<DatabaseHelper>(),
+      notificationService: getIt<NotificationService>(),
     ),
   );
 
@@ -87,6 +89,9 @@ Future<void> initDependencies() async {
   );
 
   getIt.registerFactory<WatchlistBloc>(
-    () => WatchlistBloc(databaseHelper: getIt<DatabaseHelper>()),
+    () => WatchlistBloc(
+      databaseHelper: getIt<DatabaseHelper>(),
+      notificationService: getIt<NotificationService>(),
+    ),
   );
 }
