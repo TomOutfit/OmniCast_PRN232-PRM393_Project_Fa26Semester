@@ -72,17 +72,16 @@ export function EPGGrid({
     limit: 50,
   });
 
-  const channels: EPGChannel[] = useMemo(
-    () =>
-      (channelsData?.data ?? []).map((c: Channel) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        logoUrl: c.logoUrl,
-        category: c.category,
-      })),
-    [channelsData],
-  );
+  const channels: EPGChannel[] = useMemo(() => {
+    const list = Array.isArray(channelsData) ? channelsData : (channelsData?.data ?? []);
+    return list.map((c: Channel) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      logoUrl: c.logoUrl,
+      category: c.category,
+    }));
+  }, [channelsData]);
 
   const channelIds = useMemo(() => channels.map((c) => c.id), [channels]);
 
@@ -93,7 +92,7 @@ export function EPGGrid({
   );
 
   const programs: EPGProgram[] = useMemo(() => {
-    const events: LiveEvent[] = scheduleData?.data ?? [];
+    const events: LiveEvent[] = Array.isArray(scheduleData) ? scheduleData : (scheduleData?.data ?? []);
     const startOfDaySelected = startOfDay(selectedDate);
     const endOfDaySelected = addDays(startOfDaySelected, 1);
     const channelMap = new Map(channels.map((c) => [c.id, c]));
