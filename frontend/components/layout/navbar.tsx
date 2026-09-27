@@ -1,12 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Menu,
   X,
-  Tv,
   Search,
   User,
   LogOut,
@@ -18,6 +17,7 @@ import {
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -29,11 +29,19 @@ const navigation = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  const userRole = (session?.user as any)?.role;
+  const userRole = user?.role;
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    await logout();
+    router.push('/');
+    router.refresh();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-dark-700 bg-dark-950/80 backdrop-blur-lg">
@@ -41,11 +49,18 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center">
-                <Tv className="w-6 h-6 text-white" />
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
+                <Image
+                  src="/logo.svg"
+                  alt="OmniCast Logo"
+                  width={36}
+                  height={36}
+                  unoptimized
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <span className="text-xl font-bold text-white hidden sm:block">
+              <span className="text-xl font-bold gradient-text hidden sm:block">
                 OmniCast
               </span>
             </Link>
@@ -71,40 +86,42 @@ export function Navbar() {
 
           {/* Search Bar (Desktop) */}
           <div className="hidden lg:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
+            <Link href="/search" className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
               <Input
                 type="search"
                 placeholder="Tìm kiếm chương trình..."
-                className="pl-10 bg-dark-800/50 border-dark-700"
+                className="pl-10 bg-dark-800/50 border-dark-700 cursor-pointer"
+                readOnly
               />
-            </div>
+            </Link>
           </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-            {status === 'loading' ? (
+            {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-dark-700 animate-pulse" />
-            ) : session ? (
+            ) : isAuthenticated && user ? (
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 p-1 rounded-full hover:bg-dark-800 transition-colors"
+                  aria-label="Mở menu người dùng"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-sm font-medium text-white">
-                    {(session.user?.name || 'U')[0].toUpperCase()}
+                    {(user.fullName || user.email || 'U')[0].toUpperCase()}
                   </div>
                   <ChevronDown className="w-4 h-4 text-dark-400 hidden sm:block" />
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-dark-800 border border-dark-700 shadow-xl py-2 animate-scale-in">
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-dark-800 border border-dark-700 shadow-xl py-2 z-50">
                     <div className="px-4 py-2 border-b border-dark-700">
-                      <p className="text-sm font-medium text-white">
-                        {session.user?.name}
+                      <p className="text-sm font-medium text-white truncate">
+                        {user.fullName}
                       </p>
-                      <p className="text-xs text-dark-400">
-                        {session.user?.email}
+                      <p className="text-xs text-dark-400 truncate">
+                        {user.email}
                       </p>
                     </div>
 
@@ -118,7 +135,7 @@ export function Navbar() {
                         Hồ sơ
                       </Link>
 
-                      {userRole === 'STAFF' && (
+                      {(userRole === 'STAFF' || userRole === 'ADMIN') && (
                         <Link
                           href="/studio/curator"
                           className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700"
@@ -131,7 +148,7 @@ export function Navbar() {
 
                       {userRole === 'ADMIN' && (
                         <Link
-                          href="/admin/dashboard"
+                          href="/admin"
                           className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
@@ -152,7 +169,7 @@ export function Navbar() {
 
                     <div className="border-t border-dark-700 pt-1">
                       <button
-                        onClick={() => signOut({ callbackUrl: '/' })}
+                        onClick={handleLogout}
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-dark-700"
                       >
                         <LogOut className="w-4 h-4" />
@@ -177,6 +194,7 @@ export function Navbar() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-lg hover:bg-dark-800 transition-colors"
+              aria-label="Mở menu"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6 text-white" />
@@ -189,7 +207,7 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-dark-700 animate-slide-down">
+          <div className="md:hidden py-4 border-t border-dark-700">
             <div className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <Link
@@ -208,11 +226,14 @@ export function Navbar() {
               ))}
 
               <div className="mt-4 pt-4 border-t border-dark-700">
-                <Input
-                  type="search"
-                  placeholder="Tìm kiếm..."
-                  className="bg-dark-800/50 border-dark-700"
-                />
+                <Link href="/search" onClick={() => setIsMenuOpen(false)}>
+                  <Input
+                    type="search"
+                    placeholder="Tìm kiếm..."
+                    className="bg-dark-800/50 border-dark-700"
+                    readOnly
+                  />
+                </Link>
               </div>
             </div>
           </div>

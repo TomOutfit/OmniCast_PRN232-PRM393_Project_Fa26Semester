@@ -36,8 +36,8 @@ export class AuditLoggerController {
     @Query('toDate') toDate?: string,
   ) {
     return this.auditLoggerService.findAll({
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
       userId,
       action,
       entityType,
@@ -65,8 +65,8 @@ export class AuditLoggerController {
     @Query('limit') limit?: number,
   ) {
     return this.auditLoggerService.findByUser(userId, {
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 50,
     });
   }
 
