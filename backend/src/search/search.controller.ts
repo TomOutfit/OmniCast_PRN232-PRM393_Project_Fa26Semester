@@ -31,8 +31,8 @@ export class SearchController {
       query,
       type,
       category,
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       sortBy,
     });
   }
@@ -42,7 +42,7 @@ export class SearchController {
   @ApiQuery({ name: 'q', required: true })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async searchChannels(@Query('q') query: string, @Query('limit') limit?: number) {
-    return this.searchService.searchChannels(query, { limit: Number(limit) });
+    return this.searchService.searchChannels(query, { limit: Number(limit) || 10 });
   }
 
   @Get('programs')
@@ -58,7 +58,7 @@ export class SearchController {
     @Query('toDate') toDate?: string,
   ) {
     return this.searchService.searchPrograms(query, {
-      limit: Number(limit),
+      limit: Number(limit) || 20,
       fromDate: fromDate ? new Date(fromDate) : undefined,
       toDate: toDate ? new Date(toDate) : undefined,
     });

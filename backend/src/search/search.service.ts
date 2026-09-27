@@ -27,12 +27,12 @@ export class SearchService {
   constructor(private readonly prisma: PrismaService) {}
 
   async search(options: SearchOptions): Promise<SearchResult> {
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.max(1, Number(options.limit) || 20);
     const {
       query,
       type = 'all',
       category,
-      page = 1,
-      limit = 20,
       sortBy = 'relevance',
     } = options;
 
