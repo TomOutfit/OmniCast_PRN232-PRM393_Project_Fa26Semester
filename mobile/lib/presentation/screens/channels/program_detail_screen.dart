@@ -12,6 +12,7 @@ import '../../../data/models/program_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
 import '../../../logic/watchlist/watchlist_bloc.dart';
 import '../../widgets/omni_player.dart';
+import '../../widgets/channel_logo.dart';
 
 class ProgramDetailScreen extends StatefulWidget {
   final String programId;
@@ -237,25 +238,9 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.dark700,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: program.channel!.logoUrl != null
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(12),
-                                            child: CachedNetworkImage(
-                                              imageUrl: AppConstants.resolveAssetUrl(program.channel?.logoUrl),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.tv,
-                                            color: AppColors.dark500,
-                                          ),
+                                  ChannelLogo(
+                                    channel: program.channel!,
+                                    size: 48,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(

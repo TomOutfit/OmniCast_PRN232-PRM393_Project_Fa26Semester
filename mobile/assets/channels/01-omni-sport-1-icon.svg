@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ring-grad-sport-1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF3B30"/>
+      <stop offset="100%" stop-color="#FF9500"/>
+    </linearGradient>
+    <linearGradient id="bg-grad-sport-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1422"/>
+      <stop offset="100%" stop-color="#070a10"/>
+    </linearGradient>
+    <filter id="glow-sport-1" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="glow-white" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Icon Squircle -->
+  <rect width="200" height="200" rx="44" fill="url(#bg-grad-sport-1)"/>
+  <rect x="1.5" y="1.5" width="197" height="197" rx="42.5" stroke="#1f293d" stroke-width="3"/>
+
+  <!-- Omni Ring -->
+  <g transform="translate(100, 100)">
+    <!-- Ambient Backdrop Glow -->
+    <circle cx="0" cy="0" r="54" stroke="url(#ring-grad-sport-1)" stroke-width="9" stroke-linecap="round" stroke-dasharray="270 70" fill="none" filter="url(#glow-sport-1)" opacity="0.6"/>
+    <!-- Main Arc Ring -->
+    <circle cx="0" cy="0" r="54" stroke="url(#ring-grad-sport-1)" stroke-width="8.5" stroke-linecap="round" stroke-dasharray="270 70" fill="none"/>
+    <!-- Core Icon -->
+    <g transform="translate(-40, -40) scale(1.55)">
+      <path d="M28 15L17 31H26L22 47L35 29H27L31 15Z" fill="#FFFFFF" filter="url(#glow-white)"/>
+    </g>
+  </g>
+</svg>

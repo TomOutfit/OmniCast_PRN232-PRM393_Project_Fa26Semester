@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../widgets/brand_logo.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -185,13 +186,21 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 32),
 
-                  // Version
-                  const Text(
-                    'OmniCast v1.0.0',
-                    style: TextStyle(
-                      color: AppColors.dark600,
-                      fontSize: 12,
-                    ),
+                  // Brand Logo & Version
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OmniCastBrandLogo(size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'OmniCast v1.0.0',
+                        style: TextStyle(
+                          color: AppColors.dark400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

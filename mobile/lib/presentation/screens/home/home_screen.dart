@@ -18,6 +18,7 @@ import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
+import '../../widgets/brand_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,23 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppColors.dark950,
                 title: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          'assets/images/omnicast_logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.tv, color: Colors.white, size: 24),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    const OmniCastBrandLogo(size: 32),
+                    const SizedBox(width: 10),
                     const Text(
                       'OmniCast',
                       style: TextStyle(
