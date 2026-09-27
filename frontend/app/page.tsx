@@ -67,7 +67,7 @@ export default function HomePage() {
   });
   const { data: liveEvents, isLoading: loadingLive } = useLiveNow();
 
-  const channels = featuredData?.data ?? [];
+  const channels = Array.isArray(featuredData) ? featuredData : (featuredData?.data ?? []);
   const liveList = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
   const liveChannelIds = new Set(
     liveList.map((e: any) => e.channelId),

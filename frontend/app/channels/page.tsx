@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels, useChannelCategories } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
-import type { LiveCategory } from '@/types';
+import type { Channel, LiveCategory } from '@/types';
 import type { CategorySummary } from '@/lib/api/channels';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -60,7 +60,14 @@ export default function ChannelsPage() {
   const { data: categoriesData } = useChannelCategories();
   const { data: liveEvents } = useLiveNow();
 
-  const channels = data?.data ?? [];
+  const channels = useMemo<Channel[]>(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray((data as any).data)) return (data as any).data;
+    if (Array.isArray((data as any).items)) return (data as any).items;
+    return [];
+  }, [data]);
+
   const liveList = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
   const liveChannelIds = new Set(
     liveList.map((e: any) => e.channelId),
@@ -71,10 +78,11 @@ export default function ChannelsPage() {
     return list.map((c) => ({
       code: c.category,
       label: CATEGORY_LABELS[c.category as LiveCategory] || c.category,
-      count: c.count,
+      count: c.count ?? (c as any)._count ?? 0,
     }));
   }, [categoriesData]);
 
+  const isFiltered = selectedCategoryLabel !== 'Tất cả' || !!search;
   const featured = channels.filter((c) => c.isFeatured);
   const others = channels.filter((c) => !c.isFeatured);
 
@@ -140,9 +148,71 @@ export default function ChannelsPage() {
           </div>
         ) : channels.length === 0 ? (
           <div className="text-center py-16 text-dark-400">
-            Không tìm thấy kênh nào.
+            Không tìm thấy kênh nào phù hợp với tìm kiếm.
+          </div>
+        ) : isFiltered ? (
+          /* Filtered View */
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center justify-between">
+              <span>
+                {selectedCategoryLabel !== 'Tất cả' ? `Kênh ${selectedCategoryLabel}` : 'Kết quả tìm kiếm'}
+              </span>
+              <span className="text-sm font-normal text-dark-400">
+                {channels.length} kênh
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {channels.map((channel) => (
+                <Link key={channel.id} href={`/channels/${channel.slug}`}>
+                  <Card className="group p-6 glass-card hover:border-primary-500/50 transition-all duration-300 hover:shadow-glow h-full flex flex-col justify-between">
+                    <div className="flex items-start gap-4">
+                      <ChannelLogo
+                        slug={channel.slug}
+                        logoUrl={channel.logoUrl}
+                        name={channel.name}
+                        category={channel.category}
+                        size="lg"
+                        className="rounded-xl flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors truncate">
+                            {channel.name}
+                          </h3>
+                          {channel.isVerified && (
+                            <span className="text-primary-400 flex-shrink-0">
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-dark-400 mb-3">
+                          {CATEGORY_LABELS[channel.category] || channel.category}
+                        </p>
+                        <p className="text-sm text-dark-300 line-clamp-2">
+                          {channel.description || 'Chưa có mô tả.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6 mt-4 pt-4 border-t border-dark-700">
+                      <div className="flex items-center gap-1.5 text-sm text-dark-400">
+                        <Users className="w-4 h-4" />
+                        <span>{formatCompact(channel.followerCount)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-sm text-dark-400">
+                        <Eye className="w-4 h-4" />
+                        <span>{formatCompact(channel.totalViews)} lượt xem</span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         ) : (
+          /* All Channels View */
           <>
             {/* Featured Section */}
             {featured.length > 0 && (
@@ -154,7 +224,7 @@ export default function ChannelsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {featured.map((channel) => (
                     <Link key={channel.id} href={`/channels/${channel.slug}`}>
-                      <Card className="group p-6 glass-card hover:border-primary-500/50 transition-all duration-300 hover:shadow-glow">
+                      <Card className="group p-6 glass-card hover:border-primary-500/50 transition-all duration-300 hover:shadow-glow h-full flex flex-col justify-between">
                         <div className="flex items-start gap-4">
                           <ChannelLogo
                             slug={channel.slug}
@@ -162,7 +232,7 @@ export default function ChannelsPage() {
                             name={channel.name}
                             category={channel.category}
                             size="lg"
-                            className="rounded-xl"
+                            className="rounded-xl flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -203,7 +273,7 @@ export default function ChannelsPage() {
               </div>
             )}
 
-            {/* All Channels */}
+            {/* Other Channels */}
             {others.length > 0 && (
               <div>
                 <h2 className="text-xl font-bold text-white mb-6">Tất cả kênh</h2>

@@ -20,7 +20,7 @@ const sizeMap = {
   xl: 128,
 };
 
-// Màu theo category (chuẩn theo Brand Guidelines 12 Kênh)
+// Màu theo category (chuẩn theo Brand Guidelines 25 Kênh)
 const categoryColors: Record<string, string> = {
   SPORTS: '#EF4444',        // Đỏ / Cam - Thể thao (Sport 1, Sport 2)
   SHOW: '#8B5CF6',          // Tím / Hồng - Showbiz & Talkshow
@@ -34,6 +34,14 @@ const categoryColors: Record<string, string> = {
   FOOD: '#EA580C',          // Cam ấm - Ẩm thực MasterChef
   DOCUMENTARY: '#14B8A6',   // Teal / Aqua - Khám phá Discovery
   EDUCATION: '#8B5CF6',     // Tím nhạt - Giáo dục
+  // ---- 8 category mở rộng (13-25) ----
+  GAMING: '#DC2626',        // Đỏ rực - Esports & Indie Games
+  PODCAST: '#F59E0B',       // Vàng cam - Audio & Sách nói
+  LIFESTYLE: '#F43F5E',     // Hồng rose - Wellness & Fashion
+  TRAVEL: '#14B8A6',        // Teal - Du lịch trong nước & quốc tế
+  ART: '#E11D48',           // Đỏ hồng - Nghệ thuật & Thiết kế
+  BUSINESS: '#1E40AF',      // Xanh navy - Tài chính & Khởi nghiệp
+  HEALTH: '#10B981',        // Xanh lá - Sức khỏe & Y khoa
 };
 
 export function getCategoryColor(category: string | undefined): string {
