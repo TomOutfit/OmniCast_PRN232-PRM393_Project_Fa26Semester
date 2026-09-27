@@ -1,9 +1,11 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface ChannelLogoProps {
-  slug: string;
+  slug?: string;
+  logoUrl?: string;
   name: string;
   category?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -39,134 +41,126 @@ export function getCategoryColor(category: string | undefined): string {
   return categoryColors[category.toUpperCase()] || '#0EA5E9';
 }
 
-export function ChannelLogo({ 
-  slug, 
-  name, 
-  category,
-  size = 'md', 
-  className = '',
-  showCategoryColor = true 
-}: ChannelLogoProps) {
-  const logoUrl = `/channels/${slug}.svg`;
-  const dimension = sizeMap[size];
-  const iconSize = dimension * 0.4;
-  const categoryColor = getCategoryColor(category);
-
-  return (
-    <div
-      className={`relative flex-shrink-0 ${className}`}
-      style={{
-        width: dimension,
-        height: dimension,
-      }}
-    >
-      <Image
-        src={logoUrl}
-        alt={name}
-        width={dimension}
-        height={dimension}
-        className="w-full h-full"
-        style={{
-          width: dimension,
-          height: dimension,
-        }}
-        onError={(e) => {
-          // Fallback to initials with category color if image fails
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          const parent = target.parentElement;
-          if (parent && !parent.querySelector('.fallback-letter')) {
-            const initials = getInitials(name);
-            const fallback = document.createElement('div');
-            fallback.className = 'fallback-letter';
-            fallback.textContent = initials;
-            fallback.style.cssText = `
-              position: absolute;
-              inset: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: ${iconSize}px;
-              font-weight: bold;
-              color: ${showCategoryColor ? categoryColor : 'white'};
-              background: ${showCategoryColor ? `${categoryColor}20` : 'linear-gradient(135deg, #0f1422, #070a10)'};
-              border-radius: inherit;
-              border: 1px solid ${showCategoryColor ? `${categoryColor}50` : 'transparent'};
-            `;
-            parent.appendChild(fallback);
-          }
-        }}
-      />
-    </div>
-  );
+function resolveLogoSrc(slug?: string, logoUrl?: string): string {
+  if (logoUrl && logoUrl.trim().length > 0) {
+    return logoUrl;
+  }
+  if (!slug) return '/channels/sport-1.svg';
+  const cleanSlug = slug.toLowerCase().trim();
+  return `/channels/${cleanSlug}.svg`;
 }
 
 // Lấy 2 chữ cái đầu của tên kênh
-function getInitials(name: string): string {
+function getInitials(name?: string): string {
+  if (!name) return 'OC';
   const words = name.trim().split(/\s+/);
-  if (words.length === 0) return '?';
+  if (words.length === 0) return 'OC';
   if (words.length === 1) {
     return words[0].substring(0, Math.min(2, words[0].length)).toUpperCase();
   }
   return `${words[0][0]}${words[1][0]}`.toUpperCase();
 }
 
-// Compact version cho list items
-export function ChannelLogoCompact({ 
+export function ChannelLogo({ 
   slug, 
+  logoUrl,
   name, 
   category,
-  size = 32,
+  size = 'md', 
   className = '',
-}: { 
-  slug: string; 
-  name: string; 
-  category?: string;
-  size?: number;
-  className?: string;
-}) {
-  const logoUrl = `/channels/${slug}.svg`;
+  showCategoryColor = true 
+}: ChannelLogoProps) {
+  const [hasError, setHasError] = useState(false);
+  const dimension = sizeMap[size];
+  const iconSize = Math.round(dimension * 0.4);
   const categoryColor = getCategoryColor(category);
+  const src = resolveLogoSrc(slug, logoUrl);
 
   return (
     <div
-      className={`relative flex-shrink-0 ${className}`}
+      className={`relative flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center transition-transform ${className}`}
+      style={{
+        width: dimension,
+        height: dimension,
+      }}
+    >
+      {!hasError ? (
+        <Image
+          src={src}
+          alt={name || 'Channel Logo'}
+          width={dimension}
+          height={dimension}
+          unoptimized
+          className="w-full h-full object-contain"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center font-bold select-none rounded-xl"
+          style={{
+            fontSize: `${iconSize}px`,
+            color: showCategoryColor ? categoryColor : '#ffffff',
+            background: showCategoryColor ? `${categoryColor}20` : 'linear-gradient(135deg, #0f1422, #070a10)',
+            border: `1px solid ${showCategoryColor ? `${categoryColor}50` : 'rgba(255,255,255,0.1)'}`,
+          }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Compact version cho list items
+export function ChannelLogoCompact({ 
+  slug, 
+  logoUrl,
+  name, 
+  category,
+  size = 32, 
+  className = '',
+}: { 
+  slug?: string; 
+  logoUrl?: string;
+  name: string; 
+  category?: string;
+  size?: number; 
+  className?: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const categoryColor = getCategoryColor(category);
+  const src = resolveLogoSrc(slug, logoUrl);
+
+  return (
+    <div
+      className={`relative flex-shrink-0 rounded-lg overflow-hidden flex items-center justify-center ${className}`}
       style={{
         width: size,
         height: size,
       }}
     >
-      <Image
-        src={logoUrl}
-        alt={name}
-        width={size}
-        height={size}
-        className="w-full h-full"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          const parent = target.parentElement;
-          if (parent && !parent.querySelector('.fallback-letter')) {
-            const initials = getInitials(name);
-            const fallback = document.createElement('div');
-            fallback.className = 'fallback-letter';
-            fallback.textContent = initials;
-            fallback.style.cssText = `
-              position: absolute;
-              inset: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: ${size * 0.35}px;
-              font-weight: bold;
-              color: ${categoryColor};
-              background: ${categoryColor}20;
-              border-radius: inherit;
-            `;
-            parent.appendChild(fallback);
-          }
-        }}
-      />
+      {!hasError ? (
+        <Image
+          src={src}
+          alt={name || 'Channel'}
+          width={size}
+          height={size}
+          unoptimized
+          className="w-full h-full object-contain"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center font-bold text-xs rounded-lg select-none"
+          style={{
+            color: categoryColor,
+            background: `${categoryColor}20`,
+            border: `1px solid ${categoryColor}40`,
+          }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
     </div>
   );
 }

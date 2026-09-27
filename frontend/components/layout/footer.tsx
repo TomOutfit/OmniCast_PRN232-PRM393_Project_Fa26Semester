@@ -1,5 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { Tv, Github, Twitter, Facebook, Mail, Phone } from 'lucide-react';
+import { Github, Twitter, Facebook, Mail, Phone } from 'lucide-react';
 
 const footerLinks = {
   product: [
@@ -28,11 +29,18 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center">
-                <Tv className="w-6 h-6 text-white" />
+            <Link href="/" className="flex items-center gap-3 mb-4 group">
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
+                <Image
+                  src="/logo.svg"
+                  alt="OmniCast Logo"
+                  width={36}
+                  height={36}
+                  unoptimized
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <span className="text-xl font-bold text-white">OmniCast</span>
+              <span className="text-xl font-bold gradient-text">OmniCast</span>
             </Link>
             <p className="text-dark-400 text-sm mb-4">
               Hệ thống quản lý lịch phát sóng EPG thông minh và nền tảng
