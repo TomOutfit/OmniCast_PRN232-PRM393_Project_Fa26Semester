@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../data/models/channel_model.dart';
 import '../../../../data/models/program_model.dart';
 import '../../../widgets/live_pulse_widget.dart';
@@ -241,7 +242,7 @@ class _FeaturedCard extends StatelessWidget {
   Widget _buildBackground() {
     if (item.imageUrl != null) {
       return CachedNetworkImage(
-        imageUrl: item.imageUrl!,
+        imageUrl: AppConstants.resolveAssetUrl(item.imageUrl),
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           color: AppColors.dark800,

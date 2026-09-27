@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 
@@ -22,13 +23,27 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   final _categories = [
     {'value': null, 'label': 'Tất cả'},
+    // === 12 category ban đầu ===
     {'value': 'SPORTS', 'label': 'Thể thao'},
+    {'value': 'SHOW', 'label': 'Show'},
     {'value': 'ENTERTAINMENT', 'label': 'Giải trí'},
     {'value': 'CINE', 'label': 'Điện ảnh'},
-    {'value': 'MUSIC', 'label': 'Âm nhạc'},
-    {'value': 'NEWS', 'label': 'Tin tức'},
     {'value': 'DRAMA', 'label': 'Phim truyện'},
+    {'value': 'NEWS', 'label': 'Tin tức'},
+    {'value': 'MUSIC', 'label': 'Âm nhạc'},
     {'value': 'KIDS', 'label': 'Thiếu nhi'},
+    {'value': 'TECH', 'label': 'Công nghệ'},
+    {'value': 'FOOD', 'label': 'Ẩm thực'},
+    {'value': 'DOCUMENTARY', 'label': 'Khám phá'},
+    {'value': 'EDUCATION', 'label': 'Giáo dục'},
+    // === 8 category mở rộng ===
+    {'value': 'GAMING', 'label': 'Esports'},
+    {'value': 'PODCAST', 'label': 'Podcast'},
+    {'value': 'LIFESTYLE', 'label': 'Phong cách sống'},
+    {'value': 'TRAVEL', 'label': 'Du lịch'},
+    {'value': 'ART', 'label': 'Nghệ thuật'},
+    {'value': 'BUSINESS', 'label': 'Kinh doanh'},
+    {'value': 'HEALTH', 'label': 'Sức khỏe'},
   ];
 
   @override
@@ -209,7 +224,7 @@ class _ChannelCard extends StatelessWidget {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: CachedNetworkImage(
-                            imageUrl: channel.logoUrl!,
+                            imageUrl: AppConstants.resolveAssetUrl(channel.logoUrl),
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Center(
                               child: Text(
