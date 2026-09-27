@@ -5,12 +5,14 @@
 import { Module } from '@nestjs/common';
 import { ProgramsController } from './programs.controller';
 import { ProgramsService } from './programs.service';
+import { SocialController } from './social.controller';
+import { SocialService } from './social.service';
 import { AuditLoggerModule } from '../audit-logger/audit-logger.module';
 
 @Module({
   imports: [AuditLoggerModule],
-  controllers: [ProgramsController],
-  providers: [ProgramsService],
-  exports: [ProgramsService],
+  controllers: [ProgramsController, SocialController],
+  providers: [ProgramsService, SocialService],
+  exports: [ProgramsService, SocialService],
 })
 export class ProgramsModule {}
