@@ -46,9 +46,9 @@ export class ChannelsService {
     isFeatured?: boolean;
     search?: string;
   }) {
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 20);
     const {
-      page = 1,
-      limit = 20,
       category,
       isActive = true,
       isFeatured,
@@ -291,7 +291,8 @@ export class ChannelsService {
   }
 
   async getFollowedChannels(userId: string, options?: { page?: number; limit?: number }) {
-    const { page = 1, limit = 20 } = options || {};
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 20);
 
     const [follows, total] = await Promise.all([
       this.prisma.follow.findMany({
@@ -323,7 +324,8 @@ export class ChannelsService {
   }
 
   async getFollowers(channelId: string, options?: { page?: number; limit?: number }) {
-    const { page = 1, limit = 20 } = options || {};
+    const page = Math.max(1, Number(options?.page) || 1);
+    const limit = Math.max(1, Number(options?.limit) || 20);
 
     const channel = await this.prisma.liveChannel.findUnique({
       where: { id: channelId },

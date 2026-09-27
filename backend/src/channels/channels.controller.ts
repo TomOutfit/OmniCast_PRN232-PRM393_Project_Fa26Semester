@@ -57,8 +57,8 @@ export class ChannelsController {
     @Query('search') search?: string,
   ) {
     return this.channelsService.findAll({
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       category: category as any,
       isActive,
       isFeatured,
@@ -90,8 +90,8 @@ export class ChannelsController {
     @Query('limit') limit?: number,
   ) {
     return this.channelsService.getFollowedChannels(req.user.sub, {
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
     });
   }
 
@@ -111,8 +111,8 @@ export class ChannelsController {
     @Query('limit') limit?: number,
   ) {
     return this.channelsService.getFollowers(id, {
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
     });
   }
 
