@@ -9,10 +9,11 @@ class ChannelsRepository {
 
   ChannelsRepository({required DioClient dioClient}) : _dioClient = dioClient;
 
-  Future<List<ChannelModel>> getChannels({
+  Future<ChannelsPage> getChannels({
     String? category,
     bool? isActive,
     bool? isFeatured,
+    String? search,
     int page = 1,
     int limit = 20,
   }) async {
@@ -24,6 +25,7 @@ class ChannelsRepository {
     if (category != null) queryParams['category'] = category;
     if (isActive != null) queryParams['isActive'] = isActive;
     if (isFeatured != null) queryParams['isFeatured'] = isFeatured;
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
     final response = await _dioClient.get(
       AppEndpoints.channels,
@@ -31,7 +33,12 @@ class ChannelsRepository {
     );
 
     final data = response.data['data'] as List;
-    return data.map((e) => ChannelModel.fromJson(e as Map<String, dynamic>)).toList();
+    return ChannelsPage(
+      items: data
+          .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      total: (response.data['meta']?['total'] as int?) ?? data.length,
+    );
   }
 
   Future<ChannelModel> getChannelById(String channelId) async {
@@ -50,8 +57,10 @@ class ChannelsRepository {
       queryParameters: {'q': query},
     );
 
-    final data = response.data as List;
-    return data.map((e) => ChannelModel.fromJson(e as Map<String, dynamic>)).toList();
+    final data = response.data['data'] as List;
+    return data
+        .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> followChannel(String channelId) async {
@@ -61,16 +70,25 @@ class ChannelsRepository {
   }
 
   Future<void> unfollowChannel(String channelId) async {
-    await _dioClient.delete(
-      '${AppEndpoints.channels}/$channelId/follow',
+    await _dioClient.post(
+      '${AppEndpoints.channels}/$channelId/unfollow',
     );
   }
 
   Future<List<ChannelCategory>> getCategories() async {
     final response = await _dioClient.get('${AppEndpoints.channels}/categories');
-    final data = response.data as List;
-    return data.map((e) => ChannelCategory.fromJson(e as Map<String, dynamic>)).toList();
+    final data = response.data['data'] as List;
+    return data
+        .map((e) => ChannelCategory.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
+}
+
+class ChannelsPage {
+  final List<ChannelModel> items;
+  final int total;
+
+  ChannelsPage({required this.items, required this.total});
 }
 
 class ChannelCategory {
@@ -85,7 +103,7 @@ class ChannelCategory {
   factory ChannelCategory.fromJson(Map<String, dynamic> json) {
     return ChannelCategory(
       category: json['category'] as String,
-      count: json['_count'] as int,
+      count: (json['count'] as int?) ?? 0,
     );
   }
 
@@ -111,6 +129,24 @@ class ChannelCategory {
         return 'Công nghệ';
       case 'FOOD':
         return 'Ẩm thực';
+      case 'DOCUMENTARY':
+        return 'Khám phá';
+      case 'EDUCATION':
+        return 'Giáo dục';
+      case 'GAMING':
+        return 'Trò chơi';
+      case 'PODCAST':
+        return 'Podcast';
+      case 'LIFESTYLE':
+        return 'Phong cách sống';
+      case 'TRAVEL':
+        return 'Du lịch';
+      case 'ART':
+        return 'Nghệ thuật';
+      case 'BUSINESS':
+        return 'Kinh doanh';
+      case 'HEALTH':
+        return 'Sức khỏe';
       default:
         return category;
     }
