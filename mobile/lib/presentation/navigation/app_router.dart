@@ -18,8 +18,6 @@ import '../../presentation/screens/watchlist/watchlist_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/studio/ai_curator_screen.dart';
 import '../../presentation/screens/main_screen.dart';
-import '../../data/models/channel_model.dart';
-import '../../data/models/program_model.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
