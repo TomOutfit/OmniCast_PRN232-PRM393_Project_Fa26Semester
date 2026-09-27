@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/program_model.dart';
-import '../../../data/models/channel_model.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../logic/watchlist/watchlist_bloc.dart';
 import '../../../data/models/watchlist_item_model.dart';
