@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { 
-  Search, 
-  Filter, 
-  X, 
-  Tv, 
-  Play, 
-  Clock, 
+import {
+  Search,
+  X,
+  Tv,
+  Play,
+  Clock,
   Calendar,
   ChevronDown,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,41 +20,69 @@ import { LiveBadge } from '@/components/ui/live-badge';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useSearch } from '@/lib/hooks/useSearch';
+import type { LiveCategory } from '@/types';
 
-// Mock search results
-const mockChannels = [
-  { id: '1', name: 'Omni Sport 1', slug: 'omni-sport-1', category: 'Thể thao', isLive: true, followerCount: 1250000 },
-  { id: '3', name: 'Omni Show', slug: 'omni-show', category: 'Giải trí', isLive: true, followerCount: 2100000 },
-  { id: '6', name: 'Omni Drama', slug: 'omni-drama', category: 'Phim truyện', isLive: true, followerCount: 2800000 },
+const CATEGORY_LABELS: Record<string, string> = {
+  SPORTS: 'Thể thao',
+  SHOW: 'Show',
+  ENTERTAINMENT: 'Giải trí',
+  CINE: 'Điện ảnh',
+  DRAMA: 'Phim truyện',
+  NEWS: 'Tin tức',
+  MUSIC: 'Âm nhạc',
+  KIDS: 'Thiếu nhi',
+  TECH: 'Công nghệ',
+  FOOD: 'Ẩm thực',
+  DOCUMENTARY: 'Khám phá',
+  EDUCATION: 'Giáo dục',
+  GAMING: 'Trò chơi',
+  PODCAST: 'Podcast',
+  LIFESTYLE: 'Phong cách sống',
+  TRAVEL: 'Du lịch',
+  ART: 'Nghệ thuật',
+  BUSINESS: 'Kinh doanh',
+  HEALTH: 'Sức khỏe',
+};
+
+const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Liên quan nhất' },
+  { value: 'recent', label: 'Mới nhất' },
+  { value: 'popular', label: 'Lượt xem cao nhất' },
 ];
 
-const mockPrograms = [
-  { id: 'p3', title: 'Champions League - Liverpool vs Man City', slug: 'liverpool-vs-man-city', category: 'Bóng đá', channel: 'Omni Sport 1', status: 'LIVE', scheduledAt: '2026-09-24T07:30:00', viewerCount: 2450000 },
-  { id: 'p20', title: 'Avengers Endgame', slug: 'avengers-endgame', category: 'Phim hành động', channel: 'Omni Cine', status: 'LIVE', scheduledAt: '2026-09-24T07:30:00', viewerCount: 1850000 },
-  { id: 'p12', title: 'Hát cho cuộc sống', slug: 'hat-cho-cuoc-song', category: 'Ca nhạc', channel: 'Omni Show', status: 'LIVE', scheduledAt: '2026-09-24T09:00:00', viewerCount: 980000 },
-];
-
-const categories = ['Tất cả', 'Thể thao', 'Giải trí', 'Điện ảnh', 'Phim truyện', 'Tin tức', 'Âm nhạc', 'Thiếu nhi'];
-const durations = ['Tất cả', 'Dưới 30 phút', '30-60 phút', '1-2 giờ', 'Trên 2 giờ'];
-const sortOptions = ['Liên quan nhất', 'Mới nhất', 'Lượt xem cao nhất', 'Thời gian phát gần nhất'];
+type SearchType = 'all' | 'channels' | 'programs';
 
 export default function SearchPage() {
-  const [searchQuery, setSearchQuery] = useState('bóng đá');
-  const [selectedCategory, setSelectedCategory] = useState('Tất cả');
-  const [selectedDuration, setSelectedDuration] = useState('Tất cả');
-  const [selectedSort, setSelectedSort] = useState('Liên quan nhất');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<LiveCategory | ''>('');
+  const [selectedSort, setSelectedSort] = useState<string>('relevance');
   const [showFilters, setShowFilters] = useState(false);
-  const [searchType, setSearchType] = useState<'all' | 'programs' | 'channels'>('all');
+  const [searchType, setSearchType] = useState<SearchType>('all');
 
-  const activeFiltersCount = [
-    selectedCategory !== 'Tất cả',
-    selectedDuration !== 'Tất cả',
-  ].filter(Boolean).length;
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const clearFilters = () => {
-    setSelectedCategory('Tất cả');
-    setSelectedDuration('Tất cả');
-  };
+  const { data, isLoading } = useSearch({
+    query: debouncedQuery,
+    type: searchType,
+    category: selectedCategory || undefined,
+    sortBy: selectedSort as 'relevance' | 'recent' | 'popular',
+  });
+
+  const channels = data?.channels ?? [];
+  const liveEvents = data?.liveEvents ?? [];
+  const recordings = data?.recordings ?? [];
+  const total = data?.totalResults ?? 0;
+  const liveChannelIds = useMemo(() => new Set(liveEvents.map((e) => e.channelId)), [liveEvents]);
+
+  const activeFiltersCount = selectedCategory ? 1 : 0;
+
+  const clearFilters = () => setSelectedCategory('');
 
   return (
     <div className="min-h-[80vh]">
@@ -76,6 +104,7 @@ export default function SearchPage() {
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+                  aria-label="Xóa tìm kiếm"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -104,8 +133,10 @@ export default function SearchPage() {
                 onChange={(e) => setSelectedSort(e.target.value)}
                 className="h-12 px-4 bg-dark-800 border border-dark-700 rounded-lg text-white appearance-none cursor-pointer pr-10"
               >
-                {sortOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400 pointer-events-none" />
@@ -113,15 +144,21 @@ export default function SearchPage() {
           </div>
 
           {/* Search Type Tabs */}
-          <div className="flex gap-2 mt-4">
-            {[
-              { value: 'all', label: 'Tất cả', count: 6 },
-              { value: 'programs', label: 'Chương trình', count: 3 },
-              { value: 'channels', label: 'Kênh', count: 3 },
-            ].map((tab) => (
+          <div className="flex gap-2 mt-4 flex-wrap">
+            {(
+              [
+                { value: 'all', label: 'Tất cả', count: total },
+                {
+                  value: 'programs',
+                  label: 'Chương trình',
+                  count: liveEvents.length + recordings.length,
+                },
+                { value: 'channels', label: 'Kênh', count: channels.length },
+              ] as { value: SearchType; label: string; count: number }[]
+            ).map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setSearchType(tab.value as typeof searchType)}
+                onClick={() => setSearchType(tab.value)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   searchType === tab.value
                     ? 'bg-primary-600 text-white'
@@ -136,67 +173,48 @@ export default function SearchPage() {
           {/* Filter Panel */}
           {showFilters && (
             <div className="mt-4 p-4 bg-dark-800 rounded-xl border border-dark-700 animate-slide-down">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Category Filter */}
                 <div>
                   <h3 className="text-sm font-medium text-white mb-3">Thể loại</h3>
                   <div className="flex flex-wrap gap-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                          selectedCategory === cat
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Duration Filter */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Thời lượng</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {durations.map((dur) => (
-                      <button
-                        key={dur}
-                        onClick={() => setSelectedDuration(dur)}
-                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                          selectedDuration === dur
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
-                        }`}
-                      >
-                        {dur}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Status Filter */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Trạng thái</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['Tất cả', 'Đang phát', 'Sắp phát', 'Theo yêu cầu'].map((status) => (
-                      <button
-                        key={status}
-                        className="px-3 py-1.5 rounded-full text-sm bg-dark-700 text-dark-300 hover:bg-dark-600 transition-colors"
-                      >
-                        {status}
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => setSelectedCategory('')}
+                      className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                        selectedCategory === ''
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    {(Object.keys(CATEGORY_LABELS) as LiveCategory[]).map(
+                      (cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                            selectedCategory === cat
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
+                          }`}
+                        >
+                          {CATEGORY_LABELS[cat]}
+                        </button>
+                      ),
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Clear Filters */}
               {activeFiltersCount > 0 && (
                 <div className="mt-4 pt-4 border-t border-dark-700 flex justify-end">
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-red-400 hover:text-red-300">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-red-400 hover:text-red-300"
+                  >
                     <X className="w-4 h-4 mr-1" />
                     Xóa bộ lọc
                   </Button>
@@ -209,142 +227,163 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Results Count */}
-        <p className="text-dark-400 mb-6">
-          Tìm thấy <span className="text-white font-medium">6</span> kết quả cho "{searchQuery}"
-        </p>
-
-        {/* Programs Results */}
-        {(searchType === 'all' || searchType === 'programs') && (
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-white mb-4">Chương trình</h2>
-            <div className="space-y-4">
-              {mockPrograms.map((program) => (
-                <Link key={program.id} href={`/programs/${program.id}`}>
-                  <Card className="group p-4 glass-card hover:border-primary-500/50 transition-all">
-                    <div className="flex gap-4">
-                      {/* Thumbnail */}
-                      <div className="relative w-48 h-28 rounded-lg bg-dark-700 flex-shrink-0 overflow-hidden">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Play className="w-10 h-10 text-dark-600" />
-                        </div>
-                        {program.status === 'LIVE' && (
-                          <div className="absolute top-2 left-2">
-                            <LiveBadge size="sm" />
-                          </div>
-                        )}
-                        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-xs text-white">
-                          {program.status === 'LIVE' ? 'Trực tiếp' : '2h 30m'}
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors mb-1">
-                          {program.title}
-                        </h3>
-                        <p className="text-sm text-dark-400 mb-2">{program.category}</p>
-                        <div className="flex items-center gap-4 text-sm text-dark-500">
-                          <span className="flex items-center gap-1">
-                            <Tv className="w-4 h-4" />
-                            {program.channel}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {format(parseISO(program.scheduledAt), 'dd/MM/yyyy', { locale: vi })}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {format(parseISO(program.scheduledAt), 'HH:mm')}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="hidden md:flex flex-col items-end justify-center text-sm text-dark-400">
-                        <span>{(program.viewerCount / 1000000).toFixed(1)}M lượt xem</span>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Channels Results */}
-        {(searchType === 'all' || searchType === 'channels') && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-4">Kênh</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockChannels.map((channel) => (
-                <Link key={channel.id} href={`/channels/${channel.slug}`}>
-                  <Card className="group p-4 glass-card hover:border-primary-500/50 transition-all">
-                    <div className="flex items-center gap-4">
-                      {/* Logo */}
-                      <div className="relative">
-                        <ChannelLogo 
-                          slug={channel.slug}
-                          name={channel.name}
-                          category={getCategoryCode(channel.category)}
-                          size="lg"
-                          className="rounded-xl"
-                        />
-                        {channel.isLive && (
-                          <div className="absolute -top-1 -right-1">
-                            <LiveBadge size="sm" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors truncate">
-                          {channel.name}
-                        </h3>
-                        <p className="text-sm text-dark-400">{channel.category}</p>
-                        <p className="text-sm text-dark-500">
-                          {(channel.followerCount / 1000000).toFixed(1)}M người theo dõi
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty State (show when no results) */}
-        {false && (
+        {!debouncedQuery || debouncedQuery.length < 2 ? (
           <div className="text-center py-16">
             <Search className="w-16 h-16 mx-auto mb-4 text-dark-600" />
-            <h3 className="text-xl font-semibold text-white mb-2">Không tìm thấy kết quả</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              Nhập từ khóa để tìm kiếm
+            </h3>
+            <p className="text-dark-400">
+              Tìm kiếm kênh, chương trình và nội dung trên OmniCast
+            </p>
+          </div>
+        ) : isLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
+          </div>
+        ) : total === 0 ? (
+          <div className="text-center py-16">
+            <Search className="w-16 h-16 mx-auto mb-4 text-dark-600" />
+            <h3 className="text-xl font-semibold text-white mb-2">
+              Không tìm thấy kết quả
+            </h3>
             <p className="text-dark-400 mb-6">
               Thử thay đổi từ khóa hoặc bộ lọc tìm kiếm
             </p>
-            <Button variant="outline">Xóa bộ lọc</Button>
+            {activeFiltersCount > 0 && (
+              <Button variant="outline" onClick={clearFilters}>
+                Xóa bộ lọc
+              </Button>
+            )}
           </div>
+        ) : (
+          <>
+            <p className="text-dark-400 mb-6">
+              Tìm thấy <span className="text-white font-medium">{total}</span> kết
+              quả cho "{debouncedQuery}"
+            </p>
+
+            {/* Programs Results */}
+            {(searchType === 'all' || searchType === 'programs') &&
+              liveEvents.length > 0 && (
+                <div className="mb-10">
+                  <h2 className="text-xl font-bold text-white mb-4">
+                    Chương trình đang phát
+                  </h2>
+                  <div className="space-y-4">
+                    {liveEvents.map((program) => (
+                      <Link key={program.id} href={`/programs/${program.id}`}>
+                        <Card className="group p-4 glass-card hover:border-primary-500/50 transition-all">
+                          <div className="flex gap-4">
+                            <div className="relative w-48 h-28 rounded-lg bg-dark-700 flex-shrink-0 overflow-hidden">
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Play className="w-10 h-10 text-dark-600" />
+                              </div>
+                              {program.status === 'LIVE' && (
+                                <div className="absolute top-2 left-2">
+                                  <LiveBadge size="sm" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors mb-1">
+                                {program.title}
+                              </h3>
+                              <p className="text-sm text-dark-400 mb-2 line-clamp-2">
+                                {program.description || ''}
+                              </p>
+                              <div className="flex items-center gap-4 text-sm text-dark-500">
+                                <span className="flex items-center gap-1">
+                                  <Tv className="w-4 h-4" />
+                                  {program.channel?.name}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  {format(
+                                    parseISO(program.scheduledAt),
+                                    'dd/MM/yyyy',
+                                    { locale: vi },
+                                  )}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {format(
+                                    parseISO(program.scheduledAt),
+                                    'HH:mm',
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="hidden md:flex flex-col items-end justify-center text-sm text-dark-400">
+                              <span>
+                                {formatCompact(program.viewerCount)} lượt xem
+                              </span>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Channels Results */}
+            {(searchType === 'all' || searchType === 'channels') &&
+              channels.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-4">Kênh</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {channels.map((channel) => (
+                      <Link
+                        key={channel.id}
+                        href={`/channels/${channel.slug}`}
+                      >
+                        <Card className="group p-4 glass-card hover:border-primary-500/50 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <ChannelLogo
+                                slug={channel.slug}
+                                logoUrl={channel.logoUrl}
+                                name={channel.name}
+                                category={channel.category}
+                                size="lg"
+                                className="rounded-xl"
+                              />
+                              {liveChannelIds.has(channel.id) && (
+                                <div className="absolute -top-1 -right-1">
+                                  <LiveBadge size="sm" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-white group-hover:text-primary-400 transition-colors truncate">
+                                {channel.name}
+                              </h3>
+                              <p className="text-sm text-dark-400">
+                                {CATEGORY_LABELS[channel.category] ||
+                                  channel.category}
+                              </p>
+                              <p className="text-sm text-dark-500">
+                                {formatCompact(channel.followerCount)} người theo
+                                dõi
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-// Map category display name to code
-function getCategoryCode(category: string): string {
-  const map: Record<string, string> = {
-    'Thể thao': 'SPORTS',
-    'Giải trí': 'ENTERTAINMENT',
-    'Điện ảnh': 'CINE',
-    'Phim truyện': 'DRAMA',
-    'Tin tức': 'NEWS',
-    'Âm nhạc': 'MUSIC',
-    'Thiếu nhi': 'KIDS',
-    'Công nghệ': 'TECH',
-    'Ẩm thực': 'FOOD',
-    'Giáo dục': 'EDUCATION',
-    'Show': 'SHOW',
-  };
-  return map[category] || category;
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+  return String(n);
 }
