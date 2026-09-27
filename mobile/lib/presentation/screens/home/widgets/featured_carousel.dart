@@ -11,6 +11,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../data/models/channel_model.dart';
 import '../../../../data/models/program_model.dart';
 import '../../../widgets/live_pulse_widget.dart';
+import '../../../widgets/brand_logo.dart';
 
 class FeaturedCarousel extends StatefulWidget {
   final List<FeaturedItem> items;
@@ -269,10 +270,9 @@ class _FeaturedCard extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.tv,
+        child: OmniCastBrandLogo(
           size: 64,
-          color: Colors.white30,
+          showGlow: true,
         ),
       ),
     );
