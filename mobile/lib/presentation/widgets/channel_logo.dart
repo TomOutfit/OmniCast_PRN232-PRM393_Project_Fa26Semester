@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../data/models/channel_model.dart';
 
 /// Widget hiển thị logo kênh với màu theo category
@@ -48,7 +49,7 @@ class ChannelLogo extends StatelessWidget {
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(size * 0.2),
                   child: CachedNetworkImage(
-                    imageUrl: channel.logoUrl!,
+                    imageUrl: AppConstants.resolveAssetUrl(channel.logoUrl),
                     fit: fit,
                     placeholder: (context, url) => _buildPlaceholder(categoryColor),
                     errorWidget: (context, url, error) =>
@@ -114,9 +115,10 @@ class ChannelLogo extends StatelessWidget {
     return '${words[0][0]}${words[1][0]}'.toUpperCase();
   }
 
-  /// Lấy màu theo category
+  /// Lấy màu theo category — Brand Guidelines 19 Category
   static Color _getCategoryColor(String category) {
     switch (category.toUpperCase()) {
+      // === 12 category ban đầu ===
       case 'SPORTS':
         return AppColors.sports;
       case 'ENTERTAINMENT':
@@ -135,9 +137,26 @@ class ChannelLogo extends StatelessWidget {
       case 'FOOD':
         return AppColors.food;
       case 'SHOW':
-        return AppColors.accentGold;
+        return AppColors.show;
       case 'EDUCATION':
         return AppColors.education;
+      case 'DOCUMENTARY':
+        return AppColors.documentary;
+      // === 8 category mở rộng ===
+      case 'GAMING':
+        return AppColors.gaming;
+      case 'PODCAST':
+        return AppColors.podcast;
+      case 'LIFESTYLE':
+        return AppColors.lifestyle;
+      case 'TRAVEL':
+        return AppColors.travel;
+      case 'ART':
+        return AppColors.art;
+      case 'BUSINESS':
+        return AppColors.business;
+      case 'HEALTH':
+        return AppColors.health;
       default:
         return AppColors.primary;
     }
@@ -195,7 +214,7 @@ class ChannelLogoCompact extends StatelessWidget {
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: CachedNetworkImage(
-                    imageUrl: logoUrl,
+                    imageUrl: AppConstants.resolveAssetUrl(logoUrl),
                     fit: BoxFit.cover,
                     errorWidget: (_, __, ___) =>
                         _buildInitials(categoryColor, name),

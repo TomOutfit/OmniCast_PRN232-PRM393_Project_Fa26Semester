@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
@@ -222,7 +223,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             // Banner Image
             if (_channel!.bannerUrl != null)
               CachedNetworkImage(
-                imageUrl: _channel!.bannerUrl!,
+                imageUrl: AppConstants.resolveAssetUrl(_channel!.bannerUrl!),
                 fit: BoxFit.cover,
               )
             else
@@ -289,7 +290,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                           borderRadius: BorderRadius.circular(14),
                           child: _channel!.logoUrl != null
                               ? CachedNetworkImage(
-                                  imageUrl: _channel!.logoUrl!,
+                                  imageUrl: AppConstants.resolveAssetUrl(_channel!.logoUrl),
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Center(
                                     child: Text(
