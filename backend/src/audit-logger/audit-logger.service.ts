@@ -128,6 +128,11 @@ export class AuditLoggerService {
   }
 
   private async getUserEmail(userId: string): Promise<string | null> {
+    // userId can be a UUID or a non-UUID system identifier like "system-ingest".
+    // Only attempt the lookup if it looks like a valid UUID.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      return null;
+    }
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },

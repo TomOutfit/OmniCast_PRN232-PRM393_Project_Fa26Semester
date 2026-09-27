@@ -1,0 +1,83 @@
+// ============================================================
+// OmniCast - Audit Logger gRPC Microservice Protobuf Definition
+// ============================================================
+//
+// The AuditLogger runs as an out-of-process gRPC microservice that writes
+// immutable audit trails to Supabase PostgreSQL. The NestJS HTTP API sends
+// audit events through the in-process AuditLoggerService (which is the
+// primary path) and can additionally forward selected events to the gRPC
+// service for asynchronous, retry-safe ingestion.
+//
+// Keeping the gRPC surface small on purpose: a single `Write` RPC and a
+// `Stream` server-streaming RPC for the Admin dashboard.
+
+syntax = "proto3";
+
+package omnicast.audit.v1;
+
+option java_multiple_files = true;
+option java_package = "vn.omnicast.audit.v1";
+
+// ---------------------------------------------------------------------
+// Common types
+// ---------------------------------------------------------------------
+
+message AuditEntry {
+  // Stable client-generated UUID v4; the server uses it for idempotency.
+  string id = 1;
+  string user_id = 2;
+  string user_email = 3;
+  // e.g. "USER_LOGIN", "CREATE_LIVE_EVENT", "AI_CURATION_COMPLETE".
+  string action = 4;
+  // e.g. "LiveEvent", "Recording", "AI_CURATOR_REPORT".
+  string entity_type = 5;
+  string entity_id = 6;
+  // JSON-serialized old/new values, encoded as raw strings (the proto layer
+  // stays JSON-agnostic so we never need a schema migration when DB fields
+  // change).
+  string old_values_json = 7;
+  string new_values_json = 8;
+  string ip_address = 9;
+  string user_agent = 10;
+  // RFC3339 timestamp; the server overrides with NOW() if absent.
+  string created_at = 11;
+}
+
+message WriteRequest {
+  AuditEntry entry = 1;
+}
+
+message WriteResponse {
+  // Echoed ID of the persisted entry, useful for client-side correlation.
+  string id = 1;
+  // True when the entry already existed and was de-duplicated.
+  bool deduplicated = 2;
+}
+
+// ---------------------------------------------------------------------
+// Streaming: Admin Dashboard subscribes to live audit events.
+// ---------------------------------------------------------------------
+
+message StreamRequest {
+  // Optional filter: only emit entries whose `entity_type` is in this list.
+  // Empty list means no filtering.
+  repeated string entity_types = 1;
+  // Optional filter by user id (useful for staff activity dashboards).
+  string user_id = 2;
+}
+
+message StreamResponse {
+  AuditEntry entry = 1;
+}
+
+// ---------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------
+
+service AuditLogger {
+  // Synchronous write — returns once the entry is durable in Supabase.
+  rpc Write(WriteRequest) returns (WriteResponse);
+
+  // Server-streaming tail — used by the Admin dashboard for live updates.
+  rpc Stream(StreamRequest) returns (stream StreamResponse);
+}
