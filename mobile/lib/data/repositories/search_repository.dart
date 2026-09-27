@@ -30,7 +30,7 @@ class SearchRepository {
       queryParameters: queryParams,
     );
 
-    return SearchResultModel.fromJson(response.data);
+    return SearchResultModel.fromJson(response.data['data'] as Map<String, dynamic>);
   }
 
   Future<SuggestionsResponse> getSuggestions(String query) async {
@@ -39,7 +39,9 @@ class SearchRepository {
       queryParameters: {'q': query},
     );
 
-    return SuggestionsResponse.fromJson(response.data);
+    return SuggestionsResponse.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
   }
 
   Future<List<ChannelSuggestion>> searchChannels(String query) async {
@@ -48,8 +50,12 @@ class SearchRepository {
       queryParameters: {'q': query},
     );
 
-    final data = response.data as List;
-    return data.map((e) => ChannelSuggestion.fromJson(e as Map<String, dynamic>)).toList();
+    final data = response.data['data'] as List;
+    return data
+        .map(
+          (e) => ChannelSuggestion.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   Future<List<ProgramSuggestion>> searchPrograms(
@@ -67,7 +73,11 @@ class SearchRepository {
       queryParameters: queryParams,
     );
 
-    final data = response.data as List;
-    return data.map((e) => ProgramSuggestion.fromJson(e as Map<String, dynamic>)).toList();
+    final data = response.data['data'] as List;
+    return data
+        .map(
+          (e) => ProgramSuggestion.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
   }
 }
