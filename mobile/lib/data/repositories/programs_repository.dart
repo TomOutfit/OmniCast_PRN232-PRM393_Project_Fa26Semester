@@ -36,7 +36,7 @@ class ProgramsRepository {
 
   Future<List<LiveEventModel>> getLiveNow() async {
     final response = await _dioClient.get(AppEndpoints.liveNow);
-    final data = response.data as List;
+    final data = response.data['data'] as List;
     return data.map((e) => LiveEventModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
