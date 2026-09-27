@@ -314,15 +314,15 @@ async function main() {
     },
   ];
 
-  const channels = await Promise.all(
-    channelsData.map((channel) =>
-      prisma.liveChannel.upsert({
-        where: { id: channel.id },
-        update: {},
-        create: channel,
-      }),
-    ),
-  );
+  const channels = [];
+  for (const channel of channelsData) {
+    const item = await prisma.liveChannel.upsert({
+      where: { id: channel.id },
+      update: {},
+      create: channel,
+    });
+    channels.push(item);
+  }
   console.log('✅ Channels created:', channels.length);
 
   // ============================================================
@@ -337,7 +337,7 @@ async function main() {
       description: 'Trận đại chiến nảy lửa giữa hai ông lớn bóng đá châu Âu.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_sport1_001',
       status: EventStatus.LIVE,
       scheduledAt: new Date('2026-09-23T10:00:00Z'),
       startedAt: new Date('2026-09-23T10:00:00Z'),
@@ -354,7 +354,7 @@ async function main() {
       description: 'Trận chung kết tennis Wimbledon hấp dẫn nhất năm.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_sport1_002',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-27T14:00:00Z'),
       duration: 14400,
@@ -369,7 +369,7 @@ async function main() {
       description: 'Talkshow độc quyền trò chuyện cùng đạo diễn và các diễn viên chính.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_show_001',
       status: EventStatus.LIVE,
       scheduledAt: new Date('2026-09-23T10:30:00Z'),
       startedAt: new Date('2026-09-23T10:30:00Z'),
@@ -386,7 +386,7 @@ async function main() {
       description: 'Lễ trao giải thưởng âm nhạc lớn nhất Việt Nam năm 2026.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_show_002',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-28T20:00:00Z'),
       duration: 10800,
@@ -401,7 +401,7 @@ async function main() {
       description: 'Vòng phân hạng đua đêm F1 trên đường đua Marina Bay.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_sport2_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-25T19:00:00Z'),
       duration: 7200,
@@ -415,7 +415,7 @@ async function main() {
       description: 'Sự kiện MMA lớn nhất năm với những trận đấu quyết liệt.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_sport2_002',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-29T22:00:00Z'),
       duration: 14400,
@@ -430,7 +430,7 @@ async function main() {
       description: 'Live concert acoustic phát sóng trực tiếp từ ban công hoàng hôn.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_music_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-26T17:30:00Z'),
       duration: 7200,
@@ -444,7 +444,7 @@ async function main() {
       description: 'Khởi đầu tour diễn hè sôi động với các ngôi sao hàng đầu.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_music_002',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-30T19:00:00Z'),
       duration: 10800,
@@ -459,7 +459,7 @@ async function main() {
       description: 'Toàn cảnh sự kiện ra mắt thế hệ AI mới.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_tech_001',
       status: EventStatus.ENDED,
       scheduledAt: new Date('2026-09-22T14:00:00Z'),
       startedAt: new Date('2026-09-22T14:00:00Z'),
@@ -476,7 +476,7 @@ async function main() {
       description: 'Hội nghị dành cho các nhà phát triển với các workshop thực hành.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_tech_002',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-10-01T09:00:00Z'),
       duration: 28800,
@@ -491,7 +491,7 @@ async function main() {
       description: 'Bản tin tổng hợp 24h qua với các sự kiện nổi bật.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_news_001',
       status: EventStatus.LIVE,
       scheduledAt: new Date('2026-09-23T06:00:00Z'),
       startedAt: new Date('2026-09-23T06:00:00Z'),
@@ -509,7 +509,7 @@ async function main() {
       description: 'Khởi đầu series phim trinh thám hồi hộp.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_drama_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-27T21:00:00Z'),
       duration: 3600,
@@ -524,7 +524,7 @@ async function main() {
       description: 'Lễ trao giải thưởng điện ảnh danh giá nhất năm.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_cine_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-10-02T19:30:00Z'),
       duration: 10800,
@@ -539,7 +539,7 @@ async function main() {
       description: 'Chương trình giáo dục giải trí cho trẻ em mỗi sáng.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_kids_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-26T08:00:00Z'),
       duration: 5400,
@@ -554,7 +554,7 @@ async function main() {
       description: 'Cuộc thi nấu ăn gay cấn với sự tham gia của các đầu bếp hàng đầu.',
       streamSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'live_food_001',
       status: EventStatus.SCHEDULED,
       scheduledAt: new Date('2026-09-28T18:00:00Z'),
       duration: 7200,
@@ -564,15 +564,15 @@ async function main() {
     },
   ];
 
-  const liveEvents = await Promise.all(
-    liveEventsData.map((event) =>
-      prisma.liveEvent.upsert({
-        where: { id: event.id },
-        update: {},
-        create: event,
-      }),
-    ),
-  );
+  const liveEvents = [];
+  for (const event of liveEventsData) {
+    const item = await prisma.liveEvent.upsert({
+      where: { id: event.id },
+      update: {},
+      create: event as any,
+    });
+    liveEvents.push(item);
+  }
   console.log('✅ Live Events created:', liveEvents.length);
 
   // ============================================================
@@ -586,7 +586,7 @@ async function main() {
       description: 'Tuyển tập những pha phản xạ không tưởng từ các thủ môn.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_sport1_001',
       duration: 720,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -639,7 +639,7 @@ async function main() {
       description: 'Báo cáo và nhận định chuyên sâu về dòng vốn đầu tư.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_news_001',
       duration: 1500,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -675,7 +675,7 @@ async function main() {
       description: 'Thước phim tài liệu 4K mãn nhãn khám phá hệ thống hang động.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_doc_001',
       duration: 2400,
       quality: StreamQuality.UHD_4K,
       contentType: ContentType.VIDEO,
@@ -694,7 +694,7 @@ async function main() {
       description: 'Tái hiện những bản tình ca bất hủ của nhạc sĩ Trịnh Công Sơn.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_music_001',
       duration: 5400,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -730,7 +730,7 @@ async function main() {
       description: 'Khám phá backstage các sao nhí trong show thời trang.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_show_001',
       duration: 2400,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -766,7 +766,7 @@ async function main() {
       description: 'Những pha ghi bàn đẹp mê hồn từ các ngôi sao bóng đá.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_sport1_002',
       duration: 900,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -819,7 +819,7 @@ async function main() {
       description: 'Chuyên gia phân tích chi tiết kết quả bầu cử và tác động toàn cầu.',
       contentSource: ContentSource.EXTERNAL,
       externalPlatform: 'YOUTUBE',
-      externalId: 'dQw4w9WgXcQ',
+      externalId: 'rec_news_002',
       duration: 3600,
       quality: StreamQuality.FULL_HD_1080P,
       contentType: ContentType.VIDEO,
@@ -851,15 +851,15 @@ async function main() {
     },
   ];
 
-  const recordings = await Promise.all(
-    recordingsData.map((recording) =>
-      prisma.recording.upsert({
-        where: { id: recording.id },
-        update: {},
-        create: recording,
-      }),
-    ),
-  );
+  const recordings = [];
+  for (const recording of recordingsData) {
+    const item = await prisma.recording.upsert({
+      where: { id: recording.id },
+      update: {},
+      create: recording as any,
+    });
+    recordings.push(item);
+  }
   console.log('✅ Recordings (VOD) created:', recordings.length);
 
   // ============================================================
@@ -875,15 +875,15 @@ async function main() {
     { id: 'cccc0000-0000-0000-0000-000000000006', content: 'Clip hài quá xứng đáng với view khủng, mình xem đi xem lại vẫn cười!', userId: viewers[2].id, recordingId: 'dddd0000-0000-0000-0000-000000000012' },
   ];
 
-  const comments = await Promise.all(
-    commentsData.map((comment) =>
-      prisma.comment.upsert({
-        where: { id: comment.id },
-        update: {},
-        create: comment,
-      }),
-    ),
-  );
+  const comments = [];
+  for (const comment of commentsData) {
+    const item = await prisma.comment.upsert({
+      where: { id: comment.id },
+      update: {},
+      create: comment,
+    });
+    comments.push(item);
+  }
   console.log('✅ Comments created:', comments.length);
 
   // ============================================================
@@ -899,15 +899,15 @@ async function main() {
     { id: 'fa000000-0000-0000-0000-000000000006', userId: viewers[2].id, type: 'FIRE' as const, recordingId: 'dddd0000-0000-0000-0000-000000000012' },
   ];
 
-  const reactions = await Promise.all(
-    reactionsData.map((reaction) =>
-      prisma.reaction.upsert({
-        where: { id: reaction.id },
-        update: {},
-        create: reaction,
-      }),
-    ),
-  );
+  const reactions = [];
+  for (const reaction of reactionsData) {
+    const item = await prisma.reaction.upsert({
+      where: { id: reaction.id },
+      update: {},
+      create: reaction,
+    });
+    reactions.push(item);
+  }
   console.log('✅ Reactions created:', reactions.length);
 
   // ============================================================
@@ -957,15 +957,15 @@ async function main() {
     { name: '16+ (PG-16)', slug: 'rating-pg16', color: '#f59e0b', type: TagType.RATING },
   ];
 
-  const tags = await Promise.all(
-    tagsData.map((tag) =>
-      prisma.productionTag.upsert({
-        where: { slug: tag.slug },
-        update: {},
-        create: tag,
-      }),
-    ),
-  );
+  const tags = [];
+  for (const tag of tagsData) {
+    const item = await prisma.productionTag.upsert({
+      where: { slug: tag.slug },
+      update: {},
+      create: tag,
+    });
+    tags.push(item);
+  }
   console.log('✅ Production Tags created:', tags.length);
 
   // ============================================================
