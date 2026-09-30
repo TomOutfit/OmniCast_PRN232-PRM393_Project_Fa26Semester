@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   Bell,
+  Heart,
   Globe,
   Sparkles,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { key: 'nav.home', href: '/' },
   { key: 'nav.epg', href: '/epg' },
   { key: 'nav.channels', href: '/channels' },
+  { key: 'nav.recordings', href: '/recordings' },
   { key: 'nav.search', href: '/search' },
 ] as const;
 
@@ -218,6 +220,15 @@ export function Navbar() {
                       >
                         <User className="w-4 h-4" />
                         {t('nav.profile')}
+                      </Link>
+
+                      <Link
+                        href="/watchlist"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700 dark:text-dark-300 dark:hover:text-white dark:hover:bg-dark-700 light:text-gray-700 light:hover:text-gray-900 light:hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Heart className="w-4 h-4" />
+                        Danh sách yêu thích
                       </Link>
 
                       {(userRole === 'STAFF' || userRole === 'ADMIN') && (
