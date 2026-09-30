@@ -66,7 +66,21 @@ export interface EpgDayResponse {
 export async function fetchEpgDay(
   params: EpgDayParams,
 ): Promise<EpgDayResponse> {
-  const { data } = await apiClient.get('/programs/epg/day', { params });
+  // The backend DTO expects `channelIds` as a **single comma-separated
+  // string** (e.g. `?channelIds=a,b,c`), validated by `@IsString()`. If
+  // we hand axios an array it serialises to repeated params
+  // (`?channelIds=a&channelIds=b`), which NestJS exposes as a `string[]`
+  // — the validator rejects it with 400 "channelIds must be a string"
+  // and the EPG query silently fails. Pre-join here so the request
+  // matches the documented contract.
+  const { data } = await apiClient.get('/programs/epg/day', {
+    params: {
+      date: params.date,
+      ...(params.channelIds && params.channelIds.length > 0
+        ? { channelIds: params.channelIds.join(',') }
+        : {}),
+    },
+  });
   return data.data ?? data;
 }
 
