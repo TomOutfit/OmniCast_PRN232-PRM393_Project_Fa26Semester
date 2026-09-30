@@ -1,5 +1,6 @@
 // OmniCast - Auth Repository
 
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/network/dio_client.dart';
@@ -50,7 +51,7 @@ class AuthRepository {
     );
     await _secureStorage.write(
       key: AppConstants.userKey,
-      value: authResponse.user.toJson().toString(),
+      value: jsonEncode(authResponse.user.toJson()),
     );
 
     return authResponse;
@@ -86,17 +87,28 @@ class AuthRepository {
     return authResponse;
   }
 
-  Future<void> logout() async {
+  Future<void> logout({bool revokeAllDevices = false}) async {
+    final refreshToken = await _secureStorage.read(
+      key: AppConstants.refreshTokenKey,
+    );
     try {
-      await _dioClient.post(AppEndpoints.logout);
+      if (revokeAllDevices) {
+        await _dioClient.post('/v1/auth/logout-all');
+      } else {
+        await _dioClient.post(
+          AppEndpoints.logout,
+          data: {if (refreshToken != null) 'refreshToken': refreshToken},
+        );
+      }
     } catch (_) {
-      // Ignore logout errors
+      // Ignore logout errors — we'll still clear local state
     } finally {
       await _secureStorage.delete(key: AppConstants.accessTokenKey);
       await _secureStorage.delete(key: AppConstants.refreshTokenKey);
       await _secureStorage.delete(key: AppConstants.userKey);
 
-      // Clear all local data (watchlist + cache) for security on logout
+      // Clear all local data (watchlist + cache + epg + pending ops) for
+      // security on logout
       try {
         await _databaseHelper.clearAllData();
       } catch (_) {
@@ -120,6 +132,10 @@ class AuthRepository {
       final response = await _dioClient.get(AppEndpoints.me);
       return UserModel.fromJson(response.data['data']);
     } catch (_) {
+      // Clear invalid token if fetch fails
+      await _secureStorage.delete(key: AppConstants.accessTokenKey);
+      await _secureStorage.delete(key: AppConstants.refreshTokenKey);
+      await _secureStorage.delete(key: AppConstants.userKey);
       return null;
     }
   }
