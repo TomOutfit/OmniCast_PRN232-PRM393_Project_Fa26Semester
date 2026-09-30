@@ -12,23 +12,22 @@ import {
   Tv,
   Loader2,
   AlertCircle,
-  Volume2,
-  Settings,
-  Maximize,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LiveBadge, UpcomingBadge } from '@/components/ui/live-badge';
 import { AiBadge } from '@/components/ai/ai-badge';
 import { ChannelLogo } from '@/components/ui/channel-logo';
+import { VideoPlayer } from '@/components/programs/video-player';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useLiveEventById, useLiveEvents } from '@/lib/hooks/usePrograms';
 import { useChannelBySlug } from '@/lib/hooks/useChannels';
 import { CommentsSection } from '@/components/programs/comments-section';
 import { ReactionsBar } from '@/components/programs/reactions-bar';
-import { useEffect } from 'react';
+import { useT } from '@/lib/i18n/i18n-provider';
 import { useAuth } from '@/lib/auth-context';
+import { cn } from '@/lib/utils';
 
 const QUALITY_LABELS: Record<string, string> = {
   SD_480P: '480p',
@@ -42,6 +41,7 @@ const QUALITY_LABELS: Record<string, string> = {
 export default function ProgramDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { user, isLoading: authLoading } = useAuth();
   const id = params?.id ?? '';
 
@@ -86,56 +86,18 @@ export default function ProgramDetailPage() {
     <div className="min-h-[80vh]">
       {/* Video Player Section */}
       <div className="bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative aspect-video bg-dark-900">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center mx-auto mb-4 cursor-pointer hover:bg-primary-500 hover:scale-110 transition-all shadow-glow">
-                  <Play className="w-10 h-10 text-white ml-1" />
-                </div>
-                <p className="text-white/60">Nhấn để phát video</p>
-                {program.status === 'LIVE' && (
-                  <div className="mt-4">
-                    <LiveBadge size="lg" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Player Controls Overlay (visual only) */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <div className="flex items-center justify-between text-white text-sm">
-                <div className="flex items-center gap-4">
-                  <button
-                    className="hover:text-primary-400 transition-colors"
-                    aria-label="Âm lượng"
-                  >
-                    <Volume2 className="w-5 h-5" />
-                  </button>
-                  <span>
-                    {format(
-                      parseISO(program.startedAt || program.scheduledAt),
-                      'HH:mm:ss',
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <button
-                    className="hover:text-primary-400 transition-colors"
-                    aria-label="Cài đặt"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </button>
-                  <button
-                    className="hover:text-primary-400 transition-colors"
-                    aria-label="Toàn màn hình"
-                  >
-                    <Maximize className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto px-0 md:px-4">
+          <VideoPlayer
+            src={
+              program.streamUrl ||
+              program.embedCode ||
+              program.externalUrl ||
+              ''
+            }
+            poster={program.thumbnailUrl || undefined}
+            type="hls"
+            className="rounded-none md:rounded-xl"
+          />
         </div>
       </div>
 
