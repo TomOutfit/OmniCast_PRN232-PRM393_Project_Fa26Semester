@@ -27,6 +27,49 @@ export interface RecordingsListParams {
   search?: string;
 }
 
+export interface EpgDayParams {
+  date: string; // YYYY-MM-DD
+  channelIds?: string[];
+}
+
+export interface EpgProgramItem {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  thumbnailUrl: string | null;
+  durationMinutes: number;
+  tags: string[];
+  category: string;
+  isFiller: boolean;
+  fillerKind: 'recording-replay' | 'channel-branding' | null;
+  sourceRecordingId: string | null;
+}
+
+export interface EpgDayChannel {
+  channelId: string;
+  channelName: string;
+  channelLogoUrl: string | null;
+  channelCategory: string;
+  programs: EpgProgramItem[];
+}
+
+export interface EpgDayResponse {
+  date: string;
+  generatedAt: string;
+  totalChannels: number;
+  totalPrograms: number;
+  channels: EpgDayChannel[];
+}
+
+export async function fetchEpgDay(
+  params: EpgDayParams,
+): Promise<EpgDayResponse> {
+  const { data } = await apiClient.get('/programs/epg/day', { params });
+  return data.data ?? data;
+}
+
 export async function fetchLiveEvents(
   params: LiveEventsListParams = {},
 ): Promise<PaginatedResponse<LiveEvent>> {
@@ -54,4 +97,15 @@ export async function fetchRecordings(
 export async function fetchRecordingById(id: string): Promise<Recording> {
   const { data } = await apiClient.get(`/programs/recordings/${id}`);
   return data;
+}
+
+export async function fetchSimilarRecordings(
+  id: string,
+  limit = 6,
+): Promise<Recording[]> {
+  const { data } = await apiClient.get(`/programs/recordings/${id}/similar`, {
+    params: { limit },
+  });
+  // Backend may wrap in { data: [...] } or return [...] directly.
+  return Array.isArray(data) ? data : (data?.data ?? []);
 }
