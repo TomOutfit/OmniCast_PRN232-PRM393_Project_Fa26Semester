@@ -22,34 +22,15 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useSearch } from '@/lib/hooks/useSearch';
 import type { LiveCategory } from '@/types';
-
-const CATEGORY_LABELS: Record<string, string> = {
-  SPORTS: 'Thể thao',
-  SHOW: 'Show',
-  ENTERTAINMENT: 'Giải trí',
-  CINE: 'Điện ảnh',
-  DRAMA: 'Phim truyện',
-  NEWS: 'Tin tức',
-  MUSIC: 'Âm nhạc',
-  KIDS: 'Thiếu nhi',
-  TECH: 'Công nghệ',
-  FOOD: 'Ẩm thực',
-  DOCUMENTARY: 'Khám phá',
-  EDUCATION: 'Giáo dục',
-  GAMING: 'Trò chơi',
-  PODCAST: 'Podcast',
-  LIFESTYLE: 'Phong cách sống',
-  TRAVEL: 'Du lịch',
-  ART: 'Nghệ thuật',
-  BUSINESS: 'Kinh doanh',
-  HEALTH: 'Sức khỏe',
-};
+import { CATEGORY_LIST } from '@/lib/constants/categories';
+import { searchTypeSchema, searchSortSchema } from '@/lib/validators/search';
+import { LIMITS } from '@/lib/constants/limits';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Liên quan nhất' },
   { value: 'recent', label: 'Mới nhất' },
   { value: 'popular', label: 'Lượt xem cao nhất' },
-];
+] as const;
 
 type SearchType = 'all' | 'channels' | 'programs';
 
@@ -60,6 +41,7 @@ export default function SearchPage() {
   const [selectedSort, setSelectedSort] = useState<string>('relevance');
   const [showFilters, setShowFilters] = useState(false);
   const [searchType, setSearchType] = useState<SearchType>('all');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Debounce search query
   useEffect(() => {
@@ -67,18 +49,54 @@ export default function SearchPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data, isLoading } = useSearch({
-    query: debouncedQuery,
-    type: searchType,
-    category: selectedCategory || undefined,
-    sortBy: selectedSort as 'relevance' | 'recent' | 'popular',
-  });
+  // Validate query before triggering the API call (avoids spam & 400 errors).
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setValidationError(null);
+      return;
+    }
+    const trimmed = debouncedQuery.trim();
+    if (trimmed.length < LIMITS.SEARCH_QUERY_MIN) {
+      setValidationError(
+        `Từ khóa phải có ít nhất ${LIMITS.SEARCH_QUERY_MIN} ký tự`,
+      );
+      return;
+    }
+    if (trimmed.length > LIMITS.SEARCH_QUERY_MAX) {
+      setValidationError(
+        `Từ khóa tối đa ${LIMITS.SEARCH_QUERY_MAX} ký tự`,
+      );
+      return;
+    }
+    setValidationError(null);
+  }, [debouncedQuery]);
+
+  const isQueryValid =
+    !!debouncedQuery &&
+    debouncedQuery.trim().length >= LIMITS.SEARCH_QUERY_MIN &&
+    debouncedQuery.trim().length <= LIMITS.SEARCH_QUERY_MAX;
+
+  const { data, isLoading } = useSearch(
+    isQueryValid
+      ? {
+          query: debouncedQuery.trim(),
+          // parse to guarantee only allowed values reach the API.
+          type: searchTypeSchema.parse(searchType === 'programs' ? 'all' : searchType),
+          category: selectedCategory || undefined,
+          sortBy: searchSortSchema.parse(selectedSort),
+        }
+      : { query: '' },
+    { enabled: isQueryValid },
+  );
 
   const channels = useMemo(() => data?.channels ?? [], [data?.channels]);
   const liveEvents = useMemo(() => data?.liveEvents ?? [], [data?.liveEvents]);
   const recordings = useMemo(() => data?.recordings ?? [], [data?.recordings]);
   const total = data?.totalResults ?? 0;
-  const liveChannelIds = useMemo(() => new Set(liveEvents.map((e) => e.channelId)), [liveEvents]);
+  const liveChannelIds = useMemo(
+    () => new Set(liveEvents.map((e) => e.channelId)),
+    [liveEvents],
+  );
 
   const activeFiltersCount = selectedCategory ? 1 : 0;
 
@@ -98,7 +116,9 @@ export default function SearchPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm chương trình, kênh..."
+                maxLength={LIMITS.SEARCH_QUERY_MAX}
                 className="pl-12 h-12 bg-dark-800 border-dark-700 text-lg"
+                aria-invalid={!!validationError}
               />
               {searchQuery && (
                 <button
@@ -116,6 +136,7 @@ export default function SearchPage() {
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
               className="h-12 gap-2"
+              aria-expanded={showFilters}
             >
               <SlidersHorizontal className="w-5 h-5" />
               Bộ lọc
@@ -142,6 +163,13 @@ export default function SearchPage() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400 pointer-events-none" />
             </div>
           </div>
+
+          {/* Validation error */}
+          {validationError && (
+            <p className="mt-2 text-sm text-amber-400" role="alert">
+              {validationError}
+            </p>
+          )}
 
           {/* Search Type Tabs */}
           <div className="flex gap-2 mt-4 flex-wrap">
@@ -188,21 +216,19 @@ export default function SearchPage() {
                     >
                       Tất cả
                     </button>
-                    {(Object.keys(CATEGORY_LABELS) as LiveCategory[]).map(
-                      (cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                            selectedCategory === cat
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
-                          }`}
-                        >
-                          {CATEGORY_LABELS[cat]}
-                        </button>
-                      ),
-                    )}
+                    {CATEGORY_LIST.map((cat) => (
+                      <button
+                        key={cat.value}
+                        onClick={() => setSelectedCategory(cat.value)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                          selectedCategory === cat.value
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-700 text-dark-300 hover:bg-dark-600'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -227,17 +253,17 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {!debouncedQuery || debouncedQuery.length < 2 ? (
+        {!debouncedQuery || debouncedQuery.trim().length < LIMITS.SEARCH_QUERY_MIN ? (
           <div className="text-center py-16">
             <Search className="w-16 h-16 mx-auto mb-4 text-dark-600" />
             <h3 className="text-xl font-semibold text-white mb-2">
               Nhập từ khóa để tìm kiếm
             </h3>
             <p className="text-dark-400">
-              Tìm kiếm kênh, chương trình và nội dung trên OmniCast
+              Tối thiểu {LIMITS.SEARCH_QUERY_MIN} ký tự — tìm kiếm kênh, chương trình và nội dung trên OmniCast
             </p>
           </div>
-        ) : isLoading ? (
+        ) : validationError ? null : isLoading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
           </div>
@@ -360,8 +386,7 @@ export default function SearchPage() {
                                 {channel.name}
                               </h3>
                               <p className="text-sm text-dark-400">
-                                {CATEGORY_LABELS[channel.category] ||
-                                  channel.category}
+                                {channel.category}
                               </p>
                               <p className="text-sm text-dark-500">
                                 {formatCompact(channel.followerCount)} người theo

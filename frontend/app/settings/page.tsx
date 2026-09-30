@@ -2,7 +2,9 @@
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useT } from '@/lib/i18n/i18n-provider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useT, useI18n } from '@/lib/i18n/i18n-provider';
 import { useTheme, type ThemeMode } from '@/lib/theme/theme-provider';
 import {
   LOCALE_LABELS,
@@ -10,9 +12,27 @@ import {
   type Locale,
 } from '@/lib/i18n/config';
 import { useState } from 'react';
-import { useI18n } from '@/lib/i18n/i18n-provider';
-import { Moon, Sun, Monitor, Bell, Mail, Tv, Database } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import {
+  Moon,
+  Sun,
+  Monitor,
+  Bell,
+  Mail,
+  Tv,
+  Database,
+  Lock,
+  Loader2,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
+import { changePasswordSchema, type ChangePasswordInput } from '@/lib/validators/auth';
+import { changePassword } from '@/lib/api/users';
+import { parseApiError } from '@/lib/errors/api-error';
 
 type NotificationPrefs = {
   push: boolean;
@@ -24,6 +44,7 @@ export default function SettingsPage() {
   const t = useT();
   const { mode, setMode } = useTheme();
   const { locale, setLocale } = useI18n();
+  const { isAuthenticated } = useAuth();
 
   const [prefs, setPrefs] = useState<NotificationPrefs>({
     push: true,
@@ -160,6 +181,16 @@ export default function SettingsPage() {
         </Card>
       </section>
 
+      {/* Change password — only available for authenticated users. */}
+      {isAuthenticated && (
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 text-dark-200 dark:text-dark-200 light:text-gray-700">
+            Bảo mật
+          </h2>
+          <ChangePasswordCard />
+        </section>
+      )}
+
       <div className="flex items-center gap-4">
         <Button onClick={handleSave}>{t('settings.save')}</Button>
         {savedAt && (
@@ -207,5 +238,162 @@ function ToggleRow({
         />
       </button>
     </label>
+  );
+}
+
+function ChangePasswordCard() {
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordInput>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
+    },
+  });
+
+  const onSubmit = async (data: ChangePasswordInput) => {
+    setSubmitting(true);
+    try {
+      await changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+      toast.success('Đổi mật khẩu thành công');
+      reset();
+    } catch (rawError) {
+      const api = parseApiError(rawError);
+      const description =
+        api.fieldError('currentPassword') ??
+        api.fieldError('newPassword') ??
+        api.fieldError('_form') ??
+        api.message;
+      toast.error('Đổi mật khẩu thất bại', { description });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="p-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <div className="flex items-center gap-2 mb-2 text-dark-200">
+          <Lock className="w-4 h-4" />
+          <h3 className="text-base font-medium">Đổi mật khẩu</h3>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="currentPassword" className="text-dark-200">
+            Mật khẩu hiện tại
+          </Label>
+          <div className="relative">
+            <Input
+              id="currentPassword"
+              type={showCurrent ? 'text' : 'password'}
+              autoComplete="current-password"
+              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
+              aria-invalid={!!errors.currentPassword}
+              {...register('currentPassword')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrent(!showCurrent)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+              aria-label={showCurrent ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.currentPassword && (
+            <p className="text-sm text-red-400" role="alert">
+              {errors.currentPassword.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="newPassword" className="text-dark-200">
+            Mật khẩu mới
+          </Label>
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showNew ? 'text' : 'password'}
+              autoComplete="new-password"
+              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
+              aria-invalid={!!errors.newPassword}
+              {...register('newPassword')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+              aria-label={showNew ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.newPassword && (
+            <p className="text-sm text-red-400" role="alert">
+              {errors.newPassword.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmNewPassword" className="text-dark-200">
+            Xác nhận mật khẩu mới
+          </Label>
+          <div className="relative">
+            <Input
+              id="confirmNewPassword"
+              type={showConfirm ? 'text' : 'password'}
+              autoComplete="new-password"
+              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
+              aria-invalid={!!errors.confirmNewPassword}
+              {...register('confirmNewPassword')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+              aria-label={showConfirm ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.confirmNewPassword && (
+            <p className="text-sm text-red-400" role="alert">
+              {errors.confirmNewPassword.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            type="submit"
+            disabled={submitting || isSubmitting}
+            className="gap-2"
+          >
+            {(submitting || isSubmitting) && (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            )}
+            Đổi mật khẩu
+          </Button>
+          <p className="text-xs text-dark-500">
+            Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.
+          </p>
+        </div>
+      </form>
+    </Card>
   );
 }
