@@ -214,9 +214,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       return SliverGrid(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 4,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 1,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.82,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -513,6 +513,7 @@ class _ChannelCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.dark800,
           borderRadius: BorderRadius.circular(12),
@@ -525,32 +526,25 @@ class _ChannelCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
-              children: [
-                Hero(
-                  tag: 'channel_logo_${channel.id}',
-                  child: ChannelLogo(
-                    channel: channel,
-                    size: 56,
-                    showLiveIndicator: channel.isLive,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                channel.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Hero(
+              tag: 'channel_logo_${channel.id}',
+              child: ChannelLogo(
+                channel: channel,
+                size: 50,
+                showLiveIndicator: channel.isLive,
               ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              channel.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

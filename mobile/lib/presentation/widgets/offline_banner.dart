@@ -100,17 +100,15 @@ class _OfflineBannerState extends State<OfflineBanner>
     return Stack(
       children: [
         widget.child,
-        // Offline Banner
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          top: _isOffline ? 0 : -60,
-          left: 0,
-          right: 0,
-          child: _OfflineBannerContent(
-            showAnimation: widget.showAnimation,
+        if (_isOffline)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _OfflineBannerContent(
+              showAnimation: widget.showAnimation,
+            ),
           ),
-        ),
       ],
     );
   }
