@@ -22,6 +22,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _emailController.text = 'testviewer@omnicast.tv';
+    _passwordController.text = 'Password@123';
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -168,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  // Register Link
+                  // Register Link & Guest button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -181,6 +188,76 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text('Đăng ký'),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/home'),
+                    icon: const Icon(Icons.explore_outlined, size: 18),
+                    label: const Text('Khám phá ngay (Không cần đăng nhập)'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Quick demo account section
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.dark900,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.dark800),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tài khoản dùng thử:',
+                          style: TextStyle(
+                            color: AppColors.dark400,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ActionChip(
+                              label: const Text('Khán giả (Viewer)', style: TextStyle(fontSize: 12)),
+                              backgroundColor: AppColors.dark800,
+                              onPressed: () {
+                                setState(() {
+                                  _emailController.text = 'testviewer@omnicast.tv';
+                                  _passwordController.text = 'Password@123';
+                                });
+                              },
+                            ),
+                            ActionChip(
+                              label: const Text('Admin', style: TextStyle(fontSize: 12)),
+                              backgroundColor: AppColors.dark800,
+                              onPressed: () {
+                                setState(() {
+                                  _emailController.text = 'admin@omnicast.tv';
+                                  _passwordController.text = 'Admin@123456';
+                                });
+                              },
+                            ),
+                            ActionChip(
+                              label: const Text('Staff', style: TextStyle(fontSize: 12)),
+                              backgroundColor: AppColors.dark800,
+                              onPressed: () {
+                                setState(() {
+                                  _emailController.text = 'staff@omnicast.tv';
+                                  _passwordController.text = 'Admin@123456';
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
