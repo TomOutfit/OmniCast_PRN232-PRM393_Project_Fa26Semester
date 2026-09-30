@@ -16,6 +16,8 @@ import '../../presentation/screens/channels/channel_detail_screen.dart';
 import '../../presentation/screens/channels/program_detail_screen.dart';
 import '../../presentation/screens/programs/categories_screen.dart';
 import '../../presentation/screens/programs/program_list_screen.dart';
+import '../../presentation/screens/recordings/recordings_screen.dart';
+import '../../presentation/screens/recordings/recording_detail_screen.dart';
 import '../../presentation/screens/watchlist/watchlist_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/studio/ai_curator_screen.dart';
@@ -43,12 +45,7 @@ class AppRouter {
         return null;
       }
 
-      // If not logged in and not on auth screen, redirect to login
-      if (!isLoggedIn && !isOnAuth) {
-        return '/login';
-      }
-
-      // If logged in and on auth screen, redirect to home
+      // If logged in and currently on auth screen, go to home
       if (isLoggedIn && isOnAuth) {
         return '/home';
       }
@@ -96,6 +93,19 @@ class AppRouter {
       GoRoute(
         path: '/categories',
         builder: (context, state) => const CategoriesScreen(),
+      ),
+      // VOD / Recordings library (full-screen, not in shell).
+      GoRoute(
+        path: '/recordings',
+        builder: (context, state) => const RecordingsScreen(),
+      ),
+      // Recording detail page (full-screen, not in shell).
+      GoRoute(
+        path: '/recording/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return RecordingDetailScreen(recordingId: id);
+        },
       ),
       // Shell route with bottom navigation
       ShellRoute(

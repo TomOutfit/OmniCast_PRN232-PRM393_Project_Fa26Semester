@@ -2,13 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 import '../../widgets/channel_logo.dart';
 
@@ -127,7 +124,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       crossAxisCount: 3,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.85,
+                      childAspectRatio: 0.78,
                     ),
                     itemCount: state.channels.length,
                     itemBuilder: (context, index) {

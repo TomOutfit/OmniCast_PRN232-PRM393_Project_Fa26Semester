@@ -8,11 +8,15 @@ import 'package:go_router/go_router.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/share_helper.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
 import '../../../logic/watchlist/watchlist_bloc.dart';
 import '../../widgets/omni_player.dart';
 import '../../widgets/channel_logo.dart';
+import '../../widgets/social/comments_section.dart';
+import '../../widgets/social/reactions_bar.dart';
+import '../../widgets/save_to_watchlist_button.dart';
 
 class ProgramDetailScreen extends StatefulWidget {
   final String programId;
@@ -27,6 +31,9 @@ class ProgramDetailScreen extends StatefulWidget {
 }
 
 class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
+  bool _playerStarted = false;
+  bool _viewBumped = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +61,23 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
             if (state is ProgramDetailsLoaded) {
             final program = state.program;
+            // Auto-start the player when the live stream has a URL
+            // available, otherwise wait for the user to tap.
+            if (!_playerStarted && program.isLive) {
+              final hasUrl = (program.streamUrl?.isNotEmpty ?? false) ||
+                  (program.externalUrl?.isNotEmpty ?? false);
+              if (hasUrl) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _playerStarted = true);
+                });
+              }
+            }
+            // Bump view count once per page mount for live streams.
+            if (!_viewBumped && program.isLive) {
+              _viewBumped = true;
+              // Fire and forget — best effort.
+              _bumpView(program);
+            }
             return CustomScrollView(
               slivers: [
                 // Video Player / Thumbnail
@@ -65,7 +89,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -73,7 +97,11 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                     onPressed: () => context.pop(),
                   ),
                   flexibleSpace: FlexibleSpaceBar(
-                    background: _VideoPlayer(program: program),
+                    background: _VideoPlayer(
+                      program: program,
+                      started: _playerStarted,
+                      onStart: () => setState(() => _playerStarted = true),
+                    ),
                   ),
                 ),
 
@@ -163,7 +191,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                               ),
                               const SizedBox(width: 12),
                             ],
-                            Icon(
+                            const Icon(
                               Icons.schedule,
                               size: 14,
                               color: AppColors.dark400,
@@ -186,7 +214,16 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  // Watch stream
+                                  if (program.isLive) {
+                                    // Start the player immediately for live
+                                    // programs.
+                                    setState(() => _playerStarted = true);
+                                  } else {
+                                    // Schedule a reminder for upcoming
+                                    // programs.
+                                    _addToWatchlist(context, program,
+                                        scheduleReminder: true);
+                                  }
                                 },
                                 icon: Icon(
                                   program.isLive
@@ -205,19 +242,19 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                             _ActionButton(
                               icon: Icons.thumb_up_outlined,
                               label: _formatNumber(program.likeCount),
-                              onTap: () {},
+                              onTap: () => _toggleReaction(program),
                             ),
                             const SizedBox(width: 8),
                             _ActionButton(
                               icon: Icons.share_outlined,
                               label: 'Chia sẻ',
-                              onTap: () {},
+                              onTap: () => ShareHelper.shareLiveEvent(program),
                             ),
                             const SizedBox(width: 8),
-                            _ActionButton(
-                              icon: Icons.bookmark_outline,
-                              label: 'Lưu',
-                              onTap: () => _addToWatchlist(context, program),
+                            SaveToWatchlistButton(
+                              programId: program.id,
+                              channelId: program.channelId,
+                              program: program,
                             ),
                           ],
                         ),
@@ -405,7 +442,21 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                               );
                             }).toList(),
                           ),
+                          const SizedBox(height: 24),
                         ],
+
+                        // Reactions
+                        ReactionsBar(
+                          targetId: program.id,
+                          kind: 'liveEvent',
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Comments
+                        CommentsSection(
+                          targetId: program.id,
+                          kind: 'liveEvent',
+                        ),
                       ],
                     ),
                   ),
@@ -450,7 +501,11 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     );
   }
 
-  void _addToWatchlist(BuildContext context, LiveEventModel program) {
+  void _addToWatchlist(
+    BuildContext context,
+    LiveEventModel program, {
+    bool scheduleReminder = false,
+  }) {
     final watchlistItem = WatchlistItemModel(
       programId: program.id,
       programTitle: program.title,
@@ -459,18 +514,50 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
       channelName: program.channel?.name,
       scheduledAt: program.scheduledAt,
       duration: program.duration,
-      reminderEnabled: false,
+      reminderEnabled: scheduleReminder,
       addedAt: DateTime.now(),
     );
 
-    context.read<WatchlistBloc>().add(AddToWatchlist(watchlistItem));
+    context.read<WatchlistBloc>().add(AddToWatchlist(
+          item: watchlistItem,
+          programId: program.id,
+          channelId: program.channelId,
+          scheduleReminder: scheduleReminder,
+        ));
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã thêm vào danh sách yêu thích'),
+      SnackBar(
+        content: Text(scheduleReminder
+            ? 'Sẽ nhắc bạn trước khi ${program.title} bắt đầu'
+            : 'Đã thêm vào danh sách yêu thích'),
         backgroundColor: AppColors.success,
       ),
     );
+  }
+
+  Future<void> _toggleReaction(LiveEventModel program) async {
+    try {
+      final repo = context.read<ProgramsBloc>().repository;
+      await repo.toggleLiveEventReaction(program.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã thả cảm xúc')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể thả cảm xúc: $e')),
+      );
+    }
+  }
+
+  Future<void> _bumpView(LiveEventModel program) async {
+    try {
+      final repo = context.read<ProgramsBloc>().repository;
+      await repo.bumpLiveEventView(program.id);
+    } catch (_) {
+      // Best effort
+    }
   }
 
   String _formatScheduleTime(LiveEventModel program) {
@@ -515,16 +602,20 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
 class _VideoPlayer extends StatefulWidget {
   final LiveEventModel program;
+  final bool started;
+  final VoidCallback? onStart;
 
-  const _VideoPlayer({required this.program});
+  const _VideoPlayer({
+    required this.program,
+    this.started = false,
+    this.onStart,
+  });
 
   @override
   State<_VideoPlayer> createState() => _VideoPlayerState();
 }
 
 class _VideoPlayerState extends State<_VideoPlayer> {
-  bool _started = false;
-
   String? get _streamUrl {
     if (widget.program.streamUrl != null && widget.program.streamUrl!.isNotEmpty) {
       return widget.program.streamUrl;
@@ -538,7 +629,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final streamUrl = _streamUrl;
-    if (streamUrl != null && _started) {
+    if (streamUrl != null && widget.started) {
       return OmniPlayer(
         url: streamUrl,
         posterUrl: AppConstants.resolveAssetUrl(widget.program.thumbnailUrl),
@@ -581,7 +672,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                AppColors.dark950.withOpacity(0.7),
+                AppColors.dark950.withValues(alpha: 0.7),
               ],
             ),
           ),
@@ -593,7 +684,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
             child: GestureDetector(
               onTap: streamUrl == null
                   ? null
-                  : () => setState(() => _started = true),
+                  : () => widget.onStart?.call(),
               child: Container(
                 width: 72,
                 height: 72,
@@ -601,7 +692,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
                   color: (streamUrl == null
                           ? AppColors.dark500
                           : AppColors.liveRed)
-                      .withOpacity(streamUrl == null ? 0.6 : 0.9),
+                      .withValues(alpha: streamUrl == null ? 0.6 : 0.9),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -653,7 +744,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
