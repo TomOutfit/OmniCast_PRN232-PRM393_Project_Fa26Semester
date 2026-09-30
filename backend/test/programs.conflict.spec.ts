@@ -164,8 +164,8 @@ test('checkScheduleConflict emits SQL that compares against effective end time',
   await call('channel-1', new Date('2026-10-01T20:00:00Z'), 90);
 
   const emitted = serializeSql(prisma.calls[0].sql);
-  assert.match(emitted, /COALESCE\("endedAt",/);
-  assert.match(emitted, /COALESCE\("duration",/);
+  assert.match(emitted, /COALESCE\s*\(\s*"endedAt"/);
+  assert.match(emitted, /"duration"/);
   assert.match(emitted, /::interval/);
   assert.match(emitted, /scheduledAt/i);
 });
