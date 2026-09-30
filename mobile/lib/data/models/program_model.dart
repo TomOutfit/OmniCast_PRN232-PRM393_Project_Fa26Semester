@@ -37,6 +37,19 @@ class LiveEventModel {
   // Channel info
   final ChannelInfo? channel;
 
+  /// True when the program was synthesised by the backend EPG service to
+  /// fill a 24-hour grid that would otherwise be empty. These slots replay
+  /// a previously-published recording (or fall back to a branded placeholder
+  /// when no recordings are available).
+  final bool isFiller;
+
+  /// 'recording-replay' or 'channel-branding' when [isFiller] is true.
+  final String? fillerKind;
+
+  /// When [fillerKind] is `recording-replay`, the ID of the underlying
+  /// Recording so the client can navigate to its detail page.
+  final String? sourceRecordingId;
+
   LiveEventModel({
     required this.id,
     required this.title,
@@ -71,6 +84,9 @@ class LiveEventModel {
     required this.createdAt,
     required this.updatedAt,
     this.channel,
+    this.isFiller = false,
+    this.fillerKind,
+    this.sourceRecordingId,
   });
 
   factory LiveEventModel.fromJson(Map<String, dynamic> json) {
@@ -105,7 +121,14 @@ class LiveEventModel {
       commentCount: json['commentCount'] as int? ?? 0,
       shareCount: json['shareCount'] as int? ?? 0,
       channelId: json['channelId'] as String,
-      tags: (json['tags'] as List?)?.cast<String>() ?? [],
+      tags: json['tags'] is List
+          ? (json['tags'] as List).map((e) => e.toString()).toList()
+          : json['tags'] is String
+              ? (json['tags'] as String)
+                  .split(RegExp(r'[, ]+'))
+                  .where((s) => s.isNotEmpty)
+                  .toList()
+              : [],
       autoRecord: json['autoRecord'] as bool? ?? true,
       slowMode: json['slowMode'] as bool? ?? false,
       chatEnabled: json['chatEnabled'] as bool? ?? true,
@@ -114,6 +137,9 @@ class LiveEventModel {
       channel: json['channel'] != null
           ? ChannelInfo.fromJson(json['channel'] as Map<String, dynamic>)
           : null,
+      isFiller: json['isFiller'] as bool? ?? false,
+      fillerKind: json['fillerKind'] as String?,
+      sourceRecordingId: json['sourceRecordingId'] as String?,
     );
   }
 
