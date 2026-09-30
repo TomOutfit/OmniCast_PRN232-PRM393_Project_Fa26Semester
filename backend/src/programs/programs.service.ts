@@ -278,7 +278,9 @@ export class ProgramsService {
 
     if (channelId) where.channelId = channelId;
     if (category) where.category = category as any;
-    if (isFeatured !== undefined) where.isFeatured = isFeatured;
+    if (isFeatured !== undefined) {
+      where.isFeatured = typeof isFeatured === 'string' ? String(isFeatured) === 'true' : Boolean(isFeatured);
+    }
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },

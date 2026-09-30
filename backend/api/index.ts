@@ -1,6 +1,11 @@
-// ============================================================
-// OmniCast - Vercel Serverless Entrypoint
-// ============================================================
+// Ensure Supabase connection uses port 6543 (transaction pooler) in serverless environments
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('pooler.supabase.com')) {
+  let url = process.env.DATABASE_URL
+    .replace(':5432/', ':6543/')
+    .replace('?pgbouncer=true', '')
+    .replace('&pgbouncer=true', '');
+  process.env.DATABASE_URL = url + (url.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
+}
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
@@ -11,8 +16,24 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { setupSwagger } from '../src/common/swagger/swagger.config';
 
+// Global BigInt JSON serialization support
+if (typeof (BigInt.prototype as any).toJSON !== 'function') {
+  (BigInt.prototype as any).toJSON = function () {
+    const int = Number.parseInt(this.toString(), 10);
+    return Number.isSafeInteger(int) ? int : this.toString();
+  };
+}
+
 const server: Express = express();
 let isInitialized = false;
+
+// Rewrite any /api/* missing /v1 to /api/v1/* automatically
+server.use((req, res, next) => {
+  if (req.url.startsWith('/api/') && !req.url.startsWith('/api/v1/')) {
+    req.url = req.url.replace('/api/', '/api/v1/');
+  }
+  next();
+});
 
 // Root & Health direct routes on express
 server.get('/', (req, res) => {

@@ -25,9 +25,9 @@
 | Thành Phần | Dịch Vụ / Nền Tảng | Liên Kết / Endpoint |
 | :--- | :--- | :--- |
 | 🐙 **Mã Nguồn (Source Code)** | GitHub | [TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester) |
-| 🗄️ **Cơ Sở Dữ Liệu & Storage** | Supabase Cloud (PostgreSQL) | [https://tktexqtqfnlfynbytjpw.supabase.co](https://tktexqtqfnlfynbytjpw.supabase.co) |
-| 🌐 **Frontend Web Portal** | Vercel Live Deployment | [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app) *(hoặc domain Vercel cấu hình)* |
-| ⚙️ **Backend API (Web API)** | Vercel API / Cloud Deployment | [https://omnicast-api.vercel.app](https://omnicast-api.vercel.app) *(Swagger Docs: `/swagger`)* |
+| 🗄️ **Cơ Sở Dữ Liệu & Storage** | Supabase Cloud (PostgreSQL) | [Supabase Dashboard](https://supabase.com/dashboard/project/tktexqtqfnlfynbytjpw) *(Endpoint: `tktexqtqfnlfynbytjpw.supabase.co`)* |
+| 🌐 **Frontend Web Portal** | Vercel Live Deployment | [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app) *(Kênh: [/channels](https://omnicast-fe.vercel.app/channels), Lịch EPG: [/epg](https://omnicast-fe.vercel.app/epg))* |
+| ⚙️ **Backend API (Web API)** | Vercel API / Cloud Deployment | [https://omnicast-api.vercel.app](https://omnicast-api.vercel.app) *(Swagger: [/swagger](https://omnicast-api.vercel.app/swagger), Health: [/api/v1/health](https://omnicast-api.vercel.app/api/v1/health))* |
 | 📱 **Ứng Dụng Di Động** | Flutter App (Android / iOS) | Thư mục `/mobile` |
 
 ---

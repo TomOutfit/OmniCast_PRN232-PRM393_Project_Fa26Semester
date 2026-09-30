@@ -58,8 +58,12 @@ export class ChannelsService {
     const where: any = {};
 
     if (category) where.category = category;
-    if (isActive !== undefined) where.isActive = isActive;
-    if (isFeatured !== undefined) where.isFeatured = isFeatured;
+    if (isActive !== undefined) {
+      where.isActive = typeof isActive === 'string' ? String(isActive) === 'true' : Boolean(isActive);
+    }
+    if (isFeatured !== undefined) {
+      where.isFeatured = typeof isFeatured === 'string' ? String(isFeatured) === 'true' : Boolean(isFeatured);
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -195,8 +199,9 @@ export class ChannelsService {
   }
 
   async getCategories() {
-    return this.prisma.liveChannel.groupBy({
+    const counts = await this.prisma.liveChannel.groupBy({
       by: ['category'],
+      where: { isActive: true },
       _count: true,
       orderBy: {
         _count: {
@@ -204,6 +209,11 @@ export class ChannelsService {
         },
       },
     });
+    return counts.map((item) => ({
+      category: item.category,
+      count: item._count,
+      _count: item._count,
+    }));
   }
 
   // ============================================================
