@@ -1,24 +1,21 @@
 // OmniCast - Home Screen
-//
-// Top-level dashboard: live carousel, featured channel grid, the full
-// 19-category grid, and quick filters. Drives the multi-source
-// programs repository and `ChannelsBloc` in parallel.
+// Now-Playing Hero entry — LIVE carousel + Up-Next strip + featured channels
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/program_categories.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
+import '../../widgets/hero_program_card.dart';
+import '../../widgets/up_next_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,33 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context);
     return OfflineBanner(
       child: Scaffold(
-        backgroundColor: AppColors.dark950,
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           color: AppColors.primary,
-          backgroundColor: AppColors.dark800,
+          backgroundColor: AppColors.surfaceRaised,
           child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // App Bar
               SliverAppBar(
                 floating: true,
                 snap: true,
-                backgroundColor: AppColors.dark950,
+                backgroundColor: AppColors.bg,
+                surfaceTintColor: Colors.transparent,
                 title: Row(
                   children: [
-                    const OmniCastBrandLogo(size: 32),
+                    const OmniCastBrandLogo(size: 30),
                     const SizedBox(width: 10),
-                    const Text(
-                      'OmniCast',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
+                    Text('OmniCast', style: tt.textTheme.titleLarge),
                   ],
                 ),
                 actions: [
@@ -95,124 +86,110 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
 
-              // Live Now Section
+              // ── HERO: LIVE NOW ─────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const _LivePulse(),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'ĐANG PHÁT SÓNG',
-                            style: TextStyle(
-                              color: AppColors.liveRed,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Live Now',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: _sectionHeader(
+                    icon: Icons.radio_button_checked,
+                    iconColor: AppColors.live,
+                    title: 'ĐANG PHÁT NGAY BÂY GIỜ',
+                    trailing: _LiveCount(),
                   ),
                 ),
               ),
-
-              // Live Programs Carousel
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 200,
-                  child: BlocBuilder<ProgramsBloc, ProgramsState>(
-                    builder: (context, state) {
-                      if (state is ProgramsLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
+                child: BlocBuilder<ProgramsBloc, ProgramsState>(
+                  builder: (context, state) {
+                    if (state is ProgramsLoading) {
+                      return const _LoadingRail(height: 320);
+                    }
+                    if (state is ProgramsLoaded && state.isLiveNow) {
+                      if (state.programs.isEmpty) {
+                        return _emptyState(
+                          icon: Icons.radio_button_unchecked,
+                          text: 'Hiện không có chương trình nào đang phát.',
                         );
                       }
-
-                      if (state is ProgramsLoaded && state.isLiveNow) {
-                        if (state.programs.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              'Không có chương trình đang phát',
-                              style: TextStyle(color: AppColors.dark400),
-                            ),
-                          );
-                        }
-
-                        return ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: state.programs.length,
-                          itemBuilder: (context, index) {
-                            final program = state.programs[index];
-                            return _LiveProgramCard(
-                              program: program,
-                              onTap: () => context.push('/program/${program.id}'),
-                            );
-                          },
-                        );
-                      }
-
-                      return const SizedBox();
-                    },
-                  ),
+                      return _liveRail(state.programs);
+                    }
+                    return const SizedBox(height: 320);
+                  },
                 ),
               ),
 
-              // Featured Channels Section
+              // ── UP NEXT ─────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Kênh nổi bật',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/channels'),
-                        child: const Text('Xem tất cả'),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  child: _sectionHeader(
+                    icon: Icons.schedule_rounded,
+                    iconColor: AppColors.primary,
+                    title: 'SẮP CHIẾU',
+                    trailing: TextButton(
+                      onPressed: () => context.go('/epg'),
+                      child: const Text('Xem EPG'),
+                    ),
                   ),
                 ),
               ),
+              SliverToBoxAdapter(
+                child: BlocBuilder<ProgramsBloc, ProgramsState>(
+                  builder: (context, state) {
+                    final upcoming = <LiveEventModel>[];
+                    if (state is ProgramsLoaded) {
+                      upcoming.addAll(
+                        state.liveEvents.where(
+                          (p) =>
+                              p.isScheduled &&
+                              p.scheduledAt.isAfter(DateTime.now()),
+                        ),
+                      );
+                      upcoming.sort(
+                        (a, b) => a.scheduledAt.compareTo(b.scheduledAt),
+                      );
+                    }
+                    if (upcoming.isEmpty) {
+                      return _emptyState(
+                        icon: Icons.event_outlined,
+                        text: 'Xem lịch đầy đủ trong EPG.',
+                      );
+                    }
+                    return _upNextRail(upcoming.take(10).toList());
+                  },
+                ),
+              ),
 
-              // Featured Channels Grid
+              // ── FEATURED CHANNELS ──────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  child: _sectionHeader(
+                    title: 'KÊNH NỔI BẬT',
+                    trailing: TextButton(
+                      onPressed: () => context.go('/channels'),
+                      child: const Text('Xem tất cả'),
+                    ),
+                  ),
+                ),
+              ),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: BlocBuilder<ChannelsBloc, ChannelsState>(
                   builder: (context, state) {
                     if (state is ChannelsLoading) {
                       return const SliverToBoxAdapter(
-                        child: Center(child: CircularProgressIndicator()),
+                        child: SizedBox(
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
                       );
                     }
-
                     if (state is ChannelsLoaded) {
-                      // Hiển thị tối đa 25 kênh từ backend
                       final channelCount = state.channels.length.clamp(0, 25);
                       return SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 4,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
@@ -223,48 +200,37 @@ class _HomeScreenState extends State<HomeScreen> {
                             final channel = state.channels[index];
                             return _ChannelCard(
                               channel: channel,
-                              onTap: () => context.push('/channel/${channel.id}'),
+                              onTap: () =>
+                                  context.push('/channel/${channel.id}'),
                             );
                           },
                           childCount: channelCount,
                         ),
                       );
                     }
-
                     return const SliverToBoxAdapter(child: SizedBox());
                   },
                 ),
               ),
 
-              // Categories Section
+              // ── CATEGORIES ─────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Danh mục',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.push('/categories'),
-                        child: const Text('Xem tất cả'),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  child: _sectionHeader(
+                    title: 'DANH MỤC',
+                    trailing: TextButton(
+                      onPressed: () => context.push('/categories'),
+                      child: const Text('Xem tất cả'),
+                    ),
                   ),
                 ),
               ),
-
-              // Categories grid
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
@@ -287,215 +253,174 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _LivePulse extends StatefulWidget {
-  const _LivePulse();
-
-  @override
-  State<_LivePulse> createState() => _LivePulseState();
-}
-
-class _LivePulseState extends State<_LivePulse>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-    _animation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: AppColors.liveRed.withOpacity(_animation.value),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.liveRed.withOpacity(_animation.value * 0.5),
-                blurRadius: 8,
-                spreadRadius: 2,
+  Widget _sectionHeader({
+    required String title,
+    IconData? icon,
+    Color? iconColor,
+    Widget? trailing,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, color: iconColor ?? AppColors.primary, size: 14),
+          const SizedBox(width: 8),
+        ],
+        Text(
+          title,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _LiveProgramCard extends StatelessWidget {
-  final LiveEventModel program;
-  final VoidCallback onTap;
-
-  const _LiveProgramCard({
-    required this.program,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.liveRed.withOpacity(0.5)),
         ),
+        const Spacer(),
+        if (trailing != null) trailing,
+      ],
+    );
+  }
+
+  Widget _liveRail(List<LiveEventModel> programs) {
+    return SizedBox(
+      height: 320,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: programs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final p = programs[index];
+          return SizedBox(
+            width: 280,
+            child: HeroProgramCard(
+              program: HeroProgramData(
+                id: p.id,
+                title: p.title,
+                startTime: p.scheduledAt,
+                endTime: p.endTime,
+                isLive: p.isLive,
+                thumbnailUrl: p.thumbnailUrl,
+                category: (p.tags.isNotEmpty ? p.tags.first : null),
+                channelName: p.channel?.name,
+                channelLogo: p.channel,
+                viewerCount: p.viewerCount,
+              ),
+              onTap: () => context.push('/program/${p.id}'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _upNextRail(List<LiveEventModel> upcoming) {
+    return SizedBox(
+      height: 140,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: upcoming.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final p = upcoming[index];
+          final start = p.scheduledAt;
+          final minutes = start.difference(DateTime.now()).inMinutes;
+          final countdown = minutes < 60
+              ? '$minutes phút nữa'
+              : '${minutes ~/ 60} giờ nữa';
+          return UpNextCard(
+            data: UpNextData(
+              id: p.id,
+              title: p.title,
+              startTime: start,
+              channelName: p.channel?.name ?? 'Kênh',
+              channel: p.channel,
+              startLabel:
+                  '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}',
+              countdownLabel: countdown,
+            ),
+            onTap: () => context.push('/program/${p.id}'),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _emptyState({required IconData icon, required String text}) {
+    return Container(
+      height: 160,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.rLg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Thumbnail
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.dark700,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Stack(
-                children: [
-                  if (program.thumbnailUrl != null)
-                    CachedNetworkImage(
-                      imageUrl: AppConstants.resolveAssetUrl(program.thumbnailUrl),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    )
-                  else
-                    const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        size: 48,
-                        color: AppColors.dark500,
-                      ),
-                    ),
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.liveRed,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, size: 6, color: Colors.white),
-                          SizedBox(width: 4),
-                          Text(
-                            'LIVE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.visibility, size: 12, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${_formatNumber(program.viewerCount)} đang xem',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    program.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if (program.channel != null)
-                    Text(
-                      program.channel!.name,
-                      style: const TextStyle(
-                        color: AppColors.dark400,
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            Icon(icon, color: AppColors.textMuted, size: 28),
+            const SizedBox(height: 8),
+            Text(text, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
       ),
     );
   }
+}
 
-  String _formatNumber(int number) {
-    if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
-    } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
-    }
-    return number.toString();
+class _LoadingRail extends StatelessWidget {
+  final double height;
+  const _LoadingRail({required this.height});
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: height,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+}
+
+class _LiveCount extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProgramsBloc, ProgramsState>(
+      builder: (context, state) {
+        final count = (state is ProgramsLoaded && state.isLiveNow)
+            ? state.programs.length
+            : 0;
+        return _CountPill(count: count, label: 'live');
+      },
+    );
+  }
+}
+
+class _CountPill extends StatelessWidget {
+  final int? count;
+  final String? label;
+  const _CountPill({this.count, this.label});
+  @override
+  Widget build(BuildContext context) {
+    if (count == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceRaised,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$count ${label ?? ''}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textDim,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+      ),
+    );
   }
 }
 
@@ -503,50 +428,49 @@ class _ChannelCard extends StatelessWidget {
   final ChannelModel channel;
   final VoidCallback onTap;
 
-  const _ChannelCard({
-    required this.channel,
-    required this.onTap,
-  });
+  const _ChannelCard({required this.channel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: channel.isLive
-                ? AppColors.liveRed.withOpacity(0.5)
-                : AppColors.dark700,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppColors.rMd),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppColors.rMd),
+            border: Border.all(
+              color: channel.isLive
+                  ? AppColors.live.withValues(alpha: 0.45)
+                  : AppColors.border,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Hero(
-              tag: 'channel_logo_${channel.id}',
-              child: ChannelLogo(
-                channel: channel,
-                size: 50,
-                showLiveIndicator: channel.isLive,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Hero(
+                tag: 'channel_logo_${channel.id}',
+                child: ChannelLogo(
+                  channel: channel,
+                  size: 50,
+                  showLiveIndicator: channel.isLive,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              channel.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 6),
+              Text(
+                channel.name,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.text,
+                    ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -571,36 +495,32 @@ class _CategoryTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppColors.rLg),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.dark800,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.dark700, width: 0.5),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppColors.rLg),
+            border: Border.all(color: AppColors.border, width: 0.5),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.18),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: 22),
               ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(context).textTheme.labelMedium,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

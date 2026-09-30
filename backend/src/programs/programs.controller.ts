@@ -117,13 +117,13 @@ export class ProgramsController {
   @ApiQuery({ name: 'date', required: false, type: String })
   @ApiQuery({ name: 'channelIds', required: false, type: String })
   async getEpgByDay(@Query() query: EpgDayQueryDto) {
-    const channelIds =
-      typeof query.channelIds === 'string'
-        ? query.channelIds
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : undefined;
+    // `channelIds` is normalised to `string[]` by the DTO's
+    // `@Transform`, regardless of whether the client sent a
+    // comma-separated string or repeated params. Coerce once here so
+    // downstream callers always receive a `string[] | undefined`.
+    const channelIds = Array.isArray(query.channelIds)
+      ? (query.channelIds as string[])
+      : undefined;
     return this.programsService.findEpgByDay({
       date: query.date ? new Date(`${query.date}T00:00:00Z`) : new Date(),
       channelIds,
