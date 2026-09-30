@@ -113,6 +113,67 @@ class TokenStorageHelper {
     return value == 'true';
   }
 
+  // Theme mode: 'light' | 'dark' | 'system'
+  Future<void> saveThemeMode(String mode) async {
+    await _storage.write(key: AppConstants.themeModeKey, value: mode);
+  }
+
+  Future<String?> getThemeMode() async {
+    return await _storage.read(key: AppConstants.themeModeKey);
+  }
+
+  // Locale code: 'vi' | 'en'
+  Future<void> saveLocale(String locale) async {
+    await _storage.write(key: AppConstants.localeKey, value: locale);
+  }
+
+  Future<String?> getLocale() async {
+    return await _storage.read(key: AppConstants.localeKey);
+  }
+
+  // Notification prefs
+  Future<void> saveNotificationPrefs({
+    required bool push,
+    required bool email,
+    required bool live,
+  }) async {
+    await _storage.write(
+      key: AppConstants.notificationPrefsKey,
+      value: '{"push":$push,"email":$email,"live":$live}',
+    );
+  }
+
+  Future<({bool push, bool email, bool live})> getNotificationPrefs() async {
+    final raw = await _storage.read(key: AppConstants.notificationPrefsKey);
+    if (raw == null) return (push: true, email: false, live: true);
+    try {
+      final cleaned = raw.replaceAll(RegExp(r'[\{\}]'), '');
+      final parts = cleaned.split(',').map((p) => p.trim()).toList();
+      bool get(String key) =>
+          parts.any((p) => p.startsWith('$key:') && p.endsWith(':true'));
+      return (
+        push: get('push'),
+        email: get('email'),
+        live: get('live'),
+      );
+    } catch (_) {
+      return (push: true, email: false, live: true);
+    }
+  }
+
+  // Data saver
+  Future<void> saveDataSaver(bool enabled) async {
+    await _storage.write(
+      key: AppConstants.dataSaverKey,
+      value: enabled ? 'true' : 'false',
+    );
+  }
+
+  Future<bool> getDataSaver() async {
+    final v = await _storage.read(key: AppConstants.dataSaverKey);
+    return v == 'true';
+  }
+
   // Clear All Data
   Future<void> clearAll() async {
     await _storage.deleteAll();

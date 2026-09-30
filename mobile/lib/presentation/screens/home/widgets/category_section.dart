@@ -159,13 +159,20 @@ class CategoryItem {
     this.category,
   });
 
-  // Default categories
+  // Default categories — 19 LiveCategory (12 cũ + 7 mới; Lifestyle gộp chung)
   static const List<CategoryItem> defaultCategories = [
+    // === 12 category ban đầu ===
     CategoryItem(
       id: 'SPORTS',
       label: 'Thể thao',
       icon: Icons.sports,
-      color: Color(0xFF22C55E),
+      color: Color(0xFFEF4444),
+    ),
+    CategoryItem(
+      id: 'SHOW',
+      label: 'Show',
+      icon: Icons.tv,
+      color: Color(0xFF8B5CF6),
     ),
     CategoryItem(
       id: 'ENTERTAINMENT',
@@ -177,13 +184,13 @@ class CategoryItem {
       id: 'CINE',
       label: 'Điện ảnh',
       icon: Icons.theater_comedy,
-      color: Color(0xFF8B5CF6),
+      color: Color(0xFFF59E0B),
     ),
     CategoryItem(
-      id: 'MUSIC',
-      label: 'Âm nhạc',
-      icon: Icons.music_note,
-      color: Color(0xFFEC4899),
+      id: 'DRAMA',
+      label: 'Phim truyện',
+      icon: Icons.live_tv,
+      color: Color(0xFFEF4444),
     ),
     CategoryItem(
       id: 'NEWS',
@@ -192,10 +199,10 @@ class CategoryItem {
       color: Color(0xFF3B82F6),
     ),
     CategoryItem(
-      id: 'DRAMA',
-      label: 'Phim truyện',
-      icon: Icons.live_tv,
-      color: Color(0xFFEF4444),
+      id: 'MUSIC',
+      label: 'Âm nhạc',
+      icon: Icons.music_note,
+      color: Color(0xFFEC4899),
     ),
     CategoryItem(
       id: 'KIDS',
@@ -213,12 +220,61 @@ class CategoryItem {
       id: 'FOOD',
       label: 'Ẩm thực',
       icon: Icons.restaurant,
-      color: Color(0xFFF97316),
+      color: Color(0xFFEA580C),
+    ),
+    CategoryItem(
+      id: 'DOCUMENTARY',
+      label: 'Khám phá',
+      icon: Icons.travel_explore,
+      color: Color(0xFF14B8A6),
+    ),
+    CategoryItem(
+      id: 'EDUCATION',
+      label: 'Giáo dục',
+      icon: Icons.school,
+      color: Color(0xFF8B5CF6),
+    ),
+    // === 7 category mở rộng (mỗi cái 1 mục) ===
+    CategoryItem(
+      id: 'GAMING',
+      label: 'Esports',
+      icon: Icons.sports_esports,
+      color: Color(0xFFDC2626),
+    ),
+    CategoryItem(
+      id: 'PODCAST',
+      label: 'Podcast',
+      icon: Icons.mic,
+      color: Color(0xFFF59E0B),
     ),
     CategoryItem(
       id: 'LIFESTYLE',
-      label: 'Phong cách',
+      label: 'Phong cách sống',
       icon: Icons.spa,
+      color: Color(0xFFF43F5E),
+    ),
+    CategoryItem(
+      id: 'TRAVEL',
+      label: 'Du lịch',
+      icon: Icons.flight,
+      color: Color(0xFF14B8A6),
+    ),
+    CategoryItem(
+      id: 'ART',
+      label: 'Nghệ thuật',
+      icon: Icons.palette,
+      color: Color(0xFFE11D48),
+    ),
+    CategoryItem(
+      id: 'BUSINESS',
+      label: 'Kinh doanh',
+      icon: Icons.business_center,
+      color: Color(0xFF1E40AF),
+    ),
+    CategoryItem(
+      id: 'HEALTH',
+      label: 'Sức khỏe',
+      icon: Icons.health_and_safety,
       color: Color(0xFF10B981),
     ),
   ];
