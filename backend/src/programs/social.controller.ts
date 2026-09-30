@@ -85,8 +85,32 @@ export class SocialController {
     @Body() dto: ToggleReactionDto,
     @Request() req: any,
   ) {
-    return this.socialService.toggleReaction(
+    return this.socialService.toggleReactionByRecording(
       recordingId,
+      req.user.sub,
+      dto.type,
+    );
+  }
+
+  // ---- LiveEvent mirror of the above ----
+
+  @Get('live-events/:id/reactions')
+  @ApiOperation({ summary: 'Get aggregated reactions for a live event' })
+  async listLiveEventReactions(@Param('id') liveEventId: string) {
+    return this.socialService.listReactionsByLiveEvent(liveEventId);
+  }
+
+  @Post('live-events/:id/reactions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle a reaction on a live event' })
+  async toggleLiveEventReaction(
+    @Param('id') liveEventId: string,
+    @Body() dto: ToggleReactionDto,
+    @Request() req: any,
+  ) {
+    return this.socialService.toggleReactionByLiveEvent(
+      liveEventId,
       req.user.sub,
       dto.type,
     );
