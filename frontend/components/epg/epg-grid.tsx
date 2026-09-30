@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
   ChevronRight,
-  Clock,
   Tv,
-  Play,
   Calendar,
   ZoomIn,
   ZoomOut,
   Loader2,
+  Search,
+  Filter,
+  Repeat,
+  Sparkles,
 } from 'lucide-react';
 import {
   format,
@@ -28,8 +30,8 @@ import { LiveBadge } from '@/components/ui/live-badge';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { cn } from '@/lib/utils';
 import { useChannels } from '@/lib/hooks/useChannels';
-import { useEpgSchedule } from '@/lib/hooks/usePrograms';
-import type { Channel, LiveEvent } from '@/types';
+import { useEpgDay } from '@/lib/hooks/usePrograms';
+import type { Channel } from '@/types';
 
 interface EPGProgram {
   id: string;
@@ -44,6 +46,11 @@ interface EPGProgram {
   channelLogo?: string;
   status: 'SCHEDULED' | 'LIVE' | 'ENDED';
   category?: string;
+  /** True when this slot was synthesised by the backend to fill a gap. */
+  isFiller: boolean;
+  fillerKind: 'recording-replay' | 'channel-branding' | null;
+  sourceRecordingId: string | null;
+  durationMinutes: number;
 }
 
 interface EPGChannel {
@@ -65,6 +72,16 @@ export function EPGGrid({
 }: EPGGridProps) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [zoom, setZoom] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(
+    new Set(),
+  );
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(
+    null,
+  );
+  const [hideFiller, setHideFiller] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const channelColumnRef = useRef<HTMLDivElement>(null);
 
   // Fetch active channels for the channel column
   const { data: channelsData, isLoading: loadingChannels } = useChannels({
@@ -72,7 +89,7 @@ export function EPGGrid({
     limit: 50,
   });
 
-  const channels: EPGChannel[] = useMemo(() => {
+  const channelsAll: EPGChannel[] = useMemo(() => {
     const list = Array.isArray(channelsData) ? channelsData : (channelsData?.data ?? []);
     return list.map((c: Channel) => ({
       id: c.id,
@@ -83,58 +100,159 @@ export function EPGGrid({
     }));
   }, [channelsData]);
 
+  // Apply category filter — empty set means "all"
+  const channels = useMemo(() => {
+    if (activeCategories.size === 0) return channelsAll;
+    return channelsAll.filter((c) => activeCategories.has(c.category));
+  }, [channelsAll, activeCategories]);
+
+  // All available categories
+  const allCategories = useMemo(
+    () => Array.from(new Set(channelsAll.map((c) => c.category))).sort(),
+    [channelsAll],
+  );
+
   const channelIds = useMemo(() => channels.map((c) => c.id), [channels]);
 
-  // Fetch EPG schedule for the selected day
-  const { data: scheduleData, isLoading: loadingSchedule } = useEpgSchedule(
+  // Fetch EPG schedule for the selected day — `useEpgDay` hits the
+  // backend's `/programs/epg/day` endpoint which guarantees a **dense,
+  // 24/7** schedule (real events + recording-replay + channel-branding
+  // fillers) for every day, so the grid is never blank.
+  const { data: epgResponse, isLoading: loadingSchedule } = useEpgDay(
     selectedDate,
     channelIds,
   );
 
+  // Auto-scroll to current time on initial load when today
+  useEffect(() => {
+    if (!timelineRef.current || !isSameDay(selectedDate, new Date())) return;
+    const hourWidth = 120 * zoom;
+    const now = new Date();
+    const left =
+      ((now.getHours() * 60 + now.getMinutes()) / 60) * hourWidth;
+    const visibleStart = timelineRef.current.scrollLeft;
+    const visibleEnd = visibleStart + timelineRef.current.clientWidth;
+    if (left < visibleStart || left > visibleEnd - 200) {
+      // Scroll so the current time is roughly centered
+      timelineRef.current.scrollTo({
+        left: Math.max(0, left - 300),
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedDate, zoom, timelineRef, loadingSchedule]);
+
+  // Keyboard navigation on the timeline
+  useEffect(() => {
+    if (!timelineRef.current) return;
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+      const hourWidth = 120 * zoom;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        timelineRef.current?.scrollBy({
+          left: -hourWidth,
+          behavior: 'smooth',
+        });
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        timelineRef.current?.scrollBy({
+          left: hourWidth,
+          behavior: 'smooth',
+        });
+      } else if (e.key === 'Enter' && selectedProgramId) {
+        e.preventDefault();
+        onProgramClick?.(filteredPrograms.find((p) => p.id === selectedProgramId)!);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zoom, selectedProgramId, onProgramClick]);
+
+  /**
+   * Flatten the per-channel EPG response into a flat list of
+   * `EPGProgram` rows. The backend already returns programs sorted by
+   * `startTime` within each channel, and covers the full 00:00 → 24:00
+   * window via fillers, so no client-side gap detection is needed.
+   */
   const programs: EPGProgram[] = useMemo(() => {
-    const events: LiveEvent[] = Array.isArray(scheduleData) ? scheduleData : (scheduleData?.data ?? []);
+    if (!epgResponse) return [];
+    const channelMap = new Map(channels.map((c) => [c.id, c]));
     const startOfDaySelected = startOfDay(selectedDate);
     const endOfDaySelected = addDays(startOfDaySelected, 1);
-    const channelMap = new Map(channels.map((c) => [c.id, c]));
 
-    return events
-      .map((e) => {
-        const channel = channelMap.get(e.channelId);
-        if (!channel) return null;
-        const start = parseISO(e.scheduledAt);
-        const end = e.endedAt
-          ? parseISO(e.endedAt)
-          : new Date(start.getTime() + (e.duration ?? 120) * 60 * 1000);
-        return {
-          id: e.id,
-          title: e.title,
-          description: e.description,
-          thumbnailUrl: e.thumbnailUrl,
+    const out: EPGProgram[] = [];
+    for (const ch of epgResponse.channels) {
+      const meta = channelMap.get(ch.channelId);
+      // Even when the channel isn't in our local cache (e.g. brand new
+      // channels), still surface the program so the row never goes blank.
+      const channelName = meta?.name ?? ch.channelName;
+      const channelSlug = meta?.slug ?? ch.channelId;
+      const channelLogo = meta?.logoUrl ?? ch.channelLogoUrl ?? undefined;
+      const category = meta?.category ?? ch.channelCategory;
+
+      for (const p of ch.programs) {
+        const start = parseISO(p.startTime);
+        const end = parseISO(p.endTime);
+        // Defensive: skip any program whose start falls outside the day
+        // (shouldn't happen, but the backend clamps day boundaries too).
+        if (start < startOfDaySelected || start >= endOfDaySelected) continue;
+        out.push({
+          id: p.id,
+          title: p.title,
+          description: undefined,
+          thumbnailUrl: p.thumbnailUrl ?? undefined,
           startTime: start.toISOString(),
           endTime: end.toISOString(),
-          channelId: e.channelId,
-          channelName: channel.name,
-          channelSlug: channel.slug,
-          channelLogo: channel.logoUrl,
-          status: (e.status === 'LIVE'
+          channelId: ch.channelId,
+          channelName,
+          channelSlug,
+          channelLogo,
+          status: (p.status === 'LIVE'
             ? 'LIVE'
-            : e.status === 'ENDED' || e.status === 'CANCELLED'
+            : p.status === 'ENDED' || p.status === 'CANCELLED'
               ? 'ENDED'
               : 'SCHEDULED') as EPGProgram['status'],
-          category: e.tags?.[0],
-        } as EPGProgram;
-      })
-      .filter((p): p is EPGProgram => !!p)
-      .filter((p) => {
-        const programStart = parseISO(p.startTime);
-        return programStart >= startOfDaySelected && programStart < endOfDaySelected;
-      });
-  }, [scheduleData, channels, selectedDate]);
+          category: p.tags?.[0] ?? category,
+          isFiller: p.isFiller,
+          fillerKind: p.fillerKind,
+          sourceRecordingId: p.sourceRecordingId,
+          durationMinutes: p.durationMinutes,
+        });
+      }
+    }
+    return out;
+  }, [epgResponse, channels, selectedDate]);
+
+  // Apply search filter + filler-toggle filter
+  const filteredPrograms = useMemo(() => {
+    let rows = programs;
+    if (hideFiller) rows = rows.filter((p) => !p.isFiller);
+    if (!searchQuery.trim()) return rows;
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.channelName.toLowerCase().includes(q),
+    );
+  }, [programs, searchQuery, hideFiller]);
 
   // Generate hours array (24 hours)
   const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
   const isLoading = loadingChannels || loadingSchedule;
+
+  const toggleCategory = (cat: string) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   // Calculate program position and width
   const getProgramStyle = useCallback(
@@ -184,6 +302,52 @@ export function EPGGrid({
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" />
+            <input
+              type="text"
+              placeholder="Tìm chương trình..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-3 py-1.5 bg-dark-800 border border-dark-700 rounded text-sm text-white w-56 placeholder:text-dark-500 focus:outline-none focus:border-primary-500"
+              aria-label="Tìm kiếm chương trình"
+            />
+          </div>
+
+          {/* Category filter */}
+          {allCategories.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Filter className="w-4 h-4 text-dark-400" />
+              {allCategories.map((cat) => {
+                const active =
+                  activeCategories.size === 0 || activeCategories.has(cat);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={cn(
+                      'px-2 py-1 rounded text-xs transition-colors',
+                      active
+                        ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                        : 'bg-dark-800 text-dark-400 border border-dark-700 hover:text-white',
+                    )}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+              {activeCategories.size > 0 && (
+                <button
+                  onClick={() => setActiveCategories(new Set())}
+                  className="ml-1 text-xs text-dark-500 hover:text-white"
+                >
+                  Xóa
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Zoom Controls */}
           <div className="flex items-center gap-1 bg-dark-800 rounded-lg p-1">
             <button
@@ -205,6 +369,27 @@ export function EPGGrid({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Day coverage summary — quick visual confirmation that the day is dense */}
+      <div className="flex flex-wrap items-center gap-3 mb-3 text-xs text-dark-400">
+        <span className="inline-flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5" />
+          Lịch phát sóng 24/7 — mỗi ngày đều được lấp đầy với chương trình
+          thực, replay từ VOD và khung quảng bá kênh.
+        </span>
+        <button
+          onClick={() => setHideFiller((v) => !v)}
+          className={cn(
+            'ml-auto px-2 py-1 rounded border transition-colors',
+            hideFiller
+              ? 'bg-primary-500/20 text-primary-300 border-primary-500/40'
+              : 'bg-dark-800 text-dark-300 border-dark-700 hover:text-white',
+          )}
+          aria-pressed={hideFiller}
+        >
+          {hideFiller ? 'Hiện tất cả khung giờ' : 'Chỉ chương trình thực'}
+        </button>
       </div>
 
       {/* EPG Grid Container */}
@@ -256,7 +441,7 @@ export function EPGGrid({
             </div>
 
             {/* Timeline Area */}
-            <div className="flex-1 overflow-x-auto">
+            <div className="flex-1 overflow-x-auto" ref={timelineRef}>
               <div className="min-w-max">
                 {/* Time Header */}
                 <div className="h-12 border-b border-dark-700 flex relative bg-dark-900/50">
@@ -309,7 +494,7 @@ export function EPGGrid({
 
                   {/* Channel Rows */}
                   {channels.map((channel, channelIndex) => {
-                    const channelPrograms = programs.filter(
+                    const channelPrograms = filteredPrograms.filter(
                       (p) => p.channelId === channel.id,
                     );
 
@@ -327,7 +512,7 @@ export function EPGGrid({
                           <div
                             className="absolute top-0 bottom-0 bg-primary-500/5"
                             style={{
-                              left: `${(currentHour * 60 / 60) * 120 * zoom}px`,
+                              left: `${((currentHour * 60 + currentMinute) / 60) * 120 * zoom}px`,
                               width: `${((60 - currentMinute) / 60) * 120 * zoom}px`,
                             }}
                           />
@@ -336,48 +521,110 @@ export function EPGGrid({
                         {/* Programs */}
                         {channelPrograms.map((program) => {
                           const { left, width } = getProgramStyle(program);
+                          const isFiller = program.isFiller;
+                          const isRecordingReplay =
+                            program.fillerKind === 'recording-replay';
+                          const isChannelBranding =
+                            program.fillerKind === 'channel-branding';
+
+                          // Filler programmes are non-clickable placeholders
+                          // — only real events link to a detail page.
+                          const href = isFiller
+                            ? '#'
+                            : `/programs/${program.id}`;
+                          const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
+                            if (isFiller) {
+                              e.preventDefault();
+                              return;
+                            }
+                            onProgramClick?.(program);
+                          };
+
+                          const card = (
+                            <div
+                              className={cn(
+                                'h-full p-2 flex flex-col',
+                                program.status === 'LIVE' && 'text-white',
+                                isFiller &&
+                                  'bg-dark-800/60 border border-dashed',
+                              )}
+                            >
+                              <div className="flex items-center gap-1 mb-1">
+                                {program.status === 'LIVE' && (
+                                  <LiveBadge size="sm" />
+                                )}
+                                {isRecordingReplay && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30"
+                                    title="Phát lại từ thư viện VOD"
+                                  >
+                                    <Repeat className="w-2.5 h-2.5" />
+                                    Replay
+                                  </span>
+                                )}
+                                {isChannelBranding && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold bg-dark-700 text-dark-300 border border-dark-600"
+                                    title="Khung giờ quảng bá kênh"
+                                  >
+                                    <Sparkles className="w-2.5 h-2.5" />
+                                    On Air
+                                  </span>
+                                )}
+                                {program.category && !isFiller && (
+                                  <span className="text-[10px] text-dark-300 truncate">
+                                    {program.category}
+                                  </span>
+                                )}
+                              </div>
+                              <p
+                                className={cn(
+                                  'text-xs font-medium truncate flex-1',
+                                  isFiller
+                                    ? 'text-dark-300 italic'
+                                    : 'text-white',
+                                  program.status === 'LIVE' && 'text-white',
+                                )}
+                              >
+                                {program.title}
+                              </p>
+                              <p className="text-[10px] text-dark-400">
+                                {format(parseISO(program.startTime), 'HH:mm')} -{' '}
+                                {format(parseISO(program.endTime), 'HH:mm')}
+                              </p>
+                            </div>
+                          );
 
                           return (
                             <Link
                               key={program.id}
-                              href={`/programs/${program.id}`}
-                              onClick={() => onProgramClick?.(program)}
+                              href={href}
+                              onClick={onClick}
+                              aria-disabled={isFiller}
+                              tabIndex={isFiller ? -1 : 0}
                               className={cn(
-                                'absolute top-2 bottom-2 rounded-lg overflow-hidden transition-all hover:z-10 hover:scale-[1.02]',
+                                'absolute top-2 bottom-2 rounded-lg overflow-hidden transition-all hover:z-10',
+                                !isFiller && 'hover:scale-[1.02]',
                                 program.status === 'LIVE' &&
+                                  !isFiller &&
                                   'ring-2 ring-red-500 shadow-glow-live',
                                 program.status === 'ENDED' && 'opacity-60',
                                 program.status === 'SCHEDULED' &&
+                                  !isFiller &&
                                   'bg-dark-700 hover:bg-dark-600',
+                                isFiller &&
+                                  'cursor-default hover:scale-100 bg-dark-800/50',
                               )}
                               style={{
                                 left,
                                 width,
                                 backgroundColor:
-                                  program.status === 'LIVE'
+                                  program.status === 'LIVE' && !isFiller
                                     ? '#dc2626'
                                     : undefined,
                               }}
                             >
-                              <div className="h-full p-2 flex flex-col">
-                                <div className="flex items-center gap-1 mb-1">
-                                  {program.status === 'LIVE' && (
-                                    <LiveBadge size="sm" />
-                                  )}
-                                  {program.category && (
-                                    <span className="text-[10px] text-dark-300 truncate">
-                                      {program.category}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs font-medium text-white truncate flex-1">
-                                  {program.title}
-                                </p>
-                                <p className="text-[10px] text-dark-400">
-                                  {format(parseISO(program.startTime), 'HH:mm')} -{' '}
-                                  {format(parseISO(program.endTime), 'HH:mm')}
-                                </p>
-                              </div>
+                              {card}
                             </Link>
                           );
                         })}
