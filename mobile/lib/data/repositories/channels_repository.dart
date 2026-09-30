@@ -15,7 +15,7 @@ class ChannelsRepository {
     bool? isFeatured,
     String? search,
     int page = 1,
-    int limit = 20,
+    int limit = 50,
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,

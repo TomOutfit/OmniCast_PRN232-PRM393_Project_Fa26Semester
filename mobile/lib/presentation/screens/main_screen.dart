@@ -31,22 +31,22 @@ class _MainScreenState extends State<MainScreen> {
       path: '/epg',
     ),
     _NavItem(
-      icon: Icons.search_outlined,
-      activeIcon: Icons.search,
-      label: 'Tìm kiếm',
-      path: '/search',
-    ),
-    _NavItem(
       icon: Icons.tv_outlined,
       activeIcon: Icons.tv,
       label: 'Kênh',
       path: '/channels',
     ),
     _NavItem(
-      icon: Icons.bookmark_outline,
-      activeIcon: Icons.bookmark,
-      label: 'Yêu thích',
-      path: '/watchlist',
+      icon: Icons.video_library_outlined,
+      activeIcon: Icons.video_library,
+      label: 'VOD',
+      path: '/recordings',
+    ),
+    _NavItem(
+      icon: Icons.search_outlined,
+      activeIcon: Icons.search,
+      label: 'Tìm kiếm',
+      path: '/search',
     ),
   ];
 
