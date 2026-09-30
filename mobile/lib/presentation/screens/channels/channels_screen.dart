@@ -53,10 +53,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: const Text('Kênh'),
-        backgroundColor: AppColors.dark950,
+        backgroundColor: AppColors.bg,
       ),
       body: Column(
         children: [
@@ -72,26 +72,44 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 final category = _categories[index];
                 final isSelected = _selectedCategory == category['value'];
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedCategory = category['value']);
-                    context.read<ChannelsBloc>().add(
-                          LoadChannels(category: category['value']),
-                        );
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.dark800,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      category['label'] as String,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.dark300,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                return Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () {
+                      setState(() => _selectedCategory = category['value']);
+                      context.read<ChannelsBloc>().add(
+                            LoadChannels(category: category['value']),
+                          );
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.borderStrong,
+                          width: isSelected ? 1 : 0.5,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        category['label'] as String,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textDim,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -184,12 +202,12 @@ class _ChannelCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.dark800,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: channel.isLive
                 ? AppColors.liveRed.withOpacity(0.5)
-                : AppColors.dark700,
+                : AppColors.border,
           ),
         ),
         child: Column(
