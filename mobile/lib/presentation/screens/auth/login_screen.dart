@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../widgets/brand_logo.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -65,34 +66,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 48),
                   // Logo
-                  Center(
-                    child: Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.25),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          'assets/images/omnicast_logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                            Icons.tv,
-                            size: 48,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                  const Center(
+                    child: OmniCastBrandLogo(
+                      size: 80,
+                      showGlow: true,
                     ),
                   ),
                   const SizedBox(height: 24),

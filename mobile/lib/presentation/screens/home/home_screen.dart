@@ -1,4 +1,8 @@
 // OmniCast - Home Screen
+//
+// Top-level dashboard: live carousel, featured channel grid, the full
+// 19-category grid, and quick filters. Drives the multi-source
+// programs repository and `ChannelsBloc` in parallel.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,10 +12,13 @@ import 'package:go_router/go_router.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/program_categories.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
+import '../../widgets/brand_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -65,23 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppColors.dark950,
                 title: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          'assets/images/omnicast_logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.tv, color: Colors.white, size: 24),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    const OmniCastBrandLogo(size: 32),
+                    const SizedBox(width: 10),
                     const Text(
                       'OmniCast',
                       style: TextStyle(
@@ -217,8 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
 
                     if (state is ChannelsLoaded) {
-                      // Hiển thị tất cả các kênh (tối đa 12 kênh từ DB)
-                      final channelCount = state.channels.length.clamp(0, 12);
+                      // Hiển thị tối đa 25 kênh từ backend
+                      final channelCount = state.channels.length.clamp(0, 25);
                       return SliverGrid(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 4,
@@ -247,9 +239,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // Categories Section
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         'Danh mục',
@@ -259,44 +251,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _CategoryChip(
-                            label: 'Thể thao',
-                            icon: Icons.sports,
-                            onTap: () {},
-                          ),
-                          _CategoryChip(
-                            label: 'Giải trí',
-                            icon: Icons.movie,
-                            onTap: () {},
-                          ),
-                          _CategoryChip(
-                            label: 'Âm nhạc',
-                            icon: Icons.music_note,
-                            onTap: () {},
-                          ),
-                          _CategoryChip(
-                            label: 'Tin tức',
-                            icon: Icons.newspaper,
-                            onTap: () {},
-                          ),
-                          _CategoryChip(
-                            label: 'Phim truyện',
-                            icon: Icons.theater_comedy,
-                            onTap: () {},
-                          ),
-                          _CategoryChip(
-                            label: 'Thiếu nhi',
-                            icon: Icons.child_care,
-                            onTap: () {},
-                          ),
-                        ],
+                      TextButton(
+                        onPressed: () => context.push('/categories'),
+                        child: const Text('Xem tất cả'),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              // Categories grid
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 0.95,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final cat = ProgramCategories.all19[index];
+                      return _CategoryTile(
+                        label: cat.label,
+                        icon: cat.icon,
+                        color: cat.color,
+                        onTap: () => context.push(
+                          '/category/${Uri.encodeComponent(cat.value)}',
+                        ),
+                      );
+                    },
+                    childCount: ProgramCategories.all19.length,
                   ),
                 ),
               ),
@@ -402,7 +388,7 @@ class _LiveProgramCard extends StatelessWidget {
                 children: [
                   if (program.thumbnailUrl != null)
                     CachedNetworkImage(
-                      imageUrl: program.thumbnailUrl!,
+                      imageUrl: AppConstants.resolveAssetUrl(program.thumbnailUrl),
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
@@ -573,41 +559,61 @@ class _ChannelCard extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
+class _CategoryTile extends StatelessWidget {
   final String label;
   final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
-  const _CategoryChip({
+  const _CategoryTile({
     required this.label,
     required this.icon,
+    required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.dark700),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.dark800,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.dark700, width: 0.5),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
