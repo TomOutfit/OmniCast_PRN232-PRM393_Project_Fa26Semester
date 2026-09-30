@@ -22,6 +22,8 @@ import {
   CreateRecordingDto,
   UpdateRecordingDto,
 } from './dto/program.dto';
+import { EpgDayQueryDto } from './dto/epg-day-query.dto';
+import { PreflightRequestDto } from './dto/preflight.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -79,10 +81,85 @@ export class ProgramsController {
     return this.programsService.getLiveNow();
   }
 
+  @Post('live-events/preflight')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('STAFF', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Dry-run schedule check (1–100 events). Returns conflicts without committing, so Staff can preview before saving.',
+  })
+  async preflight(@Body() body: PreflightRequestDto) {
+    const conflicts = await this.programsService.preflightEvents(
+      body.events.map((e) => ({
+        clientRef: e.clientRef,
+        channelId: e.channelId,
+        scheduledAt: new Date(e.scheduledAt),
+        duration: e.duration,
+      })),
+    );
+    return {
+      totalEvents: body.events.length,
+      totalConflicts: conflicts.length,
+      conflicts,
+    };
+  }
+
+  // ============================================================
+  // EPG (Electronic Program Guide)
+  // ============================================================
+
+  @Get('epg/day')
+  @ApiOperation({
+    summary:
+      'EPG for a single day (UTC), grouped by channel. Cached 60s.',
+  })
+  @ApiQuery({ name: 'date', required: false, type: String })
+  @ApiQuery({ name: 'channelIds', required: false, type: String })
+  async getEpgByDay(@Query() query: EpgDayQueryDto) {
+    const channelIds =
+      typeof query.channelIds === 'string'
+        ? query.channelIds
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined;
+    return this.programsService.findEpgByDay({
+      date: query.date ? new Date(`${query.date}T00:00:00Z`) : new Date(),
+      channelIds,
+    });
+  }
+
+  @Get('epg/snapshot')
+  @ApiOperation({
+    summary:
+      'Now + Next snapshot for every active channel. Cached 60s.',
+  })
+  async getEpgSnapshot() {
+    return this.programsService.getChannelSnapshots();
+  }
+
   @Get('live-events/:id')
   @ApiOperation({ summary: 'Get live event by ID' })
   async findLiveEventById(@Param('id') id: string) {
     return this.programsService.findLiveEventById(id);
+  }
+
+  @Post('live-events/:id/view')
+  @ApiOperation({
+    summary:
+      'Increment viewer count for a live event. Best-effort — duplicate calls within a session are cheap.',
+  })
+  async incrementLiveEventView(@Param('id') id: string) {
+    return this.programsService.incrementLiveEventView(id);
+  }
+
+  @Post('live-events/:id/share')
+  @ApiOperation({
+    summary: 'Increment share counter for a live event.',
+  })
+  async incrementLiveEventShare(@Param('id') id: string) {
+    return this.programsService.incrementLiveEventShare(id);
   }
 
   @Patch('live-events/:id')
@@ -153,6 +230,40 @@ export class ProgramsController {
   @ApiOperation({ summary: 'Get recording by ID' })
   async findRecordingById(@Param('id') id: string) {
     return this.programsService.findRecordingById(id);
+  }
+
+  @Post('recordings/:id/view')
+  @ApiOperation({
+    summary:
+      'Increment view counter for a recording. Idempotent — safe to call once per session.',
+  })
+  async incrementRecordingView(@Param('id') id: string) {
+    return this.programsService.incrementRecordingView(id);
+  }
+
+  @Post('recordings/:id/share')
+  @ApiOperation({
+    summary:
+      'Increment share counter. Idempotent for a single user action; clients should debounce.',
+  })
+  async incrementRecordingShare(@Param('id') id: string) {
+    return this.programsService.incrementRecordingShare(id);
+  }
+
+  @Get('recordings/:id/similar')
+  @ApiOperation({
+    summary:
+      'Return up to N related recordings for the given recording. Currently uses the same channel as a strong relevance signal; cross-channel ranking can be layered on later.',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findSimilarRecordings(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.programsService.findSimilarRecordings(
+      id,
+      Math.min(Math.max(Number(limit) || 6, 1), 20),
+    );
   }
 
   @Patch('recordings/:id')
