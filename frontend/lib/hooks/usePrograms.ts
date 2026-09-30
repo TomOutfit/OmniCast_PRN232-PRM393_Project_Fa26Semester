@@ -67,11 +67,18 @@ export function useLiveNow(
   });
 }
 
-export function useLiveEventById(id: string | undefined) {
+export function useLiveEventById(
+  id: string | undefined,
+  options?: Omit<
+    import('@tanstack/react-query').UseQueryOptions<LiveEvent>,
+    'queryKey' | 'queryFn'
+  >,
+) {
   return useQuery<LiveEvent>({
     queryKey: programsKeys.detail(id ?? ''),
     queryFn: () => fetchLiveEventById(id as string),
     enabled: !!id,
+    ...options,
   });
 }
 

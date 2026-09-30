@@ -133,4 +133,20 @@
     @apply absolute left-2 top-2 -translate-y-16 focus:translate-y-0 transition-transform;
     @apply bg-primary-500 text-white px-3 py-2 rounded z-50;
   }
+
+  /* Custom scrollbar — slim & dark for EPG timeline */
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.4);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.6);
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.8);
+  }
 }
