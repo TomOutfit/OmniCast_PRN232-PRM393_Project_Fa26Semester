@@ -35,7 +35,9 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'omnicast_local.db';
-  static const int databaseVersion = 1;
+  // v3: invalidate EPG cache so the new `isFiller`/`fillerKind` shape is
+  // always served fresh from the backend.
+  static const int databaseVersion = 3;
 
   // Pagination
   static const int defaultPageSize = 20;
@@ -132,4 +134,16 @@ class AppEndpoints {
   static const String adminChannels = '/v1/channels';
   static const String adminScheduleBulk = '/v1/programs/schedule/bulk';
   static const String auditLogsExport = '/v1/audit-logs/export';
+
+  // Watchlist (Cloud Primary)
+  static const String watchlist = '/v1/me/watchlist';
+  static const String watchlistGrouped = '/v1/me/watchlist/grouped';
+  static const String watchlistSync = '/v1/me/watchlist/sync';
+
+  // EPG
+  static const String epgDay = '/v1/programs/epg/day';
+  static const String epgSnapshot = '/v1/programs/epg/snapshot';
+
+  // Preflight
+  static const String epgPreflight = '/v1/programs/live-events/preflight';
 }

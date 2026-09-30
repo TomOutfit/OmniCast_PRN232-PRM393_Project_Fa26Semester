@@ -36,6 +36,61 @@ class AppStrings {
     'nav.search': {'vi': 'Tìm kiếm', 'en': 'Search'},
     'nav.channels': {'vi': 'Kênh', 'en': 'Channels'},
     'nav.watchlist': {'vi': 'Yêu thích', 'en': 'Watchlist'},
+    'nav.recordings': {'vi': 'VOD', 'en': 'VOD'},
+
+    // Recordings / VOD library
+    'recordings.title': {'vi': 'Thư viện VOD', 'en': 'VOD library'},
+    'recordings.subtitle': {
+      'vi': 'Xem lại các chương trình, podcast và video đã phát sóng trên OmniCast.',
+      'en': 'Replay programs, podcasts and videos that aired on OmniCast.',
+    },
+    'recordings.searchHint': {
+      'vi': 'Tìm kiếm VOD...',
+      'en': 'Search VOD...',
+    },
+    'recordings.filterAll': {'vi': 'Tất cả', 'en': 'All'},
+    'recordings.featured': {
+      'vi': 'Nội dung nổi bật',
+      'en': 'Featured',
+    },
+    'recordings.empty': {
+      'vi': 'Không tìm thấy VOD phù hợp',
+      'en': 'No VOD found',
+    },
+    'recordings.emptyHint': {
+      'vi': 'Thử đổi bộ lọc hoặc từ khóa khác.',
+      'en': 'Try a different filter or keyword.',
+    },
+    'recordings.clearFilters': {'vi': 'Xóa bộ lọc', 'en': 'Clear filters'},
+    'recordings.resultsCount': {'vi': 'kết quả', 'en': 'results'},
+    'recordings.pageOf': {'vi': 'Trang', 'en': 'Page'},
+    'recordings.badge.featured': {'vi': 'Nổi bật', 'en': 'Featured'},
+    'recordings.badge.age18': {'vi': '18+', 'en': '18+'},
+    'recordings.badge.vod': {'vi': 'VOD', 'en': 'VOD'},
+    'recordings.duration.format': {
+      'vi': 'phút',
+      'en': 'min',
+    },
+
+    // Recording detail
+    'recording.description': {'vi': 'Mô tả', 'en': 'Description'},
+    'recording.tags': {'vi': 'Thẻ', 'en': 'Tags'},
+    'recording.source': {'vi': 'Nguồn', 'en': 'Source'},
+    'recording.related': {
+      'vi': 'Video liên quan',
+      'en': 'Related videos',
+    },
+    'recording.action.save': {'vi': 'Lưu', 'en': 'Save'},
+    'recording.action.share': {'vi': 'Chia sẻ', 'en': 'Share'},
+    'recording.action.viewChannel': {'vi': 'Xem kênh', 'en': 'View channel'},
+    'recording.stats.views': {'vi': 'lượt xem', 'en': 'views'},
+    'recording.stats.likes': {'vi': 'thích', 'en': 'likes'},
+    'recording.stats.comments': {'vi': 'bình luận', 'en': 'comments'},
+    'recording.stats.shares': {'vi': 'chia sẻ', 'en': 'shares'},
+    'recording.noDescription': {
+      'vi': 'Chưa có mô tả.',
+      'en': 'No description yet.',
+    },
 
     // Settings
     'settings.title': {'vi': 'Cài đặt', 'en': 'Settings'},
