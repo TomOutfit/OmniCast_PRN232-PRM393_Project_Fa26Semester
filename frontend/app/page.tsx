@@ -18,7 +18,7 @@ import { Card } from '@/components/ui/card';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { LiveBadge } from '@/components/ui/live-badge';
 import { useChannels } from '@/lib/hooks/useChannels';
-import { useLiveNow } from '@/lib/hooks/usePrograms';
+import { useLiveNow, useRecordings } from '@/lib/hooks/usePrograms';
 
 const features = [
   {
@@ -66,9 +66,17 @@ export default function HomePage() {
     limit: 12,
   });
   const { data: liveEvents, isLoading: loadingLive } = useLiveNow();
+  const { data: recordingsData, isLoading: loadingRecordings } = useRecordings({
+    isFeatured: true,
+    limit: 12,
+    page: 1,
+  });
 
   const channels = Array.isArray(featuredData) ? featuredData : (featuredData?.data ?? []);
   const liveList = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
+  const recordings = Array.isArray(recordingsData)
+    ? recordingsData
+    : (recordingsData as any)?.data ?? [];
   const liveChannelIds = new Set(
     liveList.map((e: any) => e.channelId),
   );
@@ -125,7 +133,11 @@ export default function HomePage() {
             <StatBox label="Kênh truyền hình" value={String(channels.length || 12) + '+'} />
             <StatBox
               label="Chương trình/ngày"
-              value={(liveEvents?.length ?? 0) > 0 ? `${(liveEvents?.length ?? 0) * 5}+` : '100+'}
+              value={(liveList?.length ?? 0) > 0 ? `${(liveList?.length ?? 0) * 5}+` : '100+'}
+            />
+            <StatBox
+              label="Video VOD"
+              value={`${recordings.length || 1080}+`}
             />
             <StatBox
               label="Tổng người theo dõi"
@@ -133,7 +145,6 @@ export default function HomePage() {
                 channels.reduce((sum, c) => sum + c.followerCount, 0),
               )}+`}
             />
-            <StatBox label="Độ khả dụng" value="99.9%" />
           </div>
         </div>
       </section>
@@ -228,6 +239,82 @@ export default function HomePage() {
                   </Link>
                 );
               })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Featured Recordings Section */}
+      <section className="py-24 bg-dark-950 border-t border-dark-800">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-white">VOD nổi bật</h2>
+              <p className="text-dark-400">
+                Xem lại các chương trình, podcast và video đã phát sóng
+              </p>
+            </div>
+            <Button asChild variant="ghost">
+              <Link href="/recordings">
+                Xem tất cả
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {loadingRecordings ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
+            </div>
+          ) : recordings.length === 0 ? (
+            <div className="text-center py-16 text-dark-400">
+              Chưa có VOD nổi bật nào.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {recordings.slice(0, 8).map((rec: any) => (
+                <Link
+                  key={rec.id}
+                  href={`/programs/recording/${rec.id}`}
+                  className="group"
+                >
+                  <Card className="overflow-hidden glass-card hover:border-primary-500/50 transition-all h-full">
+                    <div className="relative aspect-video bg-dark-800 overflow-hidden">
+                      {rec.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={rec.thumbnailUrl}
+                          alt={rec.title}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Play className="w-10 h-10 text-dark-600" />
+                        </div>
+                      )}
+                      {rec.duration > 0 && (
+                        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-white text-xs">
+                          {Math.floor(rec.duration / 60)}m
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                        <Play className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity fill-current" />
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-primary-400 transition-colors">
+                        {rec.title}
+                      </h3>
+                      {rec.channel && (
+                        <p className="text-xs text-dark-500 mt-1 truncate">
+                          {rec.channel.name}
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                </Link>
+              ))}
             </div>
           )}
         </div>
