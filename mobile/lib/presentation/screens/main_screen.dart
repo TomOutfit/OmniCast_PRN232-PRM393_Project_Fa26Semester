@@ -1,4 +1,5 @@
 // OmniCast - Main Screen with Bottom Navigation
+// Now-Playing Hero: clean Material 3 NavigationBar
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,31 +21,31 @@ class _MainScreenState extends State<MainScreen> {
   final _navItems = const [
     _NavItem(
       icon: Icons.home_outlined,
-      activeIcon: Icons.home,
+      activeIcon: Icons.home_rounded,
       label: 'Trang chủ',
       path: '/home',
     ),
     _NavItem(
       icon: Icons.schedule_outlined,
-      activeIcon: Icons.schedule,
+      activeIcon: Icons.schedule_rounded,
       label: 'EPG',
       path: '/epg',
     ),
     _NavItem(
       icon: Icons.tv_outlined,
-      activeIcon: Icons.tv,
+      activeIcon: Icons.tv_rounded,
       label: 'Kênh',
       path: '/channels',
     ),
     _NavItem(
       icon: Icons.video_library_outlined,
-      activeIcon: Icons.video_library,
+      activeIcon: Icons.video_library_rounded,
       label: 'VOD',
       path: '/recordings',
     ),
     _NavItem(
       icon: Icons.search_outlined,
-      activeIcon: Icons.search,
+      activeIcon: Icons.search_rounded,
       label: 'Tìm kiếm',
       path: '/search',
     ),
@@ -60,9 +61,7 @@ class _MainScreenState extends State<MainScreen> {
     final location = GoRouterState.of(context).matchedLocation;
     final index = _navItems.indexWhere((item) => item.path == location);
     if (index != -1 && index != _currentIndex) {
-      setState(() {
-        _currentIndex = index;
-      });
+      setState(() => _currentIndex = index);
     }
   }
 
@@ -70,40 +69,29 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: widget.child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.dark900,
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(
-              color: AppColors.dark700.withOpacity(0.5),
-              width: 0.5,
-            ),
+            top: BorderSide(color: AppColors.border, width: 0.5),
           ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _navItems.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final isSelected = index == _currentIndex;
-
-                return _NavBarItem(
-                  icon: isSelected ? item.activeIcon : item.icon,
-                  label: item.label,
-                  isSelected: isSelected,
-                  onTap: () {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                    context.go(item.path);
-                  },
-                );
-              }).toList(),
-            ),
-          ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          backgroundColor: AppColors.surface,
+          indicatorColor: AppColors.primary.withValues(alpha: 0.18),
+          surfaceTintColor: Colors.transparent,
+          onDestinationSelected: (index) {
+            setState(() => _currentIndex = index);
+            context.go(_navItems[index].path);
+          },
+          destinations: [
+            for (final item in _navItems)
+              NavigationDestination(
+                icon: Icon(item.icon),
+                selectedIcon: Icon(item.activeIcon),
+                label: item.label,
+              ),
+          ],
         ),
       ),
     );
@@ -122,48 +110,4 @@ class _NavItem {
     required this.label,
     required this.path,
   });
-}
-
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _NavBarItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected ? AppColors.primary : AppColors.dark500,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppColors.primary : AppColors.dark500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

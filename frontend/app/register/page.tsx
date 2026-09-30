@@ -2,7 +2,6 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -13,25 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
-
-const registerSchema = z
-  .object({
-    fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
-    email: z.string().email('Email không hợp lệ'),
-    password: z
-      .string()
-      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-      .regex(/[A-Z]/, 'Phải chứa ít nhất 1 chữ hoa')
-      .regex(/[a-z]/, 'Phải chứa ít nhất 1 chữ thường')
-      .regex(/[0-9]/, 'Phải chứa ít nhất 1 số'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Mật khẩu xác nhận không khớp',
-    path: ['confirmPassword'],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+import {
+  registerSchema,
+  PASSWORD_REQUIREMENTS,
+  checkPasswordRequirements,
+  type RegisterInput,
+  type PasswordRequirementId,
+} from '@/lib/validators/auth';
+import { parseApiError } from '@/lib/errors/api-error';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,20 +32,21 @@ export default function RegisterPage() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<RegisterFormData>({
+  } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
   });
 
   const password = watch('password', '');
+  const reqStatus: Record<PasswordRequirementId, boolean> =
+    checkPasswordRequirements(password);
 
-  const passwordRequirements = [
-    { id: 'length', label: 'Ít nhất 8 ký tự', met: password.length >= 8 },
-    { id: 'upper', label: 'Ít nhất 1 chữ hoa', met: /[A-Z]/.test(password) },
-    { id: 'lower', label: 'Ít nhất 1 chữ thường', met: /[a-z]/.test(password) },
-    { id: 'number', label: 'Ít nhất 1 số', met: /[0-9]/.test(password) },
-  ];
-
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: RegisterInput) => {
     setIsLoading(true);
     try {
       const res = await registerUser({
@@ -70,14 +59,15 @@ export default function RegisterPage() {
       });
       router.push('/');
       router.refresh();
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Đã có lỗi xảy ra, vui lòng thử lại';
-      toast.error('Đăng ký thất bại', {
-        description: Array.isArray(message) ? message.join(', ') : message,
-      });
+    } catch (rawError) {
+      const api = parseApiError(rawError);
+      const description =
+        api.fieldError('email') ??
+        api.fieldError('fullName') ??
+        api.fieldError('password') ??
+        api.fieldError('_form') ??
+        api.message;
+      toast.error('Đăng ký thất bại', { description });
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +88,7 @@ export default function RegisterPage() {
         </div>
 
         <Card className="p-8 glass-card">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Full Name Field */}
             <div className="space-y-2">
               <Label htmlFor="fullName" className="text-dark-200">
@@ -108,11 +98,15 @@ export default function RegisterPage() {
                 id="fullName"
                 type="text"
                 placeholder="Nguyễn Văn A"
+                autoComplete="name"
                 className="bg-dark-900/50 border-dark-600 focus:border-primary-500"
+                aria-invalid={!!errors.fullName}
                 {...register('fullName')}
               />
               {errors.fullName && (
-                <p className="text-sm text-red-400">{errors.fullName.message}</p>
+                <p className="text-sm text-red-400" role="alert">
+                  {errors.fullName.message}
+                </p>
               )}
             </div>
 
@@ -125,11 +119,15 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="nguoixem@omnicast.tv"
+                autoComplete="email"
                 className="bg-dark-900/50 border-dark-600 focus:border-primary-500"
+                aria-invalid={!!errors.email}
                 {...register('email')}
               />
               {errors.email && (
-                <p className="text-sm text-red-400">{errors.email.message}</p>
+                <p className="text-sm text-red-400" role="alert">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -143,7 +141,9 @@ export default function RegisterPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
+                  aria-invalid={!!errors.password}
                   {...register('password')}
                 />
                 <button
@@ -160,26 +160,31 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-400">{errors.password.message}</p>
+                <p className="text-sm text-red-400" role="alert">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
-            {/* Password Requirements */}
-            {password && (
+            {/* Password Requirements (live) */}
+            {password.length > 0 && (
               <div className="space-y-1 p-3 bg-dark-900/50 rounded-lg border border-dark-700">
                 <p className="text-xs text-dark-400 mb-2">Yêu cầu mật khẩu:</p>
-                {passwordRequirements.map((req) => (
-                  <div key={req.id} className="flex items-center gap-2 text-xs">
-                    {req.met ? (
-                      <Check className="w-3 h-3 text-green-400" />
-                    ) : (
-                      <X className="w-3 h-3 text-dark-500" />
-                    )}
-                    <span className={req.met ? 'text-green-400' : 'text-dark-500'}>
-                      {req.label}
-                    </span>
-                  </div>
-                ))}
+                {PASSWORD_REQUIREMENTS.map((req) => {
+                  const met = reqStatus[req.id];
+                  return (
+                    <div key={req.id} className="flex items-center gap-2 text-xs">
+                      {met ? (
+                        <Check className="w-3 h-3 text-green-400" />
+                      ) : (
+                        <X className="w-3 h-3 text-dark-500" />
+                      )}
+                      <span className={met ? 'text-green-400' : 'text-dark-500'}>
+                        {req.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -192,11 +197,15 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="bg-dark-900/50 border-dark-600 focus:border-primary-500"
+                aria-invalid={!!errors.confirmPassword}
                 {...register('confirmPassword')}
               />
               {errors.confirmPassword && (
-                <p className="text-sm text-red-400">{errors.confirmPassword.message}</p>
+                <p className="text-sm text-red-400" role="alert">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
@@ -205,8 +214,8 @@ export default function RegisterPage() {
               <input
                 id="terms"
                 type="checkbox"
-                required
                 className="mt-1 w-4 h-4 rounded border-dark-600 bg-dark-900 text-primary-600 focus:ring-primary-500"
+                {...register('acceptTerms')}
               />
               <Label htmlFor="terms" className="text-sm text-dark-400 cursor-pointer">
                 Tôi đồng ý với{' '}
@@ -219,6 +228,11 @@ export default function RegisterPage() {
                 </Link>
               </Label>
             </div>
+            {errors.acceptTerms && (
+              <p className="text-sm text-red-400" role="alert">
+                {errors.acceptTerms.message}
+              </p>
+            )}
 
             {/* Submit Button */}
             <Button

@@ -91,9 +91,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
 
   Widget _buildLoadingState() {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.dark950,
+        backgroundColor: AppColors.bg,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -105,9 +105,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
 
   Widget _buildErrorState() {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.dark950,
+        backgroundColor: AppColors.bg,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -133,7 +133,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
 
   Widget _buildContent() {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
           // App Bar with Channel Banner
@@ -150,9 +150,6 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             delegate: _SliverTabBarDelegate(
               TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.dark400,
-                indicatorColor: AppColors.primary,
                 tabs: const [
                   Tab(text: 'Lịch phát'),
                   Tab(text: 'Giới thiệu'),
@@ -182,7 +179,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
@@ -253,8 +250,8 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    AppColors.dark950.withOpacity(0.8),
-                    AppColors.dark950,
+                    AppColors.bg.withOpacity(0.8),
+                    AppColors.bg,
                   ],
                 ),
               ),
@@ -411,8 +408,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
               const SizedBox(width: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.dark800,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.share),
@@ -647,11 +645,11 @@ class _ScheduleCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.dark800,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: isLive
             ? Border.all(color: AppColors.liveRed.withOpacity(0.5))
-            : null,
+            : Border.all(color: AppColors.border, width: 0.5),
       ),
       child: Row(
         children: [
@@ -805,7 +803,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: AppColors.dark950,
+      color: AppColors.bg,
       child: tabBar,
     );
   }
