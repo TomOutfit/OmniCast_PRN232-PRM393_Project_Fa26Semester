@@ -4,20 +4,46 @@
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+export function getApiBaseUrl(): string {
+  let url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url || url.includes('localhost')) {
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) {
+        url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+      } else {
+        url = 'https://omnicast-api.vercel.app/api/v1';
+      }
+    } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      url = 'https://omnicast-api.vercel.app/api/v1';
+    } else {
+      url = 'http://localhost:3000/api/v1';
+    }
+  }
+
+  // Normalize: ensure it ends with /api/v1
+  url = url.replace(/\/$/, '');
+  if (!url.endsWith('/v1')) {
+    if (url.endsWith('/api')) {
+      url = `${url}/v1`;
+    } else if (!url.includes('/api/')) {
+      url = `${url}/api/v1`;
+    }
+  }
+  return url;
+}
 
 export const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 15000,
 });
 
-// ----- Request interceptor: attach Bearer token -----
+// ----- Request interceptor: attach Bearer token and dynamic baseURL -----
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    config.baseURL = getApiBaseUrl();
     const token =
       typeof window !== 'undefined'
         ? localStorage.getItem('accessToken')
@@ -98,7 +124,7 @@ apiClient.interceptors.response.use(
 
       isRefreshing = true;
       try {
-        const res = await axios.post(`${API_URL}/auth/refresh`, {
+        const res = await axios.post(`${getApiBaseUrl()}/auth/refresh`, {
           refreshToken,
         });
         const newAccess: string = res.data?.accessToken;

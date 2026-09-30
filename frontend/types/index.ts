@@ -185,6 +185,7 @@ export interface Recording {
   isFeatured: boolean;
   isAgeRestricted: boolean;
   category?: LiveCategory;
+  channelId?: string;
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
