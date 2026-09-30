@@ -27,11 +27,12 @@ class SearchQueryChanged extends SearchEvent {
 class PerformSearch extends SearchEvent {
   final String query;
   final String? type;
+  final String? category;
 
-  const PerformSearch({required this.query, this.type});
+  const PerformSearch({required this.query, this.type, this.category});
 
   @override
-  List<Object?> get props => [query, type];
+  List<Object?> get props => [query, type, category];
 }
 
 class ClearSearch extends SearchEvent {}
@@ -64,14 +65,16 @@ class SearchSuggestionsLoaded extends SearchState {
 class SearchResultsLoaded extends SearchState {
   final SearchResultModel results;
   final String query;
+  final String? category;
 
   const SearchResultsLoaded({
     required this.results,
     required this.query,
+    this.category,
   });
 
   @override
-  List<Object?> get props => [results, query];
+  List<Object?> get props => [results, query, category];
 }
 
 class SearchError extends SearchState {
@@ -129,10 +132,12 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       final results = await _searchRepository.search(
         query: event.query,
         type: event.type,
+        category: event.category,
       );
       emit(SearchResultsLoaded(
         results: results,
         query: event.query,
+        category: event.category,
       ));
     } catch (e) {
       emit(SearchError(e.toString()));

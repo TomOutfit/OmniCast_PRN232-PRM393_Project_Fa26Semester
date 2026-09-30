@@ -7,9 +7,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
 import '../../../logic/watchlist/watchlist_bloc.dart';
+import '../../widgets/omni_player.dart';
+import '../../widgets/channel_logo.dart';
 
 class ProgramDetailScreen extends StatefulWidget {
   final String programId;
@@ -30,17 +33,26 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     context.read<ProgramsBloc>().add(LoadProgramDetails(widget.programId));
   }
 
+  Future<void> _refresh() async {
+    context.read<ProgramsBloc>().add(LoadProgramDetails(widget.programId));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.dark950,
-      body: BlocBuilder<ProgramsBloc, ProgramsState>(
-        builder: (context, state) {
-          if (state is ProgramsLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        backgroundColor: AppColors.dark800,
+        onRefresh: _refresh,
+        child: BlocBuilder<ProgramsBloc, ProgramsState>(
+          builder: (context, state) {
+            if (state is ProgramsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is ProgramDetailsLoaded) {
+            if (state is ProgramDetailsLoaded) {
             final program = state.program;
             return CustomScrollView(
               slivers: [
@@ -226,25 +238,9 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.dark700,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: program.channel!.logoUrl != null
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(12),
-                                            child: CachedNetworkImage(
-                                              imageUrl: program.channel!.logoUrl!,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.tv,
-                                            color: AppColors.dark500,
-                                          ),
+                                  ChannelLogo(
+                                    channel: program.channel!,
+                                    size: 48,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -276,6 +272,81 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                               ),
                             ),
                           ),
+                        const SizedBox(height: 24),
+
+                        // Category + Source badge
+                        Row(
+                          children: [
+                            // Source pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.dark800,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.dark700,
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.cloud_outlined,
+                                    size: 14,
+                                    color: AppColors.dark400,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _sourceLabel(program.contentSource),
+                                    style: const TextStyle(
+                                      color: AppColors.dark300,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // External platform pill (if present)
+                            if (program.externalPlatform != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.dark800,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.dark700,
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.link,
+                                      size: 14,
+                                      color: AppColors.dark400,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      program.externalPlatform!,
+                                      style: const TextStyle(
+                                        color: AppColors.dark300,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                         const SizedBox(height: 24),
 
                         // Description
@@ -375,6 +446,7 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
           return const SizedBox();
         },
       ),
+      ),
     );
   }
 
@@ -426,22 +498,61 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     }
     return number.toString();
   }
+
+  String _sourceLabel(String source) {
+    switch (source.toUpperCase()) {
+      case 'EXTERNAL':
+        return 'Nguồn ngoài';
+      case 'UPLOADED':
+        return 'Tải lên';
+      case 'GENERATED':
+        return 'Tự động';
+      default:
+        return source;
+    }
+  }
 }
 
-class _VideoPlayer extends StatelessWidget {
+class _VideoPlayer extends StatefulWidget {
   final LiveEventModel program;
 
   const _VideoPlayer({required this.program});
 
   @override
+  State<_VideoPlayer> createState() => _VideoPlayerState();
+}
+
+class _VideoPlayerState extends State<_VideoPlayer> {
+  bool _started = false;
+
+  String? get _streamUrl {
+    if (widget.program.streamUrl != null && widget.program.streamUrl!.isNotEmpty) {
+      return widget.program.streamUrl;
+    }
+    if (widget.program.externalUrl != null && widget.program.externalUrl!.isNotEmpty) {
+      return widget.program.externalUrl;
+    }
+    return null;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final streamUrl = _streamUrl;
+    if (streamUrl != null && _started) {
+      return OmniPlayer(
+        url: streamUrl,
+        posterUrl: AppConstants.resolveAssetUrl(widget.program.thumbnailUrl),
+        autoPlay: widget.program.isLive,
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Thumbnail or Stream
-        if (program.thumbnailUrl != null)
+        // Thumbnail
+        if (widget.program.thumbnailUrl != null)
           CachedNetworkImage(
-            imageUrl: program.thumbnailUrl!,
+            imageUrl: AppConstants.resolveAssetUrl(widget.program.thumbnailUrl),
             fit: BoxFit.cover,
             errorWidget: (_, __, ___) => Container(
               color: AppColors.dark800,
@@ -476,33 +587,41 @@ class _VideoPlayer extends StatelessWidget {
           ),
         ),
 
-        // Play button overlay
-        if (program.isLive)
-          Positioned.fill(
-            child: Center(
+        // Play button overlay (only if stream URL available)
+        Positioned.fill(
+          child: Center(
+            child: GestureDetector(
+              onTap: streamUrl == null
+                  ? null
+                  : () => setState(() => _started = true),
               child: Container(
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.liveRed.withOpacity(0.9),
+                  color: (streamUrl == null
+                          ? AppColors.dark500
+                          : AppColors.liveRed)
+                      .withOpacity(streamUrl == null ? 0.6 : 0.9),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.play_arrow,
+                child: Icon(
+                  streamUrl == null ? Icons.notifications_active : Icons.play_arrow,
                   size: 40,
                   color: Colors.white,
                 ),
               ),
             ),
           ),
+        ),
 
         // Live indicator
-        if (program.isLive)
+        if (widget.program.isLive)
           Positioned(
             top: 16,
             left: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.liveRed,
                 borderRadius: BorderRadius.circular(4),
@@ -526,12 +645,13 @@ class _VideoPlayer extends StatelessWidget {
           ),
 
         // Viewer count
-        if (program.isLive)
+        if (widget.program.isLive)
           Positioned(
             top: 16,
             right: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(20),
@@ -546,7 +666,7 @@ class _VideoPlayer extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    _formatNumber(program.viewerCount),
+                    _formatNumber(widget.program.viewerCount),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,

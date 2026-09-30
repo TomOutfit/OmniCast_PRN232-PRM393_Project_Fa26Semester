@@ -7,12 +7,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../widgets/live_pulse_widget.dart';
+import '../../widgets/channel_logo.dart';
 
 class ChannelDetailScreen extends StatefulWidget {
   final String? channelId;
@@ -222,7 +224,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             // Banner Image
             if (_channel!.bannerUrl != null)
               CachedNetworkImage(
-                imageUrl: _channel!.bannerUrl!,
+                imageUrl: AppConstants.resolveAssetUrl(_channel!.bannerUrl!),
                 fit: BoxFit.cover,
               )
             else
@@ -258,86 +260,10 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
               bottom: 16,
               child: Row(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(ChannelLogoHelper.getFallbackColor(_channel!.category)),
-                              Color(ChannelLogoHelper.getFallbackColor(_channel!.category)).withOpacity(0.7),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: _channel!.logoUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: _channel!.logoUrl!,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Center(
-                                    child: Text(
-                                      ChannelLogoHelper.getInitial(_channel!.name),
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : Center(
-                                  child: Text(
-                                    ChannelLogoHelper.getInitial(_channel!.name),
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
-                      if (_channel!.isLive)
-                        Positioned(
-                          bottom: -4,
-                          right: -4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.liveRed,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'LIVE',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  ChannelLogo(
+                    channel: _channel!,
+                    size: 72,
+                    showLiveIndicator: _channel!.isLive,
                   ),
                   const SizedBox(width: 12),
                   if (_channel!.isLive)

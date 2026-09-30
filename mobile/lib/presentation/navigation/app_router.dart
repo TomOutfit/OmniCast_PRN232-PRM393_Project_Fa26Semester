@@ -14,9 +14,12 @@ import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/channels/channels_screen.dart';
 import '../../presentation/screens/channels/channel_detail_screen.dart';
 import '../../presentation/screens/channels/program_detail_screen.dart';
+import '../../presentation/screens/programs/categories_screen.dart';
+import '../../presentation/screens/programs/program_list_screen.dart';
 import '../../presentation/screens/watchlist/watchlist_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/studio/ai_curator_screen.dart';
+import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/main_screen.dart';
 
 class AppRouter {
@@ -80,6 +83,20 @@ class AppRouter {
           return ProgramDetailScreen(programId: programId);
         },
       ),
+      // Program-list screen filtered by category (multi-source browse).
+      GoRoute(
+        path: '/category/:id',
+        builder: (context, state) {
+          final raw = state.pathParameters['id'] ?? '';
+          final category = Uri.decodeComponent(raw);
+          return ProgramListScreen(category: category);
+        },
+      ),
+      // Landing screen showing all 19 categories as a 2-column grid.
+      GoRoute(
+        path: '/categories',
+        builder: (context, state) => const CategoriesScreen(),
+      ),
       // Shell route with bottom navigation
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -127,6 +144,11 @@ class AppRouter {
       GoRoute(
         path: '/ai-curator',
         builder: (context, state) => const AICuratorScreen(),
+      ),
+      // Settings
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

@@ -152,6 +152,24 @@ class ChannelModel {
         return 'Công nghệ';
       case 'FOOD':
         return 'Ẩm thực';
+      case 'DOCUMENTARY':
+        return 'Khám phá';
+      case 'EDUCATION':
+        return 'Giáo dục';
+      case 'GAMING':
+        return 'Esports';
+      case 'PODCAST':
+        return 'Podcast';
+      case 'LIFESTYLE':
+        return 'Phong cách sống';
+      case 'TRAVEL':
+        return 'Du lịch';
+      case 'ART':
+        return 'Nghệ thuật';
+      case 'BUSINESS':
+        return 'Kinh doanh';
+      case 'HEALTH':
+        return 'Sức khỏe';
       default:
         return category;
     }
