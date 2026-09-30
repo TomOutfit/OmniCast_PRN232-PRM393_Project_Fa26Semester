@@ -39,6 +39,9 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
 
+  # Sharing
+  share_plus: ^10.0.2
+
   # Video player
   video_player: ^2.9.2
 
