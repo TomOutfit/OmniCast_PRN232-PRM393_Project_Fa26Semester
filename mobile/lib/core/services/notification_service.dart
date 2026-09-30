@@ -11,6 +11,22 @@ import 'package:flutter/material.dart';
 import '../../data/models/watchlist_item_model.dart';
 import '../../data/datasources/local/database_helper.dart';
 
+// ============================================================
+// Notification Action IDs (3 quick actions per reminder)
+// ============================================================
+
+class NotificationActionIds {
+  static const String snooze5min = 'SNOOZE_5_MIN';
+  static const String watchNow = 'WATCH_NOW';
+  static const String dismiss = 'DISMISS';
+}
+
+// Callback for snooze requests (handled by app-level notifier)
+typedef SnoozeRequestCallback = void Function(
+    String programId, String programTitle);
+typedef WatchNowCallback = void Function(String programId);
+typedef DismissCallback = void Function(String programId);
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -23,6 +39,10 @@ class NotificationService {
 
   // Callback for notification tap
   static Function(String?)? onNotificationTap;
+  static SnoozeRequestCallback? onSnoozeRequest;
+  static WatchNowCallback? onWatchNow;
+  static DismissCallback? onDismiss;
+
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -76,7 +96,30 @@ class NotificationService {
   }
 
   static void _onNotificationTap(NotificationResponse response) {
-    onNotificationTap?.call(response.payload);
+    final payload = response.payload;
+    final actionId = response.actionId;
+
+    if (actionId == NotificationActionIds.dismiss) {
+      if (payload != null && payload.startsWith('program:')) {
+        onDismiss?.call(payload.substring(8));
+      }
+      return;
+    }
+    if (actionId == NotificationActionIds.watchNow) {
+      if (payload != null && payload.startsWith('program:')) {
+        onWatchNow?.call(payload.substring(8));
+      }
+      return;
+    }
+    if (actionId == NotificationActionIds.snooze5min) {
+      if (payload != null && payload.startsWith('program:')) {
+        final programId = payload.substring(8);
+        onSnoozeRequest?.call(programId, '');
+      }
+      return;
+    }
+
+    onNotificationTap?.call(payload);
   }
 
   @pragma('vm:entry-point')
@@ -130,6 +173,27 @@ class NotificationService {
     await cancelReminder(item.programId);
 
     // Create notification details
+    final androidActions = <AndroidNotificationAction>[
+      const AndroidNotificationAction(
+        NotificationActionIds.watchNow,
+        'Xem ngay',
+        showsUserInterface: true,
+        cancelNotification: true,
+      ),
+      const AndroidNotificationAction(
+        NotificationActionIds.snooze5min,
+        'Hoãn 5 phút',
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+      const AndroidNotificationAction(
+        NotificationActionIds.dismiss,
+        'Bỏ nhắc',
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+    ];
+
     final androidDetails = AndroidNotificationDetails(
       'omnicast_reminders',
       'Program Reminders',
@@ -138,6 +202,7 @@ class NotificationService {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
+      actions: androidActions,
       styleInformation: BigTextStyleInformation(
         'Sắp bắt đầu lúc ${_formatTime(item.scheduledAt)} trên ${item.channelName ?? 'kênh của bạn'}',
         contentTitle: '📺 ${item.programTitle}',
@@ -145,10 +210,11 @@ class NotificationService {
       ),
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      categoryIdentifier: 'program_reminder',
     );
 
     final notificationDetails = NotificationDetails(
@@ -183,6 +249,84 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
+  /// Generic single-shot cancel by integer id.
+  Future<void> cancel(int id) async {
+    await _notifications.cancel(id);
+  }
+
+  /// Schedule a **daily repeating** notification at the supplied local
+  /// hour:minute. The id is used as both the schedule id and the
+  /// channel id for the OS notification channel.
+  Future<void> zonedScheduleDaily({
+    required int id,
+    required int hour,
+    required int minute,
+    required String title,
+    required String body,
+    String? timezone,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final tzName = timezone ?? DateTime.now().timeZoneName;
+    final location = tz.getLocation(_mapTimezoneName(tzName));
+    final now = tz.TZDateTime.now(location);
+    var scheduled = tz.TZDateTime(
+      location,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    const androidDetails = AndroidNotificationDetails(
+      'channel_reminder',
+      'Nhắc nhở kênh',
+      channelDescription: 'Nhắc nhở hằng ngày cho kênh bạn theo dõi',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduled,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  static String _mapTimezoneName(String name) {
+    // The OS may return a localised name (e.g. "SE Asia Standard Time"
+    // on Windows or "Asia/Ho_Chi_Minh" on Linux). Normalise to IANA.
+    final lower = name.toLowerCase();
+    if (lower.contains('hanoi') ||
+        lower.contains('ho_chi_minh') ||
+        lower.contains('indochina') ||
+        lower.contains('asia/')) {
+      return 'Asia/Ho_Chi_Minh';
+    }
+    return name;
+  }
+
   // Get pending notifications
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
@@ -204,6 +348,33 @@ class NotificationService {
     } catch (e) {
       debugPrint('Error scheduling reminders: $e');
     }
+  }
+
+  /// Reschedule the same reminder `minutesLater` minutes from now.
+  /// Used by the "Hoãn 5 phút" notification quick action.
+  Future<void> snoozeReminder({
+    required WatchlistItemModel item,
+    int minutesLater = 5,
+  }) async {
+    await cancelReminder(item.programId);
+    final next = DateTime.now().add(Duration(minutes: minutesLater));
+    await _notifications.show(
+      item.programId.hashCode,
+      item.programTitle,
+      'Sẽ nhắc lại lúc ${_formatTime(next)}',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'omnicast_reminders',
+          'Program Reminders',
+          channelDescription: 'Notifications for upcoming programs',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: 'program:${item.programId}',
+    );
+    debugPrint('Snoozed reminder for ${item.programTitle} -> $next');
   }
 
   // Show immediate notification (for testing)

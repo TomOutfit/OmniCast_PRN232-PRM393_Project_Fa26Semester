@@ -14,6 +14,7 @@ import 'core/utils/token_storage_helper.dart';
 import 'logic/auth/auth_bloc.dart';
 import 'logic/channels/channels_bloc.dart';
 import 'logic/programs/programs_bloc.dart';
+import 'logic/recordings/recordings_bloc.dart';
 import 'logic/epg/epg_bloc.dart';
 import 'logic/search/search_bloc.dart';
 import 'logic/watchlist/watchlist_bloc.dart';
@@ -122,6 +123,9 @@ class _OmniCastAppState extends State<OmniCastApp> {
         ),
         BlocProvider<WatchlistBloc>(
           create: (_) => getIt<WatchlistBloc>(),
+        ),
+        BlocProvider<RecordingsBloc>(
+          create: (_) => getIt<RecordingsBloc>(),
         ),
       ],
       child: AppLocaleScope(

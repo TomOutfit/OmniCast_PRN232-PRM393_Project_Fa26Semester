@@ -2,19 +2,20 @@
 // Shows channel information, live stream, and program schedule
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/channel_logo_helper.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../widgets/live_pulse_widget.dart';
 import '../../widgets/channel_logo.dart';
+import '../../../core/services/share_helper.dart';
 
 class ChannelDetailScreen extends StatefulWidget {
   final String? channelId;
@@ -203,7 +204,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             ),
             child: const Icon(Icons.share, color: Colors.white, size: 20),
           ),
-          onPressed: () {},
+          onPressed: _channel == null
+              ? null
+              : () => ShareHelper.shareChannel(_channel!),
         ),
         IconButton(
           icon: Container(
@@ -214,7 +217,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             ),
             child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
           ),
-          onPressed: () {},
+          onPressed: _channel == null
+              ? null
+              : () => _toggleChannelReminder(_channel!),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -395,7 +400,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _toggleFollow(_channel!),
                   icon: const Icon(Icons.notifications_active),
                   label: const Text('Theo dõi'),
                   style: ElevatedButton.styleFrom(
@@ -411,7 +416,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.share),
-                  onPressed: () {},
+                  onPressed: () => ShareHelper.shareChannel(_channel!),
                 ),
               ),
             ],
@@ -419,6 +424,51 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _toggleFollow(ChannelModel channel) async {
+    try {
+      context.read<ChannelsBloc>().add(FollowChannel(channel.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã theo dõi ${channel.name}'),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể theo dõi: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleChannelReminder(ChannelModel channel) async {
+    // Channel-level reminders are wired via the existing
+    // NotificationService helper below. We schedule a generic daily
+    // reminder at 19:00 so the user gets a ping for new live content.
+    try {
+      await ShareHelper.scheduleChannelReminder(channel);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sẽ nhắc bạn mỗi ngày lúc 19:00 khi ${channel.name} lên sóng'),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể đặt nhắc nhở: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildScheduleTab() {
@@ -627,7 +677,7 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 if (event.duration != null)
                   Text(
-                    '${event.duration}p',
+                    _formatDuration(event.duration!),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 11,
@@ -699,6 +749,14 @@ class _ScheduleCard extends StatelessWidget {
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) return '$minutes phút';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}p';
   }
 }
 
