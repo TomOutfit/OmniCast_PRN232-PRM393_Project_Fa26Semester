@@ -14,6 +14,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../data/repositories/programs_repository.dart';
 import '../../data/models/program_model.dart';
+import '../../data/models/recording_model.dart';
 
 // ============================================================
 // EVENTS
@@ -288,6 +289,11 @@ class ProgramsError extends ProgramsState {
 
 class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
   final ProgramsRepository _programsRepository;
+
+  /// Read-only access for UI screens that need to fire one-off calls
+  /// outside the BLoC's normal event flow (e.g. bump a view counter
+  /// when the user opens the page).
+  ProgramsRepository get repository => _programsRepository;
 
   ProgramsBloc({required ProgramsRepository programsRepository})
       : _programsRepository = programsRepository,
