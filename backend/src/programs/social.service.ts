@@ -171,18 +171,65 @@ export class SocialService {
   // REACTIONS
   // ============================================================
 
-  async listReactionsByRecording(recordingId: string) {
-    const recording = await this.prisma.recording.findUnique({
-      where: { id: recordingId },
-      select: { id: true },
-    });
-    if (!recording) {
-      throw new NotFoundException('Recording not found');
+  /**
+   * Internal helper: resolve "live event OR recording" via the union
+   * type on the `Reaction` table. We accept either `recordingId` OR
+   * `liveEventId`, never both.
+   */
+  private async resolveReactionTarget(opts: {
+    recordingId?: string;
+    liveEventId?: string;
+  }): Promise<
+    | { kind: 'recording'; id: string }
+    | { kind: 'liveEvent'; id: string }
+    | null
+  > {
+    if (opts.recordingId) {
+      const r = await this.prisma.recording.findUnique({
+        where: { id: opts.recordingId },
+        select: { id: true },
+      });
+      return r ? { kind: 'recording', id: opts.recordingId } : null;
     }
+    if (opts.liveEventId) {
+      const e = await this.prisma.liveEvent.findUnique({
+        where: { id: opts.liveEventId },
+        select: { id: true },
+      });
+      return e ? { kind: 'liveEvent', id: opts.liveEventId } : null;
+    }
+    return null;
+  }
+
+  async listReactionsByRecording(recordingId: string) {
+    return this.listReactions({ recordingId });
+  }
+
+  async listReactionsByLiveEvent(liveEventId: string) {
+    return this.listReactions({ liveEventId });
+  }
+
+  async listReactions(opts: {
+    recordingId?: string;
+    liveEventId?: string;
+  }): Promise<{ data: Record<string, number>; total: number }> {
+    const target = await this.resolveReactionTarget(opts);
+    if (!target) {
+      throw new NotFoundException(
+        opts.recordingId
+          ? 'Recording not found'
+          : 'Live event not found',
+      );
+    }
+
+    const where =
+      target.kind === 'recording'
+        ? { recordingId: target.id }
+        : { liveEventId: target.id };
 
     const reactions = await this.prisma.reaction.groupBy({
       by: ['type'],
-      where: { recordingId },
+      where,
       _count: { type: true },
     });
 
@@ -196,48 +243,85 @@ export class SocialService {
     return { data: result, total };
   }
 
-  async toggleReaction(
+  async toggleReactionByRecording(
     recordingId: string,
     userId: string,
     type: ReactionType,
   ) {
-    const recording = await this.prisma.recording.findUnique({
-      where: { id: recordingId },
-      select: { id: true },
-    });
-    if (!recording) {
-      throw new NotFoundException('Recording not found');
+    return this.toggleReaction({ recordingId }, userId, type);
+  }
+
+  async toggleReactionByLiveEvent(
+    liveEventId: string,
+    userId: string,
+    type: ReactionType,
+  ) {
+    return this.toggleReaction({ liveEventId }, userId, type);
+  }
+
+  /**
+   * Toggle a reaction on either a recording or a live event. The
+   * `Reaction` table is polymorphic via nullable `recordingId` /
+   * `liveEventId` columns (see migration 003).
+   */
+  async toggleReaction(
+    target: { recordingId?: string; liveEventId?: string },
+    userId: string,
+    type: ReactionType,
+  ): Promise<{ toggled: boolean; type: ReactionType; target: string }> {
+    const resolved = await this.resolveReactionTarget(target);
+    if (!resolved) {
+      throw new NotFoundException(
+        target.recordingId
+          ? 'Recording not found'
+          : 'Live event not found',
+      );
     }
 
-    const existing = await this.prisma.reaction.findUnique({
-      where: {
-        userId_recordingId_type: {
-          userId,
-          recordingId,
-          type,
-        },
-      },
-    });
+    const where =
+      resolved.kind === 'recording'
+        ? { userId, recordingId: resolved.id, type }
+        : { userId, liveEventId: resolved.id, type };
+
+    const existing = await this.prisma.reaction.findFirst({ where });
 
     if (existing) {
-      await this.prisma.reaction.delete({
-        where: { id: existing.id },
-      });
-      await this.prisma.recording.update({
-        where: { id: recordingId },
-        data: { likeCount: { decrement: 1 } },
-      });
-      return { toggled: false, type };
+      await this.prisma.reaction.delete({ where: { id: existing.id } });
+      if (resolved.kind === 'recording') {
+        await this.prisma.recording.update({
+          where: { id: resolved.id },
+          data: { likeCount: { decrement: 1 } },
+        });
+      } else {
+        await this.prisma.liveEvent.update({
+          where: { id: resolved.id },
+          data: { likeCount: { decrement: 1 } },
+        });
+      }
+      return { toggled: false, type, target: resolved.kind };
     }
 
-    await this.prisma.reaction.create({
-      data: { userId, recordingId, type },
-    });
-    await this.prisma.recording.update({
-      where: { id: recordingId },
-      data: { likeCount: { increment: 1 } },
-    });
+    // Prisma's union CreateInput expects either recordingId OR liveEventId
+    // to be present (the other omitted). Use a cast so the discriminator
+    // narrows correctly without TypeScript bailing on the implicit-undefined.
+    const createData =
+      resolved.kind === 'recording'
+        ? { userId, recordingId: resolved.id, type }
+        : { userId, liveEventId: resolved.id, type };
 
-    return { toggled: true, type };
+    await this.prisma.reaction.create({ data: createData as any });
+    if (resolved.kind === 'recording') {
+      await this.prisma.recording.update({
+        where: { id: resolved.id },
+        data: { likeCount: { increment: 1 } },
+      });
+    } else {
+      await this.prisma.liveEvent.update({
+        where: { id: resolved.id },
+        data: { likeCount: { increment: 1 } },
+      });
+    }
+
+    return { toggled: true, type, target: resolved.kind };
   }
 }
