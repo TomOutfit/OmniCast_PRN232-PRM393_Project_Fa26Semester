@@ -55,3 +55,41 @@ export async function toggleReaction(
   });
   return data;
 }
+
+// ============================================================
+// LIVE EVENT reactions (mirror of recording endpoints)
+// ============================================================
+
+export async function fetchLiveEventReactions(liveEventId: string): Promise<ReactionSummary> {
+  const { data } = await apiClient.get(`/live-events/${liveEventId}/reactions`);
+  return data;
+}
+
+export async function toggleLiveEventReaction(
+  liveEventId: string,
+  type: ReactionTypeValue,
+) {
+  const { data } = await apiClient.post(`/live-events/${liveEventId}/reactions`, {
+    type,
+  });
+  return data;
+}
+
+// ============================================================
+// SHARE / VIEW counters
+// ============================================================
+
+export async function bumpRecordingShare(recordingId: string) {
+  const { data } = await apiClient.post(`/recordings/${recordingId}/share`);
+  return data as { id: string; shareCount: number | null };
+}
+
+export async function bumpLiveEventShare(liveEventId: string) {
+  const { data } = await apiClient.post(`/live-events/${liveEventId}/share`);
+  return data as { id: string; shareCount: number | null };
+}
+
+export async function bumpRecordingView(recordingId: string) {
+  const { data } = await apiClient.post(`/recordings/${recordingId}/view`);
+  return data as { recordingId: string; viewCount: number | bigint | null };
+}

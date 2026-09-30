@@ -8,7 +8,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import {
+  useLiveEventReactions,
   useReactions,
+  useToggleLiveEventReaction,
   useToggleReaction,
 } from '@/lib/hooks/useSocial';
 import { useAuth } from '@/lib/auth-context';
@@ -17,7 +19,9 @@ import { useRouter } from 'next/navigation';
 import type { ReactionTypeValue } from '@/types';
 
 interface ReactionsBarProps {
-  recordingId: string;
+  /** ID of either a recording or live event (discriminated by `kind`). */
+  targetId: string;
+  kind?: 'recording' | 'liveEvent';
 }
 
 const REACTION_OPTIONS: {
@@ -32,11 +36,30 @@ const REACTION_OPTIONS: {
   { type: 'WOW', label: 'Wow', Icon: Sparkles, color: 'text-cyan-400' },
 ];
 
-export function ReactionsBar({ recordingId }: ReactionsBarProps) {
-  const { data, isLoading } = useReactions(recordingId);
-  const toggle = useToggleReaction(recordingId);
+/**
+ * 4-button reactions bar. Backed by either
+ * `/recordings/:id/reactions` (default) or
+ * `/live-events/:id/reactions` (when `kind="liveEvent"`).
+ */
+export function ReactionsBar({ targetId, kind = 'recording' }: ReactionsBarProps) {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+
+  const recordingQuery = useReactions(kind === 'recording' ? targetId : undefined);
+  const liveEventQuery = useLiveEventReactions(
+    kind === 'liveEvent' ? targetId : undefined,
+  );
+
+  const recordingToggle = useToggleReaction(kind === 'recording' ? targetId : '');
+  const liveEventToggle = useToggleLiveEventReaction(
+    kind === 'liveEvent' ? targetId : '',
+  );
+
+  const data = kind === 'recording' ? recordingQuery.data : liveEventQuery.data;
+  const isLoading =
+    kind === 'recording' ? recordingQuery.isLoading : liveEventQuery.isLoading;
+  const toggle =
+    kind === 'recording' ? recordingToggle : liveEventToggle;
 
   const handleClick = async (type: ReactionTypeValue) => {
     if (!isAuthenticated) {

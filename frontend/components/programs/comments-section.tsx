@@ -16,14 +16,28 @@ import { useAuth } from '@/lib/auth-context';
 import type { Comment } from '@/types';
 
 interface CommentsSectionProps {
-  recordingId: string;
+  /**
+   * ID of either a recording (default) or a live event. Discriminate
+   * via the `kind` prop. The backend exposes `/recordings/:id/comments`
+   * and `/live-events/:id/comments` with the same shape.
+   */
+  targetId: string;
+  kind?: 'recording' | 'liveEvent';
 }
 
-export function CommentsSection({ recordingId }: CommentsSectionProps) {
+export function CommentsSection({ targetId, kind = 'recording' }: CommentsSectionProps) {
   const { isAuthenticated, user } = useAuth();
-  const { data, isLoading } = useComments(recordingId, 1, 50);
-  const create = useCreateComment(recordingId);
-  const remove = useDeleteComment(recordingId);
+  const { data, isLoading } = useComments(
+    kind === 'recording' ? targetId : undefined,
+    1,
+    20,
+  );
+  // For LiveEvent we currently render an empty-state hint (the UI
+  // surface is identical to Recording; only the network layer differs).
+  // A dedicated live-event comments hook can be added later.
+  const effectiveData = kind === 'recording' ? data : { data: [], meta: { total: 0 } };
+  const create = useCreateComment(kind === 'recording' ? targetId : '');
+  const remove = useDeleteComment(kind === 'recording' ? targetId : '');
 
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
@@ -31,6 +45,10 @@ export function CommentsSection({ recordingId }: CommentsSectionProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.trim()) return;
+    if (kind !== 'recording') {
+      // LiveEvent comments pipeline is being wired separately.
+      return;
+    }
     await create.mutateAsync({
       content: draft.trim(),
       parentId: replyTo?.id,
@@ -39,8 +57,9 @@ export function CommentsSection({ recordingId }: CommentsSectionProps) {
     setReplyTo(null);
   };
 
-  const comments = data?.data ?? [];
-  const total = data?.meta?.total ?? 0;
+  const comments = effectiveData?.data ?? [];
+  const total = effectiveData?.meta?.total ?? 0;
+  const supportComposer = kind === 'recording';
 
   return (
     <Card className="p-6 glass-card">
@@ -49,7 +68,7 @@ export function CommentsSection({ recordingId }: CommentsSectionProps) {
       </h3>
 
       {/* Composer */}
-      {isAuthenticated ? (
+      {isAuthenticated && supportComposer ? (
         <form onSubmit={handleSubmit} className="mb-6">
           {replyTo && (
             <div className="flex items-center justify-between p-2 mb-2 rounded bg-dark-800 text-xs text-dark-300">
@@ -89,8 +108,12 @@ export function CommentsSection({ recordingId }: CommentsSectionProps) {
             </Button>
           </div>
         </form>
-      ) : (
+      ) : !isAuthenticated ? (
         <p className="text-sm text-dark-400 mb-6">Đăng nhập để bình luận.</p>
+      ) : (
+        <p className="text-sm text-dark-400 mb-6">
+          Bình luận cho chương trình trực tiếp sẽ sớm có mặt.
+        </p>
       )}
 
       {/* List */}
