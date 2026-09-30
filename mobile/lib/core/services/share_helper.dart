@@ -121,11 +121,13 @@ class ShareHelper {
   }) async {
     try {
       final body = text == null || text.isEmpty ? url : '$text\n$url';
-      await SharePlus.instance.share(
-        ShareParams(
-          subject: title,
-          text: body,
-        ),
+      // `share_plus` v10 API — `Share.share` is a static call that
+      // returns a `ShareResult`. The newer v11+ API exposes
+      // `SharePlus.instance.share(ShareParams(...))` but we pin v10 in
+      // `pubspec.yaml` so we stick with the static call.
+      await Share.share(
+        body,
+        subject: title,
       );
     } catch (_) {
       // share_plus throws if the platform can't show a sheet. Fall
