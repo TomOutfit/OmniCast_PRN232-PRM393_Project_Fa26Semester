@@ -1320,10 +1320,16 @@ async function main() {
     const tagPool = tagsPoolByCategory[ch.category] || [];
     const tagSlug = ch.slug.replace(/-/g, '_');
 
+    const standardDurationsSec = [1800, 2700, 3600, 5400, 7200]; // 30m, 45m, 60m, 90m, 120m
+
     // 20 LiveEvents / kênh
     for (let i = 0; i < 20; i++) {
       const idx = i + 1;
-      const title = `${titles[i % titles.length]} #${idx}`;
+      const isMultiDaySeries = (i % 3 === 0);
+      const episodeNum = (i % 3) + 1;
+      const title = isMultiDaySeries
+        ? `${titles[i % titles.length]} - Tập ${episodeNum}/3`
+        : `${titles[i % titles.length]} #${idx}`;
       const externalId = `live_${tagSlug}_${String(idx).padStart(3, '0')}`;
       const id = deterministicUUID(`${ch.id}-event-${idx}`);
       // Trộn status: 3 LIVE, 12 SCHEDULED, 5 ENDED
@@ -1331,7 +1337,7 @@ async function main() {
       let scheduledAt: Date;
       let startedAt: Date | undefined;
       let endedAt: Date | undefined;
-      let duration: number;
+      let duration: number = standardDurationsSec[i % standardDurationsSec.length];
       let viewerCount = 0;
       let peakViewers = 0;
 
@@ -1341,21 +1347,23 @@ async function main() {
         status = EventStatus.LIVE;
         scheduledAt = new Date(baseDate.getTime() - (i + 1) * 3600 * 1000);
         startedAt = new Date(scheduledAt.getTime());
-        duration = 7200 + i * 1800;
+        duration = standardDurationsSec[(i + 2) % standardDurationsSec.length];
         viewerCount = 5000 + Math.floor(Math.random() * 15000);
         peakViewers = viewerCount + Math.floor(Math.random() * 8000);
       } else if (i < 15) {
-        // SCHEDULED trong 14 ngày tới
+        // SCHEDULED trong các ngày tới
         status = EventStatus.SCHEDULED;
-        scheduledAt = new Date(baseDate.getTime() + (i - 2) * 86400 * 1000);
-        duration = 5400 + Math.floor(Math.random() * 9000);
+        // Schedule multiple times per day (e.g. morning, afternoon, prime time)
+        const dayOffset = Math.floor((i - 3) / 3);
+        const hourOffset = ((i - 3) % 3) * 4; // 0h, 4h, 8h offset
+        scheduledAt = new Date(baseDate.getTime() + dayOffset * 86400 * 1000 + hourOffset * 3600 * 1000);
+        duration = standardDurationsSec[i % standardDurationsSec.length];
       } else {
         // ENDED trong quá khứ
         status = EventStatus.ENDED;
         scheduledAt = new Date(baseDate.getTime() - (i - 14) * 86400 * 1000);
         startedAt = new Date(scheduledAt.getTime());
-        endedAt = new Date(startedAt.getTime() + 7200 * 1000);
-        duration = 7200;
+        endedAt = new Date(startedAt.getTime() + duration * 1000);
         peakViewers = 8000 + Math.floor(Math.random() * 22000);
       }
 

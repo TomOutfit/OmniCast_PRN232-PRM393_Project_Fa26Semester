@@ -253,7 +253,7 @@ model LiveEvent {
   scheduledAt      DateTime
   startedAt        DateTime?
   endedAt          DateTime?
-  duration         Int?
+  duration         Int?            /// Estimated length in **seconds** (written by ingest pipelines). Internal services normalise this to minutes via `normalizeDurationMinutes`.
   viewerCount      Int              @default(0)
   peakViewers      Int              @default(0)
   likeCount        Int              @default(0)
@@ -267,6 +267,10 @@ model LiveEvent {
   chatEnabled      Boolean          @default(true)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+
+  watchlistItems   Watchlist[]
+  reactions        Reaction[]
+  curatorReports   AiCuratorReport[]
 
   @@unique([channelId, externalPlatform, externalId], name: "channel_platform_external_unique")
   @@index([status, scheduledAt])
@@ -421,12 +425,16 @@ model Reaction {
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        ReactionType
-  recordingId String
-  recording   Recording    @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recordingId String?
+  recording   Recording?   @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  liveEventId String?
+  liveEvent   LiveEvent?   @relation(fields: [liveEventId], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())
 
   @@unique([userId, recordingId, type])
+  @@unique([userId, liveEventId, type])
   @@index([recordingId])
+  @@index([liveEventId])
 }
 
 model WatchHistory {
@@ -487,4 +495,49 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([entityType, entityId])
   @@index([action, createdAt])
+}
+
+// ============================================================
+// MODULE 7: WATCHLIST (Personal Program Reminders)
+// ============================================================
+
+model Watchlist {
+  id        String    @id @default(uuid())
+  userId    String
+  programId String
+  channelId String?
+  note      String?   @db.VarChar(500)
+  addedAt   DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  program   LiveEvent @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId, addedAt])
+  @@index([programId])
+}
+
+// ============================================================
+// MODULE 8: AI CURATOR REPORTS
+// ============================================================
+
+model AiCuratorReport {
+  id                   String    @id @default(uuid())
+  programId            String
+  broadcastSuitability String    @db.VarChar(20)
+  suggestedTimeSlot    String    @db.VarChar(100)
+  targetAudienceVibe   String    @db.VarChar(500)
+  riskWarnings         String    @db.VarChar(1000)
+  sentimentAnalysis    Json
+  complianceAssessment Json
+  aiModelVersion       String    @db.VarChar(100)
+  tokenUsed            Int?
+  processingTimeMs     Int       @default(0)
+  createdBy            String?
+  createdAt            DateTime  @default(now())
+
+  program              LiveEvent @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, createdAt])
+  @@index([programId, createdAt])
 }

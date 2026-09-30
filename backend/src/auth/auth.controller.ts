@@ -34,10 +34,11 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes — brute-force protection
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -55,10 +56,28 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout and invalidate refresh token' })
+  @ApiOperation({
+    summary:
+      'Logout current session (revokes the provided refresh token, or the most recent one).',
+  })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@Request() req: any) {
-    return this.authService.logout(req.user.sub);
+  async logout(@Request() req: any, @Body() body?: RefreshTokenDto) {
+    return this.authService.logout(
+      req.user.sub,
+      body?.refreshToken,
+    );
+  }
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Logout from every device (revokes all refresh tokens).',
+  })
+  @ApiResponse({ status: 200, description: 'All sessions revoked' })
+  async logoutAll(@Request() req: any) {
+    return this.authService.logoutAll(req.user.sub);
   }
 
   @Get('me')

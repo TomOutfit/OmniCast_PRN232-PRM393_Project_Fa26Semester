@@ -58,19 +58,16 @@ export class AiCuratorService {
       throw new BadRequestException('Program not found');
     }
 
-    // Check for existing report (unless force refresh)
+    // Check for existing latest report (unless force refresh)
     if (!forceRefresh) {
-      const existingReport = await this.prisma.auditLog.findFirst({
-        where: {
-          entityType: 'AI_CURATOR_REPORT',
-          entityId: programId,
-        },
+      const existingReport = await this.prisma.aiCuratorReport.findFirst({
+        where: { programId },
         orderBy: { createdAt: 'desc' },
       });
 
-      if (existingReport && typeof existingReport.newValues === 'object' && existingReport.newValues !== null) {
+      if (existingReport) {
         return {
-          ...(existingReport.newValues as Record<string, any>),
+          ...existingReport,
           cached: true,
         };
       }
@@ -83,16 +80,32 @@ export class AiCuratorService {
 
     report.processingTimeMs = Date.now() - startTime;
 
-    // Store report in audit log
+    // Store report in dedicated table (and keep the audit log entry too)
+    const stored = await this.prisma.aiCuratorReport.create({
+      data: {
+        programId,
+        broadcastSuitability: report.broadcastSuitability,
+        suggestedTimeSlot: report.suggestedTimeSlot,
+        targetAudienceVibe: report.targetAudienceVibe,
+        riskWarnings: report.riskWarnings,
+        sentimentAnalysis: report.sentimentAnalysis as any,
+        complianceAssessment: report.complianceAssessment as any,
+        aiModelVersion: report.aiModelVersion,
+        tokenUsed: (report as any).tokenUsed ?? null,
+        processingTimeMs: report.processingTimeMs,
+        createdBy: userId,
+      },
+    });
+
     await this.auditLogger.log({
       userId,
       action: 'AI_CURATION_COMPLETE',
-      entityType: 'AI_CURATOR_REPORT',
-      entityId: programId,
+      entityType: 'AiCuratorReport',
+      entityId: stored.id,
       newValues: report,
     });
 
-    return report;
+    return { ...stored, cached: false };
   }
 
   private async executeCuratorPipeline(program: any): Promise<AiCuratorReport> {
@@ -263,11 +276,8 @@ export class AiCuratorService {
   }
 
   async getCurationHistory(programId: string) {
-    return this.prisma.auditLog.findMany({
-      where: {
-        entityType: 'AI_CURATOR_REPORT',
-        entityId: programId,
-      },
+    return this.prisma.aiCuratorReport.findMany({
+      where: { programId },
       orderBy: { createdAt: 'desc' },
       take: 10,
     });
