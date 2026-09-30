@@ -1,10 +1,11 @@
-// OmniCast - Watchlist Screen
+// OmniCast - Watchlist Screen (3-tab: Sắp tới / Đang LIVE / Đã phát)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../logic/watchlist/watchlist_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/watchlist_item_model.dart';
+import '../../../logic/watchlist/watchlist_bloc.dart';
 
 class WatchlistScreen extends StatefulWidget {
   const WatchlistScreen({super.key});
@@ -13,11 +14,21 @@ class WatchlistScreen extends StatefulWidget {
   State<WatchlistScreen> createState() => _WatchlistScreenState();
 }
 
-class _WatchlistScreenState extends State<WatchlistScreen> {
+class _WatchlistScreenState extends State<WatchlistScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+
   @override
   void initState() {
     super.initState();
-    context.read<WatchlistBloc>().add(LoadWatchlist());
+    _tabs = TabController(length: 3, vsync: this);
+    context.read<WatchlistBloc>().add(const LoadWatchlist());
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
   }
 
   @override
@@ -27,28 +38,60 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
       appBar: AppBar(
         title: const Text('Danh sách yêu thích'),
         backgroundColor: AppColors.dark950,
+        actions: [
+          BlocBuilder<WatchlistBloc, WatchlistState>(
+            builder: (context, state) {
+              if (state is! WatchlistLoaded || state.pendingSyncCount == 0) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Center(
+                  child: Chip(
+                    label: Text(
+                      '${state.pendingSyncCount} chờ đồng bộ',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    backgroundColor:
+                        AppColors.warning.withValues(alpha: 0.2),
+                    side: const BorderSide(
+                        color: AppColors.warning, width: 1),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: BlocBuilder<WatchlistBloc, WatchlistState>(
+            builder: (context, state) {
+              int upcoming = 0, live = 0, past = 0;
+              if (state is WatchlistLoaded) {
+                upcoming = state.buckets.upcoming.length;
+                live = state.buckets.live.length;
+                past = state.buckets.past.length;
+              }
+              return TabBar(
+                controller: _tabs,
+                indicatorColor: AppColors.primary,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.dark400,
+                tabs: [
+                  Tab(text: 'Sắp tới ($upcoming)'),
+                  Tab(text: 'LIVE ($live)'),
+                  Tab(text: 'Đã phát ($past)'),
+                ],
+              );
+            },
+          ),
+        ),
       ),
       body: BlocBuilder<WatchlistBloc, WatchlistState>(
         builder: (context, state) {
           if (state is WatchlistLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (state is WatchlistLoaded) {
-            if (state.items.isEmpty) {
-              return _buildEmptyState();
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.items.length,
-              itemBuilder: (context, index) {
-                final item = state.items[index];
-                return _WatchlistItemCard(item: item);
-              },
-            );
-          }
-
           if (state is WatchlistError) {
             return Center(
               child: Text(
@@ -57,55 +100,75 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
               ),
             );
           }
+          if (state is! WatchlistLoaded) {
+            return const SizedBox.shrink();
+          }
 
-          return const SizedBox();
+          if (state.buckets.total == 0) {
+            return _EmptyState();
+          }
+
+          return TabBarView(
+            controller: _tabs,
+            children: [
+              _TabList(items: state.buckets.upcoming, emptyLabel: 'Chưa có chương trình sắp tới'),
+              _TabList(items: state.buckets.live, emptyLabel: 'Hiện không có chương trình đang LIVE'),
+              _TabList(items: state.buckets.past, emptyLabel: 'Chưa xem chương trình nào'),
+            ],
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.bookmark_outline,
-            size: 80,
-            color: AppColors.dark600,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Chưa có mục nào',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Lưu các chương trình yêu thích để xem later',
-            style: TextStyle(
-              color: AppColors.dark400,
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _WatchlistItemCard extends StatelessWidget {
-  final dynamic item;
+class _TabList extends StatelessWidget {
+  final List<WatchlistItemModel> items;
+  final String emptyLabel;
+  const _TabList({required this.items, required this.emptyLabel});
 
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.bookmark_outline,
+              size: 64,
+              color: AppColors.dark600,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              emptyLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.dark400),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed('/epg'),
+              icon: const Icon(Icons.explore),
+              label: const Text('Khám phá EPG'),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (_, i) => _WatchlistItemCard(item: items[i]),
+    );
+  }
+}
+
+class _WatchlistItemCard extends StatelessWidget {
+  final WatchlistItemModel item;
   const _WatchlistItemCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final isUpcoming = item.isUpcoming;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -114,13 +177,12 @@ class _WatchlistItemCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Thumbnail
           Container(
             width: 100,
             height: 80,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.dark700,
-              borderRadius: const BorderRadius.horizontal(
+              borderRadius: BorderRadius.horizontal(
                 left: Radius.circular(12),
               ),
             ),
@@ -130,7 +192,6 @@ class _WatchlistItemCard extends StatelessWidget {
               size: 40,
             ),
           ),
-          // Content
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -158,16 +219,16 @@ class _WatchlistItemCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.schedule,
                         size: 14,
-                        color: isUpcoming ? AppColors.primary : AppColors.dark500,
+                        color: AppColors.primary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _formatDateTime(item.scheduledAt),
-                        style: TextStyle(
-                          color: isUpcoming ? AppColors.primary : AppColors.dark500,
+                        style: const TextStyle(
+                          color: AppColors.primary,
                           fontSize: 12,
                         ),
                       ),
@@ -177,7 +238,6 @@ class _WatchlistItemCard extends StatelessWidget {
               ),
             ),
           ),
-          // Actions
           Column(
             children: [
               IconButton(
@@ -190,7 +250,14 @@ class _WatchlistItemCard extends StatelessWidget {
                       : AppColors.dark500,
                 ),
                 onPressed: () {
-                  // Toggle reminder
+                  context.read<WatchlistBloc>().add(
+                        ToggleWatchlistReminder(
+                          itemId: item.id!,
+                          reminderTime: item.reminderEnabled
+                              ? null
+                              : DateTime.now().add(const Duration(minutes: 5)),
+                        ),
+                      );
                 },
               ),
               IconButton(
@@ -200,7 +267,7 @@ class _WatchlistItemCard extends StatelessWidget {
                 ),
                 onPressed: () {
                   context.read<WatchlistBloc>().add(
-                        RemoveFromWatchlist(item.id!),
+                        RemoveFromWatchlist(item.programId),
                       );
                 },
               ),
@@ -211,16 +278,58 @@ class _WatchlistItemCard extends StatelessWidget {
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
+  static String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final diff = dateTime.difference(now);
 
-    if (diff.inDays == 0) {
+    if (diff.inDays == 0 && diff.inSeconds > -3600 * 4) {
       return 'Hôm nay ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (diff.inDays == 1) {
       return 'Ngày mai ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
       return '${dateTime.day}/${dateTime.month} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     }
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.bookmark_outline,
+            size: 80,
+            color: AppColors.dark600,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Chưa có mục nào',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Lưu các chương trình yêu thích để xem sau, đồng bộ giữa Mobile và Web.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.dark400, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pushNamed('/epg'),
+            icon: const Icon(Icons.explore),
+            label: const Text('Khám phá EPG'),
+          ),
+        ],
+      ),
+    );
   }
 }
