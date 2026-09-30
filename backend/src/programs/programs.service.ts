@@ -14,6 +14,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { TmdbEnrichmentService } from './ingest/tmdb-enrichment.service';
 import {
+  EpScheduleFillerService,
+  FillerExpandedProgram,
+} from './epg-filler.service';
+import {
   CreateLiveEventDto,
   UpdateLiveEventDto,
   CreateRecordingDto,
@@ -62,6 +66,7 @@ export class ProgramsService {
     private readonly auditLogger: AuditLoggerService,
     private readonly tmdbEnrichment: TmdbEnrichmentService,
     private readonly configService: ConfigService,
+    private readonly epgFiller: EpScheduleFillerService,
   ) {}
 
   // ============================================================
@@ -387,7 +392,7 @@ export class ProgramsService {
 
     const channelsWithPrograms = channels.map((channel) => {
       const channelEvents = events.filter((e) => e.channelId === channel.id);
-      const realPrograms = channelEvents.map((e) => {
+      const realPrograms: FillerExpandedProgram[] = channelEvents.map((e) => {
         const start = e.scheduledAt;
         const durationMinutes = this.normalizeDurationMinutes(e.duration);
         const end = new Date(start.getTime() + durationMinutes * 60_000);
@@ -404,6 +409,7 @@ export class ProgramsService {
           isFiller: false,
           fillerKind: null,
           sourceRecordingId: null,
+          sourceRecordingOrigin: null,
         };
       });
       const programs = this.expandChannelSchedule({
@@ -439,184 +445,57 @@ export class ProgramsService {
   /**
    * Expand a channel's daily schedule so the grid is never empty.
    *
-   * The DB only has a handful of `LiveEvent` rows per channel per day, so
-   * without fillers most channels show a blank row for 22+ hours. To make
-   * the EPG feel like a real television guide we walk the 24-hour timeline
-   * once, place the real events at their exact times, then fill every
-   * remaining gap with:
+   * The DB only has a handful of `LiveEvent` rows per channel per day,
+   * so without fillers most channels would show a blank row for 22+
+   * hours. We delegate the gap-filling to {@link EpScheduleFillerService}
+   * which owns the policy: genre-aware random selection, episode
+   * splitting for long programmes, and a per-day replay cap so the
+   * viewer never sees the same episode loop endlessly.
    *
-   *   1. **Recording replays** — the channel's own previously-published
-   *      recordings, rotated deterministically per (date, channel) so the
-   *      same day always shows the same slots but adjacent days surface
-   *      different content.
-   *   2. **Channel-branding placeholder** — used only when the channel
-   *      has zero recordings. The slot shows the channel name and a
-   *      generic "Đang phát sóng" message.
-   *
-   * Returns the merged list of real + filler programs sorted by `startTime`.
+   * Returns the merged list of real + filler programs sorted by
+   * `startTime`.
    */
   private expandChannelSchedule(opts: {
     channel: {
       id: string;
       name: string;
+      logoUrl?: string | null;
       category: string;
     };
     date: Date;
-    realPrograms: Array<{
-      id: string;
-      title: string;
-      startTime: string;
-      endTime: string;
-      status: EventStatus;
-      thumbnailUrl: string | null;
-      durationMinutes: number;
-      tags: string[];
-      category: string;
-      isFiller: boolean;
-      fillerKind: 'recording-replay' | 'channel-branding' | null;
-      sourceRecordingId: string | null;
-    }>;
+    realPrograms: FillerExpandedProgram[];
     recordings: Array<{
       id: string;
       title: string;
       thumbnailUrl: string | null;
       duration: number | null;
       tags: string[];
+      category?: any;
     }>;
-  }): typeof opts.realPrograms {
-    const { channel, date, realPrograms, recordings } = opts;
-
-    const dayStart = new Date(date);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
-    const dayStartMs = dayStart.getTime();
-    const dayEndMs = dayEnd.getTime();
-
-    // Default filler slot length. Picked so ~16 fillers fit in 24h for
-    // channels with no real events; when a real event cuts the day into
-    // larger chunks the filler grows to absorb the remaining time.
-    const DEFAULT_FILLER_MINUTES = 90;
-    const MIN_SLOT_MINUTES = 15;
-
-    // Deterministic rotation: different day-of-year -> different rotation
-    // offset. The 7-day channel suffix spreads adjacent channels apart
-    // so all channels don't start their filler rotation on the same item.
-    const dayOfYear = Math.floor(
-      (dayStartMs - Date.UTC(date.getUTCFullYear(), 0, 0)) / 86_400_000,
-    );
-    const channelOffset =
-      [...channel.id].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 7;
-    const rotatedRecordings =
-      recordings.length > 0
-        ? this.rotateArray(
-            recordings,
-            (dayOfYear + channelOffset) % recordings.length,
-          )
-        : [];
-
-    let recordingCursor = 0;
-    const takeRecording = () => {
-      if (rotatedRecordings.length === 0) return null;
-      const rec = rotatedRecordings[recordingCursor % rotatedRecordings.length];
-      recordingCursor++;
-      return rec;
-    };
-
-    // Sort real programs by start time so we can walk the timeline.
-    const sortedReal = [...realPrograms].sort(
-      (a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-    );
-
-    const result: typeof opts.realPrograms = [];
-    let cursorMs = dayStartMs;
-
-    const pushFiller = (slotStartMs: number, slotEndMs: number) => {
-      const slotMinutes = Math.round((slotEndMs - slotStartMs) / 60_000);
-      if (slotMinutes < MIN_SLOT_MINUTES) return false;
-      const rec = takeRecording();
-      if (rec) {
-        result.push({
-          id: `filler-rec-${rec.id}-${slotStartMs}`,
-          title: rec.title,
-          startTime: new Date(slotStartMs).toISOString(),
-          endTime: new Date(slotEndMs).toISOString(),
-          status: 'SCHEDULED' as EventStatus,
-          thumbnailUrl: rec.thumbnailUrl ?? null,
-          durationMinutes: slotMinutes,
-          tags: [...(rec.tags ?? []), 'Replay'],
-          category: channel.category,
-          isFiller: true,
-          fillerKind: 'recording-replay',
-          sourceRecordingId: rec.id,
-        });
-      } else {
-        result.push({
-          id: `filler-brand-${channel.id}-${slotStartMs}`,
-          title: `${channel.name} — Đang phát sóng`,
-          startTime: new Date(slotStartMs).toISOString(),
-          endTime: new Date(slotEndMs).toISOString(),
-          status: 'SCHEDULED' as EventStatus,
-          thumbnailUrl: null,
-          durationMinutes: slotMinutes,
-          tags: [channel.category, 'Channel Branding'],
-          category: channel.category,
-          isFiller: true,
-          fillerKind: 'channel-branding',
-          sourceRecordingId: null,
-        });
-      }
-      return true;
-    };
-
-    for (const prog of sortedReal) {
-      const progStartMs = new Date(prog.startTime).getTime();
-      const progEndMs = new Date(prog.endTime).getTime();
-
-      // Clamp real-event times that overflow the day (e.g. SCHEDULED past
-      // midnight UTC). We still show the event but trim its end.
-      const clampedStartMs = Math.max(progStartMs, dayStartMs);
-      const clampedEndMs = Math.min(progEndMs, dayEndMs);
-
-      // Fill the gap before this event.
-      let gapCursor = cursorMs;
-      while (gapCursor < clampedStartMs) {
-        const next = Math.min(
-          gapCursor + DEFAULT_FILLER_MINUTES * 60_000,
-          clampedStartMs,
-        );
-        if (!pushFiller(gapCursor, next)) break;
-        gapCursor = next;
-      }
-
-      // Place the real event itself (use the clamped times so it never
-      // visually overflows the day).
-      result.push({
-        ...prog,
-        startTime: new Date(clampedStartMs).toISOString(),
-        endTime: new Date(clampedEndMs).toISOString(),
-        durationMinutes: Math.max(
-          MIN_SLOT_MINUTES,
-          Math.round((clampedEndMs - clampedStartMs) / 60_000),
-        ),
-      });
-      cursorMs = Math.max(cursorMs, clampedEndMs);
-    }
-
-    // Fill the rest of the day.
-    let tail = cursorMs;
-    while (tail < dayEndMs) {
-      const next = Math.min(tail + DEFAULT_FILLER_MINUTES * 60_000, dayEndMs);
-      if (!pushFiller(tail, next)) break;
-      tail = next;
-    }
-
-    return result;
+  }): FillerExpandedProgram[] {
+    return this.epgFiller.expandChannelSchedule({
+      channel: {
+        id: opts.channel.id,
+        name: opts.channel.name,
+        category: opts.channel.category,
+      },
+      date: opts.date,
+      realPrograms: opts.realPrograms,
+      recordings: opts.recordings.map((r) => ({
+        id: r.id,
+        title: r.title,
+        thumbnailUrl: r.thumbnailUrl,
+        duration: r.duration ?? 0,
+        tags: r.tags ?? [],
+        category: r.category ?? null,
+      })),
+    });
   }
 
   /**
    * Rotate `arr` left by `offset` positions. Pure, no mutation.
+   * Kept for backwards-compatibility with internal callers; new code
+   * should use {@link EpScheduleFillerService.shuffleDeterministic}.
    */
   private rotateArray<T>(arr: T[], offset: number): T[] {
     if (arr.length === 0) return arr;
