@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Eye, TrendingUp, Search, Loader2 } from 'lucide-react';
+import { Users, Eye, TrendingUp, Search, Loader2, Plus, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LiveBadge } from '@/components/ui/live-badge';
 import { Input } from '@/components/ui/input';
 import { ChannelLogo } from '@/components/ui/channel-logo';
+import { ChannelQuickView } from '@/components/channels/channel-quick-view';
+import { ChannelSkeleton } from '@/components/channels/channel-skeleton';
 import { useChannels, useChannelCategories } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
 import type { Channel, LiveCategory } from '@/types';
@@ -41,6 +43,7 @@ export default function ChannelsPage() {
   const [search, setSearch] = useState('');
   const [selectedCategoryLabel, setSelectedCategoryLabel] =
     useState<string>('Tất cả');
+  const [quickViewChannel, setQuickViewChannel] = useState<Channel | null>(null);
 
   const selectedCategoryCode = useMemo(() => {
     if (selectedCategoryLabel === 'Tất cả') return undefined;
@@ -85,6 +88,10 @@ export default function ChannelsPage() {
   const isFiltered = selectedCategoryLabel !== 'Tất cả' || !!search;
   const featured = channels.filter((c) => c.isFeatured);
   const others = channels.filter((c) => !c.isFeatured);
+
+  const handleOpenQuickView = (c: Channel) => {
+    setQuickViewChannel(c);
+  };
 
   return (
     <div className="min-h-[80vh]">
@@ -143,12 +150,20 @@ export default function ChannelsPage() {
       {/* Channels Grid */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
-          </div>
+          <ChannelSkeleton />
         ) : channels.length === 0 ? (
-          <div className="text-center py-16 text-dark-400">
-            Không tìm thấy kênh nào phù hợp với tìm kiếm.
+          <div className="text-center py-20 rounded-2xl border border-dashed border-dark-700">
+            <Search className="w-12 h-12 mx-auto mb-4 text-dark-500 opacity-50" />
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Không tìm thấy kênh phù hợp
+            </h3>
+            <p className="text-sm text-dark-400 mb-6 max-w-md mx-auto">
+              Thử thay đổi bộ lọc, hoặc yêu cầu thêm kênh mới.
+            </p>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Yêu cầu thêm kênh
+            </Button>
           </div>
         ) : isFiltered ? (
           /* Filtered View */
@@ -301,6 +316,18 @@ export default function ChannelsPage() {
                                 <LiveBadge size="sm" />
                               </div>
                             )}
+                            {/* Quick-view button (B2) */}
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenQuickView(channel);
+                              }}
+                              className="absolute bottom-2 right-2 p-1.5 rounded-full bg-dark-900/80 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary-500"
+                              aria-label={`Xem nhanh ${channel.name}`}
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                           <h3 className="text-sm font-medium text-white truncate group-hover:text-primary-400 transition-colors">
                             {channel.name}
@@ -318,6 +345,14 @@ export default function ChannelsPage() {
           </>
         )}
       </div>
+
+      {/* Quick view drawer (B2) */}
+      {quickViewChannel && (
+        <ChannelQuickView
+          channel={quickViewChannel}
+          onClose={() => setQuickViewChannel(null)}
+        />
+      )}
     </div>
   );
 }
