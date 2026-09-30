@@ -1,25 +1,29 @@
 // ============================================================
 // OmniCast - Ingest Controller (Admin)
-// Manual triggers for YouTube, Twitch, and TMDB enrichment.
+// Manual triggers for Content Aggregator, YouTube, Twitch, and TMDB.
 // ============================================================
 
 import {
   Controller,
+  Get,
   Post,
   HttpCode,
   HttpStatus,
   UseGuards,
   Body,
+  Param,
+  Request,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { LiveCategory, UserRole } from '@prisma/client';
 import { YoutubeIngestService } from './youtube-ingest.service';
 import { YoutubeRssIngestService } from './youtube-rss-ingest.service';
 import { TwitchIngestService } from './twitch-ingest.service';
 import { TmdbEnrichmentService } from './tmdb-enrichment.service';
+import { ContentAggregatorService } from './content-aggregator.service';
 
 @ApiTags('Ingest (Admin)')
 @ApiBearerAuth()
@@ -28,11 +32,66 @@ import { TmdbEnrichmentService } from './tmdb-enrichment.service';
 @Roles(UserRole.ADMIN)
 export class IngestController {
   constructor(
+    private readonly contentAggregator: ContentAggregatorService,
     private readonly youtubeIngest: YoutubeIngestService,
     private readonly youtubeRssIngest: YoutubeRssIngestService,
     private readonly twitchIngest: TwitchIngestService,
     private readonly tmdbEnrichment: TmdbEnrichmentService,
   ) {}
+
+  // ============================================================
+  // CONTENT AGGREGATOR ENDPOINTS
+  // ============================================================
+
+  @Get('status')
+  @ApiOperation({
+    summary: 'Get health, configuration status and mappings for all 12 category sources',
+  })
+  async getAggregatorStatus() {
+    return this.contentAggregator.getStatus();
+  }
+
+  @Post('all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Trigger a full aggregator ingest run across all active channels',
+  })
+  async runAllAggregator(@Request() req: any) {
+    const userId = req.user?.sub || 'ADMIN';
+    return this.contentAggregator.runAll(userId);
+  }
+
+  @Post('category/:category')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'category', enum: LiveCategory })
+  @ApiOperation({
+    summary: 'Trigger an aggregator ingest run for a specific channel category',
+  })
+  async runCategory(
+    @Param('category') category: LiveCategory,
+    @Request() req: any,
+  ) {
+    const userId = req.user?.sub || 'ADMIN';
+    return this.contentAggregator.runForCategory(category, userId);
+  }
+
+  @Post('channel/:channelId')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'channelId', description: 'Channel ID or Slug' })
+  @ApiOperation({
+    summary: 'Trigger an aggregator ingest run for a single channel',
+  })
+  async runChannel(
+    @Param('channelId') channelId: string,
+    @Request() req: any,
+  ) {
+    const userId = req.user?.sub || 'ADMIN';
+    return this.contentAggregator.runForChannel(channelId, userId);
+  }
+
+  // ============================================================
+  // LEGACY / PLATFORM-SPECIFIC INGEST ENDPOINTS
+  // ============================================================
 
   @Post('youtube')
   @HttpCode(HttpStatus.OK)
