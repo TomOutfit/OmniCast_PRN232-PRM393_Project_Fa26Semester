@@ -106,12 +106,46 @@ export class AuthService {
     return this.generateTokens(user.id, user.email, user.role, user);
   }
 
-  async logout(userId: string) {
-    await this.prisma.refreshToken.updateMany({
+  async logout(userId: string, refreshToken?: string) {
+    if (refreshToken) {
+      // Revoke only the refresh token provided. Other devices remain signed in.
+      const updated = await this.prisma.refreshToken.updateMany({
+        where: { userId, token: refreshToken, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      return {
+        message: 'Logged out from this device',
+        revokedCount: updated.count,
+      };
+    }
+    // Without a token, fall back to "logout current session": revoke the
+    // *most recent* un-revoked token, leaving other devices untouched.
+    const mostRecent = await this.prisma.refreshToken.findFirst({
+      where: { userId, isRevoked: false },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!mostRecent) {
+      return { message: 'No active session', revokedCount: 0 };
+    }
+    await this.prisma.refreshToken.update({
+      where: { id: mostRecent.id },
+      data: { isRevoked: true },
+    });
+    return {
+      message: 'Logged out from this device',
+      revokedCount: 1,
+    };
+  }
+
+  async logoutAll(userId: string) {
+    const updated = await this.prisma.refreshToken.updateMany({
       where: { userId, isRevoked: false },
       data: { isRevoked: true },
     });
-    return { message: 'Logged out successfully' };
+    return {
+      message: 'Logged out from all devices',
+      revokedCount: updated.count,
+    };
   }
 
   async validateUser(userId: string) {
