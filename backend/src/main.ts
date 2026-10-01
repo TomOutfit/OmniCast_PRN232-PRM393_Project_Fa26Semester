@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 // Ensure Supabase connection uses port 6543 (transaction pooler) in serverless environments
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('pooler.supabase.com')) {
   let url = process.env.DATABASE_URL

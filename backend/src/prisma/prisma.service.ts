@@ -18,6 +18,9 @@ function getDatabaseUrl(): string | undefined {
     } else if (!url.includes('connection_limit=')) {
       url += '&connection_limit=1';
     }
+    if (!url.includes('pool_timeout=')) {
+      url += '&pool_timeout=20';
+    }
   }
   return url;
 }
@@ -33,7 +36,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
+    let attempts = 5;
+    while (attempts > 0) {
+      try {
+        await this.$connect();
+        return;
+      } catch (err) {
+        attempts--;
+        if (attempts === 0) throw err;
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
   }
 
   async onModuleDestroy() {
