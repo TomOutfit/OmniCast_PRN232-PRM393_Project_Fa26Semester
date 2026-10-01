@@ -1,7 +1,3 @@
-// ============================================================
-// OmniCast - Programs Controller
-// ============================================================
-
 import {
   Controller,
   Get,
@@ -13,8 +9,10 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { ProgramsService } from './programs.service';
 import {
   CreateLiveEventDto,
@@ -42,6 +40,11 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new live event (Staff/Admin only)' })
+  @ApiResponse({ status: 201, description: '201 Created — Live event scheduled successfully' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Validation failed' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Requires STAFF or ADMIN' })
+  @ApiResponse({ status: 409, description: '409 Conflict — Schedule overlap collision' })
   async createLiveEvent(
     @Body() createDto: CreateLiveEventDto,
     @Request() req: any,
@@ -57,6 +60,8 @@ export class ProgramsController {
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
+  @ApiResponse({ status: 200, description: '200 OK — Paginated live events list' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid query parameters' })
   async findAllLiveEvents(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -77,6 +82,7 @@ export class ProgramsController {
 
   @Get('live-events/live-now')
   @ApiOperation({ summary: 'Get all currently live events' })
+  @ApiResponse({ status: 200, description: '200 OK — Active broadcasting events' })
   async getLiveNow() {
     return this.programsService.getLiveNow();
   }
@@ -89,6 +95,10 @@ export class ProgramsController {
     summary:
       'Dry-run schedule check (1–100 events). Returns conflicts without committing, so Staff can preview before saving.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — Preflight conflict analysis complete' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Malformed events payload' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Requires STAFF or ADMIN' })
   async preflight(@Body() body: PreflightRequestDto) {
     const conflicts = await this.programsService.preflightEvents(
       body.events.map((e) => ({
@@ -116,11 +126,9 @@ export class ProgramsController {
   })
   @ApiQuery({ name: 'date', required: false, type: String })
   @ApiQuery({ name: 'channelIds', required: false, type: String })
+  @ApiResponse({ status: 200, description: '200 OK — 24-hour EPG channel grid' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid date format' })
   async getEpgByDay(@Query() query: EpgDayQueryDto) {
-    // `channelIds` is normalised to `string[]` by the DTO's
-    // `@Transform`, regardless of whether the client sent a
-    // comma-separated string or repeated params. Coerce once here so
-    // downstream callers always receive a `string[] | undefined`.
     const channelIds = Array.isArray(query.channelIds)
       ? (query.channelIds as string[])
       : undefined;
@@ -135,12 +143,15 @@ export class ProgramsController {
     summary:
       'Now + Next snapshot for every active channel. Cached 60s.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — Channel now-next snapshots' })
   async getEpgSnapshot() {
     return this.programsService.getChannelSnapshots();
   }
 
   @Get('live-events/:id')
   @ApiOperation({ summary: 'Get live event by ID' })
+  @ApiResponse({ status: 200, description: '200 OK — Live event detail' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Event not found' })
   async findLiveEventById(@Param('id') id: string) {
     return this.programsService.findLiveEventById(id);
   }
@@ -150,6 +161,8 @@ export class ProgramsController {
     summary:
       'Increment viewer count for a live event. Best-effort — duplicate calls within a session are cheap.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — Viewer counter updated' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementLiveEventView(@Param('id') id: string) {
     return this.programsService.incrementLiveEventView(id);
   }
@@ -158,6 +171,8 @@ export class ProgramsController {
   @ApiOperation({
     summary: 'Increment share counter for a live event.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — Share counter updated' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementLiveEventShare(@Param('id') id: string) {
     return this.programsService.incrementLiveEventShare(id);
   }
@@ -167,6 +182,12 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update live event (Staff/Admin only)' })
+  @ApiResponse({ status: 200, description: '200 OK — Live event updated' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
+  @ApiResponse({ status: 409, description: '409 Conflict — Overlaps with existing scheduled program' })
   async updateLiveEvent(
     @Param('id') id: string,
     @Body() updateDto: UpdateLiveEventDto,
@@ -180,6 +201,10 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete live event (Staff/Admin only)' })
+  @ApiResponse({ status: 200, description: '200 OK — Live event deleted' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async deleteLiveEvent(@Param('id') id: string, @Request() req: any) {
     return this.programsService.deleteLiveEvent(id, req.user.sub);
   }
@@ -193,6 +218,10 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new recording/VOD (Staff/Admin only)' })
+  @ApiResponse({ status: 201, description: '201 Created — Recording published' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Validation failed' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
   async createRecording(
     @Body() createDto: CreateRecordingDto,
     @Request() req: any,
@@ -208,6 +237,8 @@ export class ProgramsController {
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'isFeatured', required: false, type: Boolean })
   @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiResponse({ status: 200, description: '200 OK — Paginated recordings list' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
   async findAllRecordings(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -228,6 +259,8 @@ export class ProgramsController {
 
   @Get('recordings/:id')
   @ApiOperation({ summary: 'Get recording by ID' })
+  @ApiResponse({ status: 200, description: '200 OK — Recording details' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async findRecordingById(@Param('id') id: string) {
     return this.programsService.findRecordingById(id);
   }
@@ -237,6 +270,8 @@ export class ProgramsController {
     summary:
       'Increment view counter for a recording. Idempotent — safe to call once per session.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — View counter incremented' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementRecordingView(@Param('id') id: string) {
     return this.programsService.incrementRecordingView(id);
   }
@@ -246,6 +281,8 @@ export class ProgramsController {
     summary:
       'Increment share counter. Idempotent for a single user action; clients should debounce.',
   })
+  @ApiResponse({ status: 200, description: '200 OK — Share counter incremented' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementRecordingShare(@Param('id') id: string) {
     return this.programsService.incrementRecordingShare(id);
   }
@@ -256,6 +293,8 @@ export class ProgramsController {
       'Return up to N related recordings for the given recording. Currently uses the same channel as a strong relevance signal; cross-channel ranking can be layered on later.',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: '200 OK — Similar recordings list' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async findSimilarRecordings(
     @Param('id') id: string,
     @Query('limit') limit?: number,
@@ -271,6 +310,11 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update recording/VOD (Staff/Admin only)' })
+  @ApiResponse({ status: 200, description: '200 OK — Recording updated' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async updateRecording(
     @Param('id') id: string,
     @Body() updateDto: UpdateRecordingDto,
@@ -284,6 +328,10 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete recording/VOD (Staff/Admin only)' })
+  @ApiResponse({ status: 200, description: '200 OK — Recording deleted' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({ status: 404, description: '404 Not Found' })
   async deleteRecording(@Param('id') id: string, @Request() req: any) {
     return this.programsService.deleteRecording(id, req.user.sub);
   }

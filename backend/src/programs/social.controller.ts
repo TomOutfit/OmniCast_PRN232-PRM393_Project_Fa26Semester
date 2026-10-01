@@ -12,8 +12,10 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { SocialService } from './social.service';
 import { CreateCommentDto, ToggleReactionDto } from './dto/social.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -31,6 +33,8 @@ export class SocialController {
   @ApiOperation({ summary: 'List comments for a recording' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: '200 OK — Paginated comments list' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Recording not found' })
   async listComments(
     @Param('id') recordingId: string,
     @Query('page') page?: number,
@@ -46,6 +50,11 @@ export class SocialController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a comment on a recording' })
+  @ApiResponse({ status: 201, description: '201 Created — Comment posted' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Empty content' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Comments disabled on channel' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Recording or parent comment not found' })
   async createComment(
     @Param('id') recordingId: string,
     @Body() dto: CreateCommentDto,
@@ -58,6 +67,10 @@ export class SocialController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a comment (owner or admin)' })
+  @ApiResponse({ status: 200, description: '200 OK — Comment deleted' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not comment owner or admin' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Comment not found' })
   async deleteComment(@Param('id') id: string, @Request() req: any) {
     return this.socialService.deleteComment(
       id,
@@ -72,6 +85,8 @@ export class SocialController {
 
   @Get('recordings/:id/reactions')
   @ApiOperation({ summary: 'Get aggregated reactions for a recording' })
+  @ApiResponse({ status: 200, description: '200 OK — Aggregated reaction counts' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Recording not found' })
   async listReactions(@Param('id') recordingId: string) {
     return this.socialService.listReactionsByRecording(recordingId);
   }
@@ -80,6 +95,11 @@ export class SocialController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle a reaction on a recording' })
+  @ApiResponse({ status: 200, description: '200 OK — Reaction toggled' })
+  @ApiResponse({ status: 201, description: '201 Created — Reaction added' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid reaction type enum' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Recording not found' })
   async toggleReaction(
     @Param('id') recordingId: string,
     @Body() dto: ToggleReactionDto,
@@ -96,6 +116,8 @@ export class SocialController {
 
   @Get('live-events/:id/reactions')
   @ApiOperation({ summary: 'Get aggregated reactions for a live event' })
+  @ApiResponse({ status: 200, description: '200 OK — Aggregated live reaction counts' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event not found' })
   async listLiveEventReactions(@Param('id') liveEventId: string) {
     return this.socialService.listReactionsByLiveEvent(liveEventId);
   }
@@ -104,6 +126,11 @@ export class SocialController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle a reaction on a live event' })
+  @ApiResponse({ status: 200, description: '200 OK — Reaction toggled' })
+  @ApiResponse({ status: 201, description: '201 Created — Reaction added' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid reaction type enum' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event not found' })
   async toggleLiveEventReaction(
     @Param('id') liveEventId: string,
     @Body() dto: ToggleReactionDto,

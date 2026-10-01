@@ -40,6 +40,7 @@ function sanitizeBigInt(data: any): any {
 
 export interface Response<T> {
   success: boolean;
+  statusCode: number;
   data: T;
   meta?: any;
   timestamp: string;
@@ -53,12 +54,19 @@ export class TransformInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
+    const ctx = context.switchToHttp();
+    const httpResponse = ctx.getResponse();
+    const statusCode = httpResponse?.statusCode || 200;
+
     return next.handle().pipe(
       map((data) => {
         const cleanedData = sanitizeBigInt(data);
 
         // If data already has our wrapper format, return as-is
-        if (cleanedData && 'success' in cleanedData) {
+        if (cleanedData && typeof cleanedData === 'object' && 'success' in cleanedData) {
+          if (!('statusCode' in cleanedData)) {
+            cleanedData.statusCode = statusCode;
+          }
           return cleanedData;
         }
 
@@ -68,6 +76,7 @@ export class TransformInterceptor<T>
 
         return {
           success: true,
+          statusCode,
           data: hasMeta ? cleanedData.data : cleanedData,
           ...(hasMeta && { meta: cleanedData.meta }),
           timestamp: new Date().toISOString(),

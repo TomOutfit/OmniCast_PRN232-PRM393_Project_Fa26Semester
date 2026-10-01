@@ -3,7 +3,7 @@
 // ============================================================
 
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 
 @ApiTags('search')
@@ -19,6 +19,8 @@ export class SearchController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['relevance', 'recent', 'popular'] })
+  @ApiResponse({ status: 200, description: '200 OK — Global search results' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Missing query parameter' })
   async search(
     @Query('q') query: string,
     @Query('type') type?: 'all' | 'channels' | 'programs' | 'recordings',
@@ -41,6 +43,8 @@ export class SearchController {
   @ApiOperation({ summary: 'Quick search for channels' })
   @ApiQuery({ name: 'q', required: true })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: '200 OK — Filtered channels matching query' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
   async searchChannels(@Query('q') query: string, @Query('limit') limit?: number) {
     return this.searchService.searchChannels(query, { limit: Number(limit) || 10 });
   }
@@ -51,6 +55,8 @@ export class SearchController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'fromDate', required: false })
   @ApiQuery({ name: 'toDate', required: false })
+  @ApiResponse({ status: 200, description: '200 OK — Filtered programs matching query' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
   async searchPrograms(
     @Query('q') query: string,
     @Query('limit') limit?: number,
@@ -67,6 +73,8 @@ export class SearchController {
   @Get('suggestions')
   @ApiOperation({ summary: 'Get search suggestions/autocomplete' })
   @ApiQuery({ name: 'q', required: true })
+  @ApiResponse({ status: 200, description: '200 OK — Autocomplete search suggestions' })
+  @ApiResponse({ status: 400, description: '400 Bad Request' })
   async getSuggestions(@Query('q') query: string) {
     return this.searchService.getSuggestions(query);
   }
