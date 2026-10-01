@@ -49,13 +49,74 @@ export function getCategoryColor(category: string | undefined): string {
   return categoryColors[category.toUpperCase()] || '#0EA5E9';
 }
 
+const OFFICIAL_CHANNEL_LOGOS: Record<string, string> = {
+  'sport-1': '/Channel_Logos/01-omni-sport-1-icon.svg',
+  'omni-sport-1': '/Channel_Logos/01-omni-sport-1-icon.svg',
+  'sport-2': '/Channel_Logos/02-omni-sport-2-icon.svg',
+  'omni-sport-2': '/Channel_Logos/02-omni-sport-2-icon.svg',
+  'show': '/Channel_Logos/03-omni-show-icon.svg',
+  'omni-show': '/Channel_Logos/03-omni-show-icon.svg',
+  'entertain': '/Channel_Logos/04-omni-entertain-icon.svg',
+  'omni-entertain': '/Channel_Logos/04-omni-entertain-icon.svg',
+  'cine': '/Channel_Logos/05-omni-cine-icon.svg',
+  'omni-cine': '/Channel_Logos/05-omni-cine-icon.svg',
+  'drama': '/Channel_Logos/06-omni-drama-icon.svg',
+  'omni-drama': '/Channel_Logos/06-omni-drama-icon.svg',
+  'news': '/Channel_Logos/07-omni-news-icon.svg',
+  'omni-news': '/Channel_Logos/07-omni-news-icon.svg',
+  'music': '/Channel_Logos/08-omni-music-icon.svg',
+  'omni-music': '/Channel_Logos/08-omni-music-icon.svg',
+  'kids': '/Channel_Logos/09-omni-kids-icon.svg',
+  'omni-kids': '/Channel_Logos/09-omni-kids-icon.svg',
+  'tech': '/Channel_Logos/10-omni-tech-icon.svg',
+  'omni-tech': '/Channel_Logos/10-omni-tech-icon.svg',
+  'food': '/Channel_Logos/11-omni-food-icon.svg',
+  'omni-food': '/Channel_Logos/11-omni-food-icon.svg',
+  'discovery': '/Channel_Logos/12-omni-discovery-icon.svg',
+  'omni-discovery': '/Channel_Logos/12-omni-discovery-icon.svg',
+  'esports': '/Channel_Logos/13-omni-esports-icon.svg',
+  'omni-esports': '/Channel_Logos/13-omni-esports-icon.svg',
+  'indie-games': '/Channel_Logos/14-omni-indie-games-icon.svg',
+  'omni-indie-games': '/Channel_Logos/14-omni-indie-games-icon.svg',
+  'podcast': '/Channel_Logos/15-omni-podcast-icon.svg',
+  'omni-podcast': '/Channel_Logos/15-omni-podcast-icon.svg',
+  'audiobook': '/Channel_Logos/16-omni-audiobook-icon.svg',
+  'omni-audiobook': '/Channel_Logos/16-omni-audiobook-icon.svg',
+  'academy': '/Channel_Logos/17-omni-academy-icon.svg',
+  'omni-academy': '/Channel_Logos/17-omni-academy-icon.svg',
+  'skill-lab': '/Channel_Logos/18-omni-skill-lab-icon.svg',
+  'omni-skill-lab': '/Channel_Logos/18-omni-skill-lab-icon.svg',
+  'wellness': '/Channel_Logos/19-omni-wellness-icon.svg',
+  'omni-wellness': '/Channel_Logos/19-omni-wellness-icon.svg',
+  'fashion': '/Channel_Logos/20-omni-fashion-icon.svg',
+  'omni-fashion': '/Channel_Logos/20-omni-fashion-icon.svg',
+  'travel-vn': '/Channel_Logos/21-omni-travel-vn-icon.svg',
+  'omni-travel-vn': '/Channel_Logos/21-omni-travel-vn-icon.svg',
+  'travel-world': '/Channel_Logos/22-omni-travel-world-icon.svg',
+  'omni-travel-world': '/Channel_Logos/22-omni-travel-world-icon.svg',
+  'art-design': '/Channel_Logos/23-omni-art-design-icon.svg',
+  'omni-art-design': '/Channel_Logos/23-omni-art-design-icon.svg',
+  'business': '/Channel_Logos/24-omni-business-icon.svg',
+  'omni-business': '/Channel_Logos/24-omni-business-icon.svg',
+  'health': '/Channel_Logos/25-omni-health-icon.svg',
+  'omni-health': '/Channel_Logos/25-omni-health-icon.svg',
+};
+
 function resolveLogoSrc(slug?: string, logoUrl?: string): string {
-  if (logoUrl && logoUrl.trim().length > 0) {
+  if (logoUrl && logoUrl.trim().length > 0 && !logoUrl.startsWith('/channels/')) {
     return logoUrl;
   }
-  if (!slug) return '/channels/sport-1.svg';
+  if (!slug) return '/Channel_Logos/01-omni-sport-1-icon.svg';
   const cleanSlug = slug.toLowerCase().trim();
-  return `/channels/${cleanSlug}.svg`;
+  if (OFFICIAL_CHANNEL_LOGOS[cleanSlug]) {
+    return OFFICIAL_CHANNEL_LOGOS[cleanSlug];
+  }
+  // Try matching without omni- prefix or with omni- prefix
+  const withOmni = cleanSlug.startsWith('omni-') ? cleanSlug : `omni-${cleanSlug}`;
+  if (OFFICIAL_CHANNEL_LOGOS[withOmni]) {
+    return OFFICIAL_CHANNEL_LOGOS[withOmni];
+  }
+  return '/Channel_Logos/01-omni-sport-1-icon.svg';
 }
 
 // Lấy 2 chữ cái đầu của tên kênh
