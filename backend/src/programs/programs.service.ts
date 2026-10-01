@@ -156,21 +156,36 @@ export class ProgramsService {
     };
   }
 
+  private isUuid(value?: string): boolean {
+    return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
   async findLiveEventById(id: string) {
-    const event = await this.prisma.liveEvent.findUnique({
-      where: { id },
-      include: {
-        channel: {
-          select: { id: true, name: true, slug: true, logoUrl: true },
+    try {
+      const event = await this.prisma.liveEvent.findUnique({
+        where: { id },
+        include: {
+          channel: {
+            select: { id: true, name: true, slug: true, logoUrl: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!event) {
-      throw new NotFoundException('Live event not found');
+      if (!event) {
+        throw new NotFoundException('Live event not found');
+      }
+
+      return event;
+    } catch (err) {
+      if (
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
+      ) {
+        throw new NotFoundException('Live event not found');
+      }
+      throw err;
     }
-
-    return event;
   }
 
   async updateLiveEvent(
@@ -178,6 +193,10 @@ export class ProgramsService {
     updateDto: UpdateLiveEventDto,
     userId: string,
   ) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('Live event not found');
+    }
+
     const event = await this.prisma.liveEvent.findUnique({ where: { id } });
     if (!event) {
       throw new NotFoundException('Live event not found');
@@ -221,6 +240,10 @@ export class ProgramsService {
   }
 
   async deleteLiveEvent(id: string, userId: string) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('Live event not found');
+    }
+
     const event = await this.prisma.liveEvent.findUnique({ where: { id } });
     if (!event) {
       throw new NotFoundException('Live event not found');
@@ -746,36 +769,58 @@ export class ProgramsService {
   }
 
   async findRecordingById(id: string) {
-    const recording = await this.prisma.recording.findUnique({
-      where: { id },
-      include: {
-        channel: {
-          select: { id: true, name: true, slug: true, logoUrl: true },
-        },
-        comments: {
-          take: 20,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            user: {
-              select: { id: true, fullName: true, avatarUrl: true },
+    try {
+      const recording = await this.prisma.recording.findUnique({
+        where: { id },
+        include: {
+          channel: {
+            select: { id: true, name: true, slug: true, logoUrl: true },
+          },
+          comments: {
+            take: 20,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              user: {
+                select: { id: true, fullName: true, avatarUrl: true },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!recording) {
-      throw new NotFoundException('Recording not found');
+      if (!recording) {
+        throw new NotFoundException('Recording not found');
+      }
+
+      return recording;
+    } catch (err) {
+      if (
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
+      ) {
+        throw new NotFoundException('Recording not found');
+      }
+      throw err;
     }
-
-    return recording;
   }
 
   async incrementViewCount(recordingId: string) {
-    return this.prisma.recording.update({
-      where: { id: recordingId },
-      data: { viewCount: { increment: 1 } },
-    });
+    try {
+      return await this.prisma.recording.update({
+        where: { id: recordingId },
+        data: { viewCount: { increment: 1 } },
+      });
+    } catch (err) {
+      if (
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
+      ) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   /** Increment + return new share count for a recording. */
@@ -789,8 +834,9 @@ export class ProgramsService {
       return { id: updated.id, shareCount: updated.shareCount };
     } catch (err) {
       if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2025'
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
       ) {
         return { id: recordingId, shareCount: null };
       }
@@ -809,8 +855,9 @@ export class ProgramsService {
       return { id: updated.id, shareCount: updated.shareCount };
     } catch (err) {
       if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2025'
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
       ) {
         return { id: liveEventId, shareCount: null };
       }
@@ -829,8 +876,9 @@ export class ProgramsService {
       return { id: updated.id, viewerCount: updated.viewerCount };
     } catch (err) {
       if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2025'
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
       ) {
         return { id: liveEventId, viewerCount: null };
       }
@@ -847,15 +895,16 @@ export class ProgramsService {
     try {
       const updated = await this.incrementViewCount(recordingId);
       return {
-        recordingId: updated.id,
-        viewCount: updated.viewCount,
+        recordingId: updated?.id || recordingId,
+        viewCount: updated?.viewCount ?? null,
       };
     } catch (err) {
       // Recording not found — return null instead of bubbling 404 so the
       // player UI can ignore the call without crashing.
       if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2025'
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
       ) {
         return { recordingId, viewCount: null };
       }
@@ -872,57 +921,64 @@ export class ProgramsService {
    * (TMDB similarity, tag overlap, …) without breaking the contract.
    */
   async findSimilarRecordings(recordingId: string, limit: number) {
-    const seed = await this.prisma.recording.findUnique({
-      where: { id: recordingId },
-      select: { id: true, channelId: true, category: true },
-    });
+    try {
+      const seed = await this.prisma.recording.findUnique({
+        where: { id: recordingId },
+        select: { id: true, channelId: true, category: true },
+      });
 
-    if (!seed) {
-      return [];
+      if (!seed) {
+        return [];
+      }
+
+      // 1) Same channel + same category, excluding seed.
+      const matchCategory = await this.prisma.recording.findMany({
+        where: {
+          channelId: seed.channelId,
+          category: seed.category,
+          id: { not: seed.id },
+        },
+        take: limit,
+        orderBy: { publishedAt: 'desc' },
+        include: {
+          channel: {
+            select: { id: true, name: true, slug: true, logoUrl: true },
+          },
+        },
+      });
+
+      if (matchCategory.length >= limit) {
+        return matchCategory;
+      }
+
+      // 2) Top off with other recordings from the same channel.
+      const existingIds = [seed.id, ...matchCategory.map((r) => r.id)];
+      const needed = limit - matchCategory.length;
+
+      const fallback = await this.prisma.recording.findMany({
+        where: {
+          channelId: seed.channelId,
+          id: { notIn: existingIds },
+        },
+        take: needed,
+        orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
+        include: {
+          channel: {
+            select: { id: true, name: true, slug: true, logoUrl: true },
+          },
+        },
+      });
+
+    } catch (err) {
+      if (
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          (err.code === 'P2025' || err.code === 'P2023')) ||
+        (err instanceof Error && err.message?.includes('Error creating UUID'))
+      ) {
+        return [];
+      }
+      throw err;
     }
-
-    // 1) Same channel + same category, excluding seed.
-    const sameChannelCategory = await this.prisma.recording.findMany({
-      where: {
-        channelId: seed.channelId,
-        category: seed.category,
-        id: { not: seed.id },
-        isPublished: true,
-      },
-      orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
-      take: limit,
-      include: {
-        channel: {
-          select: { id: true, name: true, slug: true, logoUrl: true },
-        },
-      },
-    });
-
-    if (sameChannelCategory.length >= limit) {
-      return sameChannelCategory;
-    }
-
-    // 2) Fill with same-channel recordings of any category.
-    const remaining = limit - sameChannelCategory.length;
-    const fill = await this.prisma.recording.findMany({
-      where: {
-        channelId: seed.channelId,
-        id: {
-          not: seed.id,
-          notIn: sameChannelCategory.map((r) => r.id),
-        },
-        isPublished: true,
-      },
-      orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
-      take: remaining,
-      include: {
-        channel: {
-          select: { id: true, name: true, slug: true, logoUrl: true },
-        },
-      },
-    });
-
-    return [...sameChannelCategory, ...fill];
   }
 
   async updateRecording(

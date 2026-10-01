@@ -91,10 +91,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = 'The relation change violates required database constraints';
           break;
         }
+        case 'P2023': {
+          status = HttpStatus.BAD_REQUEST;
+          error = 'Bad Request';
+          message = 'Invalid identifier format: a valid UUID string is required';
+          break;
+        }
         default: {
           status = HttpStatus.BAD_REQUEST;
-          error = 'Database Request Error';
-          message = prismaError.message?.split('\n').pop() || 'Invalid database operation';
+          error = 'Bad Request';
+          const rawMsg = prismaError.message?.split('\n').pop() || 'Invalid database operation';
+          if (rawMsg.includes('Error creating UUID') || rawMsg.includes('Inconsistent column data')) {
+            message = 'Invalid identifier format: a valid UUID string is required';
+          } else {
+            message = rawMsg;
+          }
           break;
         }
       }
@@ -111,8 +122,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
     // 4. Generic JavaScript Errors
     else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name || 'Error';
+      if (
+        exception.message?.includes('Error creating UUID') ||
+        exception.message?.includes('Inconsistent column data')
+      ) {
+        status = HttpStatus.BAD_REQUEST;
+        error = 'Bad Request';
+        message = 'Invalid identifier format: a valid UUID string is required';
+      } else {
+        message = exception.message;
+        error = exception.name || 'Error';
+      }
     }
 
     const errorResponse: ErrorResponse = {

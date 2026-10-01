@@ -20,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { HttpCode, HttpStatus } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
@@ -110,15 +111,17 @@ export class ChannelsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get channel by ID' })
-  @ApiResponse({ status: 200, description: '200 OK — Channel details by ID' })
-  @ApiResponse({ status: 404, description: '404 Not Found — Channel ID does not exist' })
+  @ApiOperation({ summary: 'Get channel by ID or slug' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
+  @ApiResponse({ status: 200, description: '200 OK — Channel details by ID or slug' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Channel ID or slug does not exist' })
   async findOne(@Param('id') id: string) {
     return this.channelsService.findOne(id);
   }
 
   @Get(':id/followers')
   @ApiOperation({ summary: 'Get followers of a channel' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: '200 OK — Followers list' })
@@ -138,6 +141,7 @@ export class ChannelsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Follow a channel' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 201, description: '201 Created — Channel followed' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 404, description: '404 Not Found — Channel does not exist' })
@@ -150,6 +154,7 @@ export class ChannelsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Unfollow a channel' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 200, description: '200 OK — Channel unfollowed' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 404, description: '404 Not Found — Channel does not exist' })
@@ -161,6 +166,7 @@ export class ChannelsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Check if current user is following a channel' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 200, description: '200 OK — Follow boolean status' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 404, description: '404 Not Found — Channel does not exist' })
@@ -173,6 +179,7 @@ export class ChannelsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update channel (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 200, description: '200 OK — Channel updated' })
   @ApiResponse({ status: 400, description: '400 Bad Request — Invalid update payload' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
@@ -191,6 +198,7 @@ export class ChannelsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete channel (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 200, description: '200 OK — Channel deleted' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden — Requires STAFF or ADMIN role' })

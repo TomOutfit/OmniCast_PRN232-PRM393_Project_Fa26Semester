@@ -15,7 +15,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -102,6 +102,7 @@ export class UsersController {
   @Get(':id')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get user by ID (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User details retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User ID not found' })
   async findOne(@Param('id') id: string) {
@@ -111,6 +112,7 @@ export class UsersController {
   @Patch(':id/deactivate')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Deactivate user (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User deactivated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async deactivate(@Param('id') id: string) {
@@ -120,6 +122,7 @@ export class UsersController {
   @Patch(':id/activate')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Activate user (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User activated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async activate(@Param('id') id: string) {
@@ -129,6 +132,7 @@ export class UsersController {
   @Patch(':id/role')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Update user role (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid role specified' })
   @ApiResponse({ status: 404, description: 'User not found' })

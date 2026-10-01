@@ -19,6 +19,10 @@ export class SocialService {
     private readonly auditLogger: AuditLoggerService,
   ) {}
 
+  private isUuid(val?: string): boolean {
+    return !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  }
+
   // ============================================================
   // COMMENTS
   // ============================================================
@@ -27,6 +31,10 @@ export class SocialService {
     recordingId: string,
     options: { page?: number; limit?: number } = {},
   ) {
+    if (!this.isUuid(recordingId)) {
+      throw new NotFoundException('Recording not found');
+    }
+
     const { page = 1, limit = 20 } = options;
     const skip = (page - 1) * limit;
 
@@ -86,6 +94,10 @@ export class SocialService {
     userId: string,
     dto: CreateCommentDto,
   ) {
+    if (!this.isUuid(recordingId)) {
+      throw new NotFoundException('Recording not found');
+    }
+
     const recording = await this.prisma.recording.findUnique({
       where: { id: recordingId },
       select: { id: true, channelId: true, channel: { select: { allowComments: true } } },
@@ -98,6 +110,9 @@ export class SocialService {
     }
 
     if (dto.parentId) {
+      if (!this.isUuid(dto.parentId)) {
+        throw new NotFoundException('Parent comment not found in this recording');
+      }
       const parent = await this.prisma.comment.findUnique({
         where: { id: dto.parentId },
         select: { id: true, recordingId: true },
@@ -139,6 +154,10 @@ export class SocialService {
   }
 
   async deleteComment(commentId: string, userId: string, role: string) {
+    if (!this.isUuid(commentId)) {
+      throw new NotFoundException('Comment not found');
+    }
+
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
     });
@@ -185,6 +204,7 @@ export class SocialService {
     | null
   > {
     if (opts.recordingId) {
+      if (!this.isUuid(opts.recordingId)) return null;
       const r = await this.prisma.recording.findUnique({
         where: { id: opts.recordingId },
         select: { id: true },
@@ -192,6 +212,7 @@ export class SocialService {
       return r ? { kind: 'recording', id: opts.recordingId } : null;
     }
     if (opts.liveEventId) {
+      if (!this.isUuid(opts.liveEventId)) return null;
       const e = await this.prisma.liveEvent.findUnique({
         where: { id: opts.liveEventId },
         select: { id: true },

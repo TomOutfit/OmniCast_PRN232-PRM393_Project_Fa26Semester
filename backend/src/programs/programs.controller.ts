@@ -12,7 +12,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProgramsService } from './programs.service';
 import {
   CreateLiveEventDto,
@@ -150,6 +150,7 @@ export class ProgramsController {
 
   @Get('live-events/:id')
   @ApiOperation({ summary: 'Get live event by ID' })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Live event detail' })
   @ApiResponse({ status: 404, description: '404 Not Found — Event not found' })
   async findLiveEventById(@Param('id') id: string) {
@@ -161,6 +162,7 @@ export class ProgramsController {
     summary:
       'Increment viewer count for a live event. Best-effort — duplicate calls within a session are cheap.',
   })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Viewer counter updated' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementLiveEventView(@Param('id') id: string) {
@@ -171,6 +173,7 @@ export class ProgramsController {
   @ApiOperation({
     summary: 'Increment share counter for a live event.',
   })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Share counter updated' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementLiveEventShare(@Param('id') id: string) {
@@ -182,6 +185,7 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update live event (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Live event updated' })
   @ApiResponse({ status: 400, description: '400 Bad Request' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
@@ -201,6 +205,7 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete live event (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Live event deleted' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden' })
@@ -259,6 +264,7 @@ export class ProgramsController {
 
   @Get('recordings/:id')
   @ApiOperation({ summary: 'Get recording by ID' })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — Recording details' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
   async findRecordingById(@Param('id') id: string) {
@@ -270,6 +276,7 @@ export class ProgramsController {
     summary:
       'Increment view counter for a recording. Idempotent — safe to call once per session.',
   })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — View counter incremented' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementRecordingView(@Param('id') id: string) {
@@ -281,6 +288,7 @@ export class ProgramsController {
     summary:
       'Increment share counter. Idempotent for a single user action; clients should debounce.',
   })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — Share counter incremented' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
   async incrementRecordingShare(@Param('id') id: string) {
@@ -292,6 +300,7 @@ export class ProgramsController {
     summary:
       'Return up to N related recordings for the given recording. Currently uses the same channel as a strong relevance signal; cross-channel ranking can be layered on later.',
   })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: '200 OK — Similar recordings list' })
   @ApiResponse({ status: 404, description: '404 Not Found' })
@@ -310,6 +319,7 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update recording/VOD (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — Recording updated' })
   @ApiResponse({ status: 400, description: '400 Bad Request' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
@@ -328,6 +338,7 @@ export class ProgramsController {
   @Roles('STAFF', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete recording/VOD (Staff/Admin only)' })
+  @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — Recording deleted' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden' })

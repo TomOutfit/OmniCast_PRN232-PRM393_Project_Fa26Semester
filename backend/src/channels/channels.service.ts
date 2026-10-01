@@ -96,9 +96,29 @@ export class ChannelsService {
     };
   }
 
-  async findOne(id: string) {
+  private isUuid(value: string): boolean {
+    return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
+  private async resolveChannel(idOrSlug: string) {
+    if (!idOrSlug) {
+      throw new NotFoundException('Channel identifier is required');
+    }
     const channel = await this.prisma.liveChannel.findUnique({
-      where: { id },
+      where: this.isUuid(idOrSlug) ? { id: idOrSlug } : { slug: idOrSlug },
+    });
+    if (!channel) {
+      throw new NotFoundException(`Channel not found with identifier '${idOrSlug}'`);
+    }
+    return channel;
+  }
+
+  async findOne(id: string) {
+    if (!id) {
+      throw new NotFoundException('Channel ID is required');
+    }
+    const channel = await this.prisma.liveChannel.findUnique({
+      where: this.isUuid(id) ? { id } : { slug: id },
       include: {
         _count: {
           select: {
@@ -111,7 +131,7 @@ export class ChannelsService {
     });
 
     if (!channel) {
-      throw new NotFoundException('Channel not found');
+      throw new NotFoundException(`Channel not found with identifier '${id}'`);
     }
 
     return channel;
@@ -136,44 +156,33 @@ export class ChannelsService {
     });
 
     if (!channel) {
-      throw new NotFoundException('Channel not found');
+      throw new NotFoundException(`Channel not found with slug '${slug}'`);
     }
 
     return channel;
   }
 
   async update(id: string, updateChannelDto: UpdateChannelDto) {
-    const channel = await this.prisma.liveChannel.findUnique({
-      where: { id },
-    });
-
-    if (!channel) {
-      throw new NotFoundException('Channel not found');
-    }
+    const channel = await this.resolveChannel(id);
 
     return this.prisma.liveChannel.update({
-      where: { id },
+      where: { id: channel.id },
       data: updateChannelDto,
     });
   }
 
   async remove(id: string) {
-    const channel = await this.prisma.liveChannel.findUnique({
-      where: { id },
-    });
-
-    if (!channel) {
-      throw new NotFoundException('Channel not found');
-    }
+    const channel = await this.resolveChannel(id);
 
     return this.prisma.liveChannel.delete({
-      where: { id },
+      where: { id: channel.id },
     });
   }
 
   async incrementFollower(channelId: string) {
+    const isIdUuid = this.isUuid(channelId);
     return this.prisma.liveChannel.update({
-      where: { id: channelId },
+      where: isIdUuid ? { id: channelId } : { slug: channelId },
       data: {
         followerCount: { increment: 1 },
       },
@@ -181,8 +190,9 @@ export class ChannelsService {
   }
 
   async decrementFollower(channelId: string) {
+    const isIdUuid = this.isUuid(channelId);
     return this.prisma.liveChannel.update({
-      where: { id: channelId },
+      where: isIdUuid ? { id: channelId } : { slug: channelId },
       data: {
         followerCount: { decrement: 1 },
       },
@@ -190,8 +200,9 @@ export class ChannelsService {
   }
 
   async incrementViews(channelId: string, count: bigint = BigInt(1)) {
+    const isIdUuid = this.isUuid(channelId);
     return this.prisma.liveChannel.update({
-      where: { id: channelId },
+      where: isIdUuid ? { id: channelId } : { slug: channelId },
       data: {
         totalViews: { increment: count },
       },
@@ -221,13 +232,7 @@ export class ChannelsService {
   // ============================================================
 
   async followChannel(channelId: string, userId: string) {
-    const channel = await this.prisma.liveChannel.findUnique({
-      where: { id: channelId },
-    });
-
-    if (!channel) {
-      throw new NotFoundException('Channel not found');
-    }
+    const channel = await this.resolveChannel(channelId);
 
     if (!channel.isPublic && channel.ownerId !== userId) {
       throw new BadRequestException('Cannot follow private channel');
@@ -238,7 +243,7 @@ export class ChannelsService {
       where: {
         followerId_channelId: {
           followerId: userId,
-          channelId,
+          channelId: channel.id,
         },
       },
     });
@@ -251,33 +256,27 @@ export class ChannelsService {
     await this.prisma.follow.create({
       data: {
         followerId: userId,
-        channelId,
+        channelId: channel.id,
       },
     });
 
     // Increment follower count
     await this.prisma.liveChannel.update({
-      where: { id: channelId },
+      where: { id: channel.id },
       data: { followerCount: { increment: 1 } },
     });
 
-    return { message: 'Successfully followed channel', channelId };
+    return { message: 'Successfully followed channel', channelId: channel.id };
   }
 
   async unfollowChannel(channelId: string, userId: string) {
-    const channel = await this.prisma.liveChannel.findUnique({
-      where: { id: channelId },
-    });
-
-    if (!channel) {
-      throw new NotFoundException('Channel not found');
-    }
+    const channel = await this.resolveChannel(channelId);
 
     const existingFollow = await this.prisma.follow.findUnique({
       where: {
         followerId_channelId: {
           followerId: userId,
-          channelId,
+          channelId: channel.id,
         },
       },
     });
@@ -293,11 +292,11 @@ export class ChannelsService {
 
     // Decrement follower count
     await this.prisma.liveChannel.update({
-      where: { id: channelId },
+      where: { id: channel.id },
       data: { followerCount: { decrement: 1 } },
     });
 
-    return { message: 'Successfully unfollowed channel', channelId };
+    return { message: 'Successfully unfollowed channel', channelId: channel.id };
   }
 
   async getFollowedChannels(userId: string, options?: { page?: number; limit?: number }) {
@@ -337,17 +336,11 @@ export class ChannelsService {
     const page = Math.max(1, Number(options?.page) || 1);
     const limit = Math.max(1, Number(options?.limit) || 20);
 
-    const channel = await this.prisma.liveChannel.findUnique({
-      where: { id: channelId },
-    });
-
-    if (!channel) {
-      throw new NotFoundException('Channel not found');
-    }
+    const channel = await this.resolveChannel(channelId);
 
     const [follows, total] = await Promise.all([
       this.prisma.follow.findMany({
-        where: { channelId },
+        where: { channelId: channel.id },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -362,7 +355,7 @@ export class ChannelsService {
           },
         },
       }),
-      this.prisma.follow.count({ where: { channelId } }),
+      this.prisma.follow.count({ where: { channelId: channel.id } }),
     ]);
 
     return {
@@ -372,11 +365,19 @@ export class ChannelsService {
   }
 
   async isFollowing(channelId: string, userId: string) {
+    const channel = await this.prisma.liveChannel.findUnique({
+      where: this.isUuid(channelId) ? { id: channelId } : { slug: channelId },
+    });
+
+    if (!channel) {
+      return { isFollowing: false };
+    }
+
     const follow = await this.prisma.follow.findUnique({
       where: {
         followerId_channelId: {
           followerId: userId,
-          channelId,
+          channelId: channel.id,
         },
       },
     });
