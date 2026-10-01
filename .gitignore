@@ -51,3 +51,11 @@ yarn-error.log*
 # Antigravity agent files
 .agents/
 
+# Playwright E2E & Visual Audits (Excluded from Git)
+playwright-tests/
+playwright/
+.playwright/
+test-results/
+playwright-report/
+
+
