@@ -168,4 +168,25 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  /* Smooth continuous motion for channels ticker */
+  @keyframes tickerMarquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-ticker-marquee {
+    display: flex;
+    width: max-content;
+    animation: tickerMarquee 38s linear infinite;
+    will-change: transform;
+  }
+
+  .animate-ticker-marquee:hover {
+    animation-play-state: paused;
+  }
 }
