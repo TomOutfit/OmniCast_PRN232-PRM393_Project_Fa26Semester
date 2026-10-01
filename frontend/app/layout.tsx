@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk, Playfair_Display } from 'next/font/google';
+import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
 import { Navbar } from '@/components/layout/navbar';
@@ -12,24 +12,22 @@ const inter = Inter({
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
+/**
+ * `font-display` now resolves to **Outfit** (was Space_Grotesk) to match the
+ * canonical Stitch Live TV & EPG design. Screen names that previously read
+ * `font-display` continue to work without changes.
+ */
+const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
+  weight: ['600', '700', '800'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains',
   display: 'swap',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
-  display: 'swap',
-  weight: ['400', '700', '900'],
-  style: ['normal', 'italic'],
 });
 
 export const metadata: Metadata = {
@@ -74,7 +72,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#0ea5e9' },
-    { media: '(prefers-color-scheme: dark)', color: '#020617' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f131d' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -90,10 +88,13 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${playfair.variable}`}
+      className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-screen flex flex-col bg-background text-foreground">
-        <a href="#main-content" className="skip-link">
+      <body className="min-h-screen flex flex-col bg-surface text-on-surface antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-cyan-500 focus:text-black focus:font-extrabold focus:rounded-xl focus:shadow-2xl focus:outline-none"
+        >
           Bỏ qua tới nội dung
         </a>
         <Providers>
@@ -107,9 +108,9 @@ export default function RootLayout({
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1e293b',
-              color: '#f8fafc',
-              border: '1px solid #334155',
+              background: '#1c1f2a',
+              color: '#dfe2f1',
+              border: '1px solid #3a494b',
             },
           }}
         />
