@@ -1022,7 +1022,7 @@ export class ProgramsService {
     >(Prisma.sql`
       SELECT id, title, "scheduledAt" AS scheduled_at, "duration"
       FROM "LiveEvent"
-      WHERE "channelId" = ${channelId}
+      WHERE "channelId" = ${channelId}::uuid
         AND status IN ('SCHEDULED', 'LIVE')
         AND "scheduledAt" < ${endTime}
         AND (
@@ -1038,7 +1038,7 @@ export class ProgramsService {
           )
           > ${startTime}
         )
-        ${excludeEventId ? Prisma.sql`AND id <> ${excludeEventId}` : Prisma.empty}
+        ${excludeEventId ? Prisma.sql`AND id <> ${excludeEventId}::uuid` : Prisma.empty}
     `);
 
     return conflictRows.map((row) => ({
@@ -1189,7 +1189,7 @@ export class ProgramsService {
     >(Prisma.sql`
       SELECT id, title, "scheduledAt" AS scheduled_at, "duration"
       FROM "LiveEvent"
-      WHERE "channelId" = ${channelId}
+      WHERE "channelId" = ${channelId}::uuid
         AND status IN ('SCHEDULED', 'LIVE')
         AND "scheduledAt" < ${endTime}
         AND (
@@ -1205,7 +1205,7 @@ export class ProgramsService {
           )
           > ${startTime}
         )
-        ${excludeEventId ? Prisma.sql`AND id <> ${excludeEventId}` : Prisma.empty}
+        ${excludeEventId ? Prisma.sql`AND id <> ${excludeEventId}::uuid` : Prisma.empty}
     `);
 
     if (conflictRows.length > 0) {
