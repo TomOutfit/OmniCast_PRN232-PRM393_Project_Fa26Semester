@@ -16,7 +16,15 @@ import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private isUuid(value?: string): boolean {
+    return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
   async findById(id: string) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('User not found');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
@@ -145,6 +153,9 @@ export class UsersService {
   }
 
   async deactivate(id: string) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('User not found');
+    }
     return this.prisma.user.update({
       where: { id },
       data: { isActive: false },
@@ -152,6 +163,9 @@ export class UsersService {
   }
 
   async activate(id: string) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('User not found');
+    }
     return this.prisma.user.update({
       where: { id },
       data: { isActive: true },
@@ -159,6 +173,9 @@ export class UsersService {
   }
 
   async updateRole(id: string, role: string) {
+    if (!this.isUuid(id)) {
+      throw new NotFoundException('User not found');
+    }
     return this.prisma.user.update({
       where: { id },
       data: { role: role as any },
@@ -170,6 +187,9 @@ export class UsersService {
   // ============================================================
 
   async getUserStats(userId: string) {
+    if (!this.isUuid(userId)) {
+      throw new NotFoundException('User not found');
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
