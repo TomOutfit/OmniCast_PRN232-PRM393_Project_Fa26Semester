@@ -495,25 +495,51 @@ export function OmniCastHomeExperience() {
           </div>
         </div>
 
-        {/* Horizontal Scrolling Pill Card Strip */}
-        <div
-          ref={channelScrollRef}
-          className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-1 scroll-smooth"
-        >
-          {ALL_25_CHANNELS.map((ch) => (
-            <Link
-              key={ch.slug}
-              href={`/channels/${ch.slug}`}
-              className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/60 p-2 flex items-center justify-center shadow-lg transition-all duration-200 group hover:scale-105"
-            >
-              <ChannelLogo
-                slug={ch.slug}
-                name={ch.name}
-                size="md"
-                className="w-full h-full object-contain"
-              />
-            </Link>
-          ))}
+        {/* Horizontal Scrolling Pill Card Strip with Continuous Motion Animation */}
+        <div className="relative overflow-hidden w-full select-none py-1 group/channelbar">
+          
+          {/* Edge fade gradients */}
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#060910] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#060910] to-transparent z-10 pointer-events-none" />
+
+          <div
+            ref={channelScrollRef}
+            className="flex items-center gap-3 overflow-x-auto scrollbar-none"
+          >
+            <div className="animate-ticker-marquee flex items-center gap-3">
+              {/* First Set of 25 Channel Cards */}
+              {ALL_25_CHANNELS.map((ch) => (
+                <Link
+                  key={ch.slug}
+                  href={`/channels/${ch.slug}`}
+                  className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
+                >
+                  <ChannelLogo
+                    slug={ch.slug}
+                    name={ch.name}
+                    size="md"
+                    className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
+                  />
+                </Link>
+              ))}
+
+              {/* Second Set of 25 Channel Cards for Infinite Seamless Loop */}
+              {ALL_25_CHANNELS.map((ch) => (
+                <Link
+                  key={`loop-${ch.slug}`}
+                  href={`/channels/${ch.slug}`}
+                  className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
+                >
+                  <ChannelLogo
+                    slug={ch.slug}
+                    name={ch.name}
+                    size="md"
+                    className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
+                  />
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
