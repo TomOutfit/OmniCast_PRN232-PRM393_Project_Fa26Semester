@@ -45,13 +45,14 @@ export class SearchService {
 
     const offset = (page - 1) * limit;
 
-    // Build search condition
-    const searchCondition = this.buildSearchCondition(query);
-
     // Search Channels
     if (type === 'all' || type === 'channels') {
       const channelWhere: Prisma.LiveChannelWhereInput = {
-        ...searchCondition,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { tagline: { contains: query, mode: 'insensitive' } },
+        ],
         isActive: true,
       };
 
@@ -87,7 +88,10 @@ export class SearchService {
     // Search Live Events
     if (type === 'all' || type === 'programs') {
       const eventWhere: Prisma.LiveEventWhereInput = {
-        ...searchCondition,
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
         status: { in: ['SCHEDULED', 'LIVE'] },
       };
 
@@ -112,7 +116,10 @@ export class SearchService {
     // Search Recordings
     if (type === 'all' || type === 'recordings') {
       const recordingWhere: Prisma.RecordingWhereInput = {
-        ...searchCondition,
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
         isPublished: true,
       };
 
