@@ -418,24 +418,67 @@ export const customSwaggerCss = `
   }
 `;
 
+import { ApiResponseDto, ApiErrorResponseDto, PaginationMetaDto } from '../dto/api-response.dto';
+
 export function setupSwagger(app: INestApplication) {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('📡 OmniCast Broadcast Intelligence Network API')
     .setDescription(`
 ### Enterprise Media & Live Broadcasting Platform
 
-Welcome to the **OmniCast API Reference**. This documentation covers endpoints for managing creator live channels, electronic program guides (EPG), search index, AI content valuations, and security audit logs.
+Welcome to the **OmniCast API Reference**. This documentation covers all RESTful endpoints for managing creator live channels, electronic program guides (EPG), VOD recordings, real-time social engagement, personal watchlists, multi-model AI content curation, and security audit logs.
 
 ---
 
-### 🚀 Core Modules:
-- 🔐 **Authentication & RBAC**: JWT token issuance, refresh rotation, and multi-tier role guards (\`VIEWER\`, \`STAFF\`, \`ADMIN\`).
-- 📺 **Live Channels Management**: Complete CRUD for 12 creator broadcast channels (Sport, Show, Cine, Drama, News, Music, Kids, Tech, Food, Discovery).
-- 📅 **Broadcast Programs & EPG**: Program scheduling, live stream ingestion, and 24-hour EPG timelines.
-- 🔍 **Search & Discovery Engine**: Full-text fuzzy search across channels, categories, and scheduled programs.
-- 🤖 **AI Content Curator**: Multi-agent LLM pipeline (Sentiment Analysis, Compliance Assessment, Editorial Recommendation).
-- 🛡️ **Audit Logger**: Real-time security event tracking and compliance history.
-- 🩺 **Health Check**: Database ping and cluster availability status.
+### 🌐 Comprehensive HTTP Response Architecture & Status Codes
+
+All API endpoints follow a strict, unified envelope contract for reliable consumption across Web, Mobile (Flutter/React Native), and Microservices.
+
+#### 1. Success Response Envelope (\`200 OK\`, \`201 Created\`)
+\`\`\`json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": { ... },
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 120,
+    "totalPages": 6
+  },
+  "timestamp": "2026-10-01T12:00:00.000Z"
+}
+\`\`\`
+
+#### 2. Error Response Envelope (\`4xx\`, \`5xx\`)
+\`\`\`json
+{
+  "success": false,
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Validation failed: email must be a valid email address",
+  "details": { "field": "email" },
+  "path": "/api/v1/auth/register",
+  "method": "POST",
+  "timestamp": "2026-10-01T12:00:00.000Z"
+}
+\`\`\`
+
+#### 3. Standard HTTP Status Code Reference Matrix
+| Status Code | Meaning | Typical Usage in OmniCast |
+|---|---|---|
+| **\`200 OK\`** | Request Succeeded | Queries (\`GET\`), Updates (\`PATCH\`, \`PUT\`), Deletes with confirmation |
+| **\`201 Created\`** | Resource Created | Creating channels, scheduling live events, posting comments, toggling reactions, adding watchlists |
+| **\`204 No Content\`** | Empty Success | Actions that succeed without returning body |
+| **\`400 Bad Request\`** | Validation Failure | Invalid DTO payloads, unknown reaction enum types, malformed UUIDs, foreign key constraint issues |
+| **\`401 Unauthorized\`** | Authentication Required | Missing, expired, or invalid JWT Bearer token; invalid login credentials |
+| **\`403 Forbidden\`** | Insufficient Role/Rights | Non-admin accessing admin routes, comments disabled on channel, deleting another user's comment |
+| **\`404 Not Found\`** | Resource Missing | Non-existent channel ID/slug, live event ID, recording ID, user ID, comment ID |
+| **\`409 Conflict\`** | Resource State Conflict | Duplicate email registration, channel slug collision, program schedule time overlaps |
+| **\`422 Unprocessable\`** | Semantic Error | Logical validation error (e.g. program end time prior to scheduled start time) |
+| **\`429 Too Many Req\`** | Rate Limit Throttled | Exceeding 100 requests per minute quota (\`ThrottlerModule\`) |
+| **\`500 Server Error\`** | Internal Server Error | Unhandled server exceptions (captured and sanitized by \`HttpExceptionFilter\`) |
+| **\`503 Unavailable\`** | Service Degraded | Health check ping fails or database connection pool unavailable |
 
 ---
 
@@ -460,16 +503,22 @@ Welcome to the **OmniCast API Reference**. This documentation covers endpoints f
       },
       'JWT-auth',
     )
-    .addTag('auth', 'Authentication, registration, JWT tokens and session rotation')
-    .addTag('channels', 'Creator live channels, channel formats, logos and follower counts')
-    .addTag('programs', 'Live events, recorded broadcasts, VOD and EPG timeline schedules')
-    .addTag('search', 'Intelligent multi-criteria search for channels, categories and live events')
-    .addTag('ai-curator', 'AI-powered content valuation, suitability grading and schedule advisory')
-    .addTag('audit-logger', 'Security audit trails, administrative actions and system events')
-    .addTag('health', 'System health checks, database status and cluster readiness')
+    .addTag('auth', 'Authentication, registration, JWT tokens, session rotation, and user credentials')
+    .addTag('channels', 'Creator live channels, channel formats, logos, slugs, and follower management')
+    .addTag('programs', 'Live events, recorded broadcasts, VOD catalog, and 24-hour EPG timeline schedules')
+    .addTag('search', 'Intelligent multi-criteria search for channels, categories, programs, and autocomplete')
+    .addTag('watchlist', 'Personalized user watchlist, program reminders, and mobile offline sync')
+    .addTag('social', 'Interactive recording comments, hierarchical replies, and polymorphic live/VOD reactions')
+    .addTag('users', 'User profile management, role elevation (Admin), account activation/deactivation, and stats')
+    .addTag('audit-logger', 'Comprehensive security audit trails, administrative actions, and compliance logging')
+    .addTag('ai-curator', 'AI-powered content valuation, suitability grading, and broadcast scheduling advisory')
+    .addTag('ingest', 'Automated feed ingestion pipelines (YouTube RSS, Twitch, TheSportsDB, iTunes Podcasts)')
+    .addTag('health', 'System health checks, Supabase database ping, and cluster readiness')
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    extraModels: [ApiResponseDto, ApiErrorResponseDto, PaginationMetaDto],
+  });
 
   const customOptions: SwaggerCustomOptions = {
     customSiteTitle: 'OmniCast API • Broadcast Intelligence Network',
