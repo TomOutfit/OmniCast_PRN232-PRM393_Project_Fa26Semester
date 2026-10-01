@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api';
 import {
@@ -10,12 +11,14 @@ import {
   Loader2,
   Bookmark,
   Tv,
-  CheckCircle2,
-  X,
+  Trash2,
+  Radio,
+  Calendar,
+  Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { LiveBadge } from '@/components/ui/live-badge';
+import { cn } from '@/lib/utils';
 
 interface Program {
   id: string;
@@ -43,13 +46,7 @@ interface GroupedWatchlist {
   past: WatchlistItem[];
 }
 
-type TabKey = 'upcoming' | 'live' | 'past';
-
-const TAB_LABELS: Record<TabKey, string> = {
-  upcoming: 'Sắp tới',
-  live: 'Đang LIVE',
-  past: 'Đã phát',
-};
+type TabKey = 'live' | 'upcoming' | 'past';
 
 function formatDateTime(iso: string): string {
   try {
@@ -62,7 +59,7 @@ function formatDateTime(iso: string): string {
 
 export default function WatchlistPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>('upcoming');
+  const [activeTab, setActiveTab] = useState<TabKey>('live');
   const [data, setData] = useState<GroupedWatchlist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,9 +76,7 @@ export default function WatchlistPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get<GroupedWatchlist>(
-        '/me/watchlist/grouped',
-      );
+      const res = await apiClient.get<GroupedWatchlist>('/me/watchlist/grouped');
       setData(res.data);
     } catch (err: any) {
       setError(err?.message ?? 'Không thể tải danh sách yêu thích');
@@ -101,221 +96,146 @@ export default function WatchlistPage() {
     });
     try {
       await apiClient.delete(`/me/watchlist/${id}`);
-    } catch {
-      await loadWatchlist();
+    } catch (err) {
+      void loadWatchlist();
     }
   }
 
-  if (authLoading) {
-    return (
-      <div className="flex justify-center py-32">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <Bookmark className="w-12 h-12 mx-auto mb-4 text-dark-500" />
-        <h2 className="text-xl font-bold text-white mb-2">
-          Đăng nhập để xem danh sách yêu thích
-        </h2>
-        <p className="text-dark-400 mb-6">
-          Danh sách của bạn được đồng bộ giữa Web, Mobile và thiết bị khác.
-        </p>
-        <Link href="/login">
-          <Button>Đăng nhập</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const counts = data
-    ? {
-        upcoming: data.upcoming.length,
-        live: data.live.length,
-        past: data.past.length,
-      }
-    : { upcoming: 0, live: 0, past: 0 };
-
-  const activeItems = data ? data[activeTab] : [];
+  const items = data ? data[activeTab] || [] : [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-2">
-        Danh sách yêu thích
-      </h1>
-      <p className="text-dark-400 mb-6">
-        Các chương trình bạn đã lưu — đồng bộ giữa Mobile và Web.
-      </p>
-
-      <div className="flex gap-2 border-b border-dark-700 mb-6">
-        {(Object.keys(TAB_LABELS) as TabKey[]).map((key) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === key
-                ? 'border-primary-400 text-white'
-                : 'border-transparent text-dark-400 hover:text-white'
-            }`}
-          >
-            {TAB_LABELS[key]}
-            {counts[key] > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs bg-dark-800 text-dark-300">
-                {counts[key]}
+    <div className="min-h-screen bg-[#070b12] text-slate-100 py-6 px-4 lg:px-6">
+      <div className="max-w-[1680px] mx-auto space-y-6">
+        
+        {/* ── Page Header ───────────────────────────────────────────── */}
+        <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
+                PERSONAL CLOUD BOOKMARKS // SYNCED 24/7
               </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
-        </div>
-      ) : error ? (
-        <div className="text-center py-12 text-red-400">
-          {error}
-          <div className="mt-4">
-            <Button variant="outline" onClick={() => loadWatchlist()}>
-              Thử lại
-            </Button>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              <Bookmark className="w-6 h-6 text-cyan-400 fill-cyan-400/20" />
+              Danh Sách Xem Sau & Yêu Thích
+            </h1>
+            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+              Quản lý các sự kiện trực tiếp, phim truyện và lịch phát sóng đã lưu để nhận thông báo tự động trước giờ lên sóng.
+            </p>
           </div>
         </div>
-      ) : activeItems.length === 0 ? (
-        <EmptyState
-          tab={activeTab}
-          onNavigate={() => {
-            window.location.href = '/epg';
-          }}
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeItems.map((item) => (
-            <WatchlistCard
-              key={item.id}
-              item={item}
-              onRemove={() => removeItem(item.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
-function WatchlistCard({
-  item,
-  onRemove,
-}: {
-  item: WatchlistItem;
-  onRemove: () => void;
-}) {
-  return (
-    <Card className="group glass-card overflow-hidden relative">
-      <Link
-        href={`/programs/${item.programId}`}
-        className="block"
-      >
-        <div className="relative aspect-video bg-dark-900">
-          {item.program.thumbnailUrl ? (
-            <img
-              src={item.program.thumbnailUrl}
-              alt={item.program.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <Tv className="w-10 h-10 text-dark-600" />
-            </div>
-          )}
-          {item.program.status === 'LIVE' && (
-            <div className="absolute top-2 left-2">
-              <LiveBadge size="sm" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-          <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
-            {item.program.channel.logoUrl && (
-              <img
-                src={item.program.channel.logoUrl}
-                alt={item.program.channel.name}
-                className="w-6 h-6 rounded-full border border-white/20"
-              />
-            )}
-            <span className="text-xs text-white truncate">
-              {item.program.channel.name}
-            </span>
+        {/* ── Navigation Tabs ────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 p-2 rounded-2xl bg-[#080d17] border border-[#142033]">
+          {[
+            { key: 'live', label: 'Đang LIVE', count: data?.live?.length ?? 0, icon: Radio },
+            { key: 'upcoming', label: 'Sắp Tới', count: data?.upcoming?.length ?? 0, icon: Calendar },
+            { key: 'past', label: 'Đã Phát (Catch-Up)', count: data?.past?.length ?? 0, icon: Clock },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isSelected = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                  isSelected
+                    ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)] font-black'
+                    : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+                <span
+                  className={cn(
+                    'px-1.5 py-0.2 rounded text-[10px] font-mono',
+                    isSelected ? 'bg-black/20 text-black' : 'bg-[#152339] text-cyan-300'
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Content Grid ───────────────────────────────────────────── */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-56 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
+            ))}
           </div>
-        </div>
-      </Link>
+        ) : !isAuthenticated ? (
+          <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
+            <Bookmark className="w-12 h-12 text-cyan-400 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Đăng nhập để xem danh sách lưu</h3>
+            <p className="text-xs text-slate-400 mb-4">Lưu lại các chương trình truyền hình yêu thích để xem lại bất cứ lúc nào.</p>
+            <Link href="/login">
+              <Button className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-6">
+                Đăng nhập ngay
+              </Button>
+            </Link>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
+            <Bookmark className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Chưa có chương trình nào trong mục này</h3>
+            <p className="text-xs text-slate-400 mb-4">Bạn có thể bấm biểu tượng Lưu / Bookmark ở trang Lịch EPG hoặc Chi tiết kênh.</p>
+            <Link href="/epg">
+              <Button className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-6">
+                Khám phá lịch phát sóng EPG
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-4 shadow-xl transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-[10px] font-bold text-cyan-400 uppercase">
+                      {item.program.channel?.name || 'Kênh OmniCast'}
+                    </span>
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      title="Xóa khỏi danh sách"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-      <div className="p-3">
-        <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-primary-400">
-          {item.program.title}
-        </h3>
-        <div className="flex items-center justify-between mt-2 text-xs text-dark-400">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {formatDateTime(item.program.scheduledAt)}
-          </span>
-        </div>
-        <div className="flex gap-2 mt-3">
-          <Link href={`/programs/${item.programId}`} className="flex-1">
-            <Button size="sm" variant="outline" className="w-full">
-              <Play className="w-3 h-3 mr-1" />
-              Xem
-            </Button>
-          </Link>
-          <button
-            onClick={onRemove}
-            className="px-2 py-1 text-dark-400 hover:text-red-400 transition-colors"
-            aria-label="Bỏ yêu thích"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+                  <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                    {item.program.title}
+                  </h3>
+
+                  <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                    <Clock className="w-3 h-3 text-slate-500" />
+                    <span>{formatDateTime(item.program.scheduledAt)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/5">
+                  <Link
+                    href={`/programs/${item.programId}`}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)]"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Xem Ngay
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
-    </Card>
-  );
-}
-
-function EmptyState({
-  tab,
-  onNavigate,
-}: {
-  tab: TabKey;
-  onNavigate: () => void;
-}) {
-  const messages: Record<TabKey, { title: string; hint: string }> = {
-    upcoming: {
-      title: 'Chưa có chương trình sắp tới',
-      hint: 'Lưu các chương trình yêu thích để nhận nhắc nhở trước khi phát sóng.',
-    },
-    live: {
-      title: 'Hiện không có chương trình đang LIVE',
-      hint: 'Khi một chương trình bắt đầu live, nó sẽ xuất hiện ở đây.',
-    },
-    past: {
-      title: 'Chưa xem chương trình nào đã phát',
-      hint: 'Các chương trình đã phát sóng sẽ được lưu tại đây để xem lại.',
-    },
-  };
-  const m = messages[tab];
-
-  return (
-    <div className="text-center py-20 rounded-2xl border border-dashed border-dark-700">
-      <Bookmark className="w-12 h-12 mx-auto mb-4 text-dark-500 opacity-50" />
-      <h3 className="text-lg font-semibold text-white mb-2">{m.title}</h3>
-      <p className="text-sm text-dark-400 mb-6 max-w-md mx-auto">{m.hint}</p>
-      {tab === 'upcoming' && (
-        <Button onClick={onNavigate}>
-          <CheckCircle2 className="w-4 h-4 mr-2" />
-          Khám phá EPG
-        </Button>
-      )}
     </div>
   );
 }
