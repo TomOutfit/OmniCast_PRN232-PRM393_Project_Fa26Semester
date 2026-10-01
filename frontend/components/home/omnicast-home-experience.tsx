@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -28,15 +28,40 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChannelLogo } from '@/components/ui/channel-logo';
-import { useChannels } from '@/lib/hooks/useChannels';
-import { useRecordings, useLiveNow } from '@/lib/hooks/usePrograms';
-import type { Channel, LiveCategory } from '@/types';
 
-// Featured Spotlight Carousel for OmniCast
+// 25 Official Channels Data for the VTVGo-style Channel Bar
+export const ALL_25_CHANNELS = [
+  { id: '1', slug: 'sport-1', name: 'Omni Sport 1', num: '01' },
+  { id: '2', slug: 'sport-2', name: 'Sport 2', num: '02' },
+  { id: '3', slug: 'show', name: 'Omni Show', num: '03' },
+  { id: '4', slug: 'entertain', name: 'Omni Entertain', num: '04' },
+  { id: '5', slug: 'cine', name: 'Omni Cine', num: '05' },
+  { id: '6', slug: 'drama', name: 'Omni Drama', num: '06' },
+  { id: '7', slug: 'news', name: 'News 24/7', num: '07' },
+  { id: '8', slug: 'music', name: 'Music Hits', num: '08' },
+  { id: '9', slug: 'kids', name: 'Kids Zone', num: '09' },
+  { id: '10', slug: 'tech', name: 'Omni Tech', num: '10' },
+  { id: '11', slug: 'food', name: 'Food Life', num: '11' },
+  { id: '12', slug: 'discovery', name: 'Omni Discovery', num: '12' },
+  { id: '13', slug: 'esports', name: 'Omni Esports', num: '13' },
+  { id: '14', slug: 'indie-games', name: 'Indie Games', num: '14' },
+  { id: '15', slug: 'podcast', name: 'Omni Podcast', num: '15' },
+  { id: '16', slug: 'audiobook', name: 'Audiobook', num: '16' },
+  { id: '17', slug: 'academy', name: 'Omni Academy', num: '17' },
+  { id: '18', slug: 'skill-lab', name: 'Skill Lab', num: '18' },
+  { id: '19', slug: 'wellness', name: 'Omni Wellness', num: '19' },
+  { id: '20', slug: 'fashion', name: 'Omni Fashion', num: '20' },
+  { id: '21', slug: 'travel-vn', name: 'Travel VN', num: '21' },
+  { id: '22', slug: 'travel-world', name: 'Travel World', num: '22' },
+  { id: '23', slug: 'art-design', name: 'Art & Design', num: '23' },
+  { id: '24', slug: 'business', name: 'Omni Business', num: '24' },
+  { id: '25', slug: 'health', name: 'Omni Health', num: '25' },
+];
+
 interface HeroSpotlightItem {
   id: string;
   title: string;
-  subtitle: string;
+  headline: string;
   category: string;
   badge: string;
   isLive: boolean;
@@ -47,115 +72,92 @@ interface HeroSpotlightItem {
   audio: string;
   rating?: number;
   backdropUrl: string;
-  description: string;
   targetHref: string;
 }
 
 const HERO_SPOTLIGHTS: HeroSpotlightItem[] = [
   {
     id: 'spot-1',
-    title: 'Chung Kết UEFA Champions League: Real Madrid vs Man City',
-    subtitle: 'Đại chiến nảy lửa tranh cúp vô địch châu Âu tại SVĐ Wembley',
+    title: 'PHÁT HUY SỨC MẠNH TỔNG HỢP TRONG THAM MƯU CHIẾN LƯỢC',
+    headline: 'Hội nghị trực tiếp toàn quốc với sự tham gia của các lãnh đạo cấp cao',
+    category: 'THỜI SỰ CHÍNH TRỊ',
+    badge: 'TRỰC TIẾP 4K',
+    isLive: true,
+    channelName: 'News 24/7',
+    channelSlug: 'news',
+    viewers: '245.8K',
+    quality: '4K UHD 60FPS',
+    audio: 'DOLBY AUDIO',
+    rating: 9.8,
+    backdropUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1600&q=80',
+    targetHref: '/channels/news',
+  },
+  {
+    id: 'spot-2',
+    title: 'CHUNG KẾT UEFA CHAMPIONS LEAGUE: REAL MADRID VS MAN CITY',
+    headline: 'Đại chiến nảy lửa tranh cúp vô địch châu Âu tại SVĐ Wembley',
     category: 'THỂ THAO ĐỈNH CAO',
-    badge: 'TRỰC TIẾP 4K MULTI-CAM',
+    badge: 'MULTI-CAM 4K',
     isLive: true,
     channelName: 'Omni Sport 1',
     channelSlug: 'sport-1',
-    viewers: '128.4K',
+    viewers: '380.2K',
     quality: '4K 60FPS HEVC',
     audio: 'DOLBY ATMOS 5.1',
     rating: 9.9,
     backdropUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1600&q=80',
-    description: 'Trực tiếp 16 góc máy độc quyền cùng bình luận viên Quang Huy & Anh Ngọc. Hệ thống phân tích chiến thuật Tactical AI thời gian thực.',
     targetHref: '/channels/sport-1',
   },
   {
-    id: 'spot-2',
-    title: 'Spider-Man: Across the Spider-Verse',
-    subtitle: 'Siêu phẩm hoạt hình Đa vũ trụ đoạt kỷ lục phòng vé toàn cầu',
-    category: 'ĐIỆN ẢNH BOM TẤN',
-    badge: 'ĐỘC QUYỀN 4K HDR',
+    id: 'spot-3',
+    title: 'SPIDER-MAN: ACROSS THE SPIDER-VERSE',
+    headline: 'Siêu phẩm hoạt hình Đa vũ trụ đoạt kỷ lục phòng vé toàn cầu',
+    category: 'BOM TẤN ĐIỆN ẢNH',
+    badge: 'ĐỘC QUYỀN 4K',
     isLive: false,
     channelName: 'Omni Cine 4K',
     channelSlug: 'cine',
-    viewers: '96.2K',
+    viewers: '190.5K',
     quality: '4K DOLBY VISION',
     audio: 'DOLBY ATMOS 7.1',
     rating: 9.4,
     backdropUrl: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=1600&q=80',
-    description: 'Miles Morales du hành qua các chiều không gian song song và đối mặt với sự truy đuổi của Quân đoàn Nhện dưới sự dẫn dắt của Miguel O’Hara.',
     targetHref: '/channels/cine',
   },
   {
-    id: 'spot-3',
-    title: 'Chung Kết Thế Giới LMHT 2025: T1 vs Gen.G',
-    subtitle: 'Trận Bo5 kinh điển tranh ngôi vương Esports thế giới',
+    id: 'spot-4',
+    title: 'CHUNG KẾT THẾ GIỚI LMHT 2025: T1 VS GEN.G',
+    headline: 'Trận Bo5 kinh điển tranh ngôi vương Esports thế giới',
     category: 'ESPORTS QUỐC TẾ',
     badge: 'BO5 KỊCH TÍNH',
     isLive: true,
     channelName: 'Omni Esports',
     channelSlug: 'esports',
-    viewers: '210.5K',
+    viewers: '412.0K',
     quality: '4K UHD 60FPS',
     audio: 'DOLBY DIGITAL',
     rating: 9.7,
     backdropUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80',
-    description: 'Faker và T1 bước vào trận chung kết lịch sử đối đầu đại kình địch Gen.G. Phân tích chi tiết từng pha giao tranh với góc nhìn tuyển thủ.',
     targetHref: '/channels/esports',
   },
   {
-    id: 'spot-4',
-    title: 'Dune: Part Two (Hành Tinh Cát 2)',
-    subtitle: 'Kiệt tác khoa học viễn tưởng điện ảnh của Denis Villeneuve',
-    category: 'KHOA HỌC VIỄN TƯỞNG',
-    badge: 'SIÊU PHẨM IMAX',
-    isLive: false,
-    channelName: 'Omni Cine 4K',
-    channelSlug: 'cine',
-    viewers: '84.1K',
-    quality: '4K IMAX MASTER',
-    audio: 'DOLBY ATMOS',
-    rating: 9.2,
-    backdropUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80',
-    description: 'Cuộc chiến khốc liệt giành quyền kiểm soát nguồn hương liệu đắt giá nhất vũ trụ trên hành tinh sa mạc khắc nghiệt Arrakis.',
-    targetHref: '/channels/cine',
-  },
-  {
     id: 'spot-5',
-    title: 'Planet Earth III: Khám Phá Thế Giới Tự Nhiên',
-    subtitle: 'Series tài liệu thiên nhiên ngoạn mục chất lượng 4K đỉnh cao từ BBC',
+    title: 'PLANET EARTH III: KỲ QUAN THẾ GIỚI TỰ NHIÊN',
+    headline: 'Series tài liệu thiên nhiên ngoạn mục chất lượng 4K đỉnh cao từ BBC',
     category: 'TÀI LIỆU DISCOVERY',
     badge: '4K ULTRA HD',
     isLive: false,
     channelName: 'Omni Discovery',
     channelSlug: 'discovery',
-    viewers: '45.8K',
+    viewers: '78.4K',
     quality: '4K 60FPS HDR',
-    audio: 'DOLBY ATMOS 5.1',
-    rating: 9.8,
+    audio: 'DOLBY ATMOS',
+    rating: 9.9,
     backdropUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&q=80',
-    description: 'Hành trình khám phá những vùng đất kỳ vĩ và những câu chuyện sinh tồn phi thường nhất của muôn loài trên Trái Đất.',
     targetHref: '/channels/discovery',
   },
 ];
 
-// Curated 25 Channels Showcase
-const CHANNELS_PREVIEW_LIST = [
-  { id: '1', slug: 'sport-1', name: 'Omni Sport 1', category: 'SPORTS', categoryName: 'Thể Thao 1', currentProgram: 'UCL: Real Madrid vs Man City', isLive: true, viewers: '128K' },
-  { id: '2', slug: 'sport-2', name: 'Omni Sport 2', category: 'SPORTS', categoryName: 'Thể Thao 2', currentProgram: 'Premier League: Arsenal vs Chelsea', isLive: true, viewers: '94K' },
-  { id: '3', slug: 'cine', name: 'Omni Cine', category: 'CINE', categoryName: 'Điện Ảnh 4K', currentProgram: 'Spider-Man: Across the Spider-Verse', isLive: true, viewers: '88K' },
-  { id: '4', slug: 'drama', name: 'Omni Drama', category: 'DRAMA', categoryName: 'Phim Truyện', currentProgram: 'Hậu Duệ Mặt Trời (Bản 4K)', isLive: false, viewers: '32K' },
-  { id: '5', slug: 'esports', name: 'Omni Esports', category: 'GAMING', categoryName: 'Esports', currentProgram: 'CKTG LMHT 2025: T1 vs Gen.G', isLive: true, viewers: '210K' },
-  { id: '6', slug: 'news', name: 'News 24/7', category: 'NEWS', categoryName: 'Tin Tức', currentProgram: 'Bản Tin Thời Sự Quốc Tế 19:00', isLive: true, viewers: '55K' },
-  { id: '7', slug: 'show', name: 'Omni Show', category: 'SHOW', categoryName: 'Showbiz', currentProgram: 'Ca Sĩ Mặt Nạ: Chung Kết', isLive: false, viewers: '64K' },
-  { id: '8', slug: 'music', name: 'Music Hits', category: 'MUSIC', categoryName: 'Âm Nhạc', currentProgram: 'Top 50 Hits Billboard 4K', isLive: true, viewers: '42K' },
-  { id: '9', slug: 'discovery', name: 'Omni Discovery', category: 'DOCUMENTARY', categoryName: 'Khám Phá', currentProgram: 'Planet Earth III (Tập 4)', isLive: true, viewers: '39K' },
-  { id: '10', slug: 'tech', name: 'Omni Tech', category: 'TECH', categoryName: 'Công Nghệ', currentProgram: 'Kỷ Nguyên Trí Tuệ Nhân Tạo AI', isLive: false, viewers: '28K' },
-  { id: '11', slug: 'food', name: 'Food Life', category: 'FOOD', categoryName: 'Ẩm Thực', currentProgram: 'MasterChef: Đại Chiến Siêu Đầu Bếp', isLive: true, viewers: '31K' },
-  { id: '12', slug: 'kids', name: 'Kids Zone', category: 'KIDS', categoryName: 'Thiếu Nhi', currentProgram: 'Thế Giới Hoạt Hình Disney', isLive: false, viewers: '24K' },
-];
-
-// Curated Showcase Posters (Movies, Shows, Matches)
 const SHOWCASE_POSTERS = [
   {
     id: 'p-01',
@@ -281,127 +283,172 @@ const SHOWCASE_POSTERS = [
 
 export function OmniCastHomeExperience() {
   const [activeSpotlightIdx, setActiveSpotlightIdx] = useState(0);
-  const [selectedChannelCategory, setSelectedChannelCategory] = useState<string>('ALL');
   const [isAutoSlide, setIsAutoSlide] = useState(true);
+  const channelScrollRef = useRef<HTMLDivElement>(null);
 
   const currentHero = HERO_SPOTLIGHTS[activeSpotlightIdx];
+  const prevHero = HERO_SPOTLIGHTS[(activeSpotlightIdx - 1 + HERO_SPOTLIGHTS.length) % HERO_SPOTLIGHTS.length];
+  const nextHero = HERO_SPOTLIGHTS[(activeSpotlightIdx + 1) % HERO_SPOTLIGHTS.length];
 
-  // Auto rotate hero spotlight
+  // Auto rotate hero carousel every 8 seconds
   useEffect(() => {
     if (!isAutoSlide) return;
     const interval = setInterval(() => {
       setActiveSpotlightIdx((prev) => (prev + 1) % HERO_SPOTLIGHTS.length);
-    }, 7000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [isAutoSlide]);
 
-  const filteredChannels = useMemo(() => {
-    if (selectedChannelCategory === 'ALL') return CHANNELS_PREVIEW_LIST;
-    return CHANNELS_PREVIEW_LIST.filter((ch) => ch.category === selectedChannelCategory);
-  }, [selectedChannelCategory]);
+  const handleScrollChannels = (dir: 'left' | 'right') => {
+    if (channelScrollRef.current) {
+      const offset = dir === 'left' ? -350 : 350;
+      channelScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 flex flex-col space-y-12 pb-20">
+    <div className="min-h-screen bg-[#060910] text-slate-100 flex flex-col space-y-8 md:space-y-10 pb-20">
       
-      {/* ── 1. Hero Spotlight Carousel (Sân Khấu Tâm Điểm OmniCast) ── */}
-      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 pt-4">
-        <div className="relative w-full rounded-3xl overflow-hidden bg-[#0a111c] border border-[#1b2b42] shadow-[0_20px_60px_rgba(0,0,0,0.85)] aspect-[21/9] min-h-[460px] max-h-[640px] group">
+      {/* ── 1. VTVGo-Style 3D Angled Hero Carousel ────────────────────── */}
+      <section className="relative w-full overflow-hidden pt-3 md:pt-5">
+        
+        {/* Soft Ambient Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-red-600/10 blur-[130px] rounded-full pointer-events-none" />
+
+        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 relative z-10">
           
-          {/* Main Hero Backdrop Image */}
-          <Image
-            src={currentHero.backdropUrl}
-            alt={currentHero.title}
-            fill
-            unoptimized
-            priority
-            className="object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
-          />
-
-          {/* Atmospheric Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070b12] via-[#070b12]/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#070b12] via-[#070b12]/85 to-transparent w-full lg:w-3/4" />
-
-          {/* Hero Content Overlay */}
-          <div className="absolute inset-0 p-6 md:p-12 lg:p-14 flex flex-col justify-end max-w-3xl z-20 space-y-4">
+          <div className="relative flex items-center justify-center min-h-[380px] md:min-h-[480px] lg:min-h-[560px]">
             
-            {/* Meta Tags & Live Status */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {currentHero.isLive && (
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                  {currentHero.badge}
-                </span>
-              )}
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)]">
-                {currentHero.channelName}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-black/60 backdrop-blur-md text-cyan-300 border border-cyan-500/30">
-                {currentHero.quality}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-black/60 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                {currentHero.audio}
-              </span>
-              {currentHero.isLive && (
-                <span className="text-xs text-slate-300 font-medium flex items-center gap-1 ml-1">
-                  <Users className="w-3.5 h-3.5 text-cyan-400" />
-                  {currentHero.viewers} đang xem
-                </span>
-              )}
+            {/* Left Flanking 3D Angled Card (VTVGo Style) */}
+            <div
+              onClick={() => {
+                setIsAutoSlide(false);
+                setActiveSpotlightIdx((p) => (p === 0 ? HERO_SPOTLIGHTS.length - 1 : p - 1));
+              }}
+              className="hidden lg:block absolute left-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 -translate-x-4 rotate-y-12 scale-90"
+              style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(18deg) scale(0.88)' }}
+            >
+              <Image
+                src={prevHero.backdropUrl}
+                alt={prevHero.title}
+                fill
+                unoptimized
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <span className="text-[10px] font-black text-cyan-400 uppercase">{prevHero.channelName}</span>
+                <h4 className="text-xs font-black text-white line-clamp-1">{prevHero.title}</h4>
+              </div>
             </div>
 
-            {/* Main Title */}
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-2xl">
-              {currentHero.title}
-            </h1>
+            {/* Center Main Spotlight Stage Card */}
+            <div className="relative w-full lg:w-[68%] rounded-3xl overflow-hidden bg-[#0a111c] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] aspect-[16/9] z-20 group">
+              
+              <Image
+                src={currentHero.backdropUrl}
+                alt={currentHero.title}
+                fill
+                unoptimized
+                priority
+                className="object-cover object-center group-hover:scale-102 transition-transform duration-700"
+              />
 
-            {/* Description */}
-            <p className="text-xs md:text-sm text-slate-300 line-clamp-2 md:line-clamp-3 leading-relaxed max-w-2xl drop-shadow">
-              {currentHero.description}
-            </p>
+              {/* Gradient Vignette Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060910] via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#060910]/90 via-[#060910]/40 to-transparent w-full md:w-3/4" />
 
-            {/* Call To Action Buttons */}
-            <div className="flex items-center gap-3.5 pt-2">
+              {/* Center Play Button Overlay */}
               <Link
                 href={currentHero.targetHref}
-                className="flex items-center gap-2 px-7 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs md:text-sm font-black shadow-[0_0_25px_rgba(0,242,254,0.5)] transition-all hover:scale-105 cursor-pointer"
+                className="absolute inset-0 flex items-center justify-center z-25 group/play"
               >
-                <Play className="w-4 h-4 fill-current" />
-                XEM TRỰC TIẾP NGAY
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600/90 group-hover/play:bg-red-500 text-white flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.7)] group-hover/play:scale-110 transition-transform">
+                  <Play className="w-7 h-7 md:w-9 md:h-9 fill-current ml-1" />
+                </div>
               </Link>
 
-              <Link
-                href="/epg"
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-slate-200 hover:text-white text-xs font-bold transition-colors"
+              {/* VTVGo-Style Lower Third Headline Banner */}
+              <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-30 flex flex-col justify-end space-y-2">
+                
+                {/* Channel & Live Badge */}
+                <div className="flex items-center gap-2">
+                  {currentHero.isLive && (
+                    <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-red-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      LIVE
+                    </span>
+                  )}
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-black/70 backdrop-blur-md text-cyan-300 border border-cyan-500/30">
+                    {currentHero.channelName}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-black/60">
+                    {currentHero.quality}
+                  </span>
+                </div>
+
+                {/* Main White Lower-Third Box (VTVGo Signature) */}
+                <div className="bg-white/95 text-black px-4 py-2.5 rounded-xl shadow-2xl max-w-2xl">
+                  <h2 className="text-sm md:text-lg font-black tracking-tight uppercase leading-snug line-clamp-2">
+                    {currentHero.title}
+                  </h2>
+                  <p className="text-[11px] md:text-xs text-slate-700 line-clamp-1 mt-0.5">
+                    {currentHero.headline}
+                  </p>
+                </div>
+              </div>
+
+              {/* Left / Right Carousel Controls */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsAutoSlide(false);
+                  setActiveSpotlightIdx((p) => (p === 0 ? HERO_SPOTLIGHTS.length - 1 : p - 1));
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
               >
-                <Calendar className="w-4 h-4 text-cyan-400" />
-                Lịch Phát Sóng (EPG)
-              </Link>
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsAutoSlide(false);
+                  setActiveSpotlightIdx((p) => (p + 1) % HERO_SPOTLIGHTS.length);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
+
+            {/* Right Flanking 3D Angled Card (VTVGo Style) */}
+            <div
+              onClick={() => {
+                setIsAutoSlide(false);
+                setActiveSpotlightIdx((p) => (p + 1) % HERO_SPOTLIGHTS.length);
+              }}
+              className="hidden lg:block absolute right-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 translate-x-4 -rotate-y-12 scale-90"
+              style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(-18deg) scale(0.88)' }}
+            >
+              <Image
+                src={nextHero.backdropUrl}
+                alt={nextHero.title}
+                fill
+                unoptimized
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <span className="text-[10px] font-black text-cyan-400 uppercase">{nextHero.channelName}</span>
+                <h4 className="text-xs font-black text-white line-clamp-1">{nextHero.title}</h4>
+              </div>
+            </div>
+
           </div>
 
-          {/* Carousel Arrows */}
-          <button
-            onClick={() => {
-              setIsAutoSlide(false);
-              setActiveSpotlightIdx((p) => (p === 0 ? HERO_SPOTLIGHTS.length - 1 : p - 1));
-            }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/70 hover:bg-cyan-500 hover:text-black text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-xl cursor-pointer"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={() => {
-              setIsAutoSlide(false);
-              setActiveSpotlightIdx((p) => (p + 1) % HERO_SPOTLIGHTS.length);
-            }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/70 hover:bg-cyan-500 hover:text-black text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-xl cursor-pointer"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-
-          {/* Dots Indicator */}
-          <div className="absolute bottom-4 right-6 z-30 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+          {/* Centered Dots Indicator (VTVGo Style) */}
+          <div className="flex items-center justify-center gap-1.5 mt-3">
             {HERO_SPOTLIGHTS.map((_, idx) => (
               <button
                 key={idx}
@@ -412,160 +459,73 @@ export function OmniCastHomeExperience() {
                 className={cn(
                   'h-1.5 rounded-full transition-all cursor-pointer',
                   activeSpotlightIdx === idx
-                    ? 'w-6 bg-cyan-400 shadow-[0_0_8px_#00f2fe]'
+                    ? 'w-6 bg-white shadow-[0_0_8px_white]'
                     : 'w-1.5 bg-slate-600 hover:bg-slate-400'
                 )}
               />
             ))}
           </div>
-        </div>
 
-        {/* Thumbnail Selector Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-          {HERO_SPOTLIGHTS.map((item, idx) => {
-            const isActive = activeSpotlightIdx === idx;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setIsAutoSlide(false);
-                  setActiveSpotlightIdx(idx);
-                }}
-                className={cn(
-                  'group relative rounded-2xl overflow-hidden aspect-[16/9] border transition-all text-left cursor-pointer p-2 flex flex-col justify-end',
-                  isActive
-                    ? 'border-cyan-400 shadow-[0_0_18px_rgba(0,242,254,0.35)] ring-2 ring-cyan-500/50 scale-[1.02] bg-[#0c1524]'
-                    : 'border-[#172438] opacity-60 hover:opacity-100 bg-[#080e18]'
-                )}
-              >
-                <Image
-                  src={item.backdropUrl}
-                  alt={item.title}
-                  fill
-                  unoptimized
-                  className="object-cover group-hover:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                <div className="relative z-10">
-                  <div className="text-[10px] font-bold text-cyan-300 line-clamp-1">{item.channelName}</div>
-                  <div className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-400">{item.title}</div>
-                </div>
-              </button>
-            );
-          })}
         </div>
       </section>
 
-      {/* ── 2. 25 Kênh Đang Phát Sóng Trực Tiếp (Live Channels Matrix) ── */}
-      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-5">
+      {/* ── 2. Dòng Kênh Truyền Hình (VTVGo Exact Signature Style) ──── */}
+      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-3">
         
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#142236] pb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
-              <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                Kênh Truyền Hình Đang Phát Sóng Trực Tiếp
-              </h2>
-            </div>
-            <p className="text-xs text-slate-400">
-              Hệ thống 25 kênh truyền hình độ nét cao 4K UHD cùng đa luồng bình luận viên
-            </p>
-          </div>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm md:text-base font-black text-white tracking-wide">
+            Kênh truyền hình
+          </h3>
 
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'ALL', label: 'Tất Cả (25 Kênh)' },
-              { id: 'SPORTS', label: 'Thể Thao' },
-              { id: 'CINE', label: 'Điện Ảnh 4K' },
-              { id: 'GAMING', label: 'Esports' },
-              { id: 'NEWS', label: 'Tin Tức' },
-              { id: 'DOCUMENTARY', label: 'Khám Phá' },
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedChannelCategory(cat.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
-                  selectedChannelCategory === cat.id
-                    ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)]'
-                    : 'bg-[#0e1726] hover:bg-[#142338] text-slate-300 border border-[#1b2b42]'
-                )}
-              >
-                {cat.label}
-              </button>
-            ))}
-
-            <Link
-              href="/channels"
-              className="ml-2 text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1"
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleScrollChannels('left')}
+              className="p-1.5 rounded-lg bg-[#0e1726] hover:bg-[#16253c] text-slate-300 hover:text-white border border-[#1b2b42] transition-colors cursor-pointer"
+              title="Cuộn trái"
             >
-              Xem tất cả →
-            </Link>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleScrollChannels('right')}
+              className="p-1.5 rounded-lg bg-[#0e1726] hover:bg-[#16253c] text-slate-300 hover:text-white border border-[#1b2b42] transition-colors cursor-pointer"
+              title="Cuộn phải"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Channel Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
-          {filteredChannels.map((ch) => (
+        {/* Horizontal Scrolling Pill Card Strip */}
+        <div
+          ref={channelScrollRef}
+          className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-1 scroll-smooth"
+        >
+          {ALL_25_CHANNELS.map((ch) => (
             <Link
               key={ch.slug}
               href={`/channels/${ch.slug}`}
-              className="group p-3.5 rounded-2xl bg-[#09101c] hover:bg-[#101b2e] border border-[#16253c] hover:border-cyan-500/50 transition-all duration-300 shadow-lg flex flex-col justify-between space-y-3 cursor-pointer"
+              className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/60 p-2 flex items-center justify-center shadow-lg transition-all duration-200 group hover:scale-105"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <ChannelLogo slug={ch.slug} name={ch.name} size="sm" />
-                  <div>
-                    <h3 className="text-xs font-black text-white group-hover:text-cyan-300 transition-colors">
-                      {ch.name}
-                    </h3>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {ch.categoryName}
-                    </span>
-                  </div>
-                </div>
-
-                {ch.isLive ? (
-                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-800 shadow-[0_0_6px_rgba(239,68,68,0.4)]">
-                    LIVE
-                  </span>
-                ) : (
-                  <span className="text-[9px] font-bold text-slate-500">
-                    24/7
-                  </span>
-                )}
-              </div>
-
-              <div className="pt-2 border-t border-[#142135]">
-                <div className="text-[11px] font-bold text-slate-200 line-clamp-1 group-hover:text-cyan-400">
-                  {ch.currentProgram}
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                  <span className="flex items-center gap-1 text-cyan-400/90">
-                    <Users className="w-3 h-3" /> {ch.viewers}
-                  </span>
-                  <span className="font-mono text-slate-500">4K Atmos</span>
-                </div>
-              </div>
+              <ChannelLogo
+                slug={ch.slug}
+                name={ch.name}
+                size="md"
+                className="w-full h-full object-contain"
+              />
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ── 3. Kho Nội Dung Mới & Bom Tấn Đề Xuất (Showcase Poster Grid) ─ */}
-      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-5">
+      {/* ── 3. Kho Nội Dung Mới & Bom Tấn Đề Xuất (Showcase Grid) ────── */}
+      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-4">
         
-        {/* Section Header */}
-        <div className="flex items-center justify-between border-b border-[#142236] pb-4">
+        <div className="flex items-center justify-between border-b border-[#142236] pb-3">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2">
               <Film className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-xl font-black text-white tracking-tight">
-                Kho Nội Dung Mới & Sự Kiện Nổi Bật
-              </h2>
-            </div>
+              Kho Nội Dung & Sự Kiện Nổi Bật
+            </h2>
             <p className="text-xs text-slate-400">
               Tuyển tập phim chiếu rạp, trận cầu đỉnh cao và show truyền hình chất lượng 4K HDR
             </p>
@@ -575,7 +535,7 @@ export function OmniCastHomeExperience() {
             href="/recordings"
             className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
           >
-            Xem toàn bộ kho VOD →
+            Xem tất cả →
           </Link>
         </div>
 
@@ -586,7 +546,6 @@ export function OmniCastHomeExperience() {
               key={item.id}
               className="group relative rounded-2xl overflow-hidden bg-[#0a111d] border border-[#162338] hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(0,242,254,0.25)] transition-all duration-300 flex flex-col"
             >
-              {/* Poster Image Container */}
               <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
                 <Image
                   src={item.poster}
@@ -596,20 +555,17 @@ export function OmniCastHomeExperience() {
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
-                {/* Quality Badge */}
                 <div className="absolute top-2 left-2 z-10">
                   <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
                     {item.quality}
                   </span>
                 </div>
 
-                {/* Star Rating Badge */}
                 <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
                   <Star className="w-2.5 h-2.5 fill-amber-400" />
                   {item.rating}
                 </div>
 
-                {/* Hover Overlay with Action Buttons */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
                   <Link
                     href={item.href}
@@ -624,7 +580,6 @@ export function OmniCastHomeExperience() {
                 </div>
               </div>
 
-              {/* Card Metadata */}
               <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
                 <div>
                   <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
@@ -668,56 +623,6 @@ export function OmniCastHomeExperience() {
           >
             Mở Bảng Lịch EPG Toàn Diện →
           </Link>
-        </div>
-      </section>
-
-      {/* ── 5. Hệ Sinh Thái Đặc Quyền OmniCast ────────────────────────── */}
-      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8">
-        <div className="p-6 md:p-8 rounded-3xl bg-[#080e19] border border-[#16253c] shadow-2xl relative overflow-hidden">
-          
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div className="p-5 rounded-2xl bg-[#05080e] border border-[#142032] hover:border-cyan-500/40 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Tv className="w-5 h-5 text-cyan-400" />
-              </div>
-              <h4 className="text-sm font-black text-white mb-1.5">25 Kênh 4K UHD 60FPS</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Độ phân giải siêu nét chuẩn truyền hình thế hệ mới không giật lag.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[#05080e] border border-[#142032] hover:border-cyan-500/40 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Radio className="w-5 h-5 text-red-400" />
-              </div>
-              <h4 className="text-sm font-black text-white mb-1.5">Multi-Cam 16 Góc Máy</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Tự do điều khiển góc máy Tactical, Spider-cam hoặc xem riêng ngôi sao.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[#05080e] border border-[#142032] hover:border-cyan-500/40 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Zap className="w-5 h-5 text-amber-400" />
-              </div>
-              <h4 className="text-sm font-black text-white mb-1.5">Dolby Atmos & Đa Luồng</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Âm thanh vòm khán đài sống động, tùy chọn BLV quốc tế và tiếng Việt.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[#05080e] border border-[#142032] hover:border-cyan-500/40 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5 text-purple-400" />
-              </div>
-              <h4 className="text-sm font-black text-white mb-1.5">AI Curator Thông Minh</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Tự động đề xuất nội dung theo sở thích và thông báo khi sắp phát sóng.
-              </p>
-            </div>
-
-          </div>
         </div>
       </section>
 
