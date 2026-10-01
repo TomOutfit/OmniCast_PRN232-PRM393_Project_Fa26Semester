@@ -5,8 +5,12 @@ import 'package:flutter/services.dart';
 ///
 /// Layered so existing screens pick up the new palette without changing their
 /// field references (e.g. `AppColors.dark800` now resolves to the new surface).
+///
+/// The colour system is a direct port of the **Stitch Live TV & EPG** canonical
+/// design (M3 dark theme · cyan primary). Both the web (Next.js) and mobile
+/// (Flutter) clients share the same tokens for visual parity.
 class AppColors {
-  /* ── Brand · Now-Playing Hero palette ───────────────────────────────── */
+  /* ── Brand · Now-Playing Hero palette (legacy, kept for back-compat) ── */
   static const Color primary = Color(0xFF3B82F6);       // electric blue
   static const Color primaryLight = Color(0xFF60A5FA);
   static const Color primaryDark = Color(0xFF2563EB);
@@ -16,7 +20,7 @@ class AppColors {
   static const Color accentGold = Color(0xFFFCD34D);    // highlight / featured
 
   /* ── Surfaces (deep-navy streaming palette) ─────────────────────────── */
-  static const Color bg = Color(0xFF0A0E1A);             // page background
+  static const Color bg = Color(0xFF0F131D);             // page background
   static const Color surface = Color(0xFF141826);        // card base
   static const Color surfaceRaised = Color(0xFF1A1F30);  // raised card / input
 
@@ -41,13 +45,14 @@ class AppColors {
 
   /* ── Back-compat aliases for screens that haven't migrated yet ───────── */
   static const Color dark950 = bg;
-  static const Color dark900 = surface;
-  static const Color dark800 = surfaceRaised;
-  static const Color dark700 = Color(0xFF252B3E);        // a touch lighter than surface
-  static const Color dark600 = borderStrong;
-  static const Color dark500 = textMuted;
-  static const Color dark400 = textFaint;
+  static const Color dark900 = Color(0xFF171B26);        // surface-container-low
+  static const Color dark800 = Color(0xFF1C1F2A);        // surface-container
+  static const Color dark700 = Color(0xFF262A35);        // surface-container-high
+  static const Color dark600 = Color(0xFF313540);        // surface-container-highest
+  static const Color dark500 = Color(0xFF3A494B);        // outline-variant
+  static const Color dark400 = Color(0xFF849495);        // outline
   static const Color dark300 = textDim;
+  static const Color dark200 = Color(0xFFD3DAE0);
 
   static const Color lightSurface = Color(0xFFF8FAFC);
   static const Color lightCard = Color(0xFFFFFFFF);
@@ -58,6 +63,69 @@ class AppColors {
   static const Color lightTextSecondary = Color(0xFF334155);
 
   static const Color liveRed = live;
+
+  /* ══════════════════════════════════════════════════════════════════════
+     Stitch Design System · M3 dark tokens (canonical brand colours)
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Brand · cyan (primary) ──────────────────────────────────────────── */
+  static const Color stitchPrimary = Color(0xFFE0FDFF);          // primary (text)
+  static const Color stitchPrimaryContainer = Color(0xFF00F2FE);  // chips / buttons
+  static const Color stitchPrimaryFixed = Color(0xFF6FF6FF);
+  static const Color stitchPrimaryFixedDim = Color(0xFF00DCE6);
+  static const Color stitchOnPrimary = Color(0xFF00373A);
+  static const Color stitchOnPrimaryContainer = Color(0xFF006A70);
+  static const Color stitchOnPrimaryFixed = Color(0xFF002022);
+  static const Color stitchOnPrimaryFixedVariant = Color(0xFF004F53);
+  static const Color stitchInversePrimary = Color(0xFF00696F);
+
+  /* ── Surfaces (deep navy → almost black) ────────────────────────────── */
+  static const Color stitchSurface = Color(0xFF0F131D);
+  static const Color stitchSurfaceDim = Color(0xFF0F131D);
+  static const Color stitchSurfaceBright = Color(0xFF353944);
+  static const Color stitchSurfaceContainerLowest = Color(0xFF0A0E18);
+  static const Color stitchSurfaceContainerLow = Color(0xFF171B26);
+  static const Color stitchSurfaceContainer = Color(0xFF1C1F2A);
+  static const Color stitchSurfaceContainerHigh = Color(0xFF262A35);
+  static const Color stitchSurfaceContainerHighest = Color(0xFF313540);
+  static const Color stitchSurfaceVariant = Color(0xFF313540);
+  static const Color stitchSurfaceTint = Color(0xFF00DCE6);
+  static const Color stitchInverseSurface = Color(0xFFDFE2F1);
+
+  /* ── Text / foreground ──────────────────────────────────────────────── */
+  static const Color stitchOnSurface = Color(0xFFDFE2F1);
+  static const Color stitchOnSurfaceVariant = Color(0xFFB9CACB);
+  static const Color stitchInverseOnSurface = Color(0xFF2C303B);
+
+  /* ── Secondary · ice blue ───────────────────────────────────────────── */
+  static const Color stitchSecondary = Color(0xFF9BCBFF);
+  static const Color stitchSecondaryContainer = Color(0xFF3196E6);
+  static const Color stitchSecondaryFixed = Color(0xFFD0E4FF);
+  static const Color stitchSecondaryFixedDim = Color(0xFF9BCBFF);
+  static const Color stitchOnSecondary = Color(0xFF003256);
+  static const Color stitchOnSecondaryContainer = Color(0xFF002C4B);
+  static const Color stitchOnSecondaryFixed = Color(0xFF001D34);
+  static const Color stitchOnSecondaryFixedVariant = Color(0xFF004A7A);
+
+  /* ── Tertiary · purple ──────────────────────────────────────────────── */
+  static const Color stitchTertiary = Color(0xFFFCF5FF);
+  static const Color stitchTertiaryContainer = Color(0xFFE3D4FF);
+  static const Color stitchTertiaryFixed = Color(0xFFE9DDFF);
+  static const Color stitchTertiaryFixedDim = Color(0xFFD1BCFF);
+  static const Color stitchOnTertiary = Color(0xFF3C0090);
+  static const Color stitchOnTertiaryContainer = Color(0xFF7318FF);
+  static const Color stitchOnTertiaryFixed = Color(0xFF23005B);
+  static const Color stitchOnTertiaryFixedVariant = Color(0xFF5700C9);
+
+  /* ── Error · coral red ──────────────────────────────────────────────── */
+  static const Color stitchError = Color(0xFFFFB4AB);
+  static const Color stitchErrorContainer = Color(0xFF93000A);
+  static const Color stitchOnError = Color(0xFF690005);
+  static const Color stitchOnErrorContainer = Color(0xFFFFDAD6);
+
+  /* ── Outline ────────────────────────────────────────────────────────── */
+  static const Color stitchOutline = Color(0xFF849495);
+  static const Color stitchOutlineVariant = Color(0xFF3A494B);
 
   /* ── Category palette (from brand guidelines) ───────────────────────── */
   static const Color sports = Color(0xFFEF4444);
@@ -96,6 +164,19 @@ class AppColors {
         ),
       ];
 
+  static List<BoxShadow> get glowCyan => [
+        BoxShadow(
+          color: stitchPrimaryContainer.withValues(alpha: 0.35),
+          blurRadius: 24,
+          spreadRadius: -4,
+        ),
+        BoxShadow(
+          color: stitchPrimaryContainer.withValues(alpha: 0.18),
+          blurRadius: 48,
+          spreadRadius: -8,
+        ),
+      ];
+
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.5),
@@ -103,6 +184,17 @@ class AppColors {
           spreadRadius: -4,
         ),
       ];
+}
+
+/// Pre-defined Google Fonts that mirror the Stitch typography stack.
+/// Loaded via `google_fonts` (already a project dependency on most Flutter
+/// setups). If you prefer `google_fonts` lazy loading, swap the constructors.
+class AppFonts {
+  // Outfit (Stitch headline) — fallback to system sans-serif on platforms
+  // where Outfit is not pre-installed.
+  static const String display = 'Outfit';
+  static const String body = 'Inter';
+  static const String mono = 'JetBrainsMono';
 }
 
 class AppTheme {
@@ -113,22 +205,32 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.bg,
       canvasColor: AppColors.bg,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        primaryContainer: AppColors.primaryDark,
-        secondary: AppColors.accentCyan,
-        tertiary: AppColors.accent,
-        surface: AppColors.surface,
-        surfaceContainerHighest: AppColors.surfaceRaised,
-        surfaceContainerHigh: AppColors.surfaceRaised,
-        surfaceContainer: AppColors.surface,
+        primary: AppColors.stitchPrimaryContainer,
+        primaryContainer: AppColors.stitchPrimaryContainer,
+        onPrimary: AppColors.stitchOnPrimaryContainer,
+        onPrimaryContainer: AppColors.stitchOnPrimaryContainer,
+        secondary: AppColors.stitchSecondary,
+        secondaryContainer: AppColors.stitchSecondaryContainer,
+        onSecondary: AppColors.stitchOnSecondary,
+        onSecondaryContainer: AppColors.stitchOnSecondaryContainer,
+        tertiary: AppColors.stitchTertiary,
+        tertiaryContainer: AppColors.stitchTertiaryContainer,
+        onTertiary: AppColors.stitchOnTertiary,
+        onTertiaryContainer: AppColors.stitchOnTertiaryContainer,
+        surface: AppColors.stitchSurface,
+        surfaceContainerLowest: AppColors.stitchSurfaceContainerLowest,
+        surfaceContainerLow: AppColors.stitchSurfaceContainerLow,
+        surfaceContainer: AppColors.stitchSurfaceContainer,
+        surfaceContainerHigh: AppColors.stitchSurfaceContainerHigh,
+        surfaceContainerHighest: AppColors.stitchSurfaceContainerHighest,
+        surfaceTint: AppColors.stitchPrimaryContainer,
         error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
-        onSurface: AppColors.text,
-        onSurfaceVariant: AppColors.textDim,
-        onError: Colors.white,
-        outline: AppColors.borderStrong,
-        outlineVariant: AppColors.border,
+        onSurface: AppColors.stitchOnSurface,
+        onSurfaceVariant: AppColors.stitchOnSurfaceVariant,
+        onError: AppColors.stitchOnError,
+        outline: AppColors.stitchOutline,
+        outlineVariant: AppColors.stitchOutlineVariant,
+        inverseSurface: AppColors.stitchInverseSurface,
       ),
     );
     return base.copyWith(
@@ -142,102 +244,112 @@ class AppTheme {
         titleTextStyle: TextStyle(
           color: AppColors.text,
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontFamily: AppFonts.display,
+          fontWeight: FontWeight.w700,
           letterSpacing: -0.2,
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: AppColors.stitchSurfaceContainer,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppColors.rLg),
-          side: const BorderSide(color: AppColors.border, width: 0.5),
+          side: const BorderSide(color: AppColors.stitchOutlineVariant, width: 0.5),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.stitchPrimaryContainer,
+          foregroundColor: AppColors.stitchOnPrimaryContainer,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rMd),
+            borderRadius: BorderRadius.circular(AppColors.rXl),
           ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.text,
+          foregroundColor: AppColors.stitchOnSurface,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          side: const BorderSide(color: AppColors.borderStrong),
+          side: const BorderSide(color: AppColors.stitchOutlineVariant),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rMd),
+            borderRadius: BorderRadius.circular(AppColors.rXl),
           ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          foregroundColor: AppColors.stitchPrimaryContainer,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceRaised,
+        fillColor: AppColors.stitchSurfaceContainerLow,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchOutlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchOutlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchPrimaryContainer, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchError),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchError, width: 1.5),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: const TextStyle(color: AppColors.textMuted),
-        labelStyle: const TextStyle(color: AppColors.textDim),
+        labelStyle: const TextStyle(color: AppColors.stitchOnSurfaceVariant),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.text,
-        unselectedItemColor: AppColors.textMuted,
+        backgroundColor: AppColors.stitchSurfaceContainer,
+        selectedItemColor: AppColors.stitchPrimaryContainer,
+        unselectedItemColor: AppColors.stitchOnSurfaceVariant,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         showUnselectedLabels: true,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
         unselectedLabelStyle: TextStyle(fontSize: 11),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.stitchSurfaceContainer,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.18),
+        indicatorColor: AppColors.stitchPrimaryContainer.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontSize: 11,
             fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w600
+                ? FontWeight.w700
                 : FontWeight.w500,
             color: states.contains(WidgetState.selected)
-                ? AppColors.text
-                : AppColors.textMuted,
+                ? AppColors.stitchOnSurface
+                : AppColors.stitchOnSurfaceVariant,
           ),
         ),
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? AppColors.text
-                : AppColors.textMuted,
+                ? AppColors.stitchPrimaryContainer
+                : AppColors.stitchOnSurfaceVariant,
             size: 22,
           ),
         ),
@@ -245,66 +357,132 @@ class AppTheme {
         height: 64,
       ),
       tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.text,
-        unselectedLabelColor: AppColors.textMuted,
-        indicatorColor: AppColors.primary,
+        labelColor: AppColors.stitchOnSurface,
+        unselectedLabelColor: AppColors.stitchOnSurfaceVariant,
+        indicatorColor: AppColors.stitchPrimaryContainer,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        labelStyle: TextStyle(
+          fontSize: 14,
+          fontFamily: AppFonts.display,
+          fontWeight: FontWeight.w700,
+        ),
         unselectedLabelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceRaised,
-        selectedColor: AppColors.primary,
-        labelStyle: const TextStyle(color: AppColors.text, fontSize: 12),
+        backgroundColor: AppColors.stitchSurfaceContainerHigh,
+        selectedColor: AppColors.stitchPrimaryContainer,
+        labelStyle: const TextStyle(
+          color: AppColors.stitchOnSurface,
+          fontSize: 12,
+          fontFamily: AppFonts.mono,
+          fontWeight: FontWeight.w600,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppColors.rPill),
-          side: const BorderSide(color: AppColors.border),
+          side: const BorderSide(color: AppColors.stitchOutlineVariant),
         ),
-        side: const BorderSide(color: AppColors.border),
+        side: const BorderSide(color: AppColors.stitchOutlineVariant),
       ),
       dividerTheme: const DividerThemeData(
-        color: AppColors.border,
+        color: AppColors.stitchOutlineVariant,
         thickness: 0.5,
         space: 0,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceRaised,
-        contentTextStyle: const TextStyle(color: AppColors.text),
-        actionTextColor: AppColors.primary,
+        backgroundColor: AppColors.stitchSurfaceContainerHigh,
+        contentTextStyle: const TextStyle(color: AppColors.stitchOnSurface),
+        actionTextColor: AppColors.stitchPrimaryContainer,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppColors.rMd),
-          side: const BorderSide(color: AppColors.border),
+          side: const BorderSide(color: AppColors.stitchOutlineVariant),
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: AppColors.surfaceRaised,
-        circularTrackColor: AppColors.surfaceRaised,
+        color: AppColors.stitchPrimaryContainer,
+        linearTrackColor: AppColors.stitchSurfaceContainer,
+        circularTrackColor: AppColors.stitchSurfaceContainer,
       ),
-      iconTheme: const IconThemeData(color: AppColors.textDim, size: 22),
+      iconTheme: const IconThemeData(color: AppColors.stitchOnSurfaceVariant, size: 22),
       textTheme: const TextTheme(
         displayLarge: TextStyle(
-            fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.text, letterSpacing: -0.5),
+            fontSize: 36,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w800,
+            color: AppColors.stitchPrimary,
+            letterSpacing: -0.5),
         displayMedium: TextStyle(
-            fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.text, letterSpacing: -0.4),
+            fontSize: 28,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.stitchPrimary,
+            letterSpacing: -0.4),
+        displaySmall: TextStyle(
+            fontSize: 22,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.stitchPrimary),
         headlineLarge: TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text, letterSpacing: -0.3),
+            fontSize: 22,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.stitchPrimary,
+            letterSpacing: -0.3),
         headlineMedium: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.text),
+            fontSize: 18,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w600,
+            color: AppColors.stitchPrimary),
+        headlineSmall: TextStyle(
+            fontSize: 16,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w600,
+            color: AppColors.stitchPrimary),
         titleLarge: TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.text),
+            fontSize: 16,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.stitchOnSurface),
         titleMedium: TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.text),
+            fontSize: 14,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w600,
+            color: AppColors.stitchOnSurface),
         titleSmall: TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDim),
-        bodyLarge: TextStyle(fontSize: 15, color: AppColors.textDim, height: 1.5),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textDim, height: 1.5),
-        bodySmall: TextStyle(fontSize: 12, color: AppColors.textFaint),
-        labelLarge: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
-        labelMedium: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textDim),
-        labelSmall: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textMuted),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.stitchOnSurfaceVariant),
+        bodyLarge: TextStyle(
+            fontSize: 16,
+            fontFamily: AppFonts.body,
+            color: AppColors.stitchOnSurface,
+            height: 1.5),
+        bodyMedium: TextStyle(
+            fontSize: 14,
+            fontFamily: AppFonts.body,
+            color: AppColors.stitchOnSurfaceVariant,
+            height: 1.5),
+        bodySmall: TextStyle(
+            fontSize: 12,
+            fontFamily: AppFonts.body,
+            color: AppColors.stitchOnSurfaceVariant),
+        labelLarge: TextStyle(
+            fontSize: 12,
+            fontFamily: AppFonts.mono,
+            fontWeight: FontWeight.w700,
+            color: AppColors.stitchOnSurface),
+        labelMedium: TextStyle(
+            fontSize: 11,
+            fontFamily: AppFonts.mono,
+            fontWeight: FontWeight.w600,
+            color: AppColors.stitchOnSurfaceVariant),
+        labelSmall: TextStyle(
+            fontSize: 10,
+            fontFamily: AppFonts.mono,
+            fontWeight: FontWeight.w500,
+            color: AppColors.stitchOnSurfaceVariant,
+            letterSpacing: 0.06),
       ),
     );
   }
@@ -315,14 +493,14 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightSurface,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        primaryContainer: AppColors.primaryLight,
-        secondary: AppColors.accentCyan,
+        primary: AppColors.stitchPrimaryContainer,
+        primaryContainer: AppColors.stitchPrimaryFixedDim,
+        secondary: AppColors.stitchSecondary,
         surface: AppColors.lightCard,
         surfaceContainerHighest: Color(0xFFF1F5F9),
         error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
+        onPrimary: AppColors.stitchOnPrimaryContainer,
+        onSecondary: AppColors.stitchOnSecondary,
         onSurface: AppColors.lightText,
         onError: Colors.white,
         outline: AppColors.lightBorder,
@@ -346,12 +524,12 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.stitchPrimaryContainer,
+          foregroundColor: AppColors.stitchOnPrimaryContainer,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rMd),
+            borderRadius: BorderRadius.circular(AppColors.rXl),
           ),
         ),
       ),
@@ -361,27 +539,27 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           side: const BorderSide(color: AppColors.lightDivider),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rMd),
+            borderRadius: BorderRadius.circular(AppColors.rXl),
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+        style: TextButton.styleFrom(foregroundColor: AppColors.stitchPrimaryContainer),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFFF1F5F9),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
           borderSide: const BorderSide(color: AppColors.lightBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
           borderSide: const BorderSide(color: AppColors.lightBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rMd),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderSide: const BorderSide(color: AppColors.stitchPrimaryContainer, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -389,19 +567,19 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightCard,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.stitchPrimaryContainer,
         unselectedItemColor: AppColors.lightMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
       tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.primary,
+        labelColor: AppColors.stitchPrimaryContainer,
         unselectedLabelColor: AppColors.lightMuted,
-        indicatorColor: AppColors.primary,
+        indicatorColor: AppColors.stitchPrimaryContainer,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFE2E8F0),
-        selectedColor: AppColors.primary,
+        selectedColor: AppColors.stitchPrimaryContainer,
         labelStyle: const TextStyle(color: AppColors.lightText),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -414,20 +592,47 @@ class AppTheme {
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(
-            fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.lightText),
+            fontSize: 32,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w800,
+            color: AppColors.lightText),
         displayMedium: TextStyle(
-            fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.lightText),
+            fontSize: 28,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.lightText),
         headlineLarge: TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.lightText),
+            fontSize: 22,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w700,
+            color: AppColors.lightText),
         headlineMedium: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.lightText),
+            fontSize: 18,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w600,
+            color: AppColors.lightText),
         titleLarge: TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.lightText),
+            fontSize: 16,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w600,
+            color: AppColors.lightText),
         titleMedium: TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.lightText),
-        bodyLarge: TextStyle(fontSize: 15, color: AppColors.lightTextSecondary),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.lightTextSecondary),
-        bodySmall: TextStyle(fontSize: 12, color: AppColors.lightMuted),
+            fontSize: 14,
+            fontFamily: AppFonts.display,
+            fontWeight: FontWeight.w500,
+            color: AppColors.lightText),
+        bodyLarge: TextStyle(
+            fontSize: 15,
+            fontFamily: AppFonts.body,
+            color: AppColors.lightTextSecondary),
+        bodyMedium: TextStyle(
+            fontSize: 14,
+            fontFamily: AppFonts.body,
+            color: AppColors.lightTextSecondary),
+        bodySmall: TextStyle(
+            fontSize: 12,
+            fontFamily: AppFonts.body,
+            color: AppColors.lightMuted),
       ),
     );
   }

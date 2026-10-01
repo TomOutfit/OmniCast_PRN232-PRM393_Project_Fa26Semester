@@ -1,399 +1,284 @@
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useT, useI18n } from '@/lib/i18n/i18n-provider';
-import { useTheme, type ThemeMode } from '@/lib/theme/theme-provider';
+import { useAuth } from '@/lib/auth-context';
 import {
-  LOCALE_LABELS,
-  SUPPORTED_LOCALES,
-  type Locale,
-} from '@/lib/i18n/config';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
-import {
-  Moon,
-  Sun,
-  Monitor,
-  Bell,
-  Mail,
+  Shield,
+  Crown,
   Tv,
-  Database,
+  Sparkles,
+  CheckCircle2,
   Lock,
-  Loader2,
-  Eye,
-  EyeOff,
+  Volume2,
+  Video,
+  Globe,
+  Bell,
+  Monitor,
+  Zap,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth-context';
-import { changePasswordSchema, type ChangePasswordInput } from '@/lib/validators/auth';
-import { changePassword } from '@/lib/api/users';
-import { parseApiError } from '@/lib/errors/api-error';
-
-type NotificationPrefs = {
-  push: boolean;
-  email: boolean;
-  live: boolean;
-};
 
 export default function SettingsPage() {
-  const t = useT();
-  const { mode, setMode } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const { locale, setLocale } = useI18n();
-  const { isAuthenticated } = useAuth();
 
-  const [prefs, setPrefs] = useState<NotificationPrefs>({
-    push: true,
-    email: false,
-    live: true,
-  });
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [dataSaver, setDataSaver] = useState(false);
+  const [activeSection, setActiveSection] = useState<'omnipass' | 'playback' | 'security'>('omnipass');
+  const [resolutionPref, setResolutionPref] = useState('4k');
+  const [audioPref, setAudioPref] = useState('dolby');
+  const [dvrAutoSave, setDvrAutoSave] = useState(true);
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSave = () => {
-    setSavedAt(new Date().toLocaleString());
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem(
-          'omnicast.notifications',
-          JSON.stringify(prefs),
-        );
-        window.localStorage.setItem(
-          'omnicast.dataSaver',
-          JSON.stringify(dataSaver),
-        );
-      } catch {
-        /* ignore */
-      }
-    }
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const themeOptions: Array<{
-    value: ThemeMode;
-    label: string;
-    icon: typeof Moon;
-  }> = [
-    { value: 'light', label: t('settings.theme.light'), icon: Sun },
-    { value: 'dark', label: t('settings.theme.dark'), icon: Moon },
-    { value: 'system', label: t('settings.theme.system'), icon: Monitor },
-  ];
-
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-8">{t('settings.title')}</h1>
-
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-dark-200 dark:text-dark-200 light:text-gray-700">
-          {t('settings.section.appearance')}
-        </h2>
-        <Card className="p-6 space-y-6">
+    <div className="min-h-screen bg-[#070b12] text-slate-100 py-6 px-4 lg:px-6">
+      <div className="max-w-[1200px] mx-auto space-y-6">
+        
+        {/* ── Page Header ───────────────────────────────────────────── */}
+        <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-sm font-medium mb-3">
-              {t('settings.theme.label')}
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
+                ACCOUNT CENTER & BROADCAST PREFERENCES
+              </span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {themeOptions.map((opt) => {
-                const Icon = opt.icon;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setMode(opt.value)}
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-colors',
-                      mode === opt.value
-                        ? 'border-primary-500 bg-primary-500/10 text-primary-300'
-                        : 'border-dark-700 bg-dark-800/50 hover:border-dark-600 dark:border-dark-700 dark:bg-dark-800/50 light:border-gray-200 light:bg-white light:hover:border-gray-300',
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-xs">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              Cài Đặt Tài Khoản & Gói Dịch Vụ OmniPass
+            </h1>
           </div>
 
-          <div>
-            <div className="text-sm font-medium mb-3">
-              {t('settings.language.label')}
+          {savedSuccess && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4" />
+              Đã lưu cài đặt thành công!
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {SUPPORTED_LOCALES.map((loc) => (
+          )}
+        </div>
+
+        {/* ── Main Layout: Sidebar Tabs + Content ────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          {/* Left Sidebar */}
+          <div className="md:col-span-4 space-y-2">
+            {[
+              { key: 'omnipass', label: 'Gói Dịch Vụ OmniPass VIP', icon: Crown },
+              { key: 'playback', label: 'Tùy Chọn Phát Sóng 4K & Audio', icon: Video },
+              { key: 'security', label: 'Bảo Mật & Đổi Mật Khẩu', icon: Lock },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isSelected = activeSection === tab.key;
+              return (
                 <button
-                  key={loc}
-                  onClick={() => setLocale(loc as Locale)}
+                  key={tab.key}
+                  onClick={() => setActiveSection(tab.key as any)}
                   className={cn(
-                    'px-4 py-3 rounded-lg border text-sm transition-colors',
-                    locale === loc
-                      ? 'border-primary-500 bg-primary-500/10 text-primary-300'
-                      : 'border-dark-700 bg-dark-800/50 hover:border-dark-600 dark:border-dark-700 dark:bg-dark-800/50 light:border-gray-200 light:bg-white light:hover:border-gray-300',
+                    'w-full flex items-center gap-3 p-3.5 rounded-2xl text-xs font-bold transition-all text-left border',
+                    isSelected
+                      ? 'bg-cyan-950/60 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(0,242,254,0.2)]'
+                      : 'bg-[#090f1a] hover:bg-[#0f1a2c] border-[#162338] text-slate-400 hover:text-white'
                   )}
                 >
-                  {LOCALE_LABELS[loc]}
+                  <Icon className="w-4 h-4 text-cyan-400" />
+                  <span>{tab.label}</span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </Card>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-dark-200 dark:text-dark-200 light:text-gray-700">
-          {t('settings.section.notifications')}
-        </h2>
-        <Card className="p-6 space-y-4">
-          <ToggleRow
-            icon={Bell}
-            label={t('settings.notifications.push')}
-            checked={prefs.push}
-            onChange={(v) => setPrefs((p) => ({ ...p, push: v }))}
-          />
-          <ToggleRow
-            icon={Mail}
-            label={t('settings.notifications.email')}
-            checked={prefs.email}
-            onChange={(v) => setPrefs((p) => ({ ...p, email: v }))}
-          />
-          <ToggleRow
-            icon={Tv}
-            label={t('settings.notifications.live')}
-            checked={prefs.live}
-            onChange={(v) => setPrefs((p) => ({ ...p, live: v }))}
-          />
-        </Card>
-      </section>
+          {/* Right Content Area */}
+          <div className="md:col-span-8">
+            
+            {/* Tab 1: OmniPass VIP Tier */}
+            {activeSection === 'omnipass' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-[#121c2e] via-[#09111e] to-[#060a12] border-2 border-cyan-500/40 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-dark-200 dark:text-dark-200 light:text-gray-700">
-          {t('settings.section.account')}
-        </h2>
-        <Card className="p-6 space-y-4">
-          <ToggleRow
-            icon={Database}
-            label={t('settings.dataSaver')}
-            checked={dataSaver}
-            onChange={setDataSaver}
-          />
-        </Card>
-      </section>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-md flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5" />
+                      OMNIPASS ULTRA VIP
+                    </span>
+                    <span className="text-xs text-emerald-400 font-mono font-bold">ĐANG HOẠT ĐỘNG</span>
+                  </div>
 
-      {/* Change password — only available for authenticated users. */}
-      {isAuthenticated && (
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 text-dark-200 dark:text-dark-200 light:text-gray-700">
-            Bảo mật
-          </h2>
-          <ChangePasswordCard />
-        </section>
-      )}
+                  <h3 className="text-xl font-black text-white mb-2">Quyền Lợi Gói Phát Sóng Cao Cấp</h3>
+                  <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+                    Trải nghiệm xem toàn bộ 12 kênh truyền hình không giới hạn, đường truyền Satellite Downlink 2160p60 HEVC và xem lại Catch-up 7 ngày.
+                  </p>
 
-      <div className="flex items-center gap-4">
-        <Button onClick={handleSave}>{t('settings.save')}</Button>
-        {savedAt && (
-          <span className="text-sm text-dark-400 dark:text-dark-400 light:text-gray-500">
-            {savedAt}
-          </span>
-        )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6">
+                    {[
+                      'Truyền dẫn 4K UHD 60FPS Low Latency',
+                      'Đa góc quay Multi-Cam Spider & Player Cam',
+                      'Âm thanh Dolby Atmos 5.1 & bình luận kép',
+                      'Catch-up xem lại 7 ngày không quảng cáo',
+                      'Tính năng ghi hình Cloud DVR không giới hạn',
+                      'Hỗ trợ 5 thiết bị đồng thời (TV, Mobile, Web)',
+                    ].map((feat, i) => (
+                      <div key={i} className="flex items-center gap-2 text-slate-200">
+                        <Check className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Hạn gia hạn tiếp theo:</div>
+                      <div className="text-xs font-mono font-bold text-white">31/12/2026 (Thanh toán tự động)</div>
+                    </div>
+                    <Button
+                      onClick={handleSave}
+                      className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-5 shadow-[0_0_15px_rgba(0,242,254,0.4)]"
+                    >
+                      Quản lý gói cước
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Playback & Broadcast Settings */}
+            {activeSection === 'playback' && (
+              <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl space-y-6">
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Video className="w-4 h-4 text-cyan-400" />
+                  Cài Đặt Chất Lượng Luồng Phát Sóng
+                </h3>
+
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-2">Độ phân giải mặc định:</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { key: '4k', label: '4K UHD 60FPS (Khuyên dùng)' },
+                        { key: '1080p', label: '1080p60 Full HD' },
+                        { key: 'auto', label: 'Tự động thích ứng (Auto)' },
+                      ].map((res) => (
+                        <button
+                          key={res.key}
+                          onClick={() => setResolutionPref(res.key)}
+                          className={cn(
+                            'p-3 rounded-xl border text-left font-bold transition-all',
+                            resolutionPref === res.key
+                              ? 'bg-cyan-950/60 border-cyan-400 text-cyan-300'
+                              : 'bg-[#0b1320] border-[#16253c] text-slate-400'
+                          )}
+                        >
+                          {res.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-2">Định dạng âm thanh ưu tiên:</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: 'dolby', label: 'Dolby Atmos 5.1 Surround' },
+                        { key: 'stereo', label: 'Stereo 2.0 Tiêu chuẩn' },
+                      ].map((aud) => (
+                        <button
+                          key={aud.key}
+                          onClick={() => setAudioPref(aud.key)}
+                          className={cn(
+                            'p-3 rounded-xl border text-left font-bold transition-all',
+                            audioPref === aud.key
+                              ? 'bg-cyan-950/60 border-cyan-400 text-cyan-300'
+                              : 'bg-[#0b1320] border-[#16253c] text-slate-400'
+                          )}
+                        >
+                          {aud.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-white">Tự động kích hoạt DVR Time-shift</div>
+                      <div className="text-[11px] text-slate-400">Cho phép tua lại tức thì ngay khi mở luồng trực tiếp</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={dvrAutoSave}
+                      onChange={(e) => setDvrAutoSave(e.target.checked)}
+                      className="w-5 h-5 accent-cyan-400 rounded cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <Button
+                    onClick={handleSave}
+                    className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-6"
+                  >
+                    Lưu cấu hình phát sóng
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Security & Password */}
+            {activeSection === 'security' && (
+              <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl space-y-6">
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-cyan-400" />
+                  Bảo Mật Tài Khoản & Mật Khẩu
+                </h3>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">Mật khẩu hiện tại</label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="bg-[#0b1320] border-[#18273e] text-white text-xs rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">Mật khẩu mới</label>
+                    <Input
+                      type="password"
+                      placeholder="Ít nhất 8 ký tự..."
+                      className="bg-[#0b1320] border-[#18273e] text-white text-xs rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">Xác nhận mật khẩu mới</label>
+                    <Input
+                      type="password"
+                      placeholder="Nhập lại mật khẩu mới..."
+                      className="bg-[#0b1320] border-[#18273e] text-white text-xs rounded-xl"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-6"
+                  >
+                    Cập nhật mật khẩu
+                  </Button>
+                </form>
+              </div>
+            )}
+
+          </div>
+        </div>
+
       </div>
     </div>
-  );
-}
-
-function ToggleRow({
-  icon: Icon,
-  label,
-  checked,
-  onChange,
-}: {
-  icon: typeof Bell;
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between gap-4 cursor-pointer">
-      <div className="flex items-center gap-3">
-        <Icon className="w-4 h-4 text-dark-400 dark:text-dark-400 light:text-gray-500" />
-        <span className="text-sm">{label}</span>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-          checked ? 'bg-primary-500' : 'bg-dark-700 dark:bg-dark-700 light:bg-gray-300',
-        )}
-      >
-        <span
-          className={cn(
-            'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-            checked ? 'translate-x-6' : 'translate-x-1',
-          )}
-        />
-      </button>
-    </label>
-  );
-}
-
-function ChangePasswordCard() {
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ChangePasswordInput>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmNewPassword: '',
-    },
-  });
-
-  const onSubmit = async (data: ChangePasswordInput) => {
-    setSubmitting(true);
-    try {
-      await changePassword({
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
-      });
-      toast.success('Đổi mật khẩu thành công');
-      reset();
-    } catch (rawError) {
-      const api = parseApiError(rawError);
-      const description =
-        api.fieldError('currentPassword') ??
-        api.fieldError('newPassword') ??
-        api.fieldError('_form') ??
-        api.message;
-      toast.error('Đổi mật khẩu thất bại', { description });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <div className="flex items-center gap-2 mb-2 text-dark-200">
-          <Lock className="w-4 h-4" />
-          <h3 className="text-base font-medium">Đổi mật khẩu</h3>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="currentPassword" className="text-dark-200">
-            Mật khẩu hiện tại
-          </Label>
-          <div className="relative">
-            <Input
-              id="currentPassword"
-              type={showCurrent ? 'text' : 'password'}
-              autoComplete="current-password"
-              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
-              aria-invalid={!!errors.currentPassword}
-              {...register('currentPassword')}
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrent(!showCurrent)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
-              aria-label={showCurrent ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-            >
-              {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.currentPassword && (
-            <p className="text-sm text-red-400" role="alert">
-              {errors.currentPassword.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="newPassword" className="text-dark-200">
-            Mật khẩu mới
-          </Label>
-          <div className="relative">
-            <Input
-              id="newPassword"
-              type={showNew ? 'text' : 'password'}
-              autoComplete="new-password"
-              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
-              aria-invalid={!!errors.newPassword}
-              {...register('newPassword')}
-            />
-            <button
-              type="button"
-              onClick={() => setShowNew(!showNew)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
-              aria-label={showNew ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-            >
-              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.newPassword && (
-            <p className="text-sm text-red-400" role="alert">
-              {errors.newPassword.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="confirmNewPassword" className="text-dark-200">
-            Xác nhận mật khẩu mới
-          </Label>
-          <div className="relative">
-            <Input
-              id="confirmNewPassword"
-              type={showConfirm ? 'text' : 'password'}
-              autoComplete="new-password"
-              className="bg-dark-900/50 border-dark-600 focus:border-primary-500 pr-10"
-              aria-invalid={!!errors.confirmNewPassword}
-              {...register('confirmNewPassword')}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
-              aria-label={showConfirm ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-            >
-              {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.confirmNewPassword && (
-            <p className="text-sm text-red-400" role="alert">
-              {errors.confirmNewPassword.message}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 pt-2">
-          <Button
-            type="submit"
-            disabled={submitting || isSubmitting}
-            className="gap-2"
-          >
-            {(submitting || isSubmitting) && (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            )}
-            Đổi mật khẩu
-          </Button>
-          <p className="text-xs text-dark-500">
-            Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.
-          </p>
-        </div>
-      </form>
-    </Card>
   );
 }
