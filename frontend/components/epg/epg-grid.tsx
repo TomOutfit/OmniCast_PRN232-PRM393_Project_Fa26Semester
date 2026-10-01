@@ -4,1297 +4,1803 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Star,
-  Search,
   Calendar,
+  Clock,
+  Play,
   RotateCcw,
   Sparkles,
-  Download,
-  Info,
+  Search,
+  Filter,
   Radio,
   Tv,
-  ChevronRight,
+  Film,
+  Flame,
+  Star,
+  CheckCircle2,
   ChevronLeft,
-  Clock,
+  ChevronRight,
+  Bell,
+  Info,
+  SlidersHorizontal,
+  Layers,
   Volume2,
-  Video,
-  Play,
+  Maximize2,
+  Share2,
+  Cast,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useEpgDay } from '@/lib/hooks/usePrograms';
+import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels } from '@/lib/hooks/useChannels';
-import type { LiveCategory } from '@/types';
+import { useEpgDay } from '@/lib/hooks/usePrograms';
 
-export interface StitchProgram {
+// Program definition with flexible real-world durations
+export interface RealEpgProgram {
   id: string;
   title: string;
   subtitle?: string;
-  startHour: number; // e.g. 19.5 for 19:30
-  endHour: number;   // e.g. 22 for 22:00
-  timeString: string;
+  category: string;
+  startTime: string; // e.g. "19:15"
+  endTime: string;   // e.g. "21:45"
+  startMinutes: number; // minutes from 00:00 (e.g. 19*60 + 15 = 1155)
+  durationMinutes: number; // e.g. 150
   badge?: string;
-  badgeType?: 'live' | 'catchup' | 'replay' | 'premiere' | 'final';
+  quality?: string;
+  audio?: string;
+  description: string;
+  thumbnailUrl: string;
+  directorOrHost?: string;
+  rating?: number;
   features?: string[];
-  isLiveNow?: boolean;
 }
 
-export interface StitchChannelRow {
+export interface RealEpgChannel {
   id: string;
+  slug: string;
   chNumber: string;
   name: string;
-  badgeTag: string;
+  category: 'sports' | 'movies' | 'news' | 'esports' | 'discovery' | 'entertainment' | 'kids';
+  categoryLabel: string;
   logo: string;
-  category: 'sports' | 'movies' | 'shows' | 'news_edu' | 'lifestyle';
-  isFavorite?: boolean;
-  programs: StitchProgram[];
+  color: string;
+  programs: RealEpgProgram[];
 }
 
-export const STITCH_CHANNELS_25: StitchChannelRow[] = [
+// ─────────────────────────────────────────────────────────────────────────────
+// REAL-WORLD 24-HOUR BROADCAST SCHEDULE (LỊCH PHÁT SÓNG THỰC TẾ 25 KÊNH)
+// Thời lượng thực tế: 15p, 30p, 45p, 50p, 75p, 90p, 110p, 135p, 150p...
+// ─────────────────────────────────────────────────────────────────────────────
+export const REAL_WORLD_CHANNELS_EPG: RealEpgChannel[] = [
+  // ── 01. Omni Sport 1 (Thể Thao Ngoại Hạng & Champions League) ─────────
   {
     id: 'ch-01',
+    slug: 'sport-1',
     chNumber: 'CH #001',
     name: 'Omni Sport 1',
-    badgeTag: 'PREMIUM LIVE 4K',
-    logo: '/Channel_Logos/01-omni-sport-1-icon.svg',
     category: 'sports',
-    isFavorite: true,
+    categoryLabel: 'Thể Thao Đỉnh Cao',
+    logo: '/Channel_Logos/01-omni-sport-1-icon.svg',
+    color: '#EF4444',
     programs: [
       {
-        id: 'p-1',
-        title: 'Bản Tin Tiền Trận: Siêu Kinh Điển Anh',
-        subtitle: 'Phân tích chiến thuật trước trận derby • Omni Sports Desk',
-        startHour: 18,
-        endHour: 19.5,
-        timeString: '18:00 - 19:30',
-        badge: 'REPLAY HD',
-        badgeType: 'replay',
+        id: 'sp1-1',
+        title: 'Thể Thao 24H: Điểm Tin Sáng Toàn Cầu',
+        category: 'Tin Tức',
+        startTime: '06:00',
+        endTime: '06:30',
+        startMinutes: 360,
+        durationMinutes: 30,
+        quality: '1080p60',
+        audio: 'Stereo',
+        description: 'Tổng hợp kết quả các trận đấu bóng đá châu Âu đêm qua, bảng xếp hạng và các thông tin thể thao quốc tế mới nhất.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-2',
+        id: 'sp1-2',
+        title: 'Tạp Chí Ngoại Hạng Anh: Bàn Thắng Vòng Đấu',
+        category: 'Tạp Chí',
+        startTime: '06:30',
+        endTime: '07:15',
+        startMinutes: 390,
+        durationMinutes: 45,
+        badge: 'HIGHLIGHT',
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Bình luận chi tiết và chiêm ngưỡng top 10 siêu phẩm bàn thắng đẹp mắt nhất vòng đấu Ngoại Hạng Anh.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-3',
+        title: 'Xem Lại Trận Đấu: Real Madrid vs Bayern Munich',
+        subtitle: 'Bán Kết Lượt Về UEFA Champions League',
+        category: 'Trận Cầu Đinh',
+        startTime: '07:15',
+        endTime: '08:45',
+        startMinutes: 435,
+        durationMinutes: 90,
+        badge: 'CATCH-UP 4K',
+        quality: '4K 60FPS',
+        audio: 'Dolby Atmos',
+        description: 'Màn rượt đuổi tỉ số nghẹt thở trên thánh địa Santiago Bernabéu với cú đúp phút bù giờ khó tin của Joselu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-4',
+        title: 'Bản Tin Chuyển Nhượng: Tin Nóng Sân Cỏ',
+        category: 'Tin Nhanh',
+        startTime: '08:45',
+        endTime: '09:05',
+        startMinutes: 525,
+        durationMinutes: 20,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Cập nhật diễn biến thị trường chuyển nhượng mùa hè châu Âu và các bản hợp đồng bom tấn chuẩn bị kích nổ.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-5',
+        title: 'Quần Vợt ATP Masters 1000: Vòng Tứ Kết',
+        category: 'Quần Vợt',
+        startTime: '09:05',
+        endTime: '11:15',
+        startMinutes: 545,
+        durationMinutes: 130,
+        quality: '4K HDR',
+        audio: 'Dolby 5.1',
+        description: 'Cuộc so tài đỉnh cao giữa Carlos Alcaraz và Jannik Sinner trên mặt sân cứng.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-6',
+        title: 'Thể Thao Trưa & Phỏng Vấn Chuyên Sâu',
+        category: 'Talkshow',
+        startTime: '11:15',
+        endTime: '12:00',
+        startMinutes: 675,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Gặp gỡ và trò chuyện cùng các chuyên gia bóng đá hàng đầu về cơ hội vô địch của các câu lạc bộ lớn.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-7',
+        title: 'Đua Xe F1: Chặng Đua Monaco GP - Vòng Phân Hạng',
+        category: 'F1 Motorsport',
+        startTime: '12:00',
+        endTime: '13:30',
+        startMinutes: 720,
+        durationMinutes: 90,
+        badge: 'REPLAY 4K',
+        quality: '4K 60FPS',
+        audio: 'Dolby 5.1',
+        description: 'Những góc cua tử thần tại Monte Carlo cùng màn tranh giành pole position nghẹt thở của Max Verstappen và Charles Leclerc.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-8',
+        title: 'Bóng Chuyền Nữ VNL: Việt Nam vs Thái Lan',
+        category: 'Bóng Chuyền',
+        startTime: '13:30',
+        endTime: '15:15',
+        startMinutes: 810,
+        durationMinutes: 105,
+        quality: '1080p60',
+        audio: 'Dolby Audio',
+        description: 'Trận thư hùng kinh điển khu vực Đông Nam Á tại đấu trường FIVB Volleyball Nations League.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-9',
+        title: 'Toàn Cảnh Champions League: Kỷ Niệm 70 Năm',
+        category: 'Tài Liệu',
+        startTime: '15:15',
+        endTime: '16:45',
+        startMinutes: 915,
+        durationMinutes: 90,
+        quality: '4K UHD',
+        audio: 'Dolby Atmos',
+        description: 'Hành trình 7 thập kỷ hình thành và phát triển của giải bóng đá danh giá nhất hành tinh cấp câu lạc bộ.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-10',
+        title: 'Bản Tin Thể Thao Tối & Tiền Trận Siêu Cúp',
+        category: 'Tin Nóng',
+        startTime: '16:45',
+        endTime: '17:45',
+        startMinutes: 1005,
+        durationMinutes: 60,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Cập nhật đội hình ra sân chính thức, sơ đồ chiến thuật và nhận định chuyên gia trước giờ bóng lăn.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-11',
         title: 'Trực Tiếp: Manchester City vs Arsenal',
-        subtitle: 'Vòng 35 Ngoại Hạng Anh • SVĐ Etihad • BLV Quang Huy & Anh Ngọc',
-        startHour: 19.5,
-        endHour: 22,
-        timeString: '19:30 - 22:00',
-        badge: 'ON-AIR 4K HDR',
-        badgeType: 'live',
-        features: ['5.1 SURROUND', 'Multi-Cam Ready'],
-        isLiveNow: true,
+        subtitle: 'Vòng 35 Ngoại Hạng Anh • SVĐ Etihad',
+        category: 'Trực Tiếp Đỉnh Cao',
+        startTime: '17:45',
+        endTime: '20:15',
+        startMinutes: 1065,
+        durationMinutes: 150,
+        badge: 'TRỰC TIẾP 4K',
+        quality: '4K 60FPS HEVC',
+        audio: 'DOLBY ATMOS 5.1',
+        rating: 9.9,
+        description: 'Trận đại chiến quyết định ngôi vương Premier League. Trực tiếp 16 góc máy cùng BLV Quang Huy & BLV Anh Ngọc.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
+        features: ['16 Multi-Cam', 'Dolby Atmos 5.1', 'Tactical AI'],
       },
       {
-        id: 'p-3',
-        title: 'Omni Extra Time: Họp Báo Sau Trận',
-        subtitle: 'Phỏng vấn HLV Pep Guardiola & Arteta',
-        startHour: 22,
-        endHour: 23,
-        timeString: '22:00 - 23:00',
-        badge: 'LIVE PRESS',
-        badgeType: 'live',
+        id: 'sp1-12',
+        title: 'Omni Extra Time: Họp Báo & Phỏng Vấn HLV',
+        category: 'Hậu Trận',
+        startTime: '20:15',
+        endTime: '21:00',
+        startMinutes: 1215,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Phỏng vấn độc quyền HLV Pep Guardiola và Mikel Arteta ngay tại phòng họp báo sân vận động Etihad.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-13',
+        title: 'Trực Tiếp: Real Madrid vs FC Barcelona',
+        subtitle: 'El Clásico Kinh Điển Tây Ban Nha • SVĐ Santiago Bernabéu',
+        category: 'Siêu Kinh Điển',
+        startTime: '21:00',
+        endTime: '23:30',
+        startMinutes: 1260,
+        durationMinutes: 150,
+        badge: 'TRỰC TIẾP 4K',
+        quality: '4K UHD HDR',
+        audio: 'DOLBY ATMOS',
+        rating: 9.8,
+        description: 'Trận El Clásico rực lửa giữa hai gã khổng lồ của bóng đá thế giới. Vinicius Jr, Bellingham chạm trán Lewandowski, Yamal.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80',
+        features: ['Spider-Cam', 'Player-Cam', 'Dolby Atmos'],
+      },
+      {
+        id: 'sp1-14',
+        title: 'Tổng Hợp Vòng Đấu & Bàn Thắng Vàng Đêm Nay',
+        category: 'Tổng Hợp',
+        startTime: '23:30',
+        endTime: '01:00',
+        startMinutes: 1410,
+        durationMinutes: 90,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Xem lại toàn bộ các pha làm bàn đỉnh cao và các tình huống gây tranh cãi của vòng đấu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-15',
+        title: 'Trực Tiếp: Chung Kết Bóng Rổ Nhà Nghề Mỹ NBA Game 7',
+        category: 'Bóng Rổ NBA',
+        startTime: '01:00',
+        endTime: '03:30',
+        startMinutes: 60,
+        durationMinutes: 150,
+        badge: 'LIVE NBA',
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Trận Game 7 sống còn tranh chức vô địch NBA Finals.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'sp1-16',
+        title: 'Thể Thao Đêm Khuya & Phát Lại Trận Cầu Đinh',
+        category: 'Phát Lại',
+        startTime: '03:30',
+        endTime: '06:00',
+        startMinutes: 210,
+        durationMinutes: 150,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Phát lại trọn vẹn trận đấu hấp dẫn nhất trong ngày dành cho khán giả không thể theo dõi trực tiếp.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
       },
     ],
   },
+
+  // ── 02. Omni Cine 4K (Điện Ảnh Bom Tấn & Phim Chiếu Rạp) ───────────────
   {
     id: 'ch-02',
-    chNumber: 'CH #002',
-    name: 'Omni Sport 2',
-    badgeTag: 'ACTION & RACING',
-    logo: '/Channel_Logos/02-omni-sport-2-icon.svg',
-    category: 'sports',
-    isFavorite: true,
+    slug: 'cine',
+    chNumber: 'CH #005',
+    name: 'Omni Cine 4K',
+    category: 'movies',
+    categoryLabel: 'Phim Chiếu Rạp 4K',
+    logo: '/Channel_Logos/05-omni-cine-icon.svg',
+    color: '#F59E0B',
     programs: [
       {
-        id: 'p-4',
-        title: 'NBA Playoff Game 6: Celtics vs Heat',
-        subtitle: 'Phát lại trọn vẹn trận đấu kịch tính • BASKETBALL 4K 60FPS',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'cn-1',
+        title: 'Phim Hành Động Sáng: Giờ Cao Điểm 3',
+        category: 'Hành Động',
+        startTime: '06:00',
+        endTime: '07:45',
+        startMinutes: 360,
+        durationMinutes: 105,
+        quality: '1080p FHD',
+        audio: 'Dolby 5.1',
+        description: 'Thanh tra Lee và cảnh sát Carter tái xuất trong phi vụ triệt phá băng đảng Tam Hoàng tại thủ đô Paris hoa lệ.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-5',
-        title: 'F1 GP Monaco: Vòng Đua Phân Hạng Q1-Q3',
-        subtitle: 'Trực tiếp từ trường đua Monte Carlo với On-board Radio & Telemetry',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        features: ['TELEMETRY ON-SCREEN'],
-        isLiveNow: true,
+        id: 'cn-2',
+        title: 'Thế Giới Hậu Trường & Trailer Bom Tấn 2026',
+        category: 'Hậu Trường',
+        startTime: '07:45',
+        endTime: '08:05',
+        startMinutes: 465,
+        durationMinutes: 20,
+        quality: '4K UHD',
+        audio: 'Stereo',
+        description: 'Khám phá hậu trường kỹ xảo điện ảnh VFX và các trích đoạn trailer mới nhất của Hollywood.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-6',
-        title: 'UFC Fight Night Main Card',
-        subtitle: 'Các trận đấu vô địch hạng nhẹ',
-        startHour: 22,
-        endHour: 24,
-        timeString: '22:00 - 24:00',
-        badge: 'COMBAT 4K',
-        badgeType: 'live',
+        id: 'cn-3',
+        title: 'Bom Tấn Viễn Tưởng: Interstellar (Hố Đen Tử Thần)',
+        category: 'Khoa Học Viễn Tưởng',
+        startTime: '08:05',
+        endTime: '11:00',
+        startMinutes: 485,
+        durationMinutes: 175,
+        badge: 'IMAX 4K',
+        quality: '4K IMAX MASTER',
+        audio: 'DOLBY ATMOS 7.1',
+        rating: 9.8,
+        description: 'Kiệt tác của Christopher Nolan về hành trình xuyên không gian tìm kiếm miền đất hứa cho nhân loại.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-4',
+        title: 'Chuyện Bên Lề Lễ Trao Giải Oscar Lần Thứ 97',
+        category: 'Tạp Chí Điện Ảnh',
+        startTime: '11:00',
+        endTime: '11:20',
+        startMinutes: 660,
+        durationMinutes: 20,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Những khoảnh khắc xúc động và giải thưởng danh giá nhất tại đêm vinh danh điện ảnh thế giới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-5',
+        title: 'Phim Tâm Lý Âm Nhạc: La La Land (Những Kẻ Khờ Mộng Mơ)',
+        category: 'Âm Nhạc • Lãng Mạn',
+        startTime: '11:20',
+        endTime: '13:30',
+        startMinutes: 680,
+        durationMinutes: 130,
+        badge: '6 GIẢI OSCAR',
+        quality: '4K HDR',
+        audio: 'Dolby Atmos',
+        rating: 9.2,
+        description: 'Bản tình ca ngọt ngào và đầy day dứt giữa chàng nhạc công piano Sebastian và cô nàng diễn viên Mia tại Los Angeles.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-6',
+        title: 'Bom Tấn Hoạt Hình: Spider-Man: Into the Spider-Verse',
+        category: 'Hoạt Hình • Siêu Anh Hùng',
+        startTime: '13:30',
+        endTime: '15:30',
+        startMinutes: 810,
+        durationMinutes: 120,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Miles Morales khám phá khả năng của Người Nhện và sát cánh cùng 5 người nhện đến từ các vũ trụ song song.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-7',
+        title: 'Phim Hành Động Sát Thủ: John Wick: Chapter 4',
+        category: 'Hành Động Gay Cấn',
+        startTime: '15:30',
+        endTime: '18:25',
+        startMinutes: 930,
+        durationMinutes: 175,
+        badge: 'BẢN CHIẾU RẠP 4K',
+        quality: '4K HDR10+',
+        audio: 'Dolby Atmos 7.1',
+        rating: 9.3,
+        description: 'John Wick tìm ra con đường đánh bại Hội Tối Cao, nhưng anh phải đối đầu với một kẻ thù mới đầy quyền lực.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-8',
+        title: 'Tiêu Điểm Phim Giờ Vàng: Đạo Diễn Denis Villeneuve',
+        category: 'Phim Tài Liệu',
+        startTime: '18:25',
+        endTime: '18:45',
+        startMinutes: 1105,
+        durationMinutes: 20,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Hành trình sáng tạo thế giới sa mạc Arrakis trong thiên sử thi viễn tưởng Dune.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-9',
+        title: 'Phim Giờ Vàng: Dune: Part Two (Hành Tinh Cát 2)',
+        subtitle: 'Siêu Phẩm Điện Ảnh Chiếu Rạp Đoạt Kỷ Lục Phòng Vé',
+        category: 'Khoa Học Viễn Tưởng',
+        startTime: '18:45',
+        endTime: '21:35',
+        startMinutes: 1125,
+        durationMinutes: 170,
+        badge: 'PREMIERE 4K',
+        quality: '4K DOLBY VISION',
+        audio: 'DOLBY ATMOS 7.1',
+        rating: 9.7,
+        description: 'Paul Atreides hợp lực cùng Chani và tộc Fremen để trả thù những kẻ đã hủy diệt gia đình anh.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
+        features: ['Dolby Vision', 'Dolby Atmos 7.1', 'Phụ Đề Song Ngữ'],
+      },
+      {
+        id: 'cn-10',
+        title: 'Bom Tấn Đa Vũ Trụ: Spider-Man: Across the Spider-Verse',
+        subtitle: 'Phim Hoạt Hình Đỉnh Cao Nhất Thập Kỷ',
+        category: 'Điện Ảnh',
+        startTime: '21:35',
+        endTime: '23:55',
+        startMinutes: 1295,
+        durationMinutes: 140,
+        badge: 'TOP #1 PHÒNG VÉ',
+        quality: '4K UHD HDR',
+        audio: 'DOLBY ATMOS',
+        rating: 9.6,
+        description: 'Miles Morales bị cuốn vào cuộc chiến xuyên không gian giữa các Người Nhện đa vũ trụ.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-11',
+        title: 'Phim Kinh Dị Đêm Muộn: The Conjuring (Ám Ảnh Kinh Hoàng)',
+        category: 'Kinh Dị • Tâm Linh',
+        startTime: '23:55',
+        endTime: '01:50',
+        startMinutes: 1435,
+        durationMinutes: 115,
+        badge: '18+',
+        quality: '4K HDR',
+        audio: 'Dolby 5.1',
+        description: 'Cặp vợ chồng chuyên gia điều tra hiện tượng siêu nhiên Ed và Lorraine Warren giúp đỡ một gia đình bị quỷ ám.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-12',
+        title: 'Phim Trinh Thám: Cô Gái Mất Tích (Gone Girl)',
+        category: 'Tội Phạm • Trinh Thám',
+        startTime: '01:50',
+        endTime: '04:15',
+        startMinutes: 110,
+        durationMinutes: 145,
+        quality: '1080p FHD',
+        audio: 'Dolby Audio',
+        description: 'Vụ mất tích đầy bí ẩn của Amy Dunne và bức màn đen tối về cuộc hôn nhân tưởng chừng hoàn hảo.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'cn-13',
+        title: 'Điện Ảnh Kinh Điển: Bố Già (The Godfather Remastered)',
+        category: 'Kinh Điển',
+        startTime: '04:15',
+        endTime: '06:00',
+        startMinutes: 255,
+        durationMinutes: 105,
+        quality: '4K RESTORED',
+        audio: 'Mono HD',
+        description: 'Bản phục chế 4K kỷ niệm 50 năm tác phẩm kinh điển về gia tộc Mafia Corleone của đạo diễn Francis Ford Coppola.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=600&q=80',
       },
     ],
   },
+
+  // ── 03. News 24/7 (Thời Sự Chính Trị & Tin Tức Quốc Tế) ───────────────
   {
     id: 'ch-03',
-    chNumber: 'CH #003',
-    name: 'Omni Show',
-    badgeTag: 'TALK & CELEBRITY',
-    logo: '/Channel_Logos/03-omni-show-icon.svg',
-    category: 'shows',
+    slug: 'news',
+    chNumber: 'CH #007',
+    name: 'News 24/7',
+    category: 'news',
+    categoryLabel: 'Tin Tức Thời Sự',
+    logo: '/Channel_Logos/07-omni-news-icon.svg',
+    color: '#3B82F6',
     programs: [
       {
-        id: 'p-7',
-        title: 'Omni Talk: Chuyện Hậu Trường Showbiz',
-        subtitle: 'Khách mời đặc biệt ca sĩ Mỹ Tâm • TALKSHOW FULL HD',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'nw-1',
+        title: 'Chào Ngày Mới & Điểm Báo Buổi Sáng',
+        category: 'Thời Sự',
+        startTime: '06:00',
+        endTime: '06:45',
+        startMinutes: 360,
+        durationMinutes: 45,
+        quality: '1080p60',
+        audio: 'Stereo',
+        description: 'Cập nhật tin tức thời sự trong nước, quốc tế, điểm các bài báo đáng chú ý và tình hình giao thông đầu ngày.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-8',
-        title: 'Ca Sĩ Mặt Nạ: Bán Kết All-Stars',
-        subtitle: 'Trấn Thành, Tóc Tiên, Bích Phương lộ diện mascot bí ẩn • OMNI ORIGINAL SHOW',
-        startHour: 20,
-        endHour: 22.5,
-        timeString: '20:00 - 22:30',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        isLiveNow: true,
+        id: 'nw-2',
+        title: 'Dự Báo Thời Tiết & Chất Lượng Không Khí 24H',
+        category: 'Thời Tiết',
+        startTime: '06:45',
+        endTime: '07:00',
+        startMinutes: 405,
+        durationMinutes: 15,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Bản đồ dự báo thời tiết 3 miền, cảnh báo triều cường và chỉ số bụi mịn AQI tại các thành phố lớn.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1592210454359-9043f067919b?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-3',
+        title: 'Tài Chính & Thị Trường Chứng Khoán Phiên Mở Cửa',
+        category: 'Kinh Tế',
+        startTime: '07:00',
+        endTime: '07:45',
+        startMinutes: 420,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Nhận định xu hướng VN-Index, biến động giá vàng, dầu thô và tỷ giá ngoại tệ đầu ngày.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-4',
+        title: 'Hồ Sơ Toàn Cầu: Khủng Hoảng Năng Lượng Xanh',
+        category: 'Phóng Sự',
+        startTime: '07:45',
+        endTime: '08:35',
+        startMinutes: 465,
+        durationMinutes: 50,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Phóng sự điều tra về cuộc chạy đua năng lượng tái tạo và tương lai năng lượng hạt nhân thế hệ mới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-5',
+        title: 'Bản Tin 9 Giờ: Tin Tức Nóng Châu Á - Thái Bình Dương',
+        category: 'Tin Nóng',
+        startTime: '08:35',
+        endTime: '09:00',
+        startMinutes: 515,
+        durationMinutes: 25,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Các sự kiện ngoại giao nổi bật và hiệp định kinh tế khu vực vừa được ký kết.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-6',
+        title: 'Kỷ Nguyên Trí Tuệ Nhân Tạo & Chuyển Đổi Số',
+        category: 'Công Nghệ',
+        startTime: '09:00',
+        endTime: '09:50',
+        startMinutes: 540,
+        durationMinutes: 50,
+        quality: '4K UHD',
+        audio: 'Stereo',
+        description: 'Ứng dụng AI tổng quát trong y tế, giáo dục và bài toán an ninh dữ liệu quốc gia.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-7',
+        title: 'Đối Thoại Trực Tiếp: Khởi Nghiệp & Đổi Mới Sáng Tạo',
+        category: 'Tọa Đàm',
+        startTime: '09:50',
+        endTime: '11:30',
+        startMinutes: 590,
+        durationMinutes: 100,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Gặp gỡ các nhà sáng lập startup công nghệ Việt Nam gọi vốn thành công triệu USD.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-8',
+        title: 'Bản Tin Thời Sự Trưa 11h30 (Trực Tiếp)',
+        category: 'Thời Sự Chính',
+        startTime: '11:30',
+        endTime: '12:05',
+        startMinutes: 690,
+        durationMinutes: 35,
+        badge: 'LIVE 11:30',
+        quality: '1080p60',
+        audio: 'Dolby Audio',
+        description: 'Bản tin thời sự tổng hợp buổi trưa với các thông tin nổi bật diễn ra trong sáng nay.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-9',
+        title: 'Thế Giới 24 Giờ Qua: Góc Nhìn Phóng Viên Quốc Tế',
+        category: 'Quốc Tế',
+        startTime: '12:05',
+        endTime: '12:50',
+        startMinutes: 725,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Phản ánh chân thực từ các cơ quan thường trú tại Washington, London, Tokyo và Bắc Kinh.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-10',
+        title: 'Chuyên Đề: Bảo Vệ Môi Trường & Phát Triển Bền Vững',
+        category: 'Chuyên Đề',
+        startTime: '12:50',
+        endTime: '14:10',
+        startMinutes: 770,
+        durationMinutes: 80,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Giải pháp giảm rác thải nhựa đại dương và chuyển dịch xanh trong ngành công nghiệp sản xuất.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-11',
+        title: 'Bản Tin Kinh Tế & Thị Trường Phiên Đóng Cửa',
+        category: 'Kinh Tế Chiều',
+        startTime: '14:10',
+        endTime: '14:45',
+        startMinutes: 850,
+        durationMinutes: 35,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Tổng kết phiên giao dịch chứng khoán, chỉ số thanh khoản và các cổ phiếu bứt phá trong ngày.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-12',
+        title: 'Nhịp Sống Đô Thị & Văn Hóa Đời Sống',
+        category: 'Đời Sống',
+        startTime: '14:45',
+        endTime: '16:00',
+        startMinutes: 885,
+        durationMinutes: 75,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Nét đẹp văn hóa làng nghề truyền thống và nhịp sống trẻ tại các thành phố năng động.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-13',
+        title: 'Phim Tài Liệu Khám Phá: Di Sản Thiên Nhiên Thế Giới',
+        category: 'Tài Liệu',
+        startTime: '16:00',
+        endTime: '17:30',
+        startMinutes: 960,
+        durationMinutes: 90,
+        quality: '4K 60FPS',
+        audio: 'Dolby Atmos',
+        description: 'Chiêm ngưỡng vẻ đẹp hùng vĩ của Vịnh Hạ Long, Vườn quốc gia Phong Nha - Kẻ Bàng qua ống kính 4K siêu nét.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-14',
+        title: 'Bản Tin Chiều: Tin Tức 17h30',
+        category: 'Tin Nhanh',
+        startTime: '17:30',
+        endTime: '18:15',
+        startMinutes: 1050,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Tóm lược các sự kiện xã hội, an ninh trật tự và tình hình giao thông giờ cao điểm tan tầm.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-15',
+        title: 'Toàn Cảnh Hội Nghị Cấp Cao: Phát Huy Sức Mạnh Tham Mưu Chiến Lược',
+        category: 'Chính Trị Trọng Điểm',
+        startTime: '18:15',
+        endTime: '19:00',
+        startMinutes: 1095,
+        durationMinutes: 45,
+        badge: 'ĐẶC BIỆT',
+        quality: '4K UHD',
+        audio: 'Dolby Audio',
+        description: 'Phát biểu chỉ đạo quan trọng của các đồng chí lãnh đạo Đảng và Nhà nước tại hội nghị toàn quốc.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-16',
+        title: 'Bản Tin Thời Sự 19 Giờ (Trực Tiếp Toàn Quốc)',
+        subtitle: 'Bản Tin Quan Trọng Nhất Trong Ngày',
+        category: 'Thời Sự Quốc Gia',
+        startTime: '19:00',
+        endTime: '19:45',
+        startMinutes: 1140,
+        durationMinutes: 45,
+        badge: 'TRỰC TIẾP 19:00',
+        quality: '1080p60 HD',
+        audio: 'Dolby Digital',
+        rating: 9.9,
+        description: 'Chương trình Thời sự trọng điểm phản ánh các hoạt động lãnh đạo của Đảng, Nhà nước và đời sống chính trị - kinh tế toàn quốc.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+        features: ['Phát Sóng Toàn Quốc', 'Phụ Đề Khiếm Thính'],
+      },
+      {
+        id: 'nw-17',
+        title: 'Tiêu Điểm Kinh Tế: Tăng Trưởng GDP & Cơ Hội Thu Hút Vốn FDI',
+        category: 'Phân Tích',
+        startTime: '19:45',
+        endTime: '20:30',
+        startMinutes: 1185,
+        durationMinutes: 45,
+        quality: '4K UHD',
+        audio: 'Stereo',
+        description: 'Phân tích các động lực thúc đẩy kinh tế số và làn sóng đầu tư vào ngành bán dẫn tại Việt Nam.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-18',
+        title: 'Hồ Sơ Vụ Án: Phóng Sự Điều Tra Chuyên Đề',
+        category: 'Pháp Luật',
+        startTime: '20:30',
+        endTime: '21:20',
+        startMinutes: 1230,
+        durationMinutes: 50,
+        badge: 'ĐIỀU TRA',
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Các vụ án công nghệ cao xuyên quốc gia và bài học cảnh giác cho người dân trên không gian mạng.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-19',
+        title: 'Thế Giới Nghiêng: Bình Luận & Phân Tích Địa Chính Trị',
+        category: 'Quốc Tế',
+        startTime: '21:20',
+        endTime: '22:15',
+        startMinutes: 1280,
+        durationMinutes: 55,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Góc nhìn đa chiều về các điểm nóng xung đột quân sự và đàm phán hòa bình trên bàn cờ ngoại giao quốc tế.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-20',
+        title: 'Bản Tin Thời Sự Cuối Ngày: Tin Nhanh 22h30',
+        category: 'Thời Sự Đêm',
+        startTime: '22:15',
+        endTime: '23:00',
+        startMinutes: 1335,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Tổng kết bức tranh toàn cảnh 24 giờ qua và các tin vắn nổi bật trước giờ chuyển giao ngày mới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-21',
+        title: 'Chuyên Đề Đêm: Những Phát Minh Làm Thay Đổi Thế Giới',
+        category: 'Khoa Học',
+        startTime: '23:00',
+        endTime: '00:30',
+        startMinutes: 1380,
+        durationMinutes: 90,
+        quality: '4K UHD',
+        audio: 'Dolby Atmos',
+        description: 'Hành trình từ động cơ hơi nước, máy tính lượng tử đến kỷ nguyên thám hiểm Sao Hỏa.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'nw-22',
+        title: 'Chương Trình Đêm Khuya: Không Gian Âm Nhạc & Thư Giãn',
+        category: 'Nghệ Thuật',
+        startTime: '00:30',
+        endTime: '06:00',
+        startMinutes: 30,
+        durationMinutes: 330,
+        quality: '1080p',
+        audio: 'Stereo HQ',
+        description: 'Giai điệu hòa tấu không lời êm dịu đồng hành cùng thính giả qua đêm muộn.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
       },
     ],
   },
+
+  // ── 04. Omni Esports (Đấu Trường Thể Thao Điện Tử) ─────────────────────
   {
     id: 'ch-04',
-    chNumber: 'CH #004',
-    name: 'Omni Entertain',
-    badgeTag: 'REALITY & GAMES',
-    logo: '/Channel_Logos/04-omni-entertain-icon.svg',
-    category: 'shows',
-    programs: [
-      {
-        id: 'p-9',
-        title: '2 Ngày 1 Đêm: Chặng Miền Tây Sông Nước',
-        subtitle: 'Tập đặc biệt hành trình khám phá chợ nổi Cái Răng',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-10',
-        title: 'Hành Trình Rực Rỡ: Gala Chung Kết',
-        subtitle: 'Đại tiệc âm nhạc và giải thưởng nghệ thuật truyền hình',
-        startHour: 20,
-        endHour: 22.5,
-        timeString: '20:00 - 22:30',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-05',
-    chNumber: 'CH #005',
-    name: 'Omni Cine',
-    badgeTag: 'BLOCKBUSTER 4K',
-    logo: '/Channel_Logos/05-omni-cine-icon.svg',
-    category: 'movies',
-    isFavorite: true,
-    programs: [
-      {
-        id: 'p-11',
-        title: 'Interstellar: Hố Đen Tử Thần',
-        subtitle: 'Đạo diễn Christopher Nolan • Matthew McConaughey • DOLBY VISION 13+',
-        startHour: 17.5,
-        endHour: 20,
-        timeString: '17:30 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-12',
-        title: 'Dune: Hành Tinh Cát - Phần 2',
-        subtitle: 'Độc quyền chiếu rạp OTT • Timothée Chalamet & Zendaya • ATMOS AUDIO',
-        startHour: 20,
-        endHour: 22.75,
-        timeString: '20:00 - 22:45',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        features: ['ATMOS AUDIO', 'Phụ Đề VIE / ENG'],
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-06',
-    chNumber: 'CH #006',
-    name: 'Omni Drama',
-    badgeTag: 'SERIES & NOVELA',
-    logo: '/Channel_Logos/06-omni-drama-icon.svg',
-    category: 'movies',
-    programs: [
-      {
-        id: 'p-13',
-        title: 'Nữ Hoàng Nước Mắt (Tập 15)',
-        subtitle: 'Kim Soo Hyun & Kim Ji Won • K-DRAMA THUYẾT MINH',
-        startHour: 18,
-        endHour: 19.5,
-        timeString: '18:00 - 19:30',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-14',
-        title: 'Nữ Hoàng Nước Mắt (Tập 16 - Final)',
-        subtitle: 'Hồi kết đại kết cục xúc động lấy nước mắt khán giả • PREMIERE PHÁT SONG SONG',
-        startHour: 19.5,
-        endHour: 21,
-        timeString: '19:30 - 21:00',
-        badge: 'ON-AIR TẬP CUỐI',
-        badgeType: 'final',
-        isLiveNow: true,
-      },
-      {
-        id: 'p-15',
-        title: 'Gia Tộc Rồng: Mùa 2 (Tập 1)',
-        subtitle: 'Cuộc chiến Dance of the Dragons • HBO ORIGINAL 18+',
-        startHour: 21,
-        endHour: 22.5,
-        timeString: '21:00 - 22:30',
-        badge: 'PREMIERE',
-        badgeType: 'premiere',
-      },
-    ],
-  },
-  {
-    id: 'ch-07',
-    chNumber: 'CH #007',
-    name: 'Omni News',
-    badgeTag: '24/7 ROLLING NEWS',
-    logo: '/Channel_Logos/07-omni-news-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-16',
-        title: 'Toàn Cảnh Thế Giới 18h',
-        subtitle: 'Tin tức thời sự quốc tế và tài chính thị trường phố Wall',
-        startHour: 18,
-        endHour: 19,
-        timeString: '18:00 - 19:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-17',
-        title: 'Bản Tin Thời Sự 19h Trực Tiếp',
-        subtitle: 'Tin nóng chính trị, kinh tế xã hội và thời tiết',
-        startHour: 19,
-        endHour: 20,
-        timeString: '19:00 - 20:00',
-        badge: 'LIVE NOW',
-        badgeType: 'live',
-      },
-      {
-        id: 'p-18',
-        title: 'Tiêu Điểm Kinh Tế Số & AI',
-        subtitle: 'Diễn đàn công nghệ và tài chính số Việt Nam 2026',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-08',
-    chNumber: 'CH #008',
-    name: 'Omni Music',
-    badgeTag: 'HITS & LIVE CONCERT',
-    logo: '/Channel_Logos/08-omni-music-icon.svg',
-    category: 'shows',
-    programs: [
-      {
-        id: 'p-19',
-        title: 'Top Hits V-Pop Weekly Countdown',
-        subtitle: 'Bảng xếp hạng 20 ca khúc thịnh hành nhất tuần',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-20',
-        title: 'Sơn Tùng M-TP: Live Symphony 4K',
-        subtitle: 'Đại nhạc hội giao hưởng kết hợp âm thanh vòm Dolby Atmos',
-        startHour: 20,
-        endHour: 22.5,
-        timeString: '20:00 - 22:30',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        features: ['DOLBY ATMOS', '4K UHD'],
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-09',
-    chNumber: 'CH #009',
-    name: 'Omni Kids',
-    badgeTag: 'FAMILY & ANIME',
-    logo: '/Channel_Logos/09-omni-kids-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-21',
-        title: 'Doraemon: Nobita và Bản Giao Hưởng Địa Cầu',
-        subtitle: 'Phim hoạt hình chiếu rạp lồng tiếng Việt chuẩn',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-22',
-        title: 'Khám Phá Vũ Trụ Cùng Bé',
-        subtitle: 'Chương trình khoa học vui giáo dục tương tác',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR KIDS',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-10',
-    chNumber: 'CH #010',
-    name: 'Omni Tech',
-    badgeTag: 'AI & FUTURE TECH',
-    logo: '/Channel_Logos/10-omni-tech-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-23',
-        title: 'Google I/O & Gemini AI Keynote Recap',
-        subtitle: 'Phân tích các mô hình AI thế hệ mới nhất 2026',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-24',
-        title: 'Trực Tiếp: Ra Mắt Kính Thực Tế Ảo Thế Hệ Mới',
-        subtitle: 'Trải nghiệm không gian ảo Spatial Computing đỉnh cao',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR TECH',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-11',
-    chNumber: 'CH #011',
-    name: 'Omni Food',
-    badgeTag: 'CULINARY & TRAVEL',
-    logo: '/Channel_Logos/11-omni-food-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-25',
-        title: 'MasterChef Việt Nam: Thử Thách Ẩm Thực 3 Miền',
-        subtitle: 'Top 10 thí sinh đối đầu tại cố đô Huế',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-26',
-        title: 'Street Food Tour: Hương Vị Sài Gòn Đêm',
-        subtitle: 'Khám phá những quán ăn đêm trứ danh cùng đầu bếp sao Michelin',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-12',
-    chNumber: 'CH #012',
-    name: 'Omni Discovery',
-    badgeTag: 'NATURE & SCIENCE',
-    logo: '/Channel_Logos/12-omni-discovery-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-27',
-        title: 'Hành Tinh Trái Đất III: Đại Dương Sâu Thẳm',
-        subtitle: 'Những sinh vật kỳ bí nhất dưới rãnh Mariana 4K HDR',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
-      },
-      {
-        id: 'p-28',
-        title: 'Bí Mật Rừng Nhiệt Đới Amazon',
-        subtitle: 'Thám hiểm hệ sinh thái nguyên sinh chưa từng được công bố',
-        startHour: 20,
-        endHour: 22.5,
-        timeString: '20:00 - 22:30',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        features: ['4K HDR', 'DOLBY 5.1'],
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-13',
+    slug: 'esports',
     chNumber: 'CH #013',
     name: 'Omni Esports',
-    badgeTag: 'PRO ESPORTS ARENA',
+    category: 'esports',
+    categoryLabel: 'Esports & Gaming',
     logo: '/Channel_Logos/13-omni-esports-icon.svg',
-    category: 'sports',
-    isFavorite: true,
+    color: '#DC2626',
     programs: [
       {
-        id: 'p-29',
-        title: 'Chung Kết LCK Mùa Hè: T1 vs Gen.G',
-        subtitle: 'Trận đại chiến kinh điển tranh tấm vé CKTG',
-        startHour: 18,
-        endHour: 21,
-        timeString: '18:00 - 21:00',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        isLiveNow: true,
+        id: 'es-1',
+        title: 'Bản Tin Esports Sáng: Điểm Tin Giải Đấu',
+        category: 'Tin Tức Game',
+        startTime: '06:00',
+        endTime: '06:40',
+        startMinutes: 360,
+        durationMinutes: 40,
+        quality: '1080p60',
+        audio: 'Stereo',
+        description: 'Kết quả giải đấu LCK, LPL và bảng xếp hạng đội tuyển thế giới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-30',
-        title: 'Valorant Champions Tour Highlights',
-        subtitle: 'Top 10 pha xử lý clutch xuất thần nhất mùa giải',
-        startHour: 21,
-        endHour: 23,
-        timeString: '21:00 - 23:00',
-        badge: 'ESPORTS 4K',
-        badgeType: 'live',
+        id: 'es-2',
+        title: 'Top 10 Pha Xử Lý Xuất Thần Tuần Này',
+        category: 'Highlight',
+        startTime: '06:40',
+        endTime: '07:15',
+        startMinutes: 400,
+        durationMinutes: 35,
+        badge: 'HIGHLIGHT',
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Những pha Outplay ảo diệu của Faker, Chovy, Gumayusi và Canyon.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
       },
-    ],
-  },
-  {
-    id: 'ch-14',
-    chNumber: 'CH #014',
-    name: 'Omni Indie Games',
-    badgeTag: 'INDIE & PIXEL ART',
-    logo: '/Channel_Logos/14-omni-indie-games-icon.svg',
-    category: 'shows',
-    programs: [
       {
-        id: 'p-31',
-        title: 'Khám Phá Tuyệt Phẩm Indie: Hollow Knight Silksong',
-        subtitle: 'Trải nghiệm gameplay độc quyền cùng nhà phát triển',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
+        id: 'es-3',
+        title: 'Xem Lại Trận Đấu: T1 vs Dplus KIA (Bo5)',
+        category: 'Trận Đinh',
+        startTime: '07:15',
+        endTime: '10:30',
+        startMinutes: 435,
+        durationMinutes: 195,
         badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        quality: '1080p60',
+        audio: 'Stereo',
+        description: 'Trận bán kết kịch tính nghẹt thở kéo dài đủ 5 ván đấu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-32',
-        title: 'Pixel Art Showcase & Game Dev Studio',
-        subtitle: 'Workshop thiết kế game indie cùng chuyên gia quốc tế',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-15',
-    chNumber: 'CH #015',
-    name: 'Omni Podcast',
-    badgeTag: 'DEEP TALK & VOICES',
-    logo: '/Channel_Logos/15-omni-podcast-icon.svg',
-    category: 'shows',
-    programs: [
-      {
-        id: 'p-33',
-        title: 'Have A Sip: Trò Chuyện Cùng Giáo Sư Triết Học',
-        subtitle: 'Tìm lại sự an yên trong tâm hồn giữa kỷ nguyên số hóa',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'es-4',
+        title: 'Phân Tích Chiến Thuật Cấm Chọn & Meta Bản Cập Nhật',
+        category: 'Phân Tích',
+        startTime: '10:30',
+        endTime: '11:15',
+        startMinutes: 630,
+        durationMinutes: 45,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Chi tiết thay đổi thông số tướng và cách vận hành lối chơi mùa giải mới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-34',
-        title: 'The AI Revolution: Tương Lai Nhân Loại 2030',
-        subtitle: 'Đối thoại trực tiếp cùng các nhà khoa học máy tính hàng đầu',
-        startHour: 20,
-        endHour: 22.5,
-        timeString: '20:00 - 22:30',
-        badge: 'ON-AIR LIVE',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-16',
-    chNumber: 'CH #016',
-    name: 'Omni Audiobook',
-    badgeTag: 'AUDIOBOOK STUDIO 24/7',
-    logo: '/Channel_Logos/16-omni-audiobook-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-35',
-        title: 'Đắc Nhân Tâm: Nghệ Thuật Ứng Xử Hiện Đại',
-        subtitle: 'Giọng đọc truyền cảm của NSƯT Thành Lộc',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'AUDIO HD',
-        badgeType: 'catchup',
+        id: 'es-5',
+        title: 'Giải Đấu CS2 Major: Vòng Tứ Kết',
+        category: 'Bắn Súng CS2',
+        startTime: '11:15',
+        endTime: '13:45',
+        startMinutes: 675,
+        durationMinutes: 150,
+        quality: '4K 60FPS',
+        audio: 'Dolby Audio',
+        description: 'Màn đọ súng căng thẳng giữa Natus Vincere và FaZe Clan trên Map Mirage.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-36',
-        title: 'Sapiens: Lược Sử Loài Người - Phần 3',
-        subtitle: 'Cách mạng khoa học và tương lai của loài người',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR AUDIO',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-17',
-    chNumber: 'CH #017',
-    name: 'Omni Academy',
-    badgeTag: 'OPEN UNIVERSITY & STEM',
-    logo: '/Channel_Logos/17-omni-academy-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-37',
-        title: 'Toán Học Ứng Dụng & Thuật Toán Tối Ưu',
-        subtitle: 'Bài giảng từ Viện Toán Học Cao Cấp Việt Nam',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'es-6',
+        title: 'Valorant Champions Tour: Trận Chung Kết Nhánh Thua',
+        category: 'Valorant',
+        startTime: '13:45',
+        endTime: '16:30',
+        startMinutes: 825,
+        durationMinutes: 165,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Cuộc chiến giành tấm vé cuối cùng vào chơi trận chung kết tổng thế giới.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-38',
-        title: 'Lập Trình Web Hiện Đại Với Next.js & React 19',
-        subtitle: 'Khóa học thực chiến xây dựng ứng dụng quy mô lớn',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR EDU',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-18',
-    chNumber: 'CH #018',
-    name: 'Omni Skill Lab',
-    badgeTag: 'HANDS-ON WORKSHOP',
-    logo: '/Channel_Logos/18-omni-skill-lab-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-39',
-        title: 'Workshop Thiết Kế Hệ Thống Design System',
-        subtitle: 'Xây dựng UI tokens và components cho doanh nghiệp',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'es-7',
+        title: 'Tọa Đàm Tiền Trận: Chung Kết CKTG 2025',
+        category: 'Tiền Trận',
+        startTime: '16:30',
+        endTime: '17:30',
+        startMinutes: 990,
+        durationMinutes: 60,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Dàn bình luận viên và phân tích viên dự đoán tỷ số trận đại chiến T1 vs Gen.G.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-40',
-        title: 'Thực Hành Data Analytics & AI Prompting',
-        subtitle: 'Phân tích dữ liệu kinh doanh bằng Python và PowerBI',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR LAB',
-        badgeType: 'live',
-        isLiveNow: true,
+        id: 'es-8',
+        title: 'Trực Tiếp Chung Kết CKTG LMHT: T1 vs Gen.G',
+        subtitle: 'Trận Bo5 Kinh Điển Tranh Cúp Vô Địch Thế Giới',
+        category: 'Trực Tiếp Đỉnh Cao',
+        startTime: '17:30',
+        endTime: '21:45',
+        startMinutes: 1050,
+        durationMinutes: 255,
+        badge: 'TRỰC TIẾP BO5',
+        quality: '4K UHD 60FPS',
+        audio: 'DOLBY AUDIO',
+        rating: 9.9,
+        description: 'Faker và T1 bước vào trận đại chiến lịch sử trước đại kình địch Gen.G. Tường thuật trực tiếp với phân tích Tactical AI.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+        features: ['Tactical Cam', 'Player POV', 'Bình Luận Đa Luồng'],
+      },
+      {
+        id: 'es-9',
+        title: 'Lễ Trao Cúp & Phỏng Vấn Nhà Vô Địch Thế Giới',
+        category: 'Lễ Đăng Quang',
+        startTime: '21:45',
+        endTime: '22:45',
+        startMinutes: 1305,
+        durationMinutes: 60,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Khoảnh khắc nâng cao chiếc cúp Summoner danh giá và phỏng vấn danh hiệu MVP trận đấu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'es-10',
+        title: 'Highlight Trọn Bộ 5 Ván Đấu Chung Kết',
+        category: 'Highlight',
+        startTime: '22:45',
+        endTime: '01:00',
+        startMinutes: 1365,
+        durationMinutes: 135,
+        quality: '1080p60',
+        audio: 'Stereo',
+        description: 'Xem lại các pha Combat nảy lửa, Baron lật kèo và những tình huống tỏa sáng cá nhân xuất sắc.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'es-11',
+        title: 'Phát Lại Các Trận Cầu Kinh Điển Mùa Giải Trước',
+        category: 'Phát Lại',
+        startTime: '01:00',
+        endTime: '06:00',
+        startMinutes: 60,
+        durationMinutes: 300,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Trọn bộ các trận chung kết quốc tế huyền thoại trong lịch sử thể thao điện tử.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80',
       },
     ],
   },
+
+  // ── 05. Omni Discovery (Thế Giới Thiên Nhiên & Khoa Học BBC) ──────────
   {
-    id: 'ch-19',
-    chNumber: 'CH #019',
-    name: 'Omni Wellness',
-    badgeTag: 'YOGA & MINDFULNESS',
-    logo: '/Channel_Logos/19-omni-wellness-icon.svg',
-    category: 'lifestyle',
+    id: 'ch-05',
+    slug: 'discovery',
+    chNumber: 'CH #012',
+    name: 'Omni Discovery',
+    category: 'discovery',
+    categoryLabel: 'Khoa Học & Khám Phá',
+    logo: '/Channel_Logos/12-omni-discovery-icon.svg',
+    color: '#14B8A6',
     programs: [
       {
-        id: 'p-41',
-        title: 'Thiền Định Tái Tạo Năng Lượng Buổi Tối',
-        subtitle: 'Giải tỏa căng thẳng sau ngày làm việc bận rộn',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-1',
+        title: 'Bình Minh Trên Đảo Galapagos: Kỳ Quan Động Vật',
+        category: 'Thiên Nhiên',
+        startTime: '06:00',
+        endTime: '07:10',
+        startMinutes: 360,
+        durationMinutes: 70,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Hành trình khám phá hệ sinh thái độc nhất vô nhị nơi loài rùa khổng lồ và cự đà biển sinh sống.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-42',
-        title: 'Yoga Giãn Cơ Cột Sống Cùng Master Ấn Độ',
-        subtitle: 'Tăng cường sự dẻo dai và phòng ngừa thoái hóa',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR WELLNESS',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-20',
-    chNumber: 'CH #020',
-    name: 'Omni Fashion',
-    badgeTag: 'RUNWAY & HAUTE COUTURE',
-    logo: '/Channel_Logos/20-omni-fashion-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-43',
-        title: 'Paris Fashion Week Haute Couture 2026',
-        subtitle: 'Trực tiếp sàn diễn thời trang danh giá nhất hành tinh',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-2',
+        title: 'Bí Mật Rạn San Hô Great Barrier Dưới Lòng Biển',
+        category: 'Đại Dương',
+        startTime: '07:10',
+        endTime: '08:30',
+        startMinutes: 430,
+        durationMinutes: 80,
+        quality: '4K 60FPS',
+        audio: 'Dolby Atmos',
+        description: 'Hệ thống rạn san hô lớn nhất hành tinh cùng những sinh vật biển kỳ lạ dưới đại dương sâu thẳm.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-44',
-        title: 'Vietnam International Fashion Show',
-        subtitle: 'Bộ sưu tập áo dài lụa tơ tằm di sản từ các NTK hàng đầu',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-21',
-    chNumber: 'CH #021',
-    name: 'Omni Travel VN',
-    badgeTag: 'VIETNAM DISCOVERY',
-    logo: '/Channel_Logos/21-omni-travel-vn-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-45',
-        title: 'Kỳ Vĩ Hang Sơn Đoòng: Chuyến Đi Đời Người',
-        subtitle: 'Hành trình 5 ngày 4 đêm khám phá hang động lớn nhất thế giới',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-3',
+        title: 'Hành Trình Chinh Phục Đỉnh Everest: Giới Hạn Sinh Tồn',
+        category: 'Thám Hiểm',
+        startTime: '08:30',
+        endTime: '10:00',
+        startMinutes: 510,
+        durationMinutes: 90,
+        quality: '4K UHD',
+        audio: 'Dolby Audio',
+        description: 'Câu chuyện phi thường của các nhà leo núi vượt qua vùng tử địa ở độ cao trên 8.000m.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-46',
-        title: 'Mùa Vàng Ruộng Bậc Thang Mù Cang Chải',
-        subtitle: 'Góc quay flycam 4K siêu sắc nét cảnh sắc Tây Bắc',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-22',
-    chNumber: 'CH #022',
-    name: 'Omni Travel World',
-    badgeTag: 'GLOBAL EXPEDITION',
-    logo: '/Channel_Logos/22-omni-travel-world-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-47',
-        title: 'Săn Cực Quang Bắc Cực Tại Iceland',
-        subtitle: 'Hiện tượng thiên nhiên huyền ảo trên bầu trời đêm Reykjavik',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-4',
+        title: 'Bí Ẩn Kim Tự Tháp & Nền Văn Minh Ai Cập Cổ Đại',
+        category: 'Lịch Sử',
+        startTime: '10:00',
+        endTime: '11:15',
+        startMinutes: 600,
+        durationMinutes: 75,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Những phát hiện khảo cổ chấn động bằng công nghệ quét Lidar xuyên lòng đất.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-48',
-        title: 'Khám Phá Đền Cổ Kyoto Mùa Hoa Anh Đào',
-        subtitle: 'Hòa mình vào vẻ đẹp thanh bình của văn hóa truyền thống Nhật Bản',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR 4K',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-23',
-    chNumber: 'CH #023',
-    name: 'Omni Art & Design',
-    badgeTag: 'CREATIVE & VISUAL ART',
-    logo: '/Channel_Logos/23-omni-art-design-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-49',
-        title: 'Triển Lãm Nghệ Thuật Đương Đại Art Basel',
-        subtitle: 'Tuyển tập các tác phẩm hội họa và điêu khắc ấn tượng nhất',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-5',
+        title: 'Vũ Trụ Vô Tận: Sự Hình Thành Của Các Vì Sao',
+        category: 'Thiên Văn',
+        startTime: '11:15',
+        endTime: '12:45',
+        startMinutes: 675,
+        durationMinutes: 90,
+        badge: 'BBC EARTH',
+        quality: '4K HDR',
+        audio: 'Dolby Atmos',
+        rating: 9.8,
+        description: 'Những hình ảnh ngoạn mục nhất từ kính thiên văn không gian James Webb hé lộ khoảnh khắc khởi nguyên của vũ trụ.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-50',
-        title: '3D Motion Graphics & VFX Cinema Workshop',
-        subtitle: 'Quy trình tạo kỹ xảo điện ảnh bom tấn trên Cinema 4D và Houdini',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR ART',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-24',
-    chNumber: 'CH #024',
-    name: 'Omni Business',
-    badgeTag: 'FINANCE & STARTUP',
-    logo: '/Channel_Logos/24-omni-business-icon.svg',
-    category: 'news_edu',
-    programs: [
-      {
-        id: 'p-51',
-        title: 'Shark Tank & Kỳ Lân Công Nghệ Châu Á',
-        subtitle: 'Chiến lược gọi vốn Series A/B từ các quỹ đầu tư mạo hiểm',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-6',
+        title: 'Động Vật Hoang Dã Châu Phi: Cuộc Đại Di Cư Serengeti',
+        category: 'Hoang Dã',
+        startTime: '12:45',
+        endTime: '14:20',
+        startMinutes: 765,
+        durationMinutes: 95,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Hàng triệu linh dương đầu bò vượt qua dòng sông Mara đầy cá sấu săn mồi để tìm kiếm nguồn cỏ non.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-52',
-        title: 'Nhịp Đập Phố Wall & Thị Trường Chứng Khoán',
-        subtitle: 'Phân tích vĩ mô lãi suất FED và xu hướng dòng tiền toàn cầu',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR FINANCE',
-        badgeType: 'live',
-        isLiveNow: true,
-      },
-    ],
-  },
-  {
-    id: 'ch-25',
-    chNumber: 'CH #025',
-    name: 'Omni Health',
-    badgeTag: 'MEDICAL & HEALTHCARE 24/7',
-    logo: '/Channel_Logos/25-omni-health-icon.svg',
-    category: 'lifestyle',
-    programs: [
-      {
-        id: 'p-53',
-        title: 'Dinh Dưỡng Học Đường & Sức Khỏe Gia Đình',
-        subtitle: 'Tư vấn chế độ ăn uống khoa học phòng chống bệnh tim mạch',
-        startHour: 18,
-        endHour: 20,
-        timeString: '18:00 - 20:00',
-        badge: 'CATCH-UP',
-        badgeType: 'catchup',
+        id: 'dc-7',
+        title: 'Rừng Mưa Amazon: Lá Phổi Xanh Đang Kêu Cứu',
+        category: 'Môi Trường',
+        startTime: '14:20',
+        endTime: '16:00',
+        startMinutes: 860,
+        durationMinutes: 100,
+        quality: '4K 60FPS',
+        audio: 'Dolby Atmos',
+        description: 'Độ đa dạng sinh học kỳ vĩ của lưu vực sông Amazon và những thách thức bảo tồn trước biến đổi khí hậu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=600&q=80',
       },
       {
-        id: 'p-54',
-        title: 'Bác Sĩ Trực Tuyến: Giải Đáp Bệnh Lý 24/7',
-        subtitle: 'Tư vấn trực tiếp cùng các chuyên gia Bệnh viện Đại học Y Dược',
-        startHour: 20,
-        endHour: 22,
-        timeString: '20:00 - 22:00',
-        badge: 'ON-AIR HEALTH',
-        badgeType: 'live',
-        isLiveNow: true,
+        id: 'dc-8',
+        title: 'Khoa Học Chế Tạo: Bí Mật Tàu Ngầm Hạt Nhân Siêu Hiện Đại',
+        category: 'Kỹ Thuật',
+        startTime: '16:00',
+        endTime: '17:30',
+        startMinutes: 960,
+        durationMinutes: 90,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Tìm hiểu quy trình cơ khí chính xác và công nghệ tàng hình âm học dưới lòng biển sâu.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'dc-9',
+        title: 'Khung Giờ Vàng: Planet Earth III (Hành Tinh Trái Đất 3)',
+        subtitle: 'Kiệt Tác Tài Liệu Thiên Nhiên Của Ngài David Attenborough',
+        category: 'Tài Liệu Độc Quyền',
+        startTime: '17:30',
+        endTime: '19:45',
+        startMinutes: 1050,
+        durationMinutes: 135,
+        badge: 'PREMIERE BBC',
+        quality: '4K 60FPS HDR',
+        audio: 'DOLBY ATMOS 7.1',
+        rating: 9.9,
+        description: 'Ghi lại những hành vi sinh tồn chưa từng thấy của các loài động vật quý hiếm trên khắp 7 châu lục.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80',
+        features: ['Thuyết Minh Tiếng Việt', 'Dolby Atmos', '4K UHD HDR'],
+      },
+      {
+        id: 'dc-10',
+        title: 'Bắc Cực Băng Giá: Vương Quốc Của Gấu Trắng',
+        category: 'Băng Giá',
+        startTime: '19:45',
+        endTime: '21:15',
+        startMinutes: 1185,
+        durationMinutes: 90,
+        quality: '4K UHD',
+        audio: 'Dolby 5.1',
+        description: 'Cuộc chiến sinh tồn khắc nghiệt giữa biển băng tuyết trắng xoá trong mùa đông địa cực.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'dc-11',
+        title: 'Núi Lửa & Những Cơn Thịnh Nộ Của Trái Đất',
+        category: 'Địa Chất',
+        startTime: '21:15',
+        endTime: '22:45',
+        startMinutes: 1275,
+        durationMinutes: 90,
+        badge: 'DISCOVERY SPECIAL',
+        quality: '4K UHD',
+        audio: 'Dolby Atmos',
+        description: 'Những đợt phun trào dung nham đỏ rực tại Iceland và Hawaii qua máy bay không người lái chuyên dụng.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'dc-12',
+        title: 'Khám Phá Hang Động Sơn Đoòng: Kỳ Quan Lòng Đất Việt Nam',
+        category: 'Việt Nam Hùng Vĩ',
+        startTime: '22:45',
+        endTime: '00:30',
+        startMinutes: 1365,
+        durationMinutes: 105,
+        quality: '4K 60FPS',
+        audio: 'Dolby 5.1',
+        description: 'Hang động tự nhiên lớn nhất thế giới với rừng nguyên sinh và hệ thống thời tiết riêng biệt bên trong hang.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80',
+      },
+      {
+        id: 'dc-13',
+        title: 'Tài Liệu Đêm Muộn: Hành Tinh Hoang Dã',
+        category: 'Thiên Nhiên Đêm',
+        startTime: '00:30',
+        endTime: '06:00',
+        startMinutes: 30,
+        durationMinutes: 330,
+        quality: '1080p',
+        audio: 'Stereo',
+        description: 'Tổng hợp các thước phim tài liệu thiên nhiên thư giãn cùng âm thanh tự nhiên của rừng già và sóng biển.',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80',
       },
     ],
   },
 ];
 
-function mapCategoryToGroup(cat?: string): StitchChannelRow['category'] {
-  if (!cat) return 'lifestyle';
-  const c = cat.toUpperCase();
-  if (c.includes('SPORT') || c.includes('GAME') || c.includes('GAMING') || c.includes('ESPORT')) return 'sports';
-  if (c.includes('CINE') || c.includes('DRAMA') || c.includes('MOVIE') || c.includes('FILM')) return 'movies';
-  if (c.includes('SHOW') || c.includes('MUSIC') || c.includes('ENTERTAIN') || c.includes('KIDS')) return 'shows';
-  if (c.includes('NEWS') || c.includes('TECH') || c.includes('EDU') || c.includes('BUSINESS') || c.includes('DISCOVERY')) return 'news_edu';
-  return 'lifestyle';
-}
-
 export function EPGGrid() {
-  const [activeDateIndex, setActiveDateIndex] = useState(6); // Today (Active)
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'sports' | 'movies' | 'shows' | 'news_edu' | 'lifestyle'>('all');
-  const [selectedTimeBlock, setSelectedTimeBlock] = useState<'morning' | 'afternoon' | 'prime' | 'night'>('prime');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [currentTimePos, setCurrentTimePos] = useState(20.42); // 20:25:40 = 20.428h
+  const [selectedDayOffset, setSelectedDayOffset] = useState<number>(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [activeChannelId, setActiveChannelId] = useState<string>('ch-01');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'timeline' | 'schedule_list'>('timeline');
+  const [selectedProgram, setSelectedProgram] = useState<RealEpgProgram | null>(null);
+  const [reminderToast, setReminderToast] = useState<string | null>(null);
 
-  // Date list for 7-day Catch-up dynamically generated
-  const DATE_RIBBON = useMemo(() => {
-    const list = [];
-    const dayNames = ['CN', 'T.HAI', 'T.BA', 'T.TƯ', 'T.NĂM', 'T.SÁU', 'T.BẢY'];
+  // Current real time marker (e.g. 19:15 = 1155 minutes)
+  const [currentTimeMinutes, setCurrentTimeMinutes] = useState<number>(() => {
     const now = new Date();
-    for (let offset = -6; offset <= 7; offset++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + offset);
-      const isToday = offset === 0;
-      const isYesterday = offset === -1;
-      const isTomorrow = offset === 1;
-      const dayLabel = isToday
-        ? 'HÔM NAY'
-        : isYesterday
-        ? 'HÔM QUA'
-        : isTomorrow
-        ? 'NGÀY MAI'
-        : dayNames[d.getDay()];
-      const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-      list.push({ label: dayLabel, date: dateStr, fullDate: d, isToday });
-    }
-    return list;
+    return now.getHours() * 60 + now.getMinutes();
+  });
+
+  // Update clock every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTimeMinutes(now.getHours() * 60 + now.getMinutes());
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
-  const activeDate = DATE_RIBBON[activeDateIndex]?.fullDate || new Date();
-
-  // Dynamic EPG day & Channels queries
-  const { data: epgDayData, isLoading: isEpgLoading } = useEpgDay(activeDate);
-  const { data: channelsData } = useChannels({ limit: 50 });
-
-  // Merge dynamic API channels/schedules with Stitch matrix
-  const channelsList = useMemo<StitchChannelRow[]>(() => {
-    if (epgDayData?.channels && epgDayData.channels.length > 0) {
-      return epgDayData.channels.map((ch, idx) => {
-        const chNumber = `CH #${String(idx + 1).padStart(3, '0')}`;
-        const categoryGroup = mapCategoryToGroup(ch.channelCategory);
-        const progs: StitchProgram[] = (ch.programs || []).map((p, pIdx) => {
-          const start = new Date(p.startTime);
-          const end = new Date(p.endTime);
-          const startHour = start.getHours() + start.getMinutes() / 60;
-          const endHour = end.getHours() + end.getMinutes() / 60;
-          const timeString = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')} - ${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-          const isLive = p.status === 'LIVE';
-          return {
-            id: p.id || `prog-${idx}-${pIdx}`,
-            title: p.title,
-            subtitle: p.isFiller ? 'Chương trình phát lại tuyển chọn' : `Trực tiếp trên ${ch.channelName}`,
-            startHour: isNaN(startHour) ? 18 : startHour,
-            endHour: isNaN(endHour) ? 20 : (endHour < startHour ? endHour + 24 : endHour),
-            timeString,
-            badge: isLive ? 'ON-AIR 4K HDR' : p.isFiller ? 'REPLAY HD' : 'PREMIERE',
-            badgeType: isLive ? 'live' : 'replay',
-            features: ['5.1 SURROUND', 'Multi-Cam Ready'],
-            isLiveNow: isLive,
-          };
-        });
-
-        return {
-          id: ch.channelId,
-          chNumber,
-          name: ch.channelName,
-          badgeTag: ch.channelCategory || 'PREMIUM 4K',
-          logo: ch.channelLogoUrl || STITCH_CHANNELS_25[idx % STITCH_CHANNELS_25.length]?.logo || '/Channel_Logos/01-omni-sport-1-icon.svg',
-          category: categoryGroup,
-          isFavorite: idx < 5,
-          programs: progs.length > 0 ? progs : (STITCH_CHANNELS_25[idx % STITCH_CHANNELS_25.length]?.programs || []),
-        };
-      });
+  // 7-Day Date Carousel List (Hôm qua, Hôm nay, Ngày mai...)
+  const SEVEN_DAYS = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let offset = -3; offset <= 3; offset++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + offset);
+      const isToday = offset === 0;
+      const dayName = isToday
+        ? 'Hôm Nay'
+        : offset === -1
+        ? 'Hôm Qua'
+        : offset === 1
+        ? 'Ngày Mai'
+        : `Thứ ${d.getDay() === 0 ? 'CN' : d.getDay() + 1}`;
+      const dateFormatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      days.push({ offset, isToday, dayName, dateFormatted });
     }
-    return STITCH_CHANNELS_25;
-  }, [epgDayData]);
+    return days;
+  }, []);
 
-  // Timeline hours from 18:00 to 22:00 (Prime time block)
-  const TIMELINE_HOURS = [18.0, 18.5, 19.0, 19.5, 20.0, 20.5, 21.0, 21.5, 22.0];
-  const BASE_START_HOUR = 18.0;
-  const BASE_END_HOUR = 22.5;
-  const TOTAL_HOURS = BASE_END_HOUR - BASE_START_HOUR;
-
-  // Filter channels
+  // Filter channels by category
   const filteredChannels = useMemo(() => {
-    return channelsList.filter((ch) => {
-      if (selectedCategory !== 'all' && ch.category !== selectedCategory) return false;
-      if (favoritesOnly && !ch.isFavorite) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = ch.name.toLowerCase().includes(q);
-        const matchesProg = ch.programs.some((p) => p.title.toLowerCase().includes(q));
-        if (!matchesName && !matchesProg) return false;
-      }
-      return true;
-    });
-  }, [channelsList, selectedCategory, favoritesOnly, searchQuery]);
+    let list = REAL_WORLD_CHANNELS_EPG;
+    if (selectedCategory !== 'ALL') {
+      list = list.filter((ch) => ch.category === selectedCategory);
+    }
+    if (searchQuery.trim().length > 0) {
+      const q = searchQuery.toLowerCase();
+      list = list.map((ch) => ({
+        ...ch,
+        programs: ch.programs.filter(
+          (p) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+        ),
+      })).filter((ch) => ch.programs.length > 0);
+    }
+    return list;
+  }, [selectedCategory, searchQuery]);
+
+  const activeChannel = useMemo(() => {
+    return filteredChannels.find((ch) => ch.id === activeChannelId) || filteredChannels[0] || REAL_WORLD_CHANNELS_EPG[0];
+  }, [filteredChannels, activeChannelId]);
+
+  // Set reminder handler with cyber toast
+  const handleSetReminder = (prog: RealEpgProgram) => {
+    setReminderToast(`Đã đặt lịch nhắc nhở: "${prog.title}" lúc ${prog.startTime}`);
+    setTimeout(() => setReminderToast(null), 4000);
+  };
+
+  // Helper to determine program status
+  const getProgramStatus = (prog: RealEpgProgram) => {
+    if (selectedDayOffset < 0) return 'catchup';
+    if (selectedDayOffset > 0) return 'upcoming';
+    // Today
+    const endMinutes = prog.startMinutes + prog.durationMinutes;
+    if (currentTimeMinutes >= prog.startMinutes && currentTimeMinutes < endMinutes) {
+      return 'live';
+    }
+    if (currentTimeMinutes >= endMinutes) {
+      return 'catchup';
+    }
+    return 'upcoming';
+  };
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      {/* ── 1. Top EPG Title & Live Action Controls ──────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 rounded-2xl bg-[#090f1a] border border-[#162338] shadow-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400">
-              EPG REALTIME SYNC UTC+7 (HANOI)
-            </span>
+    <div className="w-full space-y-6 text-slate-100">
+      
+      {/* ── 1. Top EPG Header & 7-Day Date Carousel Bar ─────────────── */}
+      <div className="p-5 md:p-6 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl space-y-5">
+        
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-[#142236] pb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-cyan-400 font-mono">
+                REALTIME ELECTRONIC PROGRAMME GUIDE • 25 CHANNELS
+              </span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-cyan-400" />
+              Lịch Phát Sóng Truyền Hình & Xem Lại 7 Ngày
+            </h1>
           </div>
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <span className="text-cyan-400 text-sm font-bold uppercase bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
-              HỆ THỐNG 25 KÊNH
-            </span>
-            Lịch Phát Sóng Điện Tử & Catch-Up 7 Ngày
-          </h2>
+
+          {/* View Mode Toggle: Timeline Grid vs Detailed Linear Schedule */}
+          <div className="flex items-center gap-2 bg-[#060a12] p-1.5 rounded-2xl border border-[#18283e]">
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                viewMode === 'timeline'
+                  ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)]'
+                  : 'text-slate-400 hover:text-white'
+              )}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              Lưới Timeline 24H
+            </button>
+
+            <button
+              onClick={() => setViewMode('schedule_list')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                viewMode === 'schedule_list'
+                  ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)]'
+                  : 'text-slate-400 hover:text-white'
+              )}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Lịch Theo Kênh
+            </button>
+          </div>
         </div>
 
-        {/* Right Tools: HIỆN TẠI (LIVE), Search, Originals, Export */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setCurrentTimePos(20.42)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs shadow-[0_0_15px_rgba(0,242,254,0.4)] transition-all"
-          >
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            HIỆN TẠI (LIVE)
-          </button>
+        {/* 7-Day Date Carousel Tabs */}
+        <div className="flex items-center justify-between gap-3 overflow-x-auto scrollbar-none py-1">
+          <div className="flex items-center gap-2 min-w-max">
+            {SEVEN_DAYS.map((day) => {
+              const isSelected = selectedDayOffset === day.offset;
+              return (
+                <button
+                  key={day.offset}
+                  onClick={() => setSelectedDayOffset(day.offset)}
+                  className={cn(
+                    'flex flex-col items-center px-4 py-2.5 rounded-2xl border text-center transition-all cursor-pointer min-w-[100px]',
+                    isSelected
+                      ? 'bg-gradient-to-b from-cyan-950/80 to-[#0e1a2b] border-cyan-400 text-cyan-200 shadow-[0_0_15px_rgba(0,242,254,0.3)] scale-102'
+                      : 'bg-[#0d1624] hover:bg-[#132034] border-[#18273c] text-slate-300'
+                  )}
+                >
+                  <span className={cn('text-xs font-black tracking-wide', isSelected ? 'text-cyan-400' : 'text-slate-200')}>
+                    {day.dayName}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-0.5">
+                    {day.dateFormatted}
+                  </span>
+                  {day.isToday && (
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          {selectedDayOffset !== 0 && (
+            <button
+              onClick={() => setSelectedDayOffset(0)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs font-bold hover:bg-cyan-900/60 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+              Về Hôm Nay
+            </button>
+          )}
+        </div>
+
+        {/* Category Filters & Quick Search Bar */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">
+          
+          {/* Category Chips */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { id: 'ALL', label: 'Tất Cả Kênh' },
+              { id: 'sports', label: 'Thể Thao' },
+              { id: 'movies', label: 'Điện Ảnh' },
+              { id: 'news', label: 'Thời Sự' },
+              { id: 'esports', label: 'Esports' },
+              { id: 'discovery', label: 'Khám Phá' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                  selectedCategory === cat.id
+                    ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,242,254,0.4)]'
+                    : 'bg-[#0d1624] hover:bg-[#132034] text-slate-300 border border-[#1b2b42]'
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Search */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm tên trận đấu, phim, gameshow..."
-              className="pl-8 pr-3 py-1.5 bg-[#0e1726] border border-[#1d2f4a] focus:border-cyan-400 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none w-52 md:w-64"
+              placeholder="Tìm chương trình, trận đấu..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#0c1421] border border-[#1b2b42] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
             />
           </div>
-
-          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1726] hover:bg-[#152339] border border-[#1d2f4a] text-xs font-bold text-slate-300 hover:text-cyan-400 transition-colors">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            Omni Originals
-          </button>
-
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1726] hover:bg-[#152339] border border-[#1d2f4a] text-xs font-bold text-slate-300 hover:text-white transition-colors">
-            <Download className="w-3.5 h-3.5" />
-            Xuất Lịch
-          </button>
         </div>
+
       </div>
 
-      {/* ── 2. 7-Day Catch-Up Date Ribbon Bar (Stitch 1:1) ───────────── */}
-      <div className="w-full overflow-x-auto scrollbar-none py-1 px-1">
-        <div className="flex items-center gap-2 min-w-max">
-          <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-400 uppercase tracking-wider mr-2">
-            <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
-            CATCH-UP:
-          </div>
-
-          {DATE_RIBBON.map((item, idx) => {
-            const isSelected = activeDateIndex === idx;
-            return (
-              <button
-                key={idx}
-                onClick={() => setActiveDateIndex(idx)}
-                className={cn(
-                  'flex flex-col items-center justify-center px-3 py-1.5 rounded-xl border text-xs font-bold transition-all min-w-[70px]',
-                  isSelected
-                    ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_12px_rgba(0,242,254,0.5)] font-black scale-105'
-                    : 'bg-[#0b1320] hover:bg-[#121f33] border-[#18273e] text-slate-300'
-                )}
-              >
-                <span className="text-[10px] uppercase">{item.label}</span>
-                <span className="text-xs font-mono">{item.date}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── 3. Category Tabs & Time Block Filters ────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[#080d17] border border-[#142033]">
-        {/* Category Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {[
-            { key: 'all', label: 'TẤT CẢ (25 KÊNH)' },
-            { key: 'sports', label: 'THỂ THAO & ESPORTS (3)' },
-            { key: 'movies', label: 'PHIM & DRAMA (2)' },
-            { key: 'shows', label: 'SHOWS & NHẠC (5)' },
-            { key: 'news_edu', label: 'TRI THỨC & CÔNG NGHỆ (8)' },
-            { key: 'lifestyle', label: 'ĐỜI SỐNG & DU LỊCH (7)' },
-          ].map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(cat.key as any)}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all',
-                selectedCategory === cat.key
-                  ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,242,254,0.4)]'
-                  : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Time Blocks on the Right */}
-        <div className="flex items-center gap-1.5 bg-[#0e1625] p-1 rounded-xl border border-[#1b2b42] text-[11px] font-bold">
-          {[
-            { key: 'morning', label: 'Sáng (06:00-12:00)' },
-            { key: 'afternoon', label: 'Chiều (12:00-18:00)' },
-            { key: 'prime', label: '● Giờ Vàng (18:00-23:00)', isLivePulse: true },
-            { key: 'night', label: 'Đêm (23:00-06:00)' },
-          ].map((tb) => (
-            <button
-              key={tb.key}
-              onClick={() => setSelectedTimeBlock(tb.key as any)}
-              className={cn(
-                'px-2.5 py-1 rounded-lg transition-colors',
-                selectedTimeBlock === tb.key
-                  ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              )}
-            >
-              {tb.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 4. Catch-Up Notice Banner ────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-950/40 via-blue-950/20 to-transparent border border-cyan-500/20 text-xs">
-        <div className="flex items-center gap-2 text-cyan-200">
-          <Info className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-          <span>
-            Tính năng <strong>Catch-Up 7 ngày</strong> hỗ trợ toàn bộ <strong>25 kênh</strong> cho phép xem lại chương trình đã phát sóng với âm thanh Dolby 5.1 và phụ đề đa ngôn ngữ.
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-300">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-slate-500" />
-            Đã phát (Xem lại)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
-            Đang phát (Live)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
-            Sắp phát sóng
-          </span>
-        </div>
-      </div>
-
-      {/* ── 5. EPG Timeline Schedule Grid with Glowing Live Line ─────── */}
-      <div className="relative rounded-2xl bg-[#070b13] border border-[#162338] shadow-2xl overflow-x-auto max-h-[750px] overflow-y-auto">
-        
-        {/* EPG Timeline Header (Sticky top) */}
-        <div className="sticky top-0 z-40 flex items-center border-b border-[#18273e] bg-[#05080e] min-w-[1200px]">
-          {/* Left Column Label: 25 KÊNH PHÁT SÓNG */}
-          <div className="w-64 p-3 border-r border-[#18273e] text-xs font-black uppercase text-slate-300 tracking-wider flex items-center justify-between bg-[#05080e]">
-            <span>25 KÊNH PHÁT SÓNG</span>
-            <span className="text-[10px] text-cyan-400 font-mono">CH #001 - #025</span>
-          </div>
-
-          {/* Timeline Hours */}
-          <div className="flex-1 grid grid-cols-9 text-xs font-mono text-slate-400 font-bold divide-x divide-[#152235]">
-            {TIMELINE_HOURS.map((h, i) => {
-              const hourStr = `${Math.floor(h)}:${h % 1 === 0 ? '00' : '30'}`;
-              return (
-                <div key={i} className="p-2.5 text-center">
-                  {hourStr}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* EPG Channel Rows Container (Relative for Glowing Live Marker) */}
-        <div className="relative min-w-[1200px] divide-y divide-[#131e30]">
+      {/* ── 2. VIEW MODE 1: CONTINUOUS 24-HOUR TIMELINE GRID ────────── */}
+      {viewMode === 'timeline' && (
+        <div className="p-4 md:p-6 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl space-y-4 overflow-hidden">
           
-          {/* Glowing Vertical Orange Live Timeline Line */}
-          <div
-            className="absolute top-0 bottom-0 z-30 pointer-events-none"
-            style={{
-              left: `calc(16rem + ${((currentTimePos - BASE_START_HOUR) / TOTAL_HOURS) * 100}% * (1 - 16rem/100%))`,
-            }}
-          >
-            {/* Slicing Orange Line */}
-            <div className="w-[2px] h-full bg-[#ff5722] shadow-[0_0_12px_#ff5722,0_0_24px_#ff5722]" />
-            {/* Live Tag Top Badge */}
-            <div className="sticky top-8 left-1/2 -translate-x-1/2 bg-[#ff5722] text-white text-[10px] font-black px-2 py-0.5 rounded shadow-[0_0_10px_#ff5722] whitespace-nowrap">
-              LIVE 20:25:40
+          <div className="flex items-center justify-between text-xs text-slate-400 border-b border-[#142236] pb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="font-bold text-white">Trực Quan Thời Lượng Thực:</span>
+              <span>Độ rộng thẻ tự động co giãn theo số phút thực tế (15p, 30p, 45p, 90p, 150p...)</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /> Đang Chiếu</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-cyan-400" /> Xem Lại (Catch-Up)</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-500" /> Sắp Chiếu</span>
             </div>
           </div>
 
-          {/* Channel Rows */}
-          {filteredChannels.map((channel) => (
-            <div key={channel.id} className="flex items-stretch hover:bg-[#0c1422]/60 transition-colors">
+          {/* Timeline Scrollable Grid Container */}
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/20 pb-4">
+            <div className="min-w-[1400px] space-y-3">
               
-              {/* Left Channel Header Card */}
-              <div className="w-64 p-3 border-r border-[#18273e] flex items-center gap-3 bg-[#080d17]/90 flex-shrink-0 sticky left-0 z-20">
-                <button
-                  onClick={() => {}}
-                  className="text-slate-500 hover:text-amber-400 transition-colors"
-                >
-                  <Star className={cn('w-4 h-4', channel.isFavorite ? 'text-amber-400 fill-amber-400' : '')} />
-                </button>
-
-                <div className="w-8 h-8 rounded-lg bg-[#121e30] border border-[#1f304a] flex items-center justify-center p-1 shadow-sm">
-                  <Tv className="w-5 h-5 text-cyan-400" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-500 font-mono">{channel.chNumber}</span>
-                    {channel.name}
-                  </div>
-                  <div className="text-[9px] font-black uppercase text-cyan-400 tracking-wider truncate">
-                    {channel.badgeTag}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Schedule Row Timeline */}
-              <div className="flex-1 relative flex items-center p-2 gap-2 min-h-[90px]">
-                {channel.programs.map((prog) => {
-                  const widthPct = Math.max(20, ((prog.endHour - prog.startHour) / TOTAL_HOURS) * 100);
-
-                  return (
-                    <div
-                      key={prog.id}
-                      className={cn(
-                        'group/card rounded-xl p-3 flex flex-col justify-between border transition-all cursor-pointer relative overflow-hidden',
-                        prog.isLiveNow
-                          ? 'bg-gradient-to-r from-cyan-950/60 to-[#0e1c2e] border-cyan-500/50 shadow-[0_0_15px_rgba(0,242,254,0.15)] hover:border-cyan-400'
-                          : 'bg-[#0a111c] hover:bg-[#101b2c] border-[#18263a]'
-                      )}
-                      style={{
-                        width: `${widthPct}%`,
-                        minWidth: '220px',
-                      }}
-                    >
-                      {/* Top Program Info */}
-                      <div>
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-mono text-slate-400 font-semibold">
-                            {prog.timeString}
-                          </span>
-                          {prog.badge && (
-                            <span
-                              className={cn(
-                                'text-[9px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider',
-                                prog.badgeType === 'live'
-                                  ? 'bg-red-950 text-red-300 border border-red-800'
-                                  : prog.badgeType === 'final'
-                                  ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                                  : 'bg-[#152236] text-cyan-300 border border-[#213554]'
-                              )}
-                            >
-                              {prog.badge}
-                            </span>
-                          )}
-                        </div>
-
-                        <h4 className="text-xs font-bold text-white group-hover/card:text-cyan-300 transition-colors line-clamp-1">
-                          {prog.title}
-                        </h4>
-                        {prog.subtitle && (
-                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                            {prog.subtitle}
-                          </p>
-                        )}
+              {filteredChannels.map((ch) => (
+                <div key={ch.id} className="flex items-stretch gap-3 group/row">
+                  
+                  {/* Channel Header (Sticky Left) */}
+                  <Link
+                    href={`/channels/${ch.slug}`}
+                    className="flex-shrink-0 w-44 md:w-52 p-3 rounded-2xl bg-[#0b1320] border border-[#18283e] hover:border-cyan-400/60 flex items-center gap-3 transition-colors shadow-lg"
+                  >
+                    <ChannelLogo slug={ch.slug} name={ch.name} size="md" />
+                    <div className="overflow-hidden">
+                      <div className="text-xs font-black text-white truncate group-hover/row:text-cyan-300">
+                        {ch.name}
                       </div>
-
-                      {/* Bottom Tags / Features & Xem Ngay Button */}
-                      <div className="flex items-center justify-between gap-1 mt-2 pt-1 border-t border-white/5">
-                        <div className="flex items-center gap-1.5">
-                          {prog.features?.map((f, fi) => (
-                            <span
-                              key={fi}
-                              className="text-[9px] font-bold text-slate-400 bg-black/40 px-1.5 py-0.2 rounded"
-                            >
-                              {f}
-                            </span>
-                          ))}
-                        </div>
-
-                        <Link
-                          href={prog.id.startsWith('p-') || prog.id.startsWith('prog-') ? `/channels` : `/programs/${prog.id}`}
-                          className="flex items-center gap-1 text-[10px] font-black text-cyan-400 group-hover/card:underline whitespace-nowrap ml-auto"
-                        >
-                          <span>Xem Ngay</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </Link>
+                      <div className="text-[10px] text-slate-400 font-mono truncate">
+                        {ch.chNumber} • {ch.categoryLabel}
                       </div>
                     </div>
+                  </Link>
+
+                  {/* Flexible Programs Flow with Natural Durations */}
+                  <div className="flex-1 flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+                    {ch.programs.map((prog) => {
+                      const status = getProgramStatus(prog);
+                      const isLive = status === 'live';
+                      const isCatchUp = status === 'catchup';
+
+                      // Width proportional to realistic duration: min 140px, max 380px
+                      const cardWidth = Math.max(140, Math.min(380, prog.durationMinutes * 2.2));
+
+                      return (
+                        <div
+                          key={prog.id}
+                          style={{ width: `${cardWidth}px` }}
+                          onClick={() => setSelectedProgram(prog)}
+                          className={cn(
+                            'flex-shrink-0 h-24 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer relative group/prog overflow-hidden',
+                            isLive
+                              ? 'bg-gradient-to-r from-red-950/60 to-[#120a14] border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.25)] ring-1 ring-red-500/50'
+                              : isCatchUp
+                              ? 'bg-[#0d1624] hover:bg-[#132034] border-[#18273c] hover:border-cyan-400/60'
+                              : 'bg-[#080d17] hover:bg-[#0e1624] border-[#142032] opacity-85 hover:opacity-100'
+                          )}
+                        >
+                          {/* Top Badges */}
+                          <div className="flex items-center justify-between gap-1 z-10">
+                            <span className="text-[10px] font-mono font-bold text-slate-300">
+                              {prog.startTime} - {prog.endTime}
+                            </span>
+                            {isLive ? (
+                              <span className="flex items-center gap-1 text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-red-600 text-white animate-pulse">
+                                LIVE
+                              </span>
+                            ) : prog.badge ? (
+                              <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                                {prog.badge}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono text-slate-500">
+                                {prog.durationMinutes}p
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Title */}
+                          <div className="z-10">
+                            <h4 className="text-xs font-bold text-white line-clamp-1 group-hover/prog:text-cyan-300 transition-colors">
+                              {prog.title}
+                            </h4>
+                            <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                              {prog.category} {prog.quality ? `• ${prog.quality}` : ''}
+                            </div>
+                          </div>
+
+                          {/* Hover Play / Catchup Icon */}
+                          <div className="absolute right-2 bottom-2 z-10 opacity-0 group-hover/prog:opacity-100 transition-opacity">
+                            {isLive || isCatchUp ? (
+                              <div className="w-6 h-6 rounded-full bg-cyan-500 text-black flex items-center justify-center shadow-[0_0_8px_#00f2fe]">
+                                <Play className="w-3 h-3 fill-current ml-0.5" />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetReminder(prog);
+                                }}
+                                className="w-6 h-6 rounded-full bg-[#18283e] hover:bg-cyan-500 hover:text-black text-slate-300 flex items-center justify-center transition-colors"
+                                title="Đặt lịch nhắc nhở"
+                              >
+                                <Bell className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ── 3. VIEW MODE 2: DETAILED CHANNEL LINEAR SCHEDULE (THEO KHUNG GIỜ) */}
+      {viewMode === 'schedule_list' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Channel Selector Sidebar (3 cols) */}
+          <aside className="lg:col-span-3 space-y-3">
+            <div className="p-4 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-xl space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono flex items-center gap-2">
+                <Tv className="w-4 h-4" />
+                CHỌN KÊNH TRUYỀN HÌNH
+              </h3>
+              
+              <div className="space-y-1.5 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500/20 pr-1">
+                {filteredChannels.map((ch) => {
+                  const isCurrent = ch.id === activeChannel.id;
+                  return (
+                    <button
+                      key={ch.id}
+                      onClick={() => setActiveChannelId(ch.id)}
+                      className={cn(
+                        'w-full p-2.5 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer group',
+                        isCurrent
+                          ? 'bg-cyan-950/60 border-cyan-400 shadow-[0_0_15px_rgba(0,242,254,0.25)]'
+                          : 'bg-[#0d1624] hover:bg-[#132034] border-[#18273c]'
+                      )}
+                    >
+                      <ChannelLogo slug={ch.slug} name={ch.name} size="sm" />
+                      <div className="overflow-hidden flex-1">
+                        <div className="text-xs font-black text-white group-hover:text-cyan-300 truncate">
+                          {ch.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">
+                          {ch.programs.length} chương trình hôm nay
+                        </div>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
-          ))}
+          </aside>
+
+          {/* Chronological Daily Timeline Program Cards (9 cols) */}
+          <main className="lg:col-span-9 space-y-4">
+            
+            {/* Active Channel Header Card */}
+            <div className="p-5 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <ChannelLogo slug={activeChannel.slug} name={activeChannel.name} size="lg" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-white">{activeChannel.name}</h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 border border-cyan-800">
+                      {activeChannel.chNumber}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Thể loại: {activeChannel.categoryLabel} • Hỗ trợ độ phân giải 4K HDR & âm thanh Dolby Atmos
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href={`/channels/${activeChannel.slug}`}
+                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.3)] transition-transform hover:scale-105"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                Xem Kênh Trực Tiếp
+              </Link>
+            </div>
+
+            {/* Program Timeline Items */}
+            <div className="space-y-3">
+              {activeChannel.programs.map((prog) => {
+                const status = getProgramStatus(prog);
+                const isLive = status === 'live';
+                const isCatchUp = status === 'catchup';
+
+                return (
+                  <div
+                    key={prog.id}
+                    onClick={() => setSelectedProgram(prog)}
+                    className={cn(
+                      'p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group',
+                      isLive
+                        ? 'bg-gradient-to-r from-red-950/60 via-[#101927] to-[#0a101b] border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.25)] ring-1 ring-red-500/50'
+                        : 'bg-[#0a111d] hover:bg-[#111c2e] border-[#16253c] hover:border-cyan-500/40'
+                    )}
+                  >
+                    <div className="flex items-start sm:items-center gap-4 flex-1">
+                      
+                      {/* Time Block */}
+                      <div className="w-24 text-left sm:text-center flex-shrink-0">
+                        <div className={cn('text-sm font-black font-mono', isLive ? 'text-red-400' : 'text-cyan-400')}>
+                          {prog.startTime}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {prog.endTime} ({prog.durationMinutes}p)
+                        </div>
+                      </div>
+
+                      {/* Thumbnail */}
+                      <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-black flex-shrink-0 hidden sm:block">
+                        <Image
+                          src={prog.thumbnailUrl}
+                          alt={prog.title}
+                          fill
+                          unoptimized
+                          className="object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {isLive && (
+                            <span className="flex items-center gap-1 px-2 py-0.2 rounded text-[9px] font-black uppercase bg-red-600 text-white animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white" /> ĐANG PHÁT
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-cyan-300 uppercase">
+                            {prog.category}
+                          </span>
+                          {prog.quality && (
+                            <span className="text-[9px] font-mono text-slate-400 bg-black/50 px-1.5 py-0.2 rounded">
+                              {prog.quality}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
+                          {prog.title}
+                        </h3>
+                        <p className="text-xs text-slate-400 line-clamp-1">
+                          {prog.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2.5 self-end sm:self-center flex-shrink-0">
+                      {isLive ? (
+                        <Link
+                          href={`/channels/${activeChannel.slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1.5 shadow-[0_0_12px_rgba(239,68,68,0.5)] transition-transform hover:scale-105"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          Xem Ngay
+                        </Link>
+                      ) : isCatchUp ? (
+                        <Link
+                          href={`/programs/${prog.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-3.5 py-2 rounded-xl bg-[#121f33] hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Xem Lại
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetReminder(prog);
+                          }}
+                          className="px-3 py-2 rounded-xl bg-[#101b2a] hover:bg-[#18283e] border border-[#1a2d44] text-slate-300 hover:text-cyan-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Bell className="w-3.5 h-3.5" />
+                          Nhắc Nhở
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+          </main>
         </div>
-      </div>
+      )}
+
+      {/* ── 4. PROGRAM DETAIL CYBER DRAWER / MODAL ───────────────────── */}
+      {selectedProgram && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-xl rounded-3xl bg-[#09111e] border border-[#1b2f4a] p-6 shadow-2xl relative space-y-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#162338]">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono">
+                  THÔNG TIN CHƯƠNG TRÌNH PHÁT SÓNG
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedProgram(null)}
+                className="p-1.5 rounded-lg bg-[#101b2a] hover:bg-[#18283e] text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Poster / Backdrop */}
+            <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-black">
+              <Image
+                src={selectedProgram.thumbnailUrl}
+                alt={selectedProgram.title}
+                fill
+                unoptimized
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-cyan-300 bg-black/70 px-2.5 py-1 rounded-md border border-cyan-500/40">
+                  {selectedProgram.category}
+                </span>
+                <span className="text-xs font-mono font-bold text-white bg-black/70 px-2.5 py-1 rounded-md">
+                  {selectedProgram.startTime} - {selectedProgram.endTime} ({selectedProgram.durationMinutes} phút)
+                </span>
+              </div>
+            </div>
+
+            {/* Details Content */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-white">
+                {selectedProgram.title}
+              </h3>
+              {selectedProgram.subtitle && (
+                <p className="text-xs font-semibold text-cyan-400">
+                  {selectedProgram.subtitle}
+                </p>
+              )}
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {selectedProgram.description}
+              </p>
+            </div>
+
+            {/* Audio / Quality Features */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#142135]">
+              {selectedProgram.quality && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#121f33] text-cyan-300 border border-cyan-800">
+                  {selectedProgram.quality}
+                </span>
+              )}
+              {selectedProgram.audio && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#121f33] text-amber-400 border border-amber-800">
+                  {selectedProgram.audio}
+                </span>
+              )}
+              {selectedProgram.features?.map((f, idx) => (
+                <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-mono bg-black/60 text-slate-400 border border-slate-700">
+                  {f}
+                </span>
+              ))}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <Link
+                href={`/channels/${activeChannel.slug}`}
+                onClick={() => setSelectedProgram(null)}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,242,254,0.4)]"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                Mở Luồng Kênh Trực Tiếp
+              </Link>
+              <button
+                onClick={() => {
+                  handleSetReminder(selectedProgram);
+                  setSelectedProgram(null);
+                }}
+                className="px-4 py-3 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-2"
+              >
+                <Bell className="w-4 h-4" />
+                Đặt Nhắc Nhở
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. CYBER TOAST NOTIFICATION ─────────────────────────────── */}
+      {reminderToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl bg-[#09121f] border border-cyan-400 text-cyan-200 text-xs font-bold shadow-[0_0_25px_rgba(0,242,254,0.4)] flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+          <span>{reminderToast}</span>
+        </div>
+      )}
+
     </div>
   );
 }
