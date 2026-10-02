@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -14,6 +14,7 @@ import {
   Tv,
   Loader2,
   AlertCircle,
+  Radio,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -24,6 +25,8 @@ import { Card } from '@/components/ui/card';
 import { LiveBadge } from '@/components/ui/live-badge';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { FollowButton } from '@/components/channels/follow-button';
+import { VideoPlayer } from '@/components/programs/video-player';
+import { bumpChannelView, bumpLiveEventView } from '@/lib/api/social';
 import {
   useChannelBySlug,
 } from '@/lib/hooks/useChannels';
@@ -70,6 +73,18 @@ export default function ChannelDetailPage() {
       })
       .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt));
   }, [scheduleData, channel]);
+
+  useEffect(() => {
+    if (channel?.id) {
+      bumpChannelView(channel.id).catch(() => {});
+    }
+  }, [channel?.id]);
+
+  useEffect(() => {
+    if (liveEvent?.id) {
+      bumpLiveEventView(liveEvent.id).catch(() => {});
+    }
+  }, [liveEvent?.id]);
 
   if (isLoading) {
     return (
@@ -152,7 +167,29 @@ export default function ChannelDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* Current/Live Program */}
+            {/* Live Broadcast Stream Player */}
+            {liveEvent && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
+                    <span className="text-xs font-black uppercase tracking-wider text-red-400 font-mono">
+                      LUỒNG PHÁT SÓNG TRỰC TIẾP
+                    </span>
+                  </div>
+                  <LiveBadge size="sm" />
+                </div>
+                <div className="rounded-2xl overflow-hidden bg-black border border-dark-700 shadow-2xl">
+                  <VideoPlayer
+                    src={liveEvent.streamUrl || liveEvent.embedCode || liveEvent.externalUrl || ''}
+                    poster={liveEvent.thumbnailUrl || channel.bannerUrl || undefined}
+                    className="rounded-2xl"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Current/Live Program Info Card */}
             {liveEvent && (
               <Card className="overflow-hidden glass-card">
                 <div className="bg-gradient-to-r from-red-600/20 to-red-900/20 p-4 border-b border-dark-700">

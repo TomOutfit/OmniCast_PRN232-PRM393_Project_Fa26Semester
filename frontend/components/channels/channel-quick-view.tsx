@@ -6,6 +6,7 @@ import { X, Play, Clock, Tv, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { LiveBadge } from '@/components/ui/live-badge';
+import { fetchEpgDay } from '@/lib/api/programs';
 import type { Channel } from '@/types';
 
 interface UpcomingProgram {
@@ -69,10 +70,7 @@ export function ChannelQuickView({ channel, onClose }: ChannelQuickViewProps) {
   const fetchPrograms = async () => {
     try {
       const todayYmd = new Date().toISOString().slice(0, 10);
-      const qs = `?date=${todayYmd}&channelIds=${channel.id}`;
-      const res = await fetch(`/api/proxy/programs/epg/day${qs}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
+      const body = await fetchEpgDay({ date: todayYmd, channelIds: [channel.id] });
       const ch = (body.channels ?? []).find(
         (c: any) => c.channelId === channel.id,
       );

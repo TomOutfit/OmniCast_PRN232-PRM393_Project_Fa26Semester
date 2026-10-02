@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -35,7 +35,7 @@ import { CommentsSection } from '@/components/programs/comments-section';
 import { ReactionsBar } from '@/components/programs/reactions-bar';
 import { useT } from '@/lib/i18n/i18n-provider';
 import { useAuth } from '@/lib/auth-context';
-import { bumpLiveEventShare, bumpRecordingShare, bumpRecordingView } from '@/lib/api/social';
+import { bumpLiveEventShare, bumpLiveEventView, bumpRecordingShare, bumpRecordingView } from '@/lib/api/social';
 import { cn } from '@/lib/utils';
 
 const QUALITY_LABELS: Record<string, string> = {
@@ -169,6 +169,12 @@ function LiveEventView({ program }: { program: any }) {
   const relatedPrograms =
     relatedData?.data?.filter((e: any) => e.id !== program.id).slice(0, 4) ?? [];
 
+  useEffect(() => {
+    if (program?.id) {
+      bumpLiveEventView(program.id).catch(() => {});
+    }
+  }, [program?.id]);
+
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -185,7 +191,6 @@ function LiveEventView({ program }: { program: any }) {
           <VideoPlayer
             src={program.streamUrl || program.embedCode || program.externalUrl || ''}
             poster={program.thumbnailUrl || undefined}
-            type="hls"
             className="rounded-none md:rounded-xl"
           />
         </div>
