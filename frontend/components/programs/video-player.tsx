@@ -102,15 +102,35 @@ export function VideoPlayer({
   }, [src, resolvedType, onError]);
 
   if (resolvedType === 'iframe') {
+    const embedSrc = getEmbedUrl(src);
     return (
-      <div className={cn('player-container', className)}>
+      <div className={cn('player-container relative w-full aspect-video bg-black', className)}>
         <iframe
-          src={src}
-          className="w-full h-full"
-          allow="autoplay; encrypted-media; picture-in-picture"
+          src={embedSrc}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           title="Live stream"
         />
+      </div>
+    );
+  }
+
+  if (!src) {
+    return (
+      <div className={cn('player-container relative w-full aspect-video bg-gradient-to-br from-slate-950 via-[#0a121e] to-slate-900 flex flex-col items-center justify-center text-center p-6 border border-slate-800 rounded-2xl', className)}>
+        {poster && (
+          <img
+            src={poster}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10"
+          />
+        )}
+        <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(0,242,254,0.15)]">
+          <Play className="w-6 h-6 text-cyan-400 ml-0.5" />
+        </div>
+        <p className="text-sm font-bold text-white">Luồng phát chưa sẵn sàng hoặc đang chuẩn bị phát sóng</p>
+        <p className="text-xs text-slate-400 mt-1">Vui lòng theo dõi khung giờ phát sóng theo lịch EPG</p>
       </div>
     );
   }
@@ -182,12 +202,26 @@ export function VideoPlayer({
   );
 }
 
+function getEmbedUrl(url: string): string {
+  if (!url) return url;
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&enablejsapi=1`;
+  }
+  const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+  if (twitchMatch && twitchMatch[1]) {
+    const parent = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
+    return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${parent}&autoplay=true`;
+  }
+  return url;
+}
+
 function detectType(url: string): NonNullable<VideoPlayerProps['type']> {
   const lower = url.toLowerCase();
   if (lower.includes('.m3u8')) return 'hls';
   if (lower.includes('.mp4')) return 'mp4';
   if (lower.includes('.webm')) return 'webm';
-  if (lower.includes('youtube.com') || lower.includes('vimeo.com') || lower.includes('twitch.tv'))
+  if (lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com') || lower.includes('twitch.tv') || lower.includes('<iframe'))
     return 'iframe';
   return 'hls';
 }
