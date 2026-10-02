@@ -47,13 +47,17 @@ class _ChannelQuickViewSheetState extends State<ChannelQuickViewSheet> {
   Future<void> _fetchUpcomingSchedule() async {
     try {
       final repo = getIt<ProgramsRepository>();
-      final page = await repo.getPrograms(
+      final list = await repo.getEpgSchedule(
+        date: DateTime.now(),
         channelId: widget.channel.id,
-        limit: 6,
       );
+      final now = DateTime.now();
+      final upcoming = list.where((p) => p.endedAt == null || p.endedAt!.isAfter(now)).toList();
+      final displayList = upcoming.isNotEmpty ? upcoming.take(6).toList() : list.take(6).toList();
+
       if (mounted) {
         setState(() {
-          _programs = page.items;
+          _programs = displayList;
           _isLoading = false;
         });
       }
