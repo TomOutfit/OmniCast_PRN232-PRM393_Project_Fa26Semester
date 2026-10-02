@@ -91,7 +91,7 @@ class CategoryChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? category.color.withOpacity(0.2)
+              ? category.color.withValues(alpha: 0.2)
               : AppColors.dark800,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -121,7 +121,7 @@ class CategoryChip extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? category.color.withOpacity(0.3)
+                      ? category.color.withValues(alpha: 0.3)
                       : AppColors.dark700,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -352,13 +352,13 @@ class _CategoryGridCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              category.color.withOpacity(0.3),
-              category.color.withOpacity(0.1),
+              category.color.withValues(alpha: 0.3),
+              category.color.withValues(alpha: 0.1),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: category.color.withOpacity(0.3),
+            color: category.color.withValues(alpha: 0.3),
           ),
         ),
         child: Stack(
@@ -370,7 +370,7 @@ class _CategoryGridCard extends StatelessWidget {
               child: Icon(
                 category.icon,
                 size: 80,
-                color: category.color.withOpacity(0.2),
+                color: category.color.withValues(alpha: 0.2),
               ),
             ),
             // Content
@@ -383,7 +383,7 @@ class _CategoryGridCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: category.color.withOpacity(0.2),
+                      color: category.color.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -491,7 +491,7 @@ class _CategoryListCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.dark800,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: category.color.withOpacity(0.3)),
+          border: Border.all(color: category.color.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -499,7 +499,7 @@ class _CategoryListCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.2),
+                color: category.color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(

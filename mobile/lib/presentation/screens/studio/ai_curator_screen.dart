@@ -1,6 +1,8 @@
 // OmniCast - AI Curator Screen (Staff Only)
+// Cyber-Dark Broadcast System styling with AI Neural Telemetry.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../logic/auth/auth_bloc.dart';
@@ -19,7 +21,7 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
   String? _error;
 
   // Filters
-  String? _selectedTimeRange;
+  String? _selectedTimeRange = '24 giờ qua';
   final List<String> _timeRanges = [
     '24 giờ qua',
     '7 ngày qua',
@@ -35,29 +37,53 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: const Text('AI Curator'),
-        backgroundColor: AppColors.dark950,
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'AI Curator Studio',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Outfit',
+              ),
+            ),
+            Text(
+              'NEURAL ANALYTICS // BROADCAST AI',
+              style: TextStyle(
+                color: Color(0xFF00E5FF),
+                fontSize: 9,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: const Icon(Icons.info_outline_rounded, color: Color(0xFF00E5FF)),
             onPressed: () => _showInfoDialog(context),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
             _buildHeader(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Filters
             _buildFilters(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Analyze Button
             _buildAnalyzeButton(),
@@ -66,6 +92,7 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             // Results
             if (_error != null) _buildError(),
             if (_analysisResult != null) _buildResults(),
+            const SizedBox(height: 36),
           ],
         ),
       ),
@@ -74,10 +101,10 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
 
   Widget _buildAccessDenied() {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: const Text('AI Curator'),
-        backgroundColor: AppColors.dark950,
+        backgroundColor: AppColors.bg,
       ),
       body: Center(
         child: Padding(
@@ -88,30 +115,37 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                    width: 1,
+                  ),
                 ),
                 child: const Icon(
-                  Icons.lock_outline,
-                  size: 64,
+                  Icons.lock_clock_rounded,
+                  size: 56,
                   color: AppColors.error,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const Text(
-                'Truy cập bị từ chối',
+                'TRUY CẬP BỊ TỪ CHỐI',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Outfit',
                   color: Colors.white,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Tính năng AI Curator chỉ dành cho nhân viên được ủy quyền.',
+                'Tính năng AI Curator phân tích nội dung chỉ dành riêng cho tài khoản Quản trị & Điều hành phát sóng.',
                 style: TextStyle(
-                  color: AppColors.dark400,
-                  fontSize: 14,
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -124,52 +158,58 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.2),
-            AppColors.accentCyan.withOpacity(0.1),
-          ],
-        ),
+        color: const Color(0xFF0B1320),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: const Color(0x3300E5FF),
+          width: 0.8,
         ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.2),
-              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                  blurRadius: 10,
+                ),
+              ],
             ),
             child: const Icon(
               Icons.auto_awesome,
-              color: AppColors.primary,
-              size: 32,
+              color: Colors.black,
+              size: 26,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Phân tích thông minh',
+                  'Mô hình đề xuất luồng AI',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Outfit',
                     color: Colors.white,
                   ),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'AI phân tích dữ liệu xem và đề xuất nội dung tối ưu',
+                  'Phân tích lưu lượng xem thời gian thực & tối ưu khung giờ vàng',
                   style: TextStyle(
-                    color: AppColors.dark400,
-                    fontSize: 13,
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -185,31 +225,41 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Bộ lọc',
+          'KHUNG THỜI GIAN PHÂN TÍCH',
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'JetBrainsMono',
+            color: Color(0xFF00E5FF),
+            letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 12),
-        // Time Range
+        const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: AppColors.dark800,
+            color: const Color(0xFF0B1320),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
           ),
           child: DropdownButton<String>(
             value: _selectedTimeRange,
-            hint: const Text('Chọn khoảng thời gian'),
+            hint: const Text('Chọn khoảng thời gian', style: TextStyle(color: Color(0xFF94A3B8))),
             isExpanded: true,
             underline: const SizedBox(),
-            dropdownColor: AppColors.dark800,
+            dropdownColor: const Color(0xFF0B1320),
+            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5FF)),
             items: _timeRanges.map((range) {
               return DropdownMenuItem(
                 value: range,
-                child: Text(range, style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  range,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               );
             }).toList(),
             onChanged: (value) {
@@ -222,30 +272,50 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
   }
 
   Widget _buildAnalyzeButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _isLoading ? null : _runAnalysis,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: AppColors.primary,
+    return GestureDetector(
+      onTap: _isLoading ? null : _runAnalysis,
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        icon: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isLoading)
+              const SizedBox(
+                width: 18,
+                height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               )
-            : const Icon(Icons.psychology),
-        label: Text(
-          _isLoading ? 'Đang phân tích...' : 'Phân tích với AI',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+            else
+              const Icon(Icons.psychology_rounded, color: Colors.black, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              _isLoading ? 'ĐANG PHÂN TÍCH...' : 'CHẠY PHÂN TÍCH VỚI AI',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Outfit',
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -253,20 +323,20 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
 
   Widget _buildError() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 12),
+          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               _error!,
-              style: const TextStyle(color: AppColors.error),
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ),
         ],
@@ -279,14 +349,16 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Kết quả phân tích',
+          'KẾT QUẢ ĐỀ XUẤT',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+            fontSize: 12,
+            fontFamily: 'JetBrainsMono',
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF00E5FF),
+            letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Summary Card
         _buildSummaryCard(),
@@ -315,53 +387,56 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.dark800,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Tổng quan',
+            'TỔNG QUAN LƯU LƯỢNG',
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              fontSize: 11,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF00E5FF),
+              letterSpacing: 0.8,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: _StatItem(
-                  icon: Icons.visibility,
-                  label: 'Lượt xem',
+                  icon: Icons.visibility_rounded,
+                  label: 'Tổng lượt xem',
                   value: _formatNumber(totalViews),
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  icon: Icons.timer,
-                  label: 'Thời gian xem TB',
-                  value: '${avgWatchTime} phút',
+                  icon: Icons.timer_outlined,
+                  label: 'Thời gian TB',
+                  value: '$avgWatchTime phút',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: _StatItem(
-                  icon: Icons.schedule,
+                  icon: Icons.schedule_rounded,
                   label: 'Giờ cao điểm',
                   value: peakHour,
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  icon: Icons.category,
-                  label: 'Danh mục hot',
+                  icon: Icons.category_outlined,
+                  label: 'Chuyên mục hot',
                   value: topCategory,
                 ),
               ),
@@ -376,94 +451,110 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     final topChannels = _analysisResult?['topChannels'] as List? ?? [];
     final topPrograms = _analysisResult?['topPrograms'] as List? ?? [];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Top hiệu suất',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (topChannels.isNotEmpty) ...[
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           const Text(
-            'Top Kênh',
+            'HIỆU SUẤT CAO NHẤT',
             style: TextStyle(
-              fontSize: 12,
-              color: AppColors.dark400,
+              fontSize: 11,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF00E5FF),
+              letterSpacing: 0.8,
             ),
           ),
-          const SizedBox(height: 8),
-          ...topChannels.take(3).map((channel) => _TopItem(
-                title: channel['name'] ?? '',
-                subtitle: '${_formatNumber(channel['views'] ?? 0)} lượt xem',
-                icon: Icons.tv,
-              )),
-        ],
-        if (topPrograms.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          const Text(
-            'Top Chương trình',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.dark400,
+          const SizedBox(height: 12),
+          if (topChannels.isNotEmpty) ...[
+            const Text(
+              'Kênh thu hút người xem',
+              style: TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                fontFamily: 'JetBrainsMono',
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          ...topPrograms.take(3).map((program) => _TopItem(
-                title: program['title'] ?? '',
-                subtitle: '${_formatNumber(program['views'] ?? 0)} lượt xem',
-                icon: Icons.play_circle,
-              )),
+            const SizedBox(height: 8),
+            ...topChannels.take(3).map((channel) => _TopItem(
+                  title: channel['name'] ?? '',
+                  subtitle: '${_formatNumber(channel['views'] ?? 0)} lượt xem',
+                  icon: Icons.tv_rounded,
+                )),
+          ],
+          if (topPrograms.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Chương trình nổi bật',
+              style: TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...topPrograms.take(3).map((program) => _TopItem(
+                  title: program['title'] ?? '',
+                  subtitle: '${_formatNumber(program['views'] ?? 0)} lượt xem',
+                  icon: Icons.play_circle_fill_rounded,
+                )),
+          ],
         ],
-      ],
+      ),
     );
   }
 
   Widget _buildRecommendations() {
     final recommendations = _analysisResult?['recommendations'] as List? ?? [];
-
     if (recommendations.isEmpty) return const SizedBox();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Đề xuất từ AI',
+          'ĐỀ XUẤT TỐI ƯU HÓA TỪ AI',
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+            fontSize: 11,
+            fontFamily: 'JetBrainsMono',
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF00E5FF),
+            letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         ...recommendations.map<Widget>((rec) => Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF0B1320),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: const Color(0x3300E5FF),
+                  width: 0.8,
                 ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
-                    Icons.lightbulb_outline,
-                    color: AppColors.accentGold,
-                    size: 20,
+                    Icons.lightbulb_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 18,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       rec['text'] ?? '',
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 12,
+                        height: 1.45,
                       ),
                     ),
                   ),
@@ -477,48 +568,48 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
   Widget _buildTrendAnalysis() {
     final trends = _analysisResult?['trends'] as Map<String, dynamic>? ?? {};
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Phân tích xu hướng',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'CHỈ SỐ XU HƯỚNG',
+            style: TextStyle(
+              fontSize: 11,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF00E5FF),
+              letterSpacing: 0.8,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.dark800,
-            borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 8),
+          _TrendItem(
+            label: 'Tăng trưởng người xem',
+            trend: trends['viewerGrowth'] ?? 0,
           ),
-          child: Column(
-            children: [
-              _TrendItem(
-                label: 'Tăng trưởng người xem',
-                trend: trends['viewerGrowth'] ?? 0,
-              ),
-              const Divider(color: AppColors.dark700),
-              _TrendItem(
-                label: 'Tương tác',
-                trend: trends['engagementChange'] ?? 0,
-              ),
-              const Divider(color: AppColors.dark700),
-              _TrendItem(
-                label: 'Giữ chân người xem',
-                trend: trends['retentionChange'] ?? 0,
-              ),
-            ],
+          const Divider(color: Color(0x1A00E5FF), height: 16),
+          _TrendItem(
+            label: 'Mức độ tương tác',
+            trend: trends['engagementChange'] ?? 0,
           ),
-        ),
-      ],
+          const Divider(color: Color(0x1A00E5FF), height: 16),
+          _TrendItem(
+            label: 'Tỷ lệ giữ chân người xem',
+            trend: trends['retentionChange'] ?? 0,
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _runAnalysis() async {
+    HapticFeedback.lightImpact();
     setState(() {
       _isLoading = true;
       _error = null;
@@ -526,51 +617,51 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     });
 
     try {
-      // Simulate API call - in production, call actual AI Curator API
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 1));
 
-      // Mock response
       final result = {
         'totalViews': 1250000,
         'avgWatchTime': 28,
         'peakHour': '20:00 - 22:00',
-        'topCategory': 'Thể thao',
+        'topCategory': 'Thể thao 4K',
         'topChannels': [
-          {'name': 'VTV3', 'views': 250000},
-          {'name': 'VTV6', 'views': 180000},
-          {'name': 'HTV7', 'views': 150000},
+          {'name': 'VTV3 HD', 'views': 250000},
+          {'name': 'VTV6 Live', 'views': 180000},
+          {'name': 'HTV7 4K', 'views': 150000},
         ],
         'topPrograms': [
-          {'title': 'Bóng đá Việt Nam', 'views': 320000},
-          {'title': 'The Voice', 'views': 180000},
-          {'title': 'Phim truyện Tết', 'views': 150000},
+          {'title': 'Bóng đá Trực Tiếp V-League', 'views': 320000},
+          {'title': 'The Voice Vietnam 2026', 'views': 180000},
+          {'title': 'Thời sự Toàn cảnh 19:00', 'views': 150000},
         ],
         'recommendations': [
           {
             'text':
-                'Nên tăng lịch phát sóng thể thao vào cuối tuần để đạt lượng xem cao hơn.'
+                'Nên tăng lịch phát sóng thể thao 4K vào cuối tuần để tối đa hóa lượng xem cao điểm.'
           },
           {
             'text':
-                'Chương trình giải trí vào khung giờ vàng (20:00-22:00) có tỷ lệ xem cao nhất.'
+                'Khung giờ vàng (20:00-22:00) đạt hiệu suất cao nhất khi ghép đôi với talkshow tương tác.'
           },
           {
             'text':
-                'Xem xét hợp tác với các KOL để tăng tương tác trên mạng xã hội.'
+                'Kích hoạt tính năng thông báo phát lại cho các trận đấu thể thao đạt hơn 100K lượt xem.'
           },
         ],
         'trends': {
           'viewerGrowth': 15.5,
           'engagementChange': 8.2,
-          'retentionChange': -2.1,
+          'retentionChange': -1.4,
         },
       };
 
+      if (!mounted) return;
       setState(() {
         _analysisResult = result;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Không thể phân tích: ${e.toString()}';
         _isLoading = false;
@@ -595,18 +686,31 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.dark800,
-        title: const Text('AI Curator là gì?'),
+        backgroundColor: const Color(0xFF0B1320),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x3300E5FF), width: 0.8),
+        ),
+        title: const Text(
+          'AI Curator Studio',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Outfit',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         content: const Text(
-          'AI Curator phân tích dữ liệu người xem, xu hướng nội dung và đề '
-          'xuất các chiến lược tối ưu hóa lịch phát sóng và nội dung.\n\n'
-          'Tính năng này chỉ dành cho nhân viên được ủy quyền.',
-          style: TextStyle(color: AppColors.dark300),
+          'AI Curator là công cụ phân tích dữ liệu người xem, xu hướng chuyên mục và đề xuất tối ưu hóa luồng phát sóng 4K HEVC theo thời gian thực.\n\nTính năng này chỉ dành riêng cho tài khoản Quản trị & Điều hành OmniCast.',
+          style: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 13,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
+            child: const Text('Đóng', style: TextStyle(color: Color(0xFF00E5FF))),
           ),
         ],
       ),
@@ -629,7 +733,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.dark400),
+        Icon(icon, size: 20, color: const Color(0xFF00E5FF)),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,16 +741,17 @@ class _StatItem extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: AppColors.dark500,
-                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                fontSize: 10,
               ),
             ),
             Text(
               value,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Outfit',
               ),
             ),
           ],
@@ -671,15 +776,16 @@ class _TopItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.dark800,
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.6),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 12),
+          Icon(icon, color: const Color(0xFF00E5FF), size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,14 +794,16 @@ class _TopItem extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    color: AppColors.dark400,
-                    fontSize: 12,
+                    color: Color(0xFF94A3B8),
+                    fontSize: 10,
+                    fontFamily: 'JetBrainsMono',
                   ),
                 ),
               ],
@@ -719,28 +827,33 @@ class _TrendItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = trend >= 0;
-    final color = isPositive ? AppColors.success : AppColors.error;
-    final icon = isPositive ? Icons.trending_up : Icons.trending_down;
+    final color = isPositive ? const Color(0xFF00E5FF) : const Color(0xFFFF2A55);
+    final icon = isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: AppColors.dark300),
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontSize: 12,
+              ),
             ),
           ),
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: color, size: 18),
               const SizedBox(width: 4),
               Text(
                 '${isPositive ? '+' : ''}${trend.toStringAsFixed(1)}%',
                 style: TextStyle(
                   color: color,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  fontFamily: 'JetBrainsMono',
                 ),
               ),
             ],

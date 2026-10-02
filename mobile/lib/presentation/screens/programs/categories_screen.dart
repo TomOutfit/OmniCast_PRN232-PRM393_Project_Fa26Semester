@@ -1,12 +1,9 @@
 // OmniCast - Categories Browse Screen
-//
-// Landing screen for browsing all 19 program categories. Each tile
-// opens ProgramListScreen filtered by the selected LiveCategory value.
+// Landing screen for browsing all 19 program categories with Cyber-Dark styling.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/program_categories.dart';
 
 class CategoriesScreen extends StatelessWidget {
@@ -15,33 +12,64 @@ class CategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: const Color(0xFF070B12),
       appBar: AppBar(
-        title: const Text('Danh mục'),
+        backgroundColor: const Color(0xFF090F1A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          '19 Chuyên Mục Nội Dung',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.3,
+          ),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             sliver: SliverToBoxAdapter(
-              child: Text(
-                'Khám phá kho chương trình phong phú từ nhiều nguồn nội dung bên ngoài — thể thao, tin tức, điện ảnh, âm nhạc, podcast, giáo dục, du lịch, ẩm thực…',
-                style: TextStyle(
-                  color: AppColors.dark400,
-                  fontSize: 13,
-                  height: 1.4,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF090F1A),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF162338)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.hub_rounded,
+                      color: Color(0xFF00E5FF),
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Kho chương trình độc quyền phát sóng 24/7 từ 12 nguồn tin cậy — Thể thao, Thời sự, Điện ảnh, Esports, AI Tech…',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
+                childAspectRatio: 1.35,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -53,7 +81,7 @@ class CategoriesScreen extends StatelessWidget {
             ),
           ),
           const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
+            child: SizedBox(height: 32),
           ),
         ],
       ),
@@ -75,37 +103,48 @@ class _CategoryTile extends StatelessWidget {
         onTap: () =>
             context.push('/category/${Uri.encodeComponent(category.value)}'),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
+            color: const Color(0xFF0B1320),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                category.color.withOpacity(0.45),
-                category.color.withOpacity(0.08),
+                category.color.withValues(alpha: 0.25),
+                const Color(0xFF0B1320),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: category.color.withOpacity(0.35),
-              width: 0.8,
+              color: category.color.withValues(alpha: 0.35),
+              width: 1,
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.35),
+                  color: const Color(0xFF070B12),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: category.color.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Icon(
                   category.icon,
-                  color: Colors.white,
-                  size: 22,
+                  color: category.color,
+                  size: 20,
                 ),
               ),
               Column(
@@ -115,17 +154,28 @@ class _CategoryTile extends StatelessWidget {
                     category.label,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'Xem chương trình →',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.75),
-                      fontSize: 11,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'Xem kênh & VOD',
+                        style: TextStyle(
+                          color: category.color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 10,
+                        color: category.color,
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -1,8 +1,6 @@
 // OmniCast - VOD / Recordings Library Screen
-//
-// Mobile counterpart of the Frontend `/recordings` page. Shows a featured
-// strip, category filter chips, search bar and an infinite-scroll grid of
-// VOD recordings.
+// Cyber-Dark VOD Experience with Featured Carousel, Category Pills,
+// Search Bar, and Infinite-Scroll 4K VOD Grid.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../logic/recordings/recordings_bloc.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/program_categories.dart';
 import '../../../data/models/recording_model.dart';
 
@@ -46,7 +43,6 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
     final max = _scrollController.position.maxScrollExtent;
     final current = _scrollController.position.pixels;
     if (max - current <= 300) {
-      // Load more when within 300px of bottom.
       final bloc = context.read<RecordingsBloc>();
       final state = bloc.state;
       if (state is RecordingsLoaded && state.hasMore && !state.isLoadingMore) {
@@ -87,14 +83,24 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: const Color(0xFF070B12),
       appBar: AppBar(
-        title: const Text('Thư viện VOD'),
-        backgroundColor: AppColors.dark950,
+        backgroundColor: const Color(0xFF090F1A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Thư Viện VOD & Bản Ghi',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.clear_rounded, color: Color(0xFF94A3B8)),
               onPressed: () {
                 _searchController.clear();
                 _onSearch('');
@@ -119,72 +125,79 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
           // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm VOD...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.dark500),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.dark500),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearch('');
-                        },
-                      )
-                    : null,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF0E1726),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF1D2F4A)),
               ),
-              onChanged: _onSearch,
-              onSubmitted: _onSearch,
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm bản ghi VOD, catch-up...',
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 20,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearch('');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                ),
+                onChanged: _onSearch,
+                onSubmitted: _onSearch,
+              ),
             ),
           ),
 
           // Category filter chips
           SizedBox(
-            height: 44,
-            child: ListView.builder(
+            height: 40,
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: ProgramCategories.all19.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
               itemBuilder: (context, index) {
                 if (index == 0) {
                   final selected = _selectedCategory == null;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: const Text('Tất cả'),
-                      selected: selected,
-                      onSelected: (_) => _onCategoryChanged(null),
-                      selectedColor: AppColors.primary.withOpacity(0.2),
-                      checkmarkColor: AppColors.primary,
-                      labelStyle: TextStyle(
-                        color: selected ? AppColors.primary : AppColors.dark300,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
+                  return _VodFilterChip(
+                    label: 'Tất cả VOD',
+                    selected: selected,
+                    onTap: () => _onCategoryChanged(null),
                   );
                 }
                 final cat = ProgramCategories.all19[index - 1];
                 final selected = _selectedCategory == cat.value;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(cat.label),
-                    selected: selected,
-                    onSelected: (_) => _onCategoryChanged(cat.value),
-                    selectedColor: cat.color.withOpacity(0.2),
-                    checkmarkColor: cat.color,
-                    labelStyle: TextStyle(
-                      color: selected ? cat.color : AppColors.dark300,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
+                return _VodFilterChip(
+                  label: cat.label,
+                  selected: selected,
+                  onTap: () => _onCategoryChanged(cat.value),
                 );
               },
             ),
           ),
+
           const SizedBox(height: 8),
 
           // Results count
@@ -197,18 +210,21 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${state.total} kết quả${_selectedCategory != null ? ' cho ${ProgramCategories.labelFor(_selectedCategory)}' : ''}',
+                        '${state.total} BẢN GHI${_selectedCategory != null ? ' // ${ProgramCategories.labelFor(_selectedCategory).toUpperCase()}' : ''}',
                         style: const TextStyle(
-                          color: AppColors.dark400,
-                          fontSize: 12,
+                          color: Color(0xFF00E5FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
                         ),
                       ),
                       if (state.totalPages > 1)
                         Text(
                           'Trang ${state.page}/${state.totalPages}',
                           style: const TextStyle(
-                            color: AppColors.dark500,
-                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                            fontSize: 10,
+                            fontFamily: 'monospace',
                           ),
                         ),
                     ],
@@ -219,14 +235,16 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
             },
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
           // Grid
           Expanded(
             child: BlocBuilder<RecordingsBloc, RecordingsState>(
               builder: (context, state) {
                 if (state is RecordingsLoading && state.previous.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                  );
                 }
 
                 if (state is RecordingsError) {
@@ -234,16 +252,25 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline,
-                            size: 64, color: AppColors.error),
-                        const SizedBox(height: 16),
-                        Text(state.message,
-                            style: const TextStyle(color: AppColors.error)),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 52,
+                          color: Color(0xFFEF4444),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          state.message,
+                          style: const TextStyle(color: Color(0xFFEF4444)),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () => context
                               .read<RecordingsBloc>()
                               .add(const LoadRecordings()),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00E5FF),
+                            foregroundColor: const Color(0xFF070B12),
+                          ),
                           child: const Text('Thử lại'),
                         ),
                       ],
@@ -262,17 +289,27 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.video_library_outlined,
-                            size: 64, color: AppColors.dark600),
-                        const SizedBox(height: 16),
-                        const Text('Không tìm thấy VOD phù hợp',
-                            style:
-                                TextStyle(color: AppColors.dark400, fontSize: 16)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Thử đổi bộ lọc hoặc từ khóa khác.',
+                        const Icon(
+                          Icons.video_library_outlined,
+                          size: 56,
+                          color: Color(0xFF334155),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Không tìm thấy bản ghi VOD phù hợp',
                           style: TextStyle(
-                              color: AppColors.dark500, fontSize: 14),
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Thử đổi bộ lọc hoặc từ khóa tìm kiếm.',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                          ),
                         ),
                         if (_selectedCategory != null ||
                             _searchController.text.isNotEmpty)
@@ -283,6 +320,12 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                                 _searchController.clear();
                                 _onCategoryChanged(null);
                               },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFF00E5FF),
+                                ),
+                                foregroundColor: const Color(0xFF00E5FF),
+                              ),
                               child: const Text('Xóa bộ lọc'),
                             ),
                           ),
@@ -293,8 +336,8 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
 
                 return RefreshIndicator(
                   onRefresh: _onRefresh,
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.dark800,
+                  color: const Color(0xFF00E5FF),
+                  backgroundColor: const Color(0xFF090F1A),
                   child: GridView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
@@ -303,17 +346,22 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.68,
+                      childAspectRatio: 0.72,
                     ),
                     itemCount: recordings.length +
-                        ((state is RecordingsLoaded && state.isLoadingMore) ? 1 : 0),
+                        ((state is RecordingsLoaded && state.isLoadingMore)
+                            ? 1
+                            : 0),
                     itemBuilder: (context, index) {
                       if (index >= recordings.length) {
                         return const Center(
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF00E5FF),
+                            ),
                           ),
                         );
                       }
@@ -330,9 +378,56 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   }
 }
 
-// ============================================================
-// FEATURED STRIP
-// ============================================================
+class _VodFilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _VodFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF00E5FF)
+                : const Color(0xFF16253C),
+          ),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x6600E5FF),
+                    blurRadius: 8,
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? const Color(0xFF070B12)
+                : const Color(0xFFCBD5E1),
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _FeaturedStrip extends StatelessWidget {
   final List<RecordingModel> recordings;
@@ -344,18 +439,19 @@ class _FeaturedStrip extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
-              Icon(Icons.trending_up, color: AppColors.accentGold, size: 20),
-              const SizedBox(width: 6),
-              const Text(
-                'Nội dung nổi bật',
+              Icon(Icons.stars_rounded, color: Color(0xFFFBBF24), size: 18),
+              SizedBox(width: 6),
+              Text(
+                'BẢN GHI NỔI BẬT',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.6,
                 ),
               ),
             ],
@@ -366,13 +462,13 @@ class _FeaturedStrip extends StatelessWidget {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: recordings.length.clamp(0, 3),
+            itemCount: recordings.length.clamp(0, 4),
             itemBuilder: (context, index) {
               return _FeaturedCard(recording: recordings[index]);
             },
           ),
         ),
-        const Divider(color: AppColors.dark800, height: 1),
+        const Divider(color: Color(0xFF162338), height: 1),
       ],
     );
   }
@@ -388,12 +484,12 @@ class _FeaturedCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/recording/${recording.id}'),
       child: Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 12),
+        width: 270,
+        margin: const EdgeInsets.only(right: 10),
         decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.dark700),
+          color: const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF16253C)),
         ),
         child: Row(
           children: [
@@ -402,33 +498,38 @@ class _FeaturedCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(12),
+                    left: Radius.circular(14),
                   ),
                   child: SizedBox(
-                    width: 110,
+                    width: 100,
                     height: 120,
                     child: recording.thumbnailUrl != null
                         ? CachedNetworkImage(
                             imageUrl: recording.thumbnailUrl!,
                             fit: BoxFit.cover,
                             placeholder: (_, __) =>
-                                const ColoredBox(color: AppColors.dark700),
+                                const ColoredBox(color: Color(0xFF121E30)),
                             errorWidget: (_, __, ___) =>
-                                const ColoredBox(color: AppColors.dark700),
+                                const ColoredBox(color: Color(0xFF121E30)),
                           )
                         : const ColoredBox(
-                            color: AppColors.dark700,
-                            child: Icon(Icons.play_circle_outline,
-                                size: 40, color: AppColors.dark500),
+                            color: Color(0xFF121E30),
+                            child: Icon(
+                              Icons.play_circle_outline,
+                              size: 36,
+                              color: Color(0xFF00E5FF),
+                            ),
                           ),
                   ),
                 ),
-                // Play overlay
                 Positioned.fill(
                   child: ColoredBox(
-                    color: Colors.black.withOpacity(0.3),
-                    child: const Icon(Icons.play_circle_fill,
-                        size: 36, color: Colors.white),
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: const Icon(
+                      Icons.play_circle_fill_rounded,
+                      size: 32,
+                      color: Color(0xFF00E5FF),
+                    ),
                   ),
                 ),
               ],
@@ -445,10 +546,10 @@ class _FeaturedCard extends StatelessWidget {
                       recording.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
@@ -456,8 +557,9 @@ class _FeaturedCard extends StatelessWidget {
                       Text(
                         recording.channel!.name,
                         style: const TextStyle(
-                          color: AppColors.dark400,
-                          fontSize: 11,
+                          color: Color(0xFF00E5FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -467,8 +569,9 @@ class _FeaturedCard extends StatelessWidget {
                       Text(
                         recording.formattedDuration,
                         style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontFamily: 'monospace',
                         ),
                       ),
                   ],
@@ -482,10 +585,6 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-// ============================================================
-// RECORDING GRID CARD
-// ============================================================
-
 class _RecordingCard extends StatelessWidget {
   final RecordingModel recording;
 
@@ -497,38 +596,39 @@ class _RecordingCard extends StatelessWidget {
       onTap: () => context.push('/recording/${recording.id}'),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.dark700),
+          color: const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF16253C)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail + badges
+            // Thumbnail
             Expanded(
               flex: 3,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
                     child: recording.thumbnailUrl != null
                         ? CachedNetworkImage(
                             imageUrl: recording.thumbnailUrl!,
                             fit: BoxFit.cover,
                             placeholder: (_, __) =>
-                                const ColoredBox(color: AppColors.dark700),
-                            errorWidget: (_, __, ___) => const ColoredBox(
-                              color: AppColors.dark700,
-                              child: Icon(Icons.play_circle_outline,
-                                  size: 40, color: AppColors.dark500),
-                            ),
+                                const ColoredBox(color: Color(0xFF121E30)),
+                            errorWidget: (_, __, ___) =>
+                                const ColoredBox(color: Color(0xFF121E30)),
                           )
                         : const ColoredBox(
-                            color: AppColors.dark700,
-                            child: Icon(Icons.play_circle_outline,
-                                size: 40, color: AppColors.dark500),
+                            color: Color(0xFF121E30),
+                            child: Icon(
+                              Icons.play_circle_outline,
+                              size: 36,
+                              color: Color(0xFF00E5FF),
+                            ),
                           ),
                   ),
                   // Duration badge
@@ -538,73 +638,51 @@ class _RecordingCard extends StatelessWidget {
                       right: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.8),
+                          color: Colors.black.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           recording.formattedDuration,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'monospace',
                           ),
                         ),
                       ),
                     ),
-                  // Featured badge
-                  if (recording.isFeatured)
-                    Positioned(
-                      top: 6,
-                      left: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGold.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
+                  // 4K Badge
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.trending_up,
-                                size: 10, color: Colors.black),
-                            const SizedBox(width: 3),
-                            const Text(
-                              'Nổi bật',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                      ),
+                      child: const Text(
+                        '4K UHD',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
                         ),
                       ),
                     ),
-                  // Age restriction badge
-                  if (recording.isAgeRestricted)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          '18+',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
@@ -621,78 +699,40 @@ class _RecordingCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
-                    // Channel row
                     if (recording.channel != null) ...[
-                      Row(
-                        children: [
-                          if (recording.channel!.logoUrl != null)
-                            ClipOval(
-                              child: SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CachedNetworkImage(
-                                  imageUrl: recording.channel!.logoUrl!,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) =>
-                                      const ColoredBox(color: AppColors.dark700),
-                                  errorWidget: (_, __, ___) =>
-                                      const ColoredBox(color: AppColors.dark700),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              recording.channel!.name,
-                              style: const TextStyle(
-                                color: AppColors.dark400,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        recording.channel!.name,
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                     ],
-                    // Stats row
                     Row(
                       children: [
-                        const Icon(Icons.visibility,
-                            size: 11, color: AppColors.dark500),
+                        const Icon(
+                          Icons.visibility_rounded,
+                          size: 11,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           _formatCount(recording.viewCount),
                           style: const TextStyle(
-                            color: AppColors.dark500,
+                            color: Color(0xFF64748B),
                             fontSize: 10,
                           ),
                         ),
-                        if (recording.category != null) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppColors.dark700,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(
-                              ProgramCategories.labelFor(recording.category),
-                              style: const TextStyle(
-                                color: AppColors.dark300,
-                                fontSize: 9,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ],

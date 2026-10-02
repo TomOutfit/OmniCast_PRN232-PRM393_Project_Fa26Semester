@@ -1,11 +1,11 @@
-// OmniCast - EPG Screen with Timeline View
+// OmniCast - EPG Screen with Cyber-Dark Timeline View
+// 24/7 Schedule Density with Live Indicators, Replays, and Channel Grouping
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/epg/epg_bloc.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/models/program_model.dart';
 import '../../widgets/channel_logo.dart' hide ChannelInfo;
 
@@ -26,15 +26,30 @@ class _EpgScreenState extends State<EpgScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: const Color(0xFF070B12),
       appBar: AppBar(
-        title: const Text('Lịch phát sóng'),
-        backgroundColor: AppColors.dark950,
+        backgroundColor: const Color(0xFF090F1A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Lịch Phát Sóng EPG',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
+            icon: const Icon(
+              Icons.calendar_month_rounded,
+              color: Color(0xFF00E5FF),
+            ),
+            tooltip: 'Chọn ngày',
             onPressed: () => _showDatePicker(context),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -50,7 +65,9 @@ class _EpgScreenState extends State<EpgScreen> {
             child: BlocBuilder<EpgBloc, EpgState>(
               builder: (context, state) {
                 if (state is EpgLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                  );
                 }
 
                 if (state is EpgLoaded) {
@@ -82,21 +99,26 @@ class _EpgScreenState extends State<EpgScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy, size: 64, color: AppColors.dark500),
-          SizedBox(height: 16),
+          Icon(
+            Icons.event_busy_rounded,
+            size: 56,
+            color: Color(0xFF334155),
+          ),
+          SizedBox(height: 14),
           Text(
-            'Không có chương trình nào',
+            'Không có chương trình nào trong ngày',
             style: TextStyle(
-              color: AppColors.dark400,
-              fontSize: 16,
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 6),
           Text(
-            'Thử chọn ngày khác',
+            'Thử chọn một ngày khác trong thanh chọn lịch.',
             style: TextStyle(
-              color: AppColors.dark600,
-              fontSize: 14,
+              color: Color(0xFF94A3B8),
+              fontSize: 12,
             ),
           ),
         ],
@@ -109,11 +131,15 @@ class _EpgScreenState extends State<EpgScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 52,
+            color: Color(0xFFEF4444),
+          ),
+          const SizedBox(height: 12),
           Text(
             message,
-            style: const TextStyle(color: AppColors.error),
+            style: const TextStyle(color: Color(0xFFEF4444)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -121,6 +147,10 @@ class _EpgScreenState extends State<EpgScreen> {
             onPressed: () {
               context.read<EpgBloc>().add(LoadEpgSchedule(date: DateTime.now()));
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: const Color(0xFF070B12),
+            ),
             child: const Text('Thử lại'),
           ),
         ],
@@ -144,8 +174,8 @@ class _EpgScreenState extends State<EpgScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
-              surface: AppColors.dark800,
+              primary: Color(0xFF00E5FF),
+              surface: Color(0xFF090F1A),
             ),
           ),
           child: child!,
@@ -153,9 +183,8 @@ class _EpgScreenState extends State<EpgScreen> {
       },
     );
 
-    if (picked != null && mounted) {
-      context.read<EpgBloc>().add(ChangeEpgDate(picked));
-    }
+    if (!mounted || picked == null) return;
+    this.context.read<EpgBloc>().add(ChangeEpgDate(picked));
   }
 }
 
@@ -163,11 +192,11 @@ class _DateSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.dark900,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        color: Color(0xFF090F1A),
         border: Border(
-          bottom: BorderSide(color: AppColors.dark700.withOpacity(0.5)),
+          bottom: BorderSide(color: Color(0xFF162338), width: 1),
         ),
       ),
       child: BlocBuilder<EpgBloc, EpgState>(
@@ -191,17 +220,32 @@ class _DateSelector extends StatelessWidget {
                     context.read<EpgBloc>().add(ChangeEpgDate(date));
                   },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 180),
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: 14,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.dark800,
+                      color: isSelected
+                          ? const Color(0xFF00E5FF)
+                          : const Color(0xFF0B1320),
                       borderRadius: BorderRadius.circular(12),
-                      border: isToday && !isSelected
-                          ? Border.all(color: AppColors.primary.withOpacity(0.5))
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF00E5FF)
+                            : (isToday
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.5)
+                                : const Color(0xFF16253C)),
+                      ),
+                      boxShadow: isSelected
+                          ? const [
+                              BoxShadow(
+                                color: Color(0x6600E5FF),
+                                blurRadius: 10,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
                           : null,
                     ),
                     child: Column(
@@ -209,28 +253,36 @@ class _DateSelector extends StatelessWidget {
                         Text(
                           _getDayName(date),
                           style: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.dark400,
-                            fontSize: 12,
+                            color: isSelected
+                                ? const Color(0xFF070B12)
+                                : const Color(0xFF94A3B8),
+                            fontSize: 11,
+                            fontWeight: isSelected
+                                ? FontWeight.w900
+                                : FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           '${date.day}',
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? const Color(0xFF070B12)
+                                : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
                           ),
                         ),
                         if (isToday)
                           Container(
-                            margin: const EdgeInsets.only(top: 4),
+                            margin: const EdgeInsets.only(top: 3),
                             width: 4,
                             height: 4,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.white
-                                  : AppColors.primary,
+                                  ? const Color(0xFF070B12)
+                                  : const Color(0xFF00E5FF),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -261,28 +313,40 @@ class _TimelineHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.dark800,
+      decoration: const BoxDecoration(
+        color: Color(0xFF070E1A),
         border: Border(
-          bottom: BorderSide(color: AppColors.dark700.withOpacity(0.5)),
+          bottom: BorderSide(color: Color(0xFF142236), width: 1),
         ),
       ),
       child: Row(
         children: [
-          const SizedBox(width: 80),
+          const SizedBox(
+            width: 80,
+            child: Text(
+              'GIỜ PHÁT',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: List.generate(24, (index) {
                   return Container(
-                    width: 60,
+                    width: 58,
                     alignment: Alignment.center,
                     child: Text(
                       '${index.toString().padLeft(2, '0')}:00',
                       style: const TextStyle(
-                        color: AppColors.dark400,
-                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                        fontSize: 10,
+                        fontFamily: 'monospace',
                       ),
                     ),
                   );
@@ -310,18 +374,11 @@ class _EpgTimelineList extends StatefulWidget {
 }
 
 class _EpgTimelineListState extends State<_EpgTimelineList> {
-  /// When null, all channels are shown grouped together.
   String? _channelFilter;
-
-  /// When true, only real programmes (isFiller == false) are surfaced.
-  /// Useful when the user wants a clean view of the day.
   bool _hideFiller = false;
 
   @override
   Widget build(BuildContext context) {
-    // Group events by channel, then sort each group chronologically by
-    // `scheduledAt` so the day reads 00:00 → 23:59 left-to-right. Real
-    // events with the same start time float to the top of their group.
     final groups = <String, _EpgChannelGroup>{};
     for (final e in widget.events) {
       final channelId = e.channelId;
@@ -338,7 +395,6 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
       g.events.sort((a, b) {
         final byTime = a.scheduledAt.compareTo(b.scheduledAt);
         if (byTime != 0) return byTime;
-        // Tie-break: real event first, then replay, then on-air branding.
         return _fillerPriority(a) - _fillerPriority(b);
       });
     }
@@ -353,118 +409,95 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
     final totalReplay = visibleEvents
         .where((e) => e.fillerKind == 'recording-replay')
         .length;
-    final totalOnAir = visibleEvents
-        .where((e) => e.fillerKind == 'channel-branding')
-        .length;
     final totalChannels = groups.length;
 
-    // If the filter strips every event out, surface an inline empty
-    // state so the user knows nothing matches — rather than a blank screen.
     if (visibleEvents.isEmpty) {
       return _buildFilteredEmpty();
     }
 
     return Column(
       children: [
-        // 24/7 coverage banner + filter toggle
+        // 24/7 Coverage Banner
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          color: AppColors.dark900,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFF090F1A),
+            border: Border(
+              bottom: BorderSide(color: Color(0xFF162338), width: 1),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   const Icon(
-                    Icons.event_available,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Lịch phát sóng 24/7 — mỗi ngày đều được lấp đầy với chương trình thực, replay từ VOD và khung quảng bá kênh.',
-                      style: TextStyle(
-                        color: AppColors.dark300.withOpacity(0.9),
-                        fontSize: 11,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    '$totalChannels kênh · $totalReal chương trình thực',
-                    style: const TextStyle(
-                      color: AppColors.dark300,
-                      fontSize: 12,
-                    ),
+                    Icons.cell_tower_rounded,
+                    size: 15,
+                    color: Color(0xFF00E5FF),
                   ),
                   const SizedBox(width: 8),
-                  if (totalReplay > 0)
-                    Text(
-                      '· $totalReplay replay',
+                  Expanded(
+                    child: Text(
+                      'LỊCH PHÁT SÓNG TOÀN DIỆN // $totalChannels KÊNH',
                       style: const TextStyle(
-                        color: AppColors.dark500,
-                        fontSize: 12,
+                        color: Color(0xFF00E5FF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'monospace',
+                        letterSpacing: 0.5,
                       ),
                     ),
-                  if (totalOnAir > 0) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '· $totalOnAir on-air',
-                      style: const TextStyle(
-                        color: AppColors.dark500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
+                  ),
                   GestureDetector(
                     onTap: () => setState(() => _hideFiller = !_hideFiller),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: _hideFiller
-                            ? AppColors.primary.withOpacity(0.2)
-                            : AppColors.dark800,
-                        borderRadius: BorderRadius.circular(12),
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.2)
+                            : const Color(0xFF0B1320),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _hideFiller
-                              ? AppColors.primary.withOpacity(0.5)
-                              : AppColors.dark700.withOpacity(0.5),
+                              ? const Color(0xFF00E5FF)
+                              : const Color(0xFF16253C),
                         ),
                       ),
                       child: Text(
-                        _hideFiller
-                            ? 'Hiện tất cả khung giờ'
-                            : 'Chỉ chương trình thực',
+                        _hideFiller ? 'Hiện tất cả' : 'Chỉ chương trình chính',
                         style: TextStyle(
                           color: _hideFiller
-                              ? AppColors.primary
-                              : AppColors.dark300,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                              ? const Color(0xFF00E5FF)
+                              : const Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                '$totalReal chương trình thực · $totalReplay phát lại replay',
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11,
+                ),
+              ),
               const SizedBox(height: 8),
+              // Channel Filter Chips
               SizedBox(
-                height: 36,
+                height: 32,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
                     _FilterChip(
-                      label: 'Tất cả',
+                      label: 'Tất cả kênh',
                       selected: _channelFilter == null,
                       onTap: () => setState(() => _channelFilter = null),
                     ),
@@ -473,7 +506,7 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
                         label: groups[id]!.channel?.name ?? 'Kênh',
                         leading: groups[id]!.channel == null
                             ? null
-                            : ChannelLogoCompact(
+                            : ChannelLogo(
                                 channel: groups[id]!.channel!,
                                 size: 18,
                               ),
@@ -486,6 +519,8 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
             ],
           ),
         ),
+
+        // Event List
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -521,35 +556,37 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.filter_alt_off,
-              size: 56, color: AppColors.dark500.withOpacity(0.7)),
+          const Icon(
+            Icons.filter_alt_off_rounded,
+            size: 52,
+            color: Color(0xFF475569),
+          ),
           const SizedBox(height: 12),
-          Text(
-            _hideFiller
-                ? 'Ngày này chưa có chương trình thực nào'
-                : 'Bộ lọc hiện tại không có kết quả',
-            style: const TextStyle(
-              color: AppColors.dark400,
+          const Text(
+            'Không có kết quả với bộ lọc hiện tại',
+            style: TextStyle(
+              color: Colors.white,
               fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),
-          TextButton.icon(
+          ElevatedButton(
             onPressed: () => setState(() {
               _channelFilter = null;
               _hideFiller = false;
             }),
-            icon: const Icon(Icons.refresh, size: 14),
-            label: const Text('Đặt lại bộ lọc'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: const Color(0xFF070B12),
+            ),
+            child: const Text('Đặt lại bộ lọc'),
           ),
         ],
       ),
     );
   }
 
-  /// Smaller sort key = renders earlier when two events start at the
-  /// same wall-clock time. Real events beat replays, replays beat the
-  /// static "on-air" branding slot.
   int _fillerPriority(LiveEventModel e) {
     if (!e.isFiller) return 0;
     if (e.fillerKind == 'recording-replay') return 1;
@@ -579,18 +616,18 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: 6),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.dark800,
-            borderRadius: BorderRadius.circular(18),
+            color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0B1320),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected
-                  ? AppColors.primary
-                  : AppColors.dark700.withOpacity(0.5),
+                  ? const Color(0xFF00E5FF)
+                  : const Color(0xFF16253C),
             ),
           ),
           child: Row(
@@ -598,14 +635,16 @@ class _FilterChip extends StatelessWidget {
             children: [
               if (leading != null) ...[
                 leading!,
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
               ],
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? Colors.white : AppColors.dark300,
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  color: selected
+                      ? const Color(0xFF070B12)
+                      : const Color(0xFFCBD5E1),
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                 ),
               ),
             ],
@@ -628,7 +667,7 @@ class _EpgChannelSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final realCount = group.events.where((e) => !e.isFiller).length;
-    final fillerCount = group.events.where((e) => e.isFiller).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -637,24 +676,24 @@ class _EpgChannelSection extends StatelessWidget {
           child: Row(
             children: [
               if (group.channel != null)
-                ChannelLogoCompact(
+                ChannelLogo(
                   channel: group.channel!,
-                  size: 24,
+                  size: 26,
                 ),
               const SizedBox(width: 8),
               Text(
                 group.channel?.name ?? 'Kênh',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                   fontSize: 14,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                '$realCount thực · $fillerCount replay',
+                '($realCount chương trình)',
                 style: const TextStyle(
-                  color: AppColors.dark500,
+                  color: Color(0xFF64748B),
                   fontSize: 11,
                 ),
               ),
@@ -666,7 +705,7 @@ class _EpgChannelSection extends StatelessWidget {
             event: event,
             selectedDate: selectedDate,
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -697,63 +736,52 @@ class _EpgEventCard extends StatelessWidget {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(12),
-          border: isLive
-              ? Border.all(color: AppColors.liveRed.withOpacity(0.5))
-              : isPast
-                  ? Border.all(color: AppColors.dark700.withOpacity(0.3))
-                  : isFiller
-                      ? Border.all(
-                          color: AppColors.dark700.withOpacity(0.4),
-                          style: BorderStyle.solid,
-                        )
-                      : null,
+          color: const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isLive
+                ? const Color(0xFF991B1B)
+                : const Color(0xFF16253C),
+          ),
         ),
         child: Row(
           children: [
             // Time Column
             Container(
-              width: 80,
-              padding: const EdgeInsets.all(12),
+              width: 72,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               decoration: BoxDecoration(
                 color: isLive
-                    ? AppColors.liveRed
-                    : isPast
-                        ? AppColors.dark700.withOpacity(0.5)
-                        : isFiller
-                            ? AppColors.dark700.withOpacity(0.3)
-                            : AppColors.dark700,
+                    ? const Color(0xFF450A0A)
+                    : const Color(0xFF070E1A),
                 borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(12),
+                  left: Radius.circular(14),
                 ),
               ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     _formatTime(event.scheduledAt),
                     style: TextStyle(
-                      color: isPast
-                          ? AppColors.dark500
-                          : (isFiller ? AppColors.dark300 : Colors.white),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      color: isLive ? const Color(0xFFF87171) : Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      fontFamily: 'monospace',
                     ),
                   ),
-                  if (event.duration != null)
+                  if (event.duration != null) ...[
+                    const SizedBox(height: 2),
                     Text(
                       _formatDuration(event.duration!),
-                      style: TextStyle(
-                        color: isPast
-                            ? AppColors.dark600
-                            : (isFiller
-                                ? AppColors.dark500
-                                : Colors.white70),
-                        fontSize: 11,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -768,110 +796,96 @@ class _EpgEventCard extends StatelessWidget {
                       children: [
                         if (isLive) ...[
                           _LiveBadge(),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                         ],
-                        if (isFiller)
-                          _FillerBadge(
-                            fillerKind: event.fillerKind,
-                          ),
-                        if (isFiller) const SizedBox(width: 8),
-                        if (isPast)
+                        if (isFiller) ...[
+                          _FillerBadge(fillerKind: event.fillerKind),
+                          const SizedBox(width: 6),
+                        ],
+                        if (isUpcoming) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.dark600,
+                              color: const Color(0xFF083344),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
-                              'Đã kết thúc',
+                              'SẮP PHÁT',
                               style: TextStyle(
-                                color: AppColors.dark400,
-                                fontSize: 10,
+                                color: Color(0xFF00E5FF),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
-                        if (isUpcoming)
+                          const SizedBox(width: 6),
+                        ],
+                        if (isPast) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: const Color(0xFF1E293B),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
-                              'Sắp phát',
+                              'ĐÃ PHÁT',
                               style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 10,
+                                color: Color(0xFF94A3B8),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                        ],
                         Expanded(
                           child: Text(
                             event.title,
                             style: TextStyle(
-                              color: isPast ? AppColors.dark400 : Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              color: isPast
+                                  ? const Color(0xFF94A3B8)
+                                  : Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (event.channel != null) ...[
-                          ChannelLogoCompact(
-                            channel: event.channel!,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            event.channel!.name,
-                            style: TextStyle(
-                              color: isPast ? AppColors.dark600 : AppColors.dark400,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        if (event.viewerCount > 0) ...[
-                          Icon(
-                            Icons.visibility,
-                            size: 12,
-                            color: isPast ? AppColors.dark600 : AppColors.dark400,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${_formatNumber(event.viewerCount)}',
-                            style: TextStyle(
-                              color: isPast ? AppColors.dark600 : AppColors.dark400,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    if (event.channel != null)
+                      Text(
+                        event.channel!.name,
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
-            // Actions
             IconButton(
               icon: Icon(
-                isPast ? Icons.replay : Icons.bookmark_outline,
-                color: AppColors.dark500,
+                isLive
+                    ? Icons.play_circle_fill_rounded
+                    : Icons.chevron_right_rounded,
+                color: isLive ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                size: isLive ? 28 : 22,
               ),
               onPressed: () {
-                // Add to watchlist or replay
+                if (!isFiller) {
+                  context.push('/program/${event.id}');
+                }
               },
             ),
           ],
@@ -884,26 +898,12 @@ class _EpgEventCard extends StatelessWidget {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  /// Render a minute count in a compact, human-friendly form.
-  ///  - 75  -> "1h 15p"
-  ///  - 60  -> "1h"
-  ///  - 30  -> "30 phút"
-  ///  - 150 -> "2h 30p"
   String _formatDuration(int minutes) {
-    if (minutes < 60) return '$minutes phút';
+    if (minutes < 60) return '$minutes p';
     final h = minutes ~/ 60;
     final m = minutes % 60;
     if (m == 0) return '${h}h';
     return '${h}h ${m}p';
-  }
-
-  String _formatNumber(int number) {
-    if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
-    } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
-    }
-    return number.toString();
   }
 }
 
@@ -913,20 +913,21 @@ class _LiveBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.liveRed,
+        color: const Color(0xFF450A0A),
         borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFF991B1B)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.circle, size: 6, color: Colors.white),
+          CircleAvatar(radius: 2.5, backgroundColor: Color(0xFFEF4444)),
           SizedBox(width: 4),
           Text(
             'LIVE',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFFF87171),
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -935,13 +936,6 @@ class _LiveBadge extends StatelessWidget {
   }
 }
 
-/// Pill that distinguishes the two kinds of filler slots returned by the
-/// backend's `/programs/epg/day` endpoint:
-///
-///  - `recording-replay` → blue-tinted "Replay" badge (replays a real
-///    previously-published recording so the grid is dense 24/7).
-///  - `channel-branding` → neutral "On Air" badge (channel has zero
-///    recordings, so this is a static branded placeholder).
 class _FillerBadge extends StatelessWidget {
   final String? fillerKind;
 
@@ -950,41 +944,23 @@ class _FillerBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isReplay = fillerKind == 'recording-replay';
-    final color = isReplay
-        ? AppColors.accentCyan
-        : AppColors.dark500;
-    final bg = isReplay
-        ? AppColors.accentCyan.withOpacity(0.15)
-        : AppColors.dark700.withOpacity(0.5);
-    final border = isReplay
-        ? AppColors.accentCyan.withOpacity(0.4)
-        : AppColors.dark500.withOpacity(0.3);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
+        color: isReplay ? const Color(0xFF1E1B4B) : const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: border),
+        border: Border.all(
+          color: isReplay ? const Color(0xFF4338CA) : const Color(0xFF334155),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isReplay ? Icons.replay : Icons.auto_awesome,
-            size: 10,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            isReplay ? 'REPLAY' : 'ON AIR',
-            style: TextStyle(
-              color: isReplay ? AppColors.accentCyan : AppColors.dark300,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ],
+      child: Text(
+        isReplay ? 'REPLAY' : 'ON-AIR',
+        style: TextStyle(
+          color: isReplay ? const Color(0xFFA5B4FC) : const Color(0xFF94A3B8),
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.4,
+        ),
       ),
     );
   }

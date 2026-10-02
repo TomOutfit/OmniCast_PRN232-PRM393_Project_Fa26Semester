@@ -2,7 +2,7 @@
 //
 // Lists programs (live + scheduled) for a single category, with infinite
 // scroll. Uses ProgramsBloc.LoadProgramsByCategory + LoadMoreProgramsByCategory
-// so the same widget can be reused for any of the 19 backend categories.
+// Cyber-Dark Broadcast System styling with telemetry badges and HEVC cards.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -78,16 +78,26 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
         category?.color ?? ProgramCategories.colorFor(widget.category);
 
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
+        backgroundColor: AppColors.bg,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
         title: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(8),
+                color: accentColor.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: accentColor.withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
               child: Icon(
                 category?.icon ?? ProgramCategories.iconFor(widget.category),
@@ -96,14 +106,41 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Text(category?.label ?? widget.category),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category?.label ?? widget.category,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  const Text(
+                    'CHUYÊN MỤC PHÁT SÓNG // 2160p HEVC',
+                    style: TextStyle(
+                      color: Color(0xFF00E5FF),
+                      fontSize: 9,
+                      fontFamily: 'JetBrainsMono',
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
       body: BlocBuilder<ProgramsBloc, ProgramsState>(
         builder: (context, state) {
           if (state is ProgramsLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+            );
           }
           if (state is ProgramsError) {
             return _ErrorView(
@@ -116,8 +153,8 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
               return _EmptyView(category: widget.category);
             }
             return RefreshIndicator(
-              color: AppColors.primary,
-              backgroundColor: AppColors.dark800,
+              color: const Color(0xFF00E5FF),
+              backgroundColor: const Color(0xFF0B1320),
               onRefresh: () async {
                 _loadFirstPage();
                 await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -125,9 +162,9 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
               child: ListView.separated(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 itemCount: state.programs.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   if (index >= state.programs.length) {
                     return _FooterLoader(
@@ -168,120 +205,145 @@ class _ProgramListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/program/${program.id}'),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.dark800,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.dark700, width: 0.5),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.push('/program/${program.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: program.isLive
+                ? const Color(0xFF00E5FF).withValues(alpha: 0.5)
+                : const Color(0x1F00E5FF),
+            width: program.isLive ? 1.2 : 0.8,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Thumbnail(program: program, accentColor: accentColor),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        if (program.isLive)
-                          _StatusBadge(
-                            label: 'LIVE',
-                            color: AppColors.liveRed,
-                            dot: true,
-                          )
-                        else if (program.isScheduled)
-                          _StatusBadge(
-                            label: 'SẮP PHÁT',
-                            color: accentColor,
-                            dot: false,
-                          )
-                        else
-                          _StatusBadge(
-                            label: 'KẾT THÚC',
-                            color: AppColors.dark500,
-                            dot: false,
-                          ),
-                        const Spacer(),
-                        Text(
-                          _formatTime(program.scheduledAt),
-                          style: const TextStyle(
-                            color: AppColors.dark400,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      program.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    if (program.channel != null)
-                      Text(
-                        program.channel!.name,
-                        style: const TextStyle(
-                          color: AppColors.dark400,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (program.viewerCount > 0) ...[
-                          const Icon(
-                            Icons.visibility,
-                            size: 12,
-                            color: AppColors.dark400,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${numFmt.format(program.viewerCount)} đang xem',
-                            style: const TextStyle(
-                              color: AppColors.dark400,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        if (program.duration != null) ...[
-                          const Icon(
-                            Icons.schedule,
-                            size: 12,
-                            color: AppColors.dark400,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatDuration(program.duration!),
-                            style: const TextStyle(
-                              color: AppColors.dark400,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
+          boxShadow: [
+            if (program.isLive)
+              BoxShadow(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
               ),
-            ],
-          ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Thumbnail(program: program, accentColor: accentColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (program.isLive)
+                        const _StatusBadge(
+                          label: 'LIVE',
+                          color: Color(0xFFFF2A55),
+                          dot: true,
+                        )
+                      else if (program.isScheduled)
+                        const _StatusBadge(
+                          label: 'SẮP PHÁT',
+                          color: Color(0xFF00E5FF),
+                          dot: false,
+                        )
+                      else
+                        const _StatusBadge(
+                          label: 'KẾT THÚC',
+                          color: Color(0xFF64748B),
+                          dot: false,
+                        ),
+                      const Spacer(),
+                      Text(
+                        _formatTime(program.scheduledAt),
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontFamily: 'JetBrainsMono',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    program.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Outfit',
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  if (program.channel != null)
+                    Row(
+                      children: [
+                        const Icon(Icons.tv_rounded, size: 12, color: Color(0xFF00E5FF)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            program.channel!.name,
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                              fontFamily: 'JetBrainsMono',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      if (program.viewerCount > 0) ...[
+                        const Icon(
+                          Icons.visibility_rounded,
+                          size: 12,
+                          color: Color(0xFF00E5FF),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${numFmt.format(program.viewerCount)} xem',
+                          style: const TextStyle(
+                            color: Color(0xFF00E5FF),
+                            fontSize: 10,
+                            fontFamily: 'JetBrainsMono',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      if (program.duration != null) ...[
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatDuration(program.duration!),
+                          style: const TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 10,
+                            fontFamily: 'JetBrainsMono',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -292,7 +354,7 @@ class _ProgramListItem extends StatelessWidget {
     if (dt.year == now.year &&
         dt.month == now.month &&
         dt.day == now.day) {
-      return 'Hôm nay ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     }
     return dateFmt.format(dt);
   }
@@ -316,8 +378,8 @@ class _Thumbnail extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: SizedBox(
-        width: 120,
-        height: 70,
+        width: 110,
+        height: 76,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -326,7 +388,7 @@ class _Thumbnail extends StatelessWidget {
                 imageUrl:
                     AppConstants.resolveAssetUrl(program.thumbnailUrl),
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: AppColors.dark700),
+                placeholder: (_, __) => Container(color: const Color(0xFF0F172A)),
                 errorWidget: (_, __, ___) => _PlaceholderThumb(
                   icon: ProgramCategories.iconFor(
                     _guessCategoryFromTags(program.tags),
@@ -342,13 +404,31 @@ class _Thumbnail extends StatelessWidget {
                 color: accentColor,
               ),
             if (program.isLive)
-              const Positioned(
-                top: 6,
-                left: 6,
-                child: Icon(
-                  Icons.play_circle_fill,
-                  color: AppColors.liveRed,
-                  size: 18,
+              Positioned(
+                bottom: 4,
+                left: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF2A55),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fiber_manual_record, color: Colors.white, size: 8),
+                      SizedBox(width: 3),
+                      Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'JetBrainsMono',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],
@@ -377,7 +457,7 @@ class _PlaceholderThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.dark700,
+      color: const Color(0xFF0F172A),
       child: Icon(icon, color: color, size: 28),
     );
   }
@@ -397,31 +477,33 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (dot) ...[
             Container(
-              width: 6,
-              height: 6,
+              width: 5,
+              height: 5,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4),
           ],
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'JetBrainsMono',
               letterSpacing: 0.5,
             ),
           ),
@@ -444,8 +526,13 @@ class _FooterLoader extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(
           child: Text(
-            '— Đã hết danh sách —',
-            style: TextStyle(color: AppColors.dark500, fontSize: 12),
+            '— HẾT DANH SÁCH CHƯƠNG TRÌNH —',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+              fontFamily: 'JetBrainsMono',
+              letterSpacing: 1.1,
+            ),
           ),
         ),
       );
@@ -457,7 +544,10 @@ class _FooterLoader extends StatelessWidget {
           child: SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF00E5FF),
+            ),
           ),
         ),
       );
@@ -478,14 +568,15 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.cloud_off, size: 56, color: AppColors.dark500),
+          const Icon(Icons.cloud_off_rounded, size: 56, color: Color(0xFF64748B)),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             'Không thể tải chương trình',
             style: TextStyle(
-              color: AppColors.dark300,
+              color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Outfit',
             ),
           ),
           const SizedBox(height: 6),
@@ -494,15 +585,19 @@ class _ErrorView extends StatelessWidget {
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.dark400, fontSize: 12),
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+            ),
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             label: const Text('Thử lại'),
           ),
         ],
@@ -525,21 +620,22 @@ class _EmptyView extends StatelessWidget {
           Icon(
             ProgramCategories.iconFor(category),
             size: 56,
-            color: AppColors.dark500,
+            color: const Color(0xFF64748B),
           ),
           const SizedBox(height: 12),
           const Text(
             'Chưa có chương trình nào',
             style: TextStyle(
-              color: AppColors.dark300,
+              color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Outfit',
             ),
           ),
           const SizedBox(height: 4),
           const Text(
             'Hãy quay lại sau để xem thêm.',
-            style: TextStyle(color: AppColors.dark400, fontSize: 12),
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
           ),
         ],
       ),
