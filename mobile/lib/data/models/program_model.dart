@@ -147,18 +147,36 @@ class LiveEventModel {
   bool get isScheduled => status == 'SCHEDULED';
   bool get hasEnded => status == 'ENDED';
 
+  /// The duration normalized to minutes.
+  /// Backend stores duration in seconds when > 1440 (24h in minutes).
+  int get durationMinutes {
+    if (duration == null) return 120;
+    if (duration! > 1440) {
+      final m = (duration! / 60).round();
+      return m < 1 ? 1 : m;
+    }
+    return duration!;
+  }
+
   DateTime get endTime {
     if (endedAt != null) return endedAt!;
-    if (duration != null) {
-      return scheduledAt.add(Duration(minutes: duration!));
-    }
-    return scheduledAt.add(const Duration(hours: 2));
+    return scheduledAt.add(Duration(minutes: durationMinutes));
   }
 
   Duration get remainingTime {
     final now = DateTime.now();
     if (now.isAfter(endTime)) return Duration.zero;
     return endTime.difference(now);
+  }
+
+  /// Human-friendly duration string (e.g. '45 p', '1h', '2h 30p')
+  String get formattedDuration {
+    final mins = durationMinutes;
+    if (mins < 60) return '$mins p';
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}p';
   }
 }
 
