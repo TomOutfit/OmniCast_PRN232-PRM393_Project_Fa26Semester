@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _loadData() {
-    context.read<ChannelsBloc>().add(const LoadChannels(isFeatured: true));
+    context.read<ChannelsBloc>().add(const LoadChannels());
     context.read<ProgramsBloc>().add(LoadLiveNow());
   }
 

@@ -22,7 +22,9 @@ class ChannelsRepository {
       'limit': limit,
     };
 
-    if (category != null) queryParams['category'] = category;
+    if (category != null && category.isNotEmpty && category != 'ALL') {
+      queryParams['category'] = category;
+    }
     if (isActive != null) queryParams['isActive'] = isActive;
     if (isFeatured != null) queryParams['isFeatured'] = isFeatured;
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
@@ -32,23 +34,42 @@ class ChannelsRepository {
       queryParameters: queryParams,
     );
 
-    final data = response.data['data'] as List;
+    final raw = response.data;
+    final list = (raw is Map && raw['data'] is List)
+        ? raw['data'] as List
+        : (raw is List ? raw : <dynamic>[]);
+
+    final parsed = list
+        .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    int totalCount = parsed.length;
+    if (raw is Map && raw['meta'] is Map && raw['meta']['total'] is num) {
+      totalCount = (raw['meta']['total'] as num).toInt();
+    }
+
     return ChannelsPage(
-      items: data
-          .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (response.data['meta']?['total'] as int?) ?? data.length,
+      items: parsed,
+      total: totalCount,
     );
   }
 
   Future<ChannelModel> getChannelById(String channelId) async {
     final response = await _dioClient.get(AppEndpoints.channel(channelId));
-    return ChannelModel.fromJson(response.data['data'] as Map<String, dynamic>);
+    final raw = response.data;
+    final map = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : raw as Map<String, dynamic>;
+    return ChannelModel.fromJson(map);
   }
 
   Future<ChannelModel> getChannelBySlug(String slug) async {
     final response = await _dioClient.get(AppEndpoints.channelBySlug(slug));
-    return ChannelModel.fromJson(response.data['data'] as Map<String, dynamic>);
+    final raw = response.data;
+    final map = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : raw as Map<String, dynamic>;
+    return ChannelModel.fromJson(map);
   }
 
   Future<List<ChannelModel>> searchChannels(String query) async {
@@ -56,9 +77,11 @@ class ChannelsRepository {
       '${AppEndpoints.search}/channels',
       queryParameters: {'q': query},
     );
-
-    final data = response.data['data'] as List;
-    return data
+    final raw = response.data;
+    final list = (raw is Map && raw['data'] is List)
+        ? raw['data'] as List
+        : (raw is List ? raw : <dynamic>[]);
+    return list
         .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
