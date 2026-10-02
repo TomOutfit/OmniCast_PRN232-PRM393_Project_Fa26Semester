@@ -31,7 +31,7 @@ class ChannelSelector extends StatelessWidget {
         color: AppColors.dark900,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.dark700.withOpacity(0.5),
+            color: AppColors.dark700.withValues(alpha: 0.5),
           ),
         ),
       ),
@@ -129,7 +129,7 @@ class _ChannelChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.2) : AppColors.dark800,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.dark800,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.dark700,

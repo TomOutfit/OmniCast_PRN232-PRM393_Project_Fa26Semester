@@ -3,7 +3,6 @@
 // rich metadata, action rail, and inline social.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -118,8 +117,8 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (program.isLive) ...[
-                            Row(
-                              children: const [
+                            const Row(
+                              children: [
                                 LiveBadge(),
                                 SizedBox(width: 8),
                                 Text(
@@ -358,7 +357,8 @@ class _MetaRow extends StatelessWidget {
     return number.toString();
   }
 
-  String _formatDuration(int minutes) {
+  String _formatDuration(int raw) {
+    final minutes = raw > 1440 ? (raw / 60).round() : raw;
     if (minutes < 60) return '$minutes phút';
     final h = minutes ~/ 60;
     final m = minutes % 60;
@@ -402,7 +402,7 @@ class _LiveProgressBar extends StatelessWidget {
                   FractionallySizedBox(
                     widthFactor: pct,
                     child: Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.live,
                         boxShadow: [
                           BoxShadow(
@@ -781,7 +781,7 @@ class _VideoPlayerState extends State<_VideoPlayer> {
                   shape: BoxShape.circle,
                   boxShadow: streamUrl == null
                       ? null
-                      : [
+                      : const [
                           BoxShadow(
                             color: AppColors.liveGlow,
                             blurRadius: 24,
@@ -802,10 +802,10 @@ class _VideoPlayerState extends State<_VideoPlayer> {
         ),
 
         if (widget.program.isLive)
-          Positioned(
+          const Positioned(
             top: 16,
             left: 16,
-            child: const LiveBadge(),
+            child: LiveBadge(),
           ),
 
         if (widget.program.isLive)

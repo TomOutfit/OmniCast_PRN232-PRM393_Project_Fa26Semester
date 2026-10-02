@@ -1,9 +1,7 @@
 // OmniCast - Recording Detail Screen
 //
 // Mobile counterpart of the Frontend `/programs/recording/[id]` page.
-// Loads the recording by id through `RecordingsBloc`, plays it via
-// `OmniPlayer` (video_player) and surfaces similar recordings in a
-// bottom rail.
+// Cyber-Dark Broadcast System styling with HEVC 4K telemetry and similar rail.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,12 +15,12 @@ import '../../../data/models/recording_model.dart';
 import '../../widgets/omni_player.dart';
 
 const _qualityLabels = {
-  'SD_480P': '480p',
-  'HD_720P': '720p',
-  'FULL_HD_1080P': '1080p',
-  'QHD_1440P': '1440p',
-  'UHD_4K': '4K',
-  'AUTO': 'Tự động',
+  'SD_480P': '480p SD',
+  'HD_720P': '720p HD',
+  'FULL_HD_1080P': '1080p FHD',
+  'QHD_1440P': '1440p 2K',
+  'UHD_4K': '2160p 4K UHD',
+  'AUTO': 'Tự động HEVC',
 };
 
 class RecordingDetailScreen extends StatefulWidget {
@@ -46,11 +44,13 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: AppColors.bg,
       body: BlocBuilder<RecordingsBloc, RecordingsState>(
         builder: (context, state) {
           if (state is RecordingsLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+            );
           }
           if (state is RecordingsError) {
             return _ErrorView(
@@ -67,77 +67,100 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
           final r = state.recording;
           return CustomScrollView(
             slivers: [
-              // App bar with back button
+              // Player App Bar
               SliverAppBar(
-                expandedHeight: 240,
+                expandedHeight: 250,
                 pinned: true,
                 backgroundColor: Colors.black,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
+                leading: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withValues(alpha: 0.6),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                      onPressed: () => context.pop(),
+                    ),
+                  ),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: _PlayerSection(recording: r),
                 ),
               ),
 
-              // Content
+              // Content Body
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Badges row
+                      // Telemetry Badges
                       Wrap(
                         spacing: 8,
-                        runSpacing: 6,
+                        runSpacing: 8,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: const Color(0x2600E5FF),
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFF00E5FF),
+                                width: 0.8,
+                              ),
                             ),
                             child: const Text(
-                              'VOD',
+                              'VOD ARCHIVE',
                               style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
+                                color: Color(0xFF00E5FF),
+                                fontSize: 10,
+                                fontFamily: 'JetBrainsMono',
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0x3300E5FF),
+                                width: 0.6,
+                              ),
+                            ),
+                            child: Text(
+                              _qualityLabels[r.quality] ?? (r.quality ?? '4K UHD'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontFamily: 'JetBrainsMono',
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          if (r.quality != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.dark700,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                _qualityLabels[r.quality] ?? r.quality!,
-                                style: const TextStyle(
-                                  color: AppColors.dark300,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
                           if (r.language != null)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.dark700,
+                                color: const Color(0xFF0F172A),
                                 borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0x1F00E5FF),
+                                  width: 0.6,
+                                ),
                               ),
                               child: Text(
                                 r.language!.toUpperCase(),
                                 style: const TextStyle(
-                                  color: AppColors.dark300,
-                                  fontSize: 12,
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 10,
+                                  fontFamily: 'JetBrainsMono',
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -146,15 +169,20 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.2),
+                                color: AppColors.error.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: AppColors.error.withValues(alpha: 0.6),
+                                  width: 0.6,
+                                ),
                               ),
                               child: const Text(
                                 '18+',
                                 style: TextStyle(
                                   color: AppColors.error,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                  fontFamily: 'JetBrainsMono',
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -163,167 +191,259 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.primary.withOpacity(0.15),
+                                color: const Color(0x1A00E5FF),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 _categoryLabel(r.category!),
                                 style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
+                                  color: Color(0xFF00E5FF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
                       // Title
                       Text(
                         r.title,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Outfit',
+                          height: 1.3,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
-                      // Channel & date row
+                      // Channel & date card
                       if (r.channel != null)
-                        GestureDetector(
-                          onTap: () => context
-                              .push('/channel/${r.channel!.id}'),
-                          child: Row(
-                            children: [
-                              if (r.channel!.logoUrl != null)
-                                ClipOval(
-                                  child: SizedBox(
-                                    width: 36,
-                                    height: 36,
-                                    child: CachedNetworkImage(
-                                      imageUrl: r.channel!.logoUrl!,
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, __) => const ColoredBox(
-                                          color: AppColors.dark700),
-                                      errorWidget: (_, __, ___) =>
-                                          const ColoredBox(
-                                              color: AppColors.dark700),
+                        InkWell(
+                          onTap: () => context.push('/channel/${r.channel!.id}'),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B1320),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0x1F00E5FF),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                if (r.channel!.logoUrl != null)
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0x4D00E5FF),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: r.channel!.logoUrl!,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) =>
+                                            const ColoredBox(color: Color(0xFF0F172A)),
+                                        errorWidget: (_, __, ___) =>
+                                            const Icon(Icons.tv, color: Color(0xFF00E5FF)),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F172A),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0x4D00E5FF),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.tv_rounded,
+                                      color: Color(0xFF00E5FF),
+                                      size: 20,
                                     ),
                                   ),
-                                )
-                              else
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        r.channel!.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'Outfit',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Phát sóng: ${_formatDate(r.publishedAt)}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF94A3B8),
+                                          fontSize: 11,
+                                          fontFamily: 'JetBrainsMono',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 Container(
-                                  width: 36,
-                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.dark700,
-                                    shape: BoxShape.circle,
+                                    color: const Color(0x1F00E5FF),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0x4D00E5FF), width: 0.8),
                                   ),
-                                  child: const Icon(Icons.tv,
-                                      color: AppColors.dark500, size: 20),
-                                ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      r.channel!.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  child: const Text(
+                                    'Kênh',
+                                    style: TextStyle(
+                                      color: Color(0xFF00E5FF),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                    Text(
-                                      _formatDate(r.publishedAt),
-                                      style: const TextStyle(
-                                        color: AppColors.dark400,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              OutlinedButton(
-                                onPressed: () => context
-                                    .push('/channel/${r.channel!.id}'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 6),
-                                ),
-                                child: const Text('Xem kênh'),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       const SizedBox(height: 16),
 
-                      // Stats row
+                      // Cyber Stats Row
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: AppColors.dark800,
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF0B1320),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             _StatColumn(
-                              icon: Icons.visibility,
+                              icon: Icons.visibility_rounded,
                               value: _formatCount(r.viewCount),
-                              label: 'lượt xem',
+                              label: 'LƯỢT XEM',
                             ),
+                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
                             _StatColumn(
-                              icon: Icons.thumb_up,
+                              icon: Icons.thumb_up_alt_rounded,
                               value: _formatCount(r.likeCount),
-                              label: 'thích',
+                              label: 'THÍCH',
                             ),
+                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
                             _StatColumn(
-                              icon: Icons.comment,
+                              icon: Icons.chat_bubble_outline_rounded,
                               value: _formatCount(r.commentCount),
-                              label: 'bình luận',
+                              label: 'BÌNH LUẬN',
                             ),
+                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
                             _StatColumn(
-                              icon: Icons.share,
+                              icon: Icons.share_rounded,
                               value: _formatCount(r.shareCount),
-                              label: 'chia sẻ',
+                              label: 'CHIA SẺ',
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Action row
+                      // Action Row
                       Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
+                            child: InkWell(
+                              onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content:
-                                          Text('Đã lưu vào danh sách yêu thích')),
+                                    content: Text('Đã lưu vào danh sách xem lại'),
+                                  ),
                                 );
                               },
-                              icon: const Icon(Icons.bookmark_border),
-                              label: const Text('Lưu'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.bookmark_add_rounded, color: Colors.black, size: 18),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'LƯU VIDEO',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w800,
+                                        fontFamily: 'Outfit',
+                                        fontSize: 12,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
+                            child: InkWell(
+                              onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Đã sao chép link')),
+                                  const SnackBar(
+                                    content: Text('Đã sao chép liên kết phát sóng'),
+                                  ),
                                 );
                               },
-                              icon: const Icon(Icons.share),
-                              label: const Text('Chia sẻ'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0x3300E5FF),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.share_rounded, color: Color(0xFF00E5FF), size: 18),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'CHIA SẺ',
+                                      style: TextStyle(
+                                        color: Color(0xFF00E5FF),
+                                        fontWeight: FontWeight.w700,
+                                        fontFamily: 'Outfit',
+                                        fontSize: 12,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -332,32 +452,45 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
 
                       // Description
                       const Text(
-                        'Mô tả',
+                        'NỘI DUNG PHÁT SÓNG',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00E5FF),
+                          fontSize: 12,
+                          fontFamily: 'JetBrainsMono',
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        r.description ?? 'Chưa có mô tả.',
-                        style: const TextStyle(
-                          color: AppColors.dark300,
-                          fontSize: 14,
-                          height: 1.5,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B1320),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+                        ),
+                        child: Text(
+                          r.description ?? 'Nội dung lưu trữ chất lượng cao từ đài truyền hình OmniCast.',
+                          style: const TextStyle(
+                            color: Color(0xFFCBD5E1),
+                            fontSize: 13,
+                            height: 1.6,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
 
                       // Tags
                       if (r.tags.isNotEmpty) ...[
                         const Text(
-                          'Thẻ',
+                          'TỪ KHÓA',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF00E5FF),
+                            fontSize: 12,
+                            fontFamily: 'JetBrainsMono',
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -368,50 +501,34 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                             for (final tag in r.tags)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
+                                    horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.dark700,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0x1F00E5FF),
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Text(
                                   '#$tag',
                                   style: const TextStyle(
-                                    color: AppColors.dark300,
-                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 11,
+                                    fontFamily: 'JetBrainsMono',
                                   ),
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Source info
-                      if (r.externalPlatform != null) ...[
-                        const Text(
-                          'Nguồn',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Nội dung được cung cấp bởi ${r.externalPlatform}${r.externalId != null ? ' · ID: ${r.externalId}' : ''}',
-                          style: const TextStyle(
-                            color: AppColors.dark400,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                       ],
                     ],
                   ),
                 ),
               ),
 
-              // Similar recordings rail
+              // Similar Recordings Rail
               if (state.similar.isNotEmpty || state.isLoadingSimilar)
                 SliverToBoxAdapter(
                   child: _SimilarRail(
@@ -421,7 +538,7 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                   ),
                 ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 36)),
             ],
           );
         },
@@ -445,6 +562,8 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
 }
 
 // ============================================================
+// PLAYER SECTION
+// ============================================================
 
 class _PlayerSection extends StatelessWidget {
   final RecordingModel recording;
@@ -465,17 +584,17 @@ class _PlayerSection extends StatelessWidget {
                   width: double.infinity,
                   height: double.infinity,
                   placeholder: (_, __) =>
-                      const ColoredBox(color: AppColors.dark900),
+                      const ColoredBox(color: Color(0xFF070B12)),
                   errorWidget: (_, __, ___) => const Icon(
                     Icons.play_circle_outline,
                     size: 64,
-                    color: AppColors.dark500,
+                    color: Color(0xFF00E5FF),
                   ),
                 )
               : const Icon(
                   Icons.play_circle_outline,
                   size: 64,
-                  color: AppColors.dark500,
+                  color: Color(0xFF00E5FF),
                 ),
         ),
       );
@@ -491,19 +610,18 @@ class _PlayerSection extends StatelessWidget {
             posterUrl: recording.thumbnailUrl,
             autoPlay: false,
           ),
-          // Subtle gradient overlay so the back button stays legible.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 80,
+            height: 70,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.5),
+                    Colors.black.withValues(alpha: 0.6),
                     Colors.transparent,
                   ],
                 ),
@@ -536,21 +654,25 @@ class _StatColumn extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppColors.primary, size: 20),
-        const SizedBox(height: 6),
+        Icon(icon, color: const Color(0xFF00E5FF), size: 18),
+        const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Outfit',
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           label,
           style: const TextStyle(
-            color: AppColors.dark400,
-            fontSize: 10,
+            color: Color(0xFF94A3B8),
+            fontSize: 9,
+            fontFamily: 'JetBrainsMono',
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -582,19 +704,23 @@ class _SimilarRail extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Video liên quan',
+            'VIDEO CÙNG THỂ LOẠI',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFF00E5FF),
+              fontSize: 12,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         SizedBox(
-          height: 140,
+          height: 155,
           child: isLoading && list.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                )
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -622,9 +748,9 @@ class _SimilarCard extends StatelessWidget {
         width: 220,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: AppColors.dark800,
+          color: const Color(0xFF0B1320),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.dark700),
+          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,42 +763,51 @@ class _SimilarCard extends StatelessWidget {
                   ),
                   child: SizedBox(
                     width: 220,
-                    height: 80,
+                    height: 85,
                     child: recording.thumbnailUrl != null
                         ? CachedNetworkImage(
                             imageUrl: recording.thumbnailUrl!,
                             fit: BoxFit.cover,
                             placeholder: (_, __) =>
-                                const ColoredBox(color: AppColors.dark700),
+                                const ColoredBox(color: Color(0xFF0F172A)),
                             errorWidget: (_, __, ___) => const ColoredBox(
-                              color: AppColors.dark700,
-                              child: Icon(Icons.play_circle_outline,
-                                  color: AppColors.dark500, size: 32),
+                              color: Color(0xFF0F172A),
+                              child: Icon(
+                                Icons.play_circle_outline,
+                                color: Color(0xFF00E5FF),
+                                size: 32,
+                              ),
                             ),
                           )
                         : const ColoredBox(
-                            color: AppColors.dark700,
-                            child: Icon(Icons.play_circle_outline,
-                                color: AppColors.dark500, size: 32),
+                            color: Color(0xFF0F172A),
+                            child: Icon(
+                              Icons.play_circle_outline,
+                              color: Color(0xFF00E5FF),
+                              size: 32,
+                            ),
                           ),
                   ),
                 ),
                 if (recording.duration > 0)
                   Positioned(
-                    bottom: 4,
-                    right: 4,
+                    bottom: 6,
+                    right: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
+                        color: Colors.black.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0x3300E5FF), width: 0.5),
                       ),
                       child: Text(
                         recording.formattedDuration,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF00E5FF),
                           fontSize: 9,
+                          fontFamily: 'JetBrainsMono',
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -700,8 +835,9 @@ class _SimilarCard extends StatelessWidget {
                       Text(
                         recording.channel!.name,
                         style: const TextStyle(
-                          color: AppColors.dark400,
+                          color: Color(0xFF94A3B8),
                           fontSize: 10,
+                          fontFamily: 'JetBrainsMono',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -733,15 +869,22 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
+          const Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
+          const SizedBox(height: 14),
           Text(
             message,
             style: const TextStyle(color: AppColors.error),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(onPressed: onRetry, child: const Text('Thử lại')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+            ),
+            onPressed: onRetry,
+            child: const Text('Thử lại'),
+          ),
         ],
       ),
     );
