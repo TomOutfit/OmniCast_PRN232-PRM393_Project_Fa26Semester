@@ -1,8 +1,6 @@
 // OmniCast - Search Screen
-//
-// Multi-source search UI: type to get channel & program suggestions;
-// submit a query to get full results. Supports a category filter pill
-// bar so the user can narrow results to a single LiveCategory.
+// High-tech Cyberpunk Search Interface with instant live suggestions,
+// trending topics, 19 category filter pills, and styled result cards.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,10 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/search/search_bloc.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/program_categories.dart';
-import '../../../data/models/search_result_model.dart';
 import '../../widgets/channel_logo.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -28,10 +23,18 @@ class _SearchScreenState extends State<SearchScreen> {
   final _focusNode = FocusNode();
   String? _activeCategory;
 
+  static const _trendingSearches = [
+    'V-League 2026',
+    'Thời Sự 19H',
+    'Điện Ảnh 4K',
+    'Esports Gaming',
+    'Tech & AI',
+    'Ẩm Thực Việt',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
     _searchController.addListener(() => setState(() {}));
   }
 
@@ -51,53 +54,88 @@ class _SearchScreenState extends State<SearchScreen> {
         );
   }
 
+  void _triggerSearch(String text) {
+    _searchController.text = text;
+    context.read<SearchBloc>().add(
+          PerformSearch(query: text, category: _activeCategory),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark950,
+      backgroundColor: const Color(0xFF070B12),
       appBar: AppBar(
-        backgroundColor: AppColors.dark950,
-        title: TextField(
-          controller: _searchController,
-          focusNode: _focusNode,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Tìm kiếm kênh, chương trình...',
-            hintStyle: const TextStyle(color: AppColors.dark500),
-            border: InputBorder.none,
-            filled: false,
-            prefixIcon: const Icon(Icons.search, color: AppColors.dark500),
+        backgroundColor: const Color(0xFF090F1A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        titleSpacing: 16,
+        title: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E1726),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF1D2F4A)),
           ),
-          onChanged: (value) {
-            context.read<SearchBloc>().add(SearchQueryChanged(value));
-          },
-          onSubmitted: (value) {
-            if (value.trim().isEmpty) return;
-            context.read<SearchBloc>().add(
-                  PerformSearch(query: value.trim(), category: _activeCategory),
-                );
-          },
-        ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                _activeCategory = null;
-                context.read<SearchBloc>().add(ClearSearch());
-              },
+          child: TextField(
+            controller: _searchController,
+            focusNode: _focusNode,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm kênh, chương trình, VOD...',
+              hintStyle: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+              ),
+              border: InputBorder.none,
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF00E5FF),
+                size: 20,
+              ),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(
+                        Icons.clear_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 18,
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                        _activeCategory = null;
+                        context.read<SearchBloc>().add(ClearSearch());
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
             ),
-        ],
+            onChanged: (value) {
+              context.read<SearchBloc>().add(SearchQueryChanged(value));
+            },
+            onSubmitted: (value) {
+              if (value.trim().isEmpty) return;
+              context.read<SearchBloc>().add(
+                    PerformSearch(
+                      query: value.trim(),
+                      category: _activeCategory,
+                    ),
+                  );
+            },
+          ),
+        ),
       ),
       body: BlocBuilder<SearchBloc, SearchState>(
         builder: (context, state) {
           return Column(
             children: [
-              _CategoryFilter(
+              _CategoryFilterBar(
                 activeCategory: _activeCategory,
                 onSelect: _setCategory,
               ),
+              const Divider(color: Color(0xFF162338), height: 1),
               Expanded(
                 child: _buildBody(state),
               ),
@@ -110,11 +148,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildBody(SearchState state) {
     if (state is SearchInitial) {
-      return _buildInitialState();
+      return _buildInitialView();
     }
 
     if (state is SearchLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+      );
     }
 
     if (state is SearchSuggestionsLoaded) {
@@ -132,12 +172,19 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 56, color: AppColors.error),
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 52,
+                color: Color(0xFFEF4444),
+              ),
               const SizedBox(height: 12),
               Text(
                 state.message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
+                style: const TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -148,103 +195,191 @@ class _SearchScreenState extends State<SearchScreen> {
     return const SizedBox();
   }
 
-  Widget _buildInitialState() {
-    return Padding(
+  Widget _buildInitialView() {
+    return ListView(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tìm kiếm nhanh',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+      children: [
+        // Trending Section
+        const Row(
+          children: [
+            Icon(
+              Icons.trending_up_rounded,
+              color: Color(0xFF00E5FF),
+              size: 18,
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final cat in ProgramCategories.all19.take(8))
-                _SearchChip(
-                  label: cat.label,
-                  icon: cat.icon,
-                  color: cat.color,
-                  onTap: () {
-                    _searchController.text = cat.label;
-                    _setCategory(cat.value);
-                  },
+            SizedBox(width: 8),
+            Text(
+              'TÌM KIẾM PHỔ BIẾN',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _trendingSearches.map((term) {
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _triggerSearch(term),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B1320),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF16253C)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.search_rounded,
+                        size: 14,
+                        color: Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        term,
+                        style: const TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-            ],
+              ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 28),
+
+        // Quick Category Browse
+        const Row(
+          children: [
+            Icon(
+              Icons.grid_view_rounded,
+              color: Color(0xFF38BDF8),
+              size: 18,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'CHUYÊN MỤC NỔI BẬT',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.2,
           ),
-        ],
-      ),
+          itemCount: 8,
+          itemBuilder: (context, index) {
+            final cat = ProgramCategories.all19[index];
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  _searchController.text = cat.label;
+                  _setCategory(cat.value);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF090F1A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF162338)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: cat.color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(cat.icon, color: cat.color, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          cat.label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
   Widget _buildSuggestions(SearchSuggestionsLoaded state) {
     if (state.channels.isEmpty && state.programs.isEmpty) {
-      return const Center(
-        child: Text(
-          'Không tìm thấy kết quả',
-          style: TextStyle(color: AppColors.dark400),
-        ),
-      );
+      return _buildNoResults('Không tìm thấy gợi ý nào');
     }
 
     return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (state.channels.isNotEmpty) ...[
-          const _SectionLabel(label: 'Kênh'),
-          ...state.channels.map(
-            (channel) => ListTile(
-              leading: ChannelLogoCompact(channel: channel.toChannelModel(), size: 48),
-              title: Text(
-                channel.name,
-                style: const TextStyle(color: Colors.white),
-              ),
-              subtitle: Text(
-                ProgramCategories.labelFor(channel.category),
-                style: const TextStyle(color: AppColors.dark400),
-              ),
-              onTap: () {
-                _searchController.text = channel.name;
-                context.read<SearchBloc>().add(
-                      PerformSearch(
-                        query: channel.name,
-                        category: _activeCategory,
-                      ),
-                    );
-              },
-            ),
-          ),
+          _buildHeaderBadge('KÊNH TRUYỀN HÌNH (${state.channels.length})'),
+          ...state.channels.map((ch) {
+            final model = ch.toChannelModel();
+            return _buildSuggestionItem(
+              title: ch.name,
+              subtitle: ProgramCategories.labelFor(ch.category),
+              leading: ChannelLogo(channel: model, size: 38),
+              onTap: () => _triggerSearch(ch.name),
+            );
+          }),
         ],
         if (state.programs.isNotEmpty) ...[
-          const _SectionLabel(label: 'Chương trình'),
-          ...state.programs.map(
-            (program) => ListTile(
-              leading: _SuggestionThumb(program: program),
-              title: Text(
-                program.title,
-                style: const TextStyle(color: Colors.white),
-              ),
-              subtitle: Text(
-                program.channelName ?? '',
-                style: const TextStyle(color: AppColors.dark400),
-              ),
-              onTap: () {
-                _searchController.text = program.title;
-                context.read<SearchBloc>().add(
-                      PerformSearch(
-                        query: program.title,
-                        category: _activeCategory,
-                      ),
-                    );
-              },
-            ),
-          ),
+          _buildHeaderBadge('CHƯƠNG TRÌNH PHÁT SÓNG (${state.programs.length})'),
+          ...state.programs.map((prog) {
+            return _buildSuggestionItem(
+              title: prog.title,
+              subtitle: prog.channelName ?? 'OmniCast',
+              leading: _buildProgramThumb(prog.thumbnailUrl),
+              onTap: () => _triggerSearch(prog.title),
+            );
+          }),
         ],
       ],
     );
@@ -253,89 +388,250 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildResults(SearchResultsLoaded state) {
     final results = state.results;
     if (results.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.search_off, size: 56, color: AppColors.dark500),
-              const SizedBox(height: 12),
-              Text(
-                'Không có kết quả cho "${state.query}"',
-                style: const TextStyle(color: AppColors.dark300, fontSize: 14),
-              ),
-              if (state.category != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'trong ${ProgramCategories.labelFor(state.category)}',
-                    style: const TextStyle(
-                      color: AppColors.dark400,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
+      return _buildNoResults('Không tìm thấy kết quả cho "${state.query}"');
     }
 
     return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            '${results.totalResults} kết quả cho "${state.query}"'
-            '${state.category != null ? ' • ${ProgramCategories.labelFor(state.category)}' : ''}',
-            style: const TextStyle(color: AppColors.dark400, fontSize: 12),
+            '${results.totalResults} KẾT QUẢ CHO "${state.query.toUpperCase()}"',
+            style: const TextStyle(
+              color: Color(0xFF00E5FF),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
-        ...results.channels.map(
-          (channel) => ListTile(
-            leading: ChannelLogoCompact(channel: channel.toChannelModel(), size: 48),
-            title: Text(
-              channel.name,
-              style: const TextStyle(color: Colors.white),
+
+        // Channels
+        ...results.channels.map((ch) {
+          final model = ch.toChannelModel();
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1320),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF16253C)),
             ),
-            subtitle: Text(
-              ProgramCategories.labelFor(channel.category),
-              style: const TextStyle(color: AppColors.dark400),
+            child: Row(
+              children: [
+                ChannelLogo(channel: model, size: 44),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ch.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        ProgramCategories.labelFor(ch.category),
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => context.push('/channel/${ch.id}'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E5FF),
+                    foregroundColor: const Color(0xFF070B12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Xem Kênh',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
             ),
-            trailing: const Icon(Icons.chevron_right, color: AppColors.dark500),
-            onTap: () => context.push('/channel/${channel.id}'),
-          ),
-        ),
-        ...results.liveEvents.map(
-          (program) => ListTile(
-            leading: _SuggestionThumb(program: program),
-            title: Text(
-              program.title,
-              style: const TextStyle(color: Colors.white),
+          );
+        }),
+
+        // Live Events
+        ...results.liveEvents.map((prog) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1320),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF16253C)),
             ),
-            subtitle: Text(
-              program.channelName ?? '',
-              style: const TextStyle(color: AppColors.dark400),
+            child: Row(
+              children: [
+                _buildProgramThumb(prog.thumbnailUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        prog.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        prog.channelName ?? 'OmniCast Live',
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 32,
+                  ),
+                  onPressed: () => context.push('/program/${prog.id}'),
+                ),
+              ],
             ),
-            trailing: const Icon(Icons.chevron_right, color: AppColors.dark500),
-            onTap: () => context.push('/program/${program.id}'),
-          ),
-        ),
+          );
+        }),
       ],
+    );
+  }
+
+  Widget _buildHeaderBadge(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF64748B),
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          fontFamily: 'monospace',
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionItem({
+    required String title,
+    required String subtitle,
+    required Widget leading,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: leading,
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          color: Color(0xFF94A3B8),
+          fontSize: 11,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.north_west_rounded,
+        size: 16,
+        color: Color(0xFF64748B),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildProgramThumb(String? url) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 54,
+        height: 38,
+        color: const Color(0xFF121E30),
+        child: url != null && url.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => const Icon(
+                  Icons.live_tv_rounded,
+                  size: 20,
+                  color: Color(0xFF64748B),
+                ),
+              )
+            : const Icon(
+                Icons.live_tv_rounded,
+                size: 20,
+                color: Color(0xFF64748B),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: Color(0xFF475569),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-// ============================================================
-// Sub-widgets
-// ============================================================
-
-class _CategoryFilter extends StatelessWidget {
+class _CategoryFilterBar extends StatelessWidget {
   final String? activeCategory;
   final void Function(String?) onSelect;
 
-  const _CategoryFilter({required this.activeCategory, required this.onSelect});
+  const _CategoryFilterBar({
+    required this.activeCategory,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -346,19 +642,15 @@ class _CategoryFilter extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
-          _Pill(
+          _PillItem(
             label: 'Tất cả',
-            icon: Icons.apps_rounded,
-            color: AppColors.primary,
             selected: activeCategory == null,
             onTap: () => onSelect(null),
           ),
           for (final cat in ProgramCategories.all19) ...[
             const SizedBox(width: 6),
-            _Pill(
+            _PillItem(
               label: cat.label,
-              icon: cat.icon,
-              color: cat.color,
               selected: activeCategory == cat.value,
               onTap: () => onSelect(cat.value),
             ),
@@ -369,17 +661,13 @@ class _CategoryFilter extends StatelessWidget {
   }
 }
 
-class _Pill extends StatelessWidget {
+class _PillItem extends StatelessWidget {
   final String label;
-  final IconData icon;
-  final Color color;
   final bool selected;
   final VoidCallback onTap;
 
-  const _Pill({
+  const _PillItem({
     required this.label,
-    required this.icon,
-    required this.color,
     required this.selected,
     required this.onTap,
   });
@@ -388,132 +676,36 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.22) : AppColors.dark800,
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0E1625),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? color : AppColors.dark700,
-            width: selected ? 1 : 0.5,
+            color: selected
+                ? const Color(0xFF00E5FF)
+                : const Color(0xFF1B2B42),
           ),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x6600E5FF),
+                    blurRadius: 8,
+                  ),
+                ]
+              : null,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: selected ? color : AppColors.dark400,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? color : AppColors.dark300,
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SuggestionThumb extends StatelessWidget {
-  final ProgramSuggestion program;
-
-  const _SuggestionThumb({required this.program});
-
-  @override
-  Widget build(BuildContext context) {
-    if (program.thumbnailUrl == null || program.thumbnailUrl!.isEmpty) {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.dark700,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.play_circle, color: AppColors.dark500),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: CachedNetworkImage(
-          imageUrl: AppConstants.resolveAssetUrl(program.thumbnailUrl),
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
-            color: AppColors.dark700,
-            child: const Icon(Icons.play_circle, color: AppColors.dark500),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? const Color(0xFF070B12)
+                : const Color(0xFF94A3B8),
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.dark400,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _SearchChip({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.dark800,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ],
         ),
       ),
     );
