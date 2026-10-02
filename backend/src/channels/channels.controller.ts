@@ -119,6 +119,16 @@ export class ChannelsController {
     return this.channelsService.findOne(id);
   }
 
+  @Post(':id/view')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Increment view counter for a channel stream' })
+  @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)' })
+  @ApiResponse({ status: 200, description: '200 OK — View counter updated' })
+  async incrementView(@Param('id') id: string) {
+    const channel = await this.channelsService.findOne(id);
+    return this.channelsService.incrementViews(channel.id);
+  }
+
   @Get(':id/followers')
   @ApiOperation({ summary: 'Get followers of a channel' })
   @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
