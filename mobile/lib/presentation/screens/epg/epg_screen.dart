@@ -898,7 +898,8 @@ class _EpgEventCard extends StatelessWidget {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatDuration(int minutes) {
+  String _formatDuration(int raw) {
+    final minutes = raw > 1440 ? (raw / 60).round() : raw;
     if (minutes < 60) return '$minutes p';
     final h = minutes ~/ 60;
     final m = minutes % 60;

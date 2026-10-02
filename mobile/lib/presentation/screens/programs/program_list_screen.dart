@@ -359,11 +359,12 @@ class _ProgramListItem extends StatelessWidget {
     return dateFmt.format(dt);
   }
 
-  String _formatDuration(int minutes) {
+  String _formatDuration(int raw) {
+    final minutes = raw > 1440 ? (raw / 60).round() : raw;
     final h = minutes ~/ 60;
     final m = minutes % 60;
-    if (h > 0) return '${h}h${m > 0 ? ' ${m}m' : ''}';
-    return '${m}m';
+    if (h > 0) return '${h}h${m > 0 ? ' ${m}p' : ''}';
+    return '${m}p';
   }
 }
 
