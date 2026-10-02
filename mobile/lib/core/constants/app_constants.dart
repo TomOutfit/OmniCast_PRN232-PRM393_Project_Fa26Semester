@@ -35,9 +35,8 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'omnicast_local.db';
-  // v3: invalidate EPG cache so the new `isFiller`/`fillerKind` shape is
-  // always served fresh from the backend.
-  static const int databaseVersion = 3;
+  // v4: invalidate EPG cache to ensure real 25-channel data from backend is loaded
+  static const int databaseVersion = 4;
 
   // Pagination
   static const int defaultPageSize = 20;
