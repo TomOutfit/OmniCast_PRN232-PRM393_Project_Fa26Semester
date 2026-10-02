@@ -254,9 +254,8 @@ class _WatchlistItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final isLiveNow = now.isAfter(item.scheduledAt) &&
-        (item.duration == null ||
-            now.isBefore(
-                item.scheduledAt.add(Duration(minutes: item.duration!))));
+        now.isBefore(
+            item.scheduledAt.add(Duration(minutes: item.durationMinutes)));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

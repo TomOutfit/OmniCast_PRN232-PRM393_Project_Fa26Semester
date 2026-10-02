@@ -357,7 +357,8 @@ class _MetaRow extends StatelessWidget {
     return number.toString();
   }
 
-  String _formatDuration(int minutes) {
+  String _formatDuration(int raw) {
+    final minutes = raw > 1440 ? (raw / 60).round() : raw;
     if (minutes < 60) return '$minutes phút';
     final h = minutes ~/ 60;
     final m = minutes % 60;

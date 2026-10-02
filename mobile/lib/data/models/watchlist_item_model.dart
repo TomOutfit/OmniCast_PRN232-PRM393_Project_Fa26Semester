@@ -91,4 +91,13 @@ class WatchlistItemModel {
 
   bool get isUpcoming => scheduledAt.isAfter(DateTime.now());
   bool get isPast => scheduledAt.isBefore(DateTime.now());
+
+  int get durationMinutes {
+    if (duration == null) return 120;
+    if (duration! > 1440) {
+      final m = (duration! / 60).round();
+      return m < 1 ? 1 : m;
+    }
+    return duration!;
+  }
 }
