@@ -153,7 +153,7 @@ class _FeaturedCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -175,8 +175,8 @@ class _FeaturedCard extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.9),
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.9),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
@@ -264,8 +264,8 @@ class _FeaturedCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withOpacity(0.8),
-            AppColors.accentCyan.withOpacity(0.8),
+            AppColors.primary.withValues(alpha: 0.8),
+            AppColors.accentCyan.withValues(alpha: 0.8),
           ],
         ),
       ),
@@ -288,7 +288,7 @@ class _FeaturedCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -337,13 +337,13 @@ class _FeaturedCard extends StatelessWidget {
               Icon(
                 Icons.tv,
                 size: 14,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 4),
               Text(
                 (item as ChannelFeaturedItem).channel.name,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                 ),
               ),
@@ -352,13 +352,13 @@ class _FeaturedCard extends StatelessWidget {
               Icon(
                 Icons.schedule,
                 size: 14,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 4),
               Text(
                 (item as ProgramFeaturedItem).formattedTime,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                 ),
               ),
@@ -368,13 +368,13 @@ class _FeaturedCard extends StatelessWidget {
               Icon(
                 Icons.visibility,
                 size: 14,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 4),
               Text(
                 _formatViewerCount(item.viewerCount),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                 ),
               ),

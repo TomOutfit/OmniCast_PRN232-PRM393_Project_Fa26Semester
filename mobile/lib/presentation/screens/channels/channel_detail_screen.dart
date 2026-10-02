@@ -2,7 +2,6 @@
 // Shows channel information, live stream, and program schedule
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -184,7 +183,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -196,7 +195,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.share, color: Colors.white, size: 20),
@@ -209,7 +208,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
@@ -236,8 +235,8 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.primary.withOpacity(0.8),
-                      AppColors.accentCyan.withOpacity(0.8),
+                      AppColors.primary.withValues(alpha: 0.8),
+                      AppColors.accentCyan.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -250,7 +249,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    AppColors.bg.withOpacity(0.8),
+                    AppColors.bg.withValues(alpha: 0.8),
                     AppColors.bg,
                   ],
                 ),
@@ -269,7 +268,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                   ),
                   const SizedBox(width: 12),
                   if (_channel!.isLive)
-                    LiveBadge()
+                    const LiveBadge()
                   else
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -352,7 +351,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -392,15 +391,79 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
 
           const SizedBox(height: 16),
 
-          // Action Buttons
+          // Primary Watch Live CTA Button
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00E5FF), Color(0xFF2563EB)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x6600E5FF),
+                  blurRadius: 16,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  // Direct live watch action
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đang khởi tạo luồng phát HEVC 2160p60...'),
+                      backgroundColor: Color(0xFF090F1A),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.play_arrow_rounded,
+                        color: Color(0xFF070B12),
+                        size: 24,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Xem Trực Tiếp (HEVC 2160p60)',
+                        style: TextStyle(
+                          color: Color(0xFF070B12),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Action Buttons: Follow & Share
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _toggleFollow(_channel!),
-                  icon: const Icon(Icons.notifications_active),
-                  label: const Text('Theo dõi'),
+                  icon: const Icon(Icons.notifications_active_rounded),
+                  label: const Text('Theo dõi kênh'),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF101B2C),
+                    foregroundColor: const Color(0xFF00E5FF),
+                    side: const BorderSide(color: Color(0xFF1E3250)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -408,12 +471,12 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
               const SizedBox(width: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: const Color(0xFF101B2C),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: const Color(0xFF1E3250)),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.share),
+                  icon: const Icon(Icons.share_rounded, color: Colors.white),
                   onPressed: () => ShareHelper.shareChannel(_channel!),
                 ),
               ),
@@ -648,7 +711,7 @@ class _ScheduleCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: isLive
-            ? Border.all(color: AppColors.liveRed.withOpacity(0.5))
+            ? Border.all(color: AppColors.liveRed.withValues(alpha: 0.5))
             : Border.all(color: AppColors.border, width: 0.5),
       ),
       child: Row(
