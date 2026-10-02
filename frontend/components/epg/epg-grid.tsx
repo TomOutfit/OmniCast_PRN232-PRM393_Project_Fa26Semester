@@ -27,43 +27,20 @@ import {
   Maximize2,
   Share2,
   Cast,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useEpgDay } from '@/lib/hooks/usePrograms';
-
-// Program definition with flexible real-world durations
-export interface RealEpgProgram {
-  id: string;
-  title: string;
-  subtitle?: string;
-  category: string;
-  startTime: string; // e.g. "19:15"
-  endTime: string;   // e.g. "21:45"
-  startMinutes: number; // minutes from 00:00 (e.g. 19*60 + 15 = 1155)
-  durationMinutes: number; // e.g. 150
-  badge?: string;
-  quality?: string;
-  audio?: string;
-  description: string;
-  thumbnailUrl: string;
-  directorOrHost?: string;
-  rating?: number;
-  features?: string[];
-}
-
-export interface RealEpgChannel {
-  id: string;
-  slug: string;
-  chNumber: string;
-  name: string;
-  category: 'sports' | 'movies' | 'news' | 'esports' | 'discovery' | 'entertainment' | 'kids';
-  categoryLabel: string;
-  logo: string;
-  color: string;
-  programs: RealEpgProgram[];
-}
+import {
+  type RealEpgProgram,
+  type RealEpgChannel,
+  CATEGORY_FILTERS,
+  buildFallbackChannels,
+  mapApiEpgToRealChannels,
+} from './epg-channels-data';
+export type { RealEpgProgram, RealEpgChannel };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REAL-WORLD 24-HOUR BROADCAST SCHEDULE (LỊCH PHÁT SÓNG THỰC TẾ 25 KÊNH)
@@ -1172,6 +1149,32 @@ export function EPGGrid() {
   const [selectedProgram, setSelectedProgram] = useState<RealEpgProgram | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
 
+  // Compute wall-clock target date from selected offset
+  const selectedDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedDayOffset);
+    return d;
+  }, [selectedDayOffset]);
+
+  // Dynamic API queries
+  const { data: epgResponse, isLoading: isEpgLoading } = useEpgDay(selectedDate);
+  const { data: channelsResponse } = useChannels({ limit: 100, isActive: true });
+
+  const rawChannels = useMemo(() => {
+    if (!channelsResponse) return [];
+    if (Array.isArray(channelsResponse)) return channelsResponse;
+    return (channelsResponse as any)?.data ?? [];
+  }, [channelsResponse]);
+
+  const channelMetaMap = useMemo(() => {
+    const map = new Map<string, any>();
+    rawChannels.forEach((ch: any) => {
+      if (ch.id) map.set(ch.id, ch);
+      if (ch.slug) map.set(ch.slug, ch);
+    });
+    return map;
+  }, [rawChannels]);
+
   // Current real time marker (e.g. 19:15 = 1155 minutes)
   const [currentTimeMinutes, setCurrentTimeMinutes] = useState<number>(() => {
     const now = new Date();
@@ -1208,9 +1211,17 @@ export function EPGGrid() {
     return days;
   }, []);
 
+  // Combine API data or rotated 25-channel fallback
+  const allChannels = useMemo<RealEpgChannel[]>(() => {
+    if (epgResponse?.channels && epgResponse.channels.length > 0) {
+      return mapApiEpgToRealChannels(epgResponse, rawChannels);
+    }
+    return buildFallbackChannels(selectedDayOffset, channelMetaMap);
+  }, [epgResponse, rawChannels, selectedDayOffset, channelMetaMap]);
+
   // Filter channels by category
   const filteredChannels = useMemo(() => {
-    let list = REAL_WORLD_CHANNELS_EPG;
+    let list = allChannels;
     if (selectedCategory !== 'ALL') {
       list = list.filter((ch) => ch.category === selectedCategory);
     }
@@ -1224,11 +1235,11 @@ export function EPGGrid() {
       })).filter((ch) => ch.programs.length > 0);
     }
     return list;
-  }, [selectedCategory, searchQuery]);
+  }, [allChannels, selectedCategory, searchQuery]);
 
   const activeChannel = useMemo(() => {
-    return filteredChannels.find((ch) => ch.id === activeChannelId) || filteredChannels[0] || REAL_WORLD_CHANNELS_EPG[0];
-  }, [filteredChannels, activeChannelId]);
+    return filteredChannels.find((ch) => ch.id === activeChannelId || ch.slug === activeChannelId) || filteredChannels[0] || allChannels[0] || REAL_WORLD_CHANNELS_EPG[0];
+  }, [filteredChannels, activeChannelId, allChannels]);
 
   // Set reminder handler with cyber toast
   const handleSetReminder = (prog: RealEpgProgram) => {
@@ -1261,8 +1272,9 @@ export function EPGGrid() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-cyan-400 font-mono">
-                REALTIME ELECTRONIC PROGRAMME GUIDE • 25 CHANNELS
+              <span className="text-[11px] font-black uppercase tracking-widest text-cyan-400 font-mono flex items-center gap-1.5">
+                REALTIME ELECTRONIC PROGRAMME GUIDE • {allChannels.length} CHANNELS
+                {isEpgLoading && <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />}
               </span>
             </div>
             <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -1347,14 +1359,7 @@ export function EPGGrid() {
           
           {/* Category Chips */}
           <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'ALL', label: 'Tất Cả Kênh' },
-              { id: 'sports', label: 'Thể Thao' },
-              { id: 'movies', label: 'Điện Ảnh' },
-              { id: 'news', label: 'Thời Sự' },
-              { id: 'esports', label: 'Esports' },
-              { id: 'discovery', label: 'Khám Phá' },
-            ].map((cat) => (
+            {CATEGORY_FILTERS.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
@@ -1439,7 +1444,7 @@ export function EPGGrid() {
                         <div
                           key={prog.id}
                           style={{ width: `${cardWidth}px` }}
-                          onClick={() => setSelectedProgram(prog)}
+                          onClick={() => setSelectedProgram({ ...prog, channelSlug: ch.slug, channelName: ch.name })}
                           className={cn(
                             'flex-shrink-0 h-24 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer relative group/prog overflow-hidden',
                             isLive
@@ -1593,7 +1598,7 @@ export function EPGGrid() {
                 return (
                   <div
                     key={prog.id}
-                    onClick={() => setSelectedProgram(prog)}
+                    onClick={() => setSelectedProgram({ ...prog, channelSlug: activeChannel.slug, channelName: activeChannel.name })}
                     className={cn(
                       'p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group',
                       isLive
@@ -1663,7 +1668,7 @@ export function EPGGrid() {
                         </Link>
                       ) : isCatchUp ? (
                         <Link
-                          href={`/programs/${prog.id}`}
+                          href={prog.sourceRecordingId ? `/programs/recording/${prog.sourceRecordingId}` : `/channels/${activeChannel.slug}`}
                           onClick={(e) => e.stopPropagation()}
                           className="px-3.5 py-2 rounded-xl bg-[#121f33] hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
                         >
@@ -1770,23 +1775,34 @@ export function EPGGrid() {
             {/* Modal Actions */}
             <div className="flex items-center gap-3 pt-2">
               <Link
-                href={`/channels/${activeChannel.slug}`}
+                href={`/channels/${selectedProgram.channelSlug || activeChannel.slug}`}
                 onClick={() => setSelectedProgram(null)}
                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,242,254,0.4)]"
               >
                 <Play className="w-4 h-4 fill-current" />
                 Mở Luồng Kênh Trực Tiếp
               </Link>
-              <button
-                onClick={() => {
-                  handleSetReminder(selectedProgram);
-                  setSelectedProgram(null);
-                }}
-                className="px-4 py-3 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-2"
-              >
-                <Bell className="w-4 h-4" />
-                Đặt Nhắc Nhở
-              </button>
+              {selectedProgram.sourceRecordingId ? (
+                <Link
+                  href={`/programs/recording/${selectedProgram.sourceRecordingId}`}
+                  onClick={() => setSelectedProgram(null)}
+                  className="px-4 py-3 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Xem Bản Ghi VOD
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleSetReminder(selectedProgram);
+                    setSelectedProgram(null);
+                  }}
+                  className="px-4 py-3 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-2"
+                >
+                  <Bell className="w-4 h-4" />
+                  Đặt Nhắc Nhở
+                </button>
+              )}
             </div>
 
           </div>
