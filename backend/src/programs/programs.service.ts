@@ -332,6 +332,7 @@ export class ProgramsService {
       select: {
         id: true,
         name: true,
+        slug: true,
         logoUrl: true,
         category: true,
       },
@@ -444,6 +445,7 @@ export class ProgramsService {
       return {
         channelId: channel.id,
         channelName: channel.name,
+        channelSlug: channel.slug,
         channelLogoUrl: channel.logoUrl ?? null,
         channelCategory: String(channel.category),
         programs,

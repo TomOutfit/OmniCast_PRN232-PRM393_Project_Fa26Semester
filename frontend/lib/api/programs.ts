@@ -50,6 +50,7 @@ export interface EpgProgramItem {
 export interface EpgDayChannel {
   channelId: string;
   channelName: string;
+  channelSlug?: string;
   channelLogoUrl: string | null;
   channelCategory: string;
   programs: EpgProgramItem[];
