@@ -68,12 +68,12 @@ export default function ChannelsPage() {
     return [];
   }, [data]);
 
-  const liveList = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
   const liveChannelMap = useMemo(() => {
+    const list = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
     const map = new Map<string, any>();
-    liveList.forEach((e: any) => map.set(e.channelId, e));
+    list.forEach((e: any) => map.set(e.channelId, e));
     return map;
-  }, [liveList]);
+  }, [liveEvents]);
 
   const categories = [
     { key: 'ALL', label: 'Tất Cả (25 Kênh)' },
@@ -107,7 +107,7 @@ export default function ChannelsPage() {
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
               <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
-                BROADCAST NETWORK // 12 HIGH-BITRATE CHANNELS
+                BROADCAST NETWORK // 25 HIGH-BITRATE CHANNELS
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
@@ -227,7 +227,7 @@ export default function ChannelsPage() {
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 pt-2 border-t border-white/5">
                     <Link
-                      href={`/programs/${liveEvent?.id || 'live'}`}
+                      href={liveEvent ? `/programs/${liveEvent.id}` : `/channels/${channel.slug}`}
                       className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)] transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
