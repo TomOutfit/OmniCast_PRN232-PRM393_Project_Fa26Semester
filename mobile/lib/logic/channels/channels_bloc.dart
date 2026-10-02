@@ -18,11 +18,17 @@ class LoadChannels extends ChannelsEvent {
   final String? category;
   final bool refresh;
   final bool isFeatured;
+  final String? search;
 
-  const LoadChannels({this.category, this.refresh = false, this.isFeatured = false});
+  const LoadChannels({
+    this.category,
+    this.refresh = false,
+    this.isFeatured = false,
+    this.search,
+  });
 
   @override
-  List<Object?> get props => [category, refresh, isFeatured];
+  List<Object?> get props => [category, refresh, isFeatured, search];
 }
 
 class LoadChannelDetails extends ChannelsEvent {
@@ -118,6 +124,8 @@ class ChannelsBloc extends Bloc<ChannelsEvent, ChannelsState> {
         category: event.category,
         isFeatured: event.isFeatured ? true : null,
         isActive: true,
+        search: event.search,
+        limit: 100,
       );
       emit(ChannelsLoaded(
         channels: page.items,
