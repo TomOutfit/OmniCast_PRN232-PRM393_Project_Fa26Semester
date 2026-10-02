@@ -85,8 +85,18 @@ export async function bumpRecordingShare(recordingId: string) {
 }
 
 export async function bumpLiveEventShare(liveEventId: string) {
-  const { data } = await apiClient.post(`/live-events/${liveEventId}/share`);
+  const { data } = await apiClient.post(`/programs/live-events/${liveEventId}/share`);
   return data as { id: string; shareCount: number | null };
+}
+
+export async function bumpLiveEventView(liveEventId: string) {
+  const { data } = await apiClient.post(`/programs/live-events/${liveEventId}/view`);
+  return data as { id: string; viewerCount: number | null };
+}
+
+export async function bumpChannelView(channelIdOrSlug: string) {
+  const { data } = await apiClient.post(`/channels/${channelIdOrSlug}/view`);
+  return data as { id: string; totalViews: number | bigint | null };
 }
 
 export async function bumpRecordingView(recordingId: string) {
