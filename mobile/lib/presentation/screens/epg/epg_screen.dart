@@ -205,93 +205,130 @@ class _DateSelector extends StatelessWidget {
           if (state is EpgLoaded) {
             selectedDate = state.selectedDate;
           }
+          final isNotToday = !_isSameDay(selectedDate, DateTime.now());
 
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: List.generate(7, (index) {
-                final date = DateTime.now().add(Duration(days: index - 3));
-                final isSelected = _isSameDay(date, selectedDate);
-                final isToday = _isSameDay(date, DateTime.now());
+          return Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    for (int index = 0; index < 7; index++) ...[
+                      () {
+                        final date = DateTime.now().add(Duration(days: index - 3));
+                        final isSelected = _isSameDay(date, selectedDate);
+                        final isToday = _isSameDay(date, DateTime.now());
 
-                return GestureDetector(
-                  onTap: () {
-                    context.read<EpgBloc>().add(ChangeEpgDate(date));
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFF00E5FF)
-                          : const Color(0xFF0B1320),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF00E5FF)
-                            : (isToday
-                                ? const Color(0xFF00E5FF).withValues(alpha: 0.5)
-                                : const Color(0xFF16253C)),
-                      ),
-                      boxShadow: isSelected
-                          ? const [
-                              BoxShadow(
-                                color: Color(0x6600E5FF),
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _getDayName(date),
-                          style: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFF070B12)
-                                : const Color(0xFF94A3B8),
-                            fontSize: 11,
-                            fontWeight: isSelected
-                                ? FontWeight.w900
-                                : FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${date.day}',
-                          style: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFF070B12)
-                                : Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        if (isToday)
-                          Container(
-                            margin: const EdgeInsets.only(top: 3),
-                            width: 4,
-                            height: 4,
+                        return GestureDetector(
+                          onTap: () {
+                            context.read<EpgBloc>().add(ChangeEpgDate(date));
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFF070B12)
-                                  : const Color(0xFF00E5FF),
-                              shape: BoxShape.circle,
+                                  ? const Color(0xFF00E5FF)
+                                  : const Color(0xFF0B1320),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF00E5FF)
+                                    : (isToday
+                                        ? const Color(0xFF00E5FF).withValues(alpha: 0.5)
+                                        : const Color(0xFF16253C)),
+                              ),
+                              boxShadow: isSelected
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x6600E5FF),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  _getDayName(date),
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? const Color(0xFF070B12)
+                                        : (isToday ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8)),
+                                    fontSize: 11,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? const Color(0xFF070B12)
+                                        : Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                                if (isToday)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 3),
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF070B12)
+                                          : const Color(0xFF00E5FF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
+                        );
+                      }(),
+                    ],
+                    if (isNotToday) ...[
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          context.read<EpgBloc>().add(ChangeEpgDate(DateTime.now()));
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF083344),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.replay_rounded, size: 14, color: Color(0xFF00E5FF)),
+                              SizedBox(width: 4),
+                              Text(
+                                'Về Hôm Nay',
+                                style: TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -303,7 +340,11 @@ class _DateSelector extends StatelessWidget {
   }
 
   String _getDayName(DateTime date) {
-    const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    final now = DateTime.now();
+    if (_isSameDay(date, now)) return 'Hôm nay';
+    if (_isSameDay(date, now.subtract(const Duration(days: 1)))) return 'Hôm qua';
+    if (_isSameDay(date, now.add(const Duration(days: 1)))) return 'Ngày mai';
+    const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
     return days[date.weekday - 1];
   }
 }
@@ -375,12 +416,63 @@ class _EpgTimelineList extends StatefulWidget {
 
 class _EpgTimelineListState extends State<_EpgTimelineList> {
   String? _channelFilter;
+  String _selectedCategory = 'ALL';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _hideFiller = false;
+
+  static const _categories = [
+    {'key': 'ALL', 'label': 'Tất Cả'},
+    {'key': 'SPORTS', 'label': 'Thể Thao'},
+    {'key': 'CINE', 'label': 'Điện Ảnh'},
+    {'key': 'DRAMA', 'label': 'Phim Truyện'},
+    {'key': 'SHOW', 'label': 'Show'},
+    {'key': 'NEWS', 'label': 'Tin Tức'},
+    {'key': 'DOCUMENTARY', 'label': 'Khám Phá'},
+    {'key': 'GAMING', 'label': 'Esports'},
+    {'key': 'EDUCATION', 'label': 'Giáo Dục'},
+    {'key': 'MUSIC', 'label': 'Âm Nhạc'},
+    {'key': 'KIDS', 'label': 'Thiếu Nhi'},
+    {'key': 'TECH', 'label': 'Công Nghệ'},
+    {'key': 'FOOD', 'label': 'Ẩm Thực'},
+    {'key': 'LIFESTYLE', 'label': 'Đời Sống'},
+    {'key': 'PODCAST', 'label': 'Podcast'},
+    {'key': 'TRAVEL', 'label': 'Du Lịch'},
+    {'key': 'BUSINESS', 'label': 'Kinh Doanh'},
+    {'key': 'HEALTH', 'label': 'Sức Khỏe'},
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 1) Filter events by search, category, and filler toggle
+    final filteredEvents = widget.events.where((e) {
+      if (_hideFiller && e.isFiller) return false;
+      if (_selectedCategory != 'ALL') {
+        final cat = e.channel?.category?.toUpperCase() ?? '';
+        final tags = e.tags.map((t) => t.toUpperCase()).toList();
+        if (cat != _selectedCategory && !tags.contains(_selectedCategory)) {
+          return false;
+        }
+      }
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        final matchTitle = e.title.toLowerCase().contains(q);
+        final matchChannel = (e.channel?.name.toLowerCase().contains(q) ?? false);
+        final matchTags = e.tags.any((t) => t.toLowerCase().contains(q));
+        if (!matchTitle && !matchChannel && !matchTags) return false;
+      }
+      return true;
+    }).toList();
+
+    // 2) Group by channel
     final groups = <String, _EpgChannelGroup>{};
-    for (final e in widget.events) {
+    for (final e in filteredEvents) {
       final channelId = e.channelId;
       final group = groups.putIfAbsent(
         channelId,
@@ -402,24 +494,90 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
       ..sort((a, b) => (groups[a]!.channel?.name ?? a)
           .compareTo(groups[b]!.channel?.name ?? b));
 
-    final visibleEvents = _hideFiller
-        ? widget.events.where((e) => !e.isFiller).toList()
-        : widget.events;
-    final totalReal = visibleEvents.where((e) => !e.isFiller).length;
-    final totalReplay = visibleEvents
-        .where((e) => e.fillerKind == 'recording-replay')
-        .length;
+    final totalEvents = filteredEvents.length;
     final totalChannels = groups.length;
-
-    if (visibleEvents.isEmpty) {
-      return _buildFilteredEmpty();
-    }
 
     return Column(
       children: [
+        // Category Filter Chips (Frontend matching)
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          color: const Color(0xFF070B12),
+          child: SizedBox(
+            height: 32,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: _categories.map((c) {
+                final key = c['key']!;
+                final label = c['label']!;
+                final isSelected = _selectedCategory == key;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = key),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF0B1320),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF16253C),
+                        ),
+                      ),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isSelected ? const Color(0xFF070B12) : const Color(0xFFCBD5E1),
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+
+        // Quick Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+          child: Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1320),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF16253C)),
+            ),
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              onChanged: (val) => setState(() => _searchQuery = val.trim()),
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm chương trình, sự kiện...',
+                hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16, color: Color(0xFF64748B)),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+        ),
+
         // 24/7 Coverage Banner
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           decoration: const BoxDecoration(
             color: Color(0xFF090F1A),
             border: Border(
@@ -439,7 +597,7 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'LỊCH PHÁT SÓNG TOÀN DIỆN // $totalChannels KÊNH',
+                      'LỊCH PHÁT SÓNG TRUYỀN HÌNH // $totalChannels KÊNH',
                       style: const TextStyle(
                         color: Color(0xFF00E5FF),
                         fontSize: 10,
@@ -483,7 +641,7 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
               ),
               const SizedBox(height: 4),
               Text(
-                '$totalReal chương trình thực · $totalReplay phát lại replay',
+                '$totalEvents chương trình · $totalChannels kênh phát sóng',
                 style: const TextStyle(
                   color: Color(0xFF64748B),
                   fontSize: 11,
@@ -491,61 +649,58 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
               ),
               const SizedBox(height: 8),
               // Channel Filter Chips
-              SizedBox(
-                height: 32,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _FilterChip(
-                      label: 'Tất cả kênh',
-                      selected: _channelFilter == null,
-                      onTap: () => setState(() => _channelFilter = null),
-                    ),
-                    for (final id in sortedGroupIds)
+              if (sortedGroupIds.isNotEmpty)
+                SizedBox(
+                  height: 32,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
                       _FilterChip(
-                        label: groups[id]!.channel?.name ?? 'Kênh',
-                        leading: groups[id]!.channel == null
-                            ? null
-                            : ChannelLogo(
-                                channel: groups[id]!.channel!,
-                                size: 18,
-                              ),
-                        selected: _channelFilter == id,
-                        onTap: () => setState(() => _channelFilter = id),
+                        label: 'Tất cả kênh',
+                        selected: _channelFilter == null,
+                        onTap: () => setState(() => _channelFilter = null),
                       ),
-                  ],
+                      for (final id in sortedGroupIds)
+                        _FilterChip(
+                          label: groups[id]!.channel?.name ?? 'Kênh',
+                          leading: groups[id]!.channel == null
+                              ? null
+                              : ChannelLogo(
+                                  channel: groups[id]!.channel!,
+                                  size: 18,
+                                ),
+                          selected: _channelFilter == id,
+                          onTap: () => setState(() => _channelFilter = id),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
 
         // Event List
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: sortedGroupIds.length,
-            itemBuilder: (context, idx) {
-              final id = sortedGroupIds[idx];
-              if (_channelFilter != null && _channelFilter != id) {
-                return const SizedBox.shrink();
-              }
-              final group = groups[id]!;
-              final visibleGroupEvents = _hideFiller
-                  ? group.events.where((e) => !e.isFiller).toList()
-                  : group.events;
-              if (visibleGroupEvents.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return _EpgChannelSection(
-                group: _EpgChannelGroup(
-                  channel: group.channel,
-                  events: visibleGroupEvents,
+          child: filteredEvents.isEmpty
+              ? _buildFilteredEmpty()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: sortedGroupIds.length,
+                  itemBuilder: (context, idx) {
+                    final id = sortedGroupIds[idx];
+                    if (_channelFilter != null && _channelFilter != id) {
+                      return const SizedBox.shrink();
+                    }
+                    final group = groups[id]!;
+                    if (group.events.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return _EpgChannelSection(
+                      group: group,
+                      selectedDate: widget.selectedDate,
+                    );
+                  },
                 ),
-                selectedDate: widget.selectedDate,
-              );
-            },
-          ),
         ),
       ],
     );
@@ -574,6 +729,9 @@ class _EpgTimelineListState extends State<_EpgTimelineList> {
           ElevatedButton(
             onPressed: () => setState(() {
               _channelFilter = null;
+              _selectedCategory = 'ALL';
+              _searchQuery = '';
+              _searchController.clear();
               _hideFiller = false;
             }),
             style: ElevatedButton.styleFrom(
@@ -691,7 +849,7 @@ class _EpgChannelSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '($realCount chương trình)',
+                '(${group.events.length} chương trình)',
                 style: const TextStyle(
                   color: Color(0xFF64748B),
                   fontSize: 11,

@@ -169,7 +169,7 @@ class DatabaseHelper {
     // `fillerKind` / `sourceRecordingId` shape is always served fresh from
     // the backend. Old payloads will deserialize but lack the filler
     // entries, leaving the grid mostly empty.
-    if (oldVersion < 3) {
+    if (oldVersion < 4) {
       await db.delete('epg_cache');
     }
   }

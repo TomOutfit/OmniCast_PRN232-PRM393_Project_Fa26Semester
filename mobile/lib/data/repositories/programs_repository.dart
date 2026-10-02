@@ -33,8 +33,11 @@ class ProgramsRepository {
   /// Returns the currently-airing live events across all channels.
   Future<List<LiveEventModel>> getLiveNow() async {
     final response = await _dioClient.get(AppEndpoints.liveNow);
-    final data = response.data['data'] as List;
-    return data
+    final raw = response.data;
+    final list = (raw is Map && raw['data'] is List)
+        ? raw['data'] as List
+        : (raw is List ? raw : <dynamic>[]);
+    return list
         .map((e) => LiveEventModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
@@ -56,7 +59,7 @@ class ProgramsRepository {
     };
 
     if (channelId != null) queryParams['channelId'] = channelId;
-    if (category != null) queryParams['category'] = category;
+    if (category != null && category != 'ALL') queryParams['category'] = category;
     if (status != null) queryParams['status'] = status;
     if (fromDate != null) queryParams['fromDate'] = fromDate.toIso8601String();
     if (toDate != null) queryParams['toDate'] = toDate.toIso8601String();
@@ -66,17 +69,20 @@ class ProgramsRepository {
       queryParameters: queryParams,
     );
 
+    final raw = response.data as Map<String, dynamic>;
     return ProgramsPage<LiveEventModel>.fromJson(
-      response.data as Map<String, dynamic>,
+      raw,
       LiveEventModel.fromJson,
     );
   }
 
   Future<LiveEventModel> getProgramById(String programId) async {
     final response = await _dioClient.get(AppEndpoints.liveEvent(programId));
-    return LiveEventModel.fromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
+    final raw = response.data;
+    final map = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : raw as Map<String, dynamic>;
+    return LiveEventModel.fromJson(map);
   }
 
   /// Continue-watching list (recordings the user has started).
@@ -94,8 +100,8 @@ class ProgramsRepository {
     );
   }
 
-  /// Scheduled programs for EPG. Uses the new `/epg/day` endpoint and
-  /// transparently falls back to the SQLite cache when offline.
+  /// Scheduled programs for EPG. Uses the `/epg/day` endpoint and
+  /// caches the real 24-hour channel schedule from the backend.
   Future<List<LiveEventModel>> getEpgSchedule({
     required DateTime date,
     String? channelId,
@@ -103,61 +109,77 @@ class ProgramsRepository {
   }) async {
     final dateKey = _ymd(date);
 
-    // 1) Always serve from cache if present and recent.
+    // 1) Serve from SQLite cache if present and non-empty.
     if (_db != null) {
-      final cached = await _db!.getEpgCachePayload(dateKey);
-      if (cached != null) {
-        final parsed = _tryDecodeEpg(cached);
-        if (parsed != null) return parsed;
-      }
+      try {
+        final cached = await _db!.getEpgCachePayload(dateKey);
+        if (cached != null) {
+          final parsed = _tryDecodeEpg(cached);
+          if (parsed != null && parsed.isNotEmpty) {
+            if (channelId != null) {
+              final filtered = parsed
+                  .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
+                  .toList();
+              if (filtered.isNotEmpty) return filtered;
+            } else if (channelIds != null && channelIds.isNotEmpty) {
+              final filtered = parsed
+                  .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
+                  .toList();
+              if (filtered.isNotEmpty) return filtered;
+            } else {
+              return parsed;
+            }
+          }
+        }
+      } catch (_) {}
     }
 
-    // 2) Hit the network.
+    // 2) Hit the real backend API.
     final queryParams = <String, dynamic>{'date': dateKey};
-    if (channelIds != null && channelIds.isNotEmpty) {
+    final uuidRegex = RegExp(r'^[0-9a-fA-F-]{36}$');
+    if (channelIds != null && channelIds.isNotEmpty && channelIds.every((id) => uuidRegex.hasMatch(id))) {
       queryParams['channelIds'] = channelIds.join(',');
-    } else if (channelId != null) {
+    } else if (channelId != null && uuidRegex.hasMatch(channelId)) {
       queryParams['channelIds'] = channelId;
     }
 
-    try {
-      final response = await _dioClient.get(
-        AppEndpoints.epgDay,
-        queryParameters: queryParams,
-      );
-      final body = response.data as Map<String, dynamic>;
-      final json = jsonEncode(body);
+    final response = await _dioClient.get(
+      AppEndpoints.epgDay,
+      queryParameters: queryParams,
+    );
+    final raw = response.data;
+    final body = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : raw as Map<String, dynamic>;
+    final list = _flattenEpg(body);
 
-      // Write to cache.
+    if (list.isNotEmpty) {
       if (_db != null) {
-        await _db!.putEpgCachePayload(dateKey: dateKey, payload: json);
+        await _db!.putEpgCachePayload(dateKey: dateKey, payload: jsonEncode(raw));
       }
-      return _flattenEpg(body);
-    } catch (_) {
-      // Last-resort: legacy endpoint (v1) for the requested day.
-      final startOfDay = DateTime(date.year, date.month, date.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-      final legacyResp = await _dioClient.get(
-        AppEndpoints.liveEvents,
-        queryParameters: {
-          'fromDate': startOfDay.toIso8601String(),
-          'toDate': endOfDay.toIso8601String(),
-          if (channelId != null) 'channelId': channelId,
-        },
-      );
-      final data = legacyResp.data['data'] as List;
-      return data
-          .map((e) => LiveEventModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      if (channelId != null) {
+        return list
+            .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
+            .toList();
+      }
+      if (channelIds != null && channelIds.isNotEmpty) {
+        return list
+            .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
+            .toList();
+      }
     }
+    return list;
   }
 
   /// Now+Next snapshot for the home/dashboard banner.
   Future<List<EpgNowNextEntry>> getEpgSnapshot() async {
     try {
       final resp = await _dioClient.get(AppEndpoints.epgSnapshot);
-      final body = resp.data as Map<String, dynamic>;
-      final channels = (body['channels'] as List? ?? []);
+      final raw = resp.data;
+      final payload = (raw is Map && raw['data'] is Map)
+          ? raw['data'] as Map<String, dynamic>
+          : (raw as Map<String, dynamic>);
+      final channels = (payload['channels'] as List? ?? []);
       return channels
           .map((c) => EpgNowNextEntry.fromJson(c as Map<String, dynamic>))
           .toList();
@@ -201,13 +223,36 @@ class ProgramsRepository {
   }
 
   List<LiveEventModel> _flattenEpg(Map<String, dynamic> body) {
-    final channels = body['channels'] as List? ?? [];
+    final payload = (body['data'] is Map<String, dynamic>)
+        ? body['data'] as Map<String, dynamic>
+        : body;
+    final channels = payload['channels'] as List? ?? [];
     final list = <LiveEventModel>[];
+    final now = DateTime.now();
+
     for (final c in channels) {
       final channel = c as Map<String, dynamic>;
+      final chId = channel['channelId']?.toString() ?? '';
+      final chName = channel['channelName']?.toString() ?? 'Kênh';
+      final chSlug = channel['channelSlug']?.toString() ?? '';
+      final chLogo = channel['channelLogoUrl']?.toString();
+      final chCat = channel['channelCategory']?.toString();
       final programs = channel['programs'] as List? ?? [];
+
       for (final p in programs) {
         final program = p as Map<String, dynamic>;
+        final start = DateTime.parse(program['startTime'] as String).toLocal();
+        final end = program['endTime'] != null
+            ? DateTime.parse(program['endTime'] as String).toLocal()
+            : null;
+
+        String status = program['status']?.toString() ?? 'SCHEDULED';
+        if (end != null && now.isAfter(start) && now.isBefore(end)) {
+          status = 'LIVE';
+        } else if (end != null && now.isAfter(end)) {
+          status = 'ENDED';
+        }
+
         list.add(LiveEventModel(
           id: program['id'] as String,
           title: program['title'] as String,
@@ -215,18 +260,16 @@ class ProgramsRepository {
           isPrivate: false,
           quality: 'AUTO',
           language: 'vi',
-          status: program['status']?.toString() ?? 'SCHEDULED',
-          scheduledAt: DateTime.parse(program['startTime'] as String),
-          endedAt: program['endTime'] != null
-              ? DateTime.parse(program['endTime'] as String)
-              : null,
+          status: status,
+          scheduledAt: start,
+          endedAt: end,
           duration: (program['durationMinutes'] as num?)?.toInt(),
           viewerCount: 0,
           peakViewers: 0,
           likeCount: 0,
           commentCount: 0,
           shareCount: 0,
-          channelId: channel['channelId'] as String,
+          channelId: chId,
           tags: (program['tags'] as List?)?.cast<String>() ?? const [],
           autoRecord: true,
           slowMode: false,
@@ -235,10 +278,11 @@ class ProgramsRepository {
           updatedAt: DateTime.now(),
           thumbnailUrl: program['thumbnailUrl'] as String?,
           channel: ChannelInfo(
-            id: channel['channelId'] as String,
-            name: channel['channelName'] as String,
-            slug: '',
-            logoUrl: channel['channelLogoUrl'] as String?,
+            id: chId,
+            name: chName,
+            slug: chSlug,
+            logoUrl: chLogo,
+            category: chCat,
           ),
           isFiller: program['isFiller'] as bool? ?? false,
           fillerKind: program['fillerKind'] as String?,

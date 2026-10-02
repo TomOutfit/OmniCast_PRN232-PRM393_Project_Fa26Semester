@@ -185,12 +185,14 @@ class ChannelInfo {
   final String name;
   final String slug;
   final String? logoUrl;
+  final String? category;
 
   ChannelInfo({
     required this.id,
     required this.name,
     required this.slug,
     this.logoUrl,
+    this.category,
   });
 
   factory ChannelInfo.fromJson(Map<String, dynamic> json) {
@@ -199,6 +201,7 @@ class ChannelInfo {
       name: json['name'] as String,
       slug: json['slug'] as String,
       logoUrl: json['logoUrl'] as String?,
+      category: json['category'] as String?,
     );
   }
 }
