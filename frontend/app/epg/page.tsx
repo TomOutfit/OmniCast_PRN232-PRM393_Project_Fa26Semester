@@ -3,7 +3,7 @@ import { EPGGrid } from '@/components/epg/epg-grid';
 
 export const metadata: Metadata = {
   title: 'Lịch Phát Sóng Điện Tử & Catch-Up 7 Ngày | OmniCast',
-  description: 'Hệ thống 12 kênh lịch phát sóng điện tử EPG 24 giờ và xem lại Catch-up 7 ngày trên OmniCast.',
+  description: 'Hệ thống 25 kênh lịch phát sóng điện tử EPG 24 giờ và xem lại Catch-up 7 ngày trên OmniCast.',
 };
 
 export default function EPGPage() {

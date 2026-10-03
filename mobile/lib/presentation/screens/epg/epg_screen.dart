@@ -930,13 +930,33 @@ class _EpgEventCard extends StatelessWidget {
                       fontFamily: 'monospace',
                     ),
                   ),
-                  if (event.duration != null) ...[
-                    const SizedBox(height: 2),
+                  if (event.endedAt != null) ...[
                     Text(
-                      _formatDuration(event.duration!),
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 10,
+                      _formatTime(event.endedAt!),
+                      style: TextStyle(
+                        color: isLive ? const Color(0xFFFCA5A5) : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                  if (event.duration != null) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E1A2B),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFF1E3A5F)),
+                      ),
+                      child: Text(
+                        _formatDuration(event.duration!),
+                        style: const TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],

@@ -6,57 +6,22 @@ import Link from 'next/link';
 import {
   Play,
   Tv,
-  Radio,
-  Sparkles,
-  Star,
   Film,
   Calendar,
   Clock,
   ChevronLeft,
   ChevronRight,
   Eye,
-  Heart,
-  Share2,
-  Volume2,
-  Flame,
-  Award,
-  Layers,
-  Search,
-  CheckCircle2,
-  Users,
-  Zap,
+  Star,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChannelLogo } from '@/components/ui/channel-logo';
-
-// 25 Official Channels Data for the VTVGo-style Channel Bar
-export const ALL_25_CHANNELS = [
-  { id: '1', slug: 'sport-1', name: 'Omni Sport 1', num: '01' },
-  { id: '2', slug: 'sport-2', name: 'Sport 2', num: '02' },
-  { id: '3', slug: 'show', name: 'Omni Show', num: '03' },
-  { id: '4', slug: 'entertain', name: 'Omni Entertain', num: '04' },
-  { id: '5', slug: 'cine', name: 'Omni Cine', num: '05' },
-  { id: '6', slug: 'drama', name: 'Omni Drama', num: '06' },
-  { id: '7', slug: 'news', name: 'News 24/7', num: '07' },
-  { id: '8', slug: 'music', name: 'Music Hits', num: '08' },
-  { id: '9', slug: 'kids', name: 'Kids Zone', num: '09' },
-  { id: '10', slug: 'tech', name: 'Omni Tech', num: '10' },
-  { id: '11', slug: 'food', name: 'Food Life', num: '11' },
-  { id: '12', slug: 'discovery', name: 'Omni Discovery', num: '12' },
-  { id: '13', slug: 'esports', name: 'Omni Esports', num: '13' },
-  { id: '14', slug: 'indie-games', name: 'Indie Games', num: '14' },
-  { id: '15', slug: 'podcast', name: 'Omni Podcast', num: '15' },
-  { id: '16', slug: 'audiobook', name: 'Audiobook', num: '16' },
-  { id: '17', slug: 'academy', name: 'Omni Academy', num: '17' },
-  { id: '18', slug: 'skill-lab', name: 'Skill Lab', num: '18' },
-  { id: '19', slug: 'wellness', name: 'Omni Wellness', num: '19' },
-  { id: '20', slug: 'fashion', name: 'Omni Fashion', num: '20' },
-  { id: '21', slug: 'travel-vn', name: 'Travel VN', num: '21' },
-  { id: '22', slug: 'travel-world', name: 'Travel World', num: '22' },
-  { id: '23', slug: 'art-design', name: 'Art & Design', num: '23' },
-  { id: '24', slug: 'business', name: 'Omni Business', num: '24' },
-  { id: '25', slug: 'health', name: 'Omni Health', num: '25' },
-];
+import { useChannels } from '@/lib/hooks/useChannels';
+import { useLiveNow, useLiveEvents, useRecordings } from '@/lib/hooks/usePrograms';
+import { getCategoryThumbnail } from '@/components/epg/epg-channels-data';
+import type { Channel } from '@/types';
 
 interface HeroSpotlightItem {
   id: string;
@@ -75,229 +40,149 @@ interface HeroSpotlightItem {
   targetHref: string;
 }
 
-const HERO_SPOTLIGHTS: HeroSpotlightItem[] = [
-  {
-    id: 'spot-1',
-    title: 'PHÁT HUY SỨC MẠNH TỔNG HỢP TRONG THAM MƯU CHIẾN LƯỢC',
-    headline: 'Hội nghị trực tiếp toàn quốc với sự tham gia của các lãnh đạo cấp cao',
-    category: 'THỜI SỰ CHÍNH TRỊ',
-    badge: 'TRỰC TIẾP 4K',
-    isLive: true,
-    channelName: 'News 24/7',
-    channelSlug: 'news',
-    viewers: '245.8K',
-    quality: '4K UHD 60FPS',
-    audio: 'DOLBY AUDIO',
-    rating: 9.8,
-    backdropUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1600&q=80',
-    targetHref: '/channels/news',
-  },
-  {
-    id: 'spot-2',
-    title: 'CHUNG KẾT UEFA CHAMPIONS LEAGUE: REAL MADRID VS MAN CITY',
-    headline: 'Đại chiến nảy lửa tranh cúp vô địch châu Âu tại SVĐ Wembley',
-    category: 'THỂ THAO ĐỈNH CAO',
-    badge: 'MULTI-CAM 4K',
-    isLive: true,
-    channelName: 'Omni Sport 1',
-    channelSlug: 'sport-1',
-    viewers: '380.2K',
-    quality: '4K 60FPS HEVC',
-    audio: 'DOLBY ATMOS 5.1',
-    rating: 9.9,
-    backdropUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1600&q=80',
-    targetHref: '/channels/sport-1',
-  },
-  {
-    id: 'spot-3',
-    title: 'SPIDER-MAN: ACROSS THE SPIDER-VERSE',
-    headline: 'Siêu phẩm hoạt hình Đa vũ trụ đoạt kỷ lục phòng vé toàn cầu',
-    category: 'BOM TẤN ĐIỆN ẢNH',
-    badge: 'ĐỘC QUYỀN 4K',
-    isLive: false,
-    channelName: 'Omni Cine 4K',
-    channelSlug: 'cine',
-    viewers: '190.5K',
-    quality: '4K DOLBY VISION',
-    audio: 'DOLBY ATMOS 7.1',
-    rating: 9.4,
-    backdropUrl: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=1600&q=80',
-    targetHref: '/channels/cine',
-  },
-  {
-    id: 'spot-4',
-    title: 'CHUNG KẾT THẾ GIỚI LMHT 2025: T1 VS GEN.G',
-    headline: 'Trận Bo5 kinh điển tranh ngôi vương Esports thế giới',
-    category: 'ESPORTS QUỐC TẾ',
-    badge: 'BO5 KỊCH TÍNH',
-    isLive: true,
-    channelName: 'Omni Esports',
-    channelSlug: 'esports',
-    viewers: '412.0K',
-    quality: '4K UHD 60FPS',
-    audio: 'DOLBY DIGITAL',
-    rating: 9.7,
-    backdropUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80',
-    targetHref: '/channels/esports',
-  },
-  {
-    id: 'spot-5',
-    title: 'PLANET EARTH III: KỲ QUAN THẾ GIỚI TỰ NHIÊN',
-    headline: 'Series tài liệu thiên nhiên ngoạn mục chất lượng 4K đỉnh cao từ BBC',
-    category: 'TÀI LIỆU DISCOVERY',
-    badge: '4K ULTRA HD',
-    isLive: false,
-    channelName: 'Omni Discovery',
-    channelSlug: 'discovery',
-    viewers: '78.4K',
-    quality: '4K 60FPS HDR',
-    audio: 'DOLBY ATMOS',
-    rating: 9.9,
-    backdropUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&q=80',
-    targetHref: '/channels/discovery',
-  },
-];
-
-const SHOWCASE_POSTERS = [
-  {
-    id: 'p-01',
-    title: 'Spider-Man: Across the Spider-Verse',
-    category: 'Điện Ảnh',
-    rating: 4.9,
-    year: 2024,
-    quality: '4K HDR',
-    audio: 'Atmos 7.1',
-    channel: 'Omni Cine',
-    poster: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/cine',
-  },
-  {
-    id: 'p-02',
-    title: 'Chung Kết UEFA Champions League 2025',
-    category: 'Thể Thao',
-    rating: 5.0,
-    year: 2025,
-    quality: '4K 60FPS',
-    audio: 'Dolby Live',
-    channel: 'Omni Sport 1',
-    poster: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/sport-1',
-  },
-  {
-    id: 'p-03',
-    title: 'Dune: Part Two (Hành Tinh Cát 2)',
-    category: 'Sci-Fi',
-    rating: 4.8,
-    year: 2024,
-    quality: '4K IMAX',
-    audio: 'Atmos 7.1',
-    channel: 'Omni Cine',
-    poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/cine',
-  },
-  {
-    id: 'p-04',
-    title: 'Chung Kết CKTG LMHT: T1 vs Gen.G',
-    category: 'Esports',
-    rating: 4.9,
-    year: 2025,
-    quality: '4K UHD',
-    audio: 'Dolby Audio',
-    channel: 'Omni Esports',
-    poster: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/esports',
-  },
-  {
-    id: 'p-05',
-    title: 'Oppenheimer (Bản Chuẩn Điện Ảnh 4K)',
-    category: 'Chính Kịch',
-    rating: 4.9,
-    year: 2023,
-    quality: '4K MASTER',
-    audio: 'Atmos 5.1',
-    channel: 'Omni Cine',
-    poster: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/cine',
-  },
-  {
-    id: 'p-06',
-    title: 'Planet Earth III: Kỳ Quan Thiên Nhiên',
-    category: 'Khám Phá',
-    rating: 4.9,
-    year: 2024,
-    quality: '4K 60FPS',
-    audio: 'Dolby Atmos',
-    channel: 'Omni Discovery',
-    poster: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/discovery',
-  },
-  {
-    id: 'p-07',
-    title: 'Cyberpunk: Edgerunners Season 2',
-    category: 'Anime',
-    rating: 4.7,
-    year: 2024,
-    quality: '1080p FHD',
-    audio: 'Stereo HD',
-    channel: 'Omni Indie Games',
-    poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/indie-games',
-  },
-  {
-    id: 'p-08',
-    title: 'MasterChef Grand Finale Season 12',
-    category: 'Show',
-    rating: 4.6,
-    year: 2024,
-    quality: '1080p FHD',
-    audio: 'Dolby 5.1',
-    channel: 'Food Life',
-    poster: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/food',
-  },
-  {
-    id: 'p-09',
-    title: 'The Batman: Hiệp Sĩ Bóng Đêm',
-    category: 'Điện Ảnh',
-    rating: 4.8,
-    year: 2023,
-    quality: '4K HDR',
-    audio: 'Atmos 5.1',
-    channel: 'Omni Cine',
-    poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/cine',
-  },
-  {
-    id: 'p-10',
-    title: 'Interstellar: Du Hành Liên Sao 4K',
-    category: 'Sci-Fi',
-    rating: 4.9,
-    year: 2024,
-    quality: '4K IMAX',
-    audio: 'Atmos 7.1',
-    channel: 'Omni Cine',
-    poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=500&q=80',
-    href: '/channels/cine',
-  },
-];
-
 export function OmniCastHomeExperience() {
+  // ── 1. DYNAMIC DATA FROM BACKEND API ──────────────────────────────────────
+  const { data: channelsData, isLoading: loadingChannels } = useChannels({
+    isActive: true,
+    limit: 100,
+  });
+
+  const channels = useMemo<Channel[]>(() => {
+    if (!channelsData) return [];
+    if (Array.isArray(channelsData)) return channelsData;
+    if (Array.isArray((channelsData as any).data)) return (channelsData as any).data;
+    if (Array.isArray((channelsData as any).items)) return (channelsData as any).items;
+    return [];
+  }, [channelsData]);
+
+  const { data: liveNowList, isLoading: loadingLive } = useLiveNow();
+  const { data: liveEventsData } = useLiveEvents({ limit: 12 });
+  const { data: recordingsData, isLoading: loadingRecs } = useRecordings({
+    limit: 10,
+    isFeatured: false,
+  });
+
+  // ── 2. DYNAMIC HERO SPOTLIGHTS ───────────────────────────────────────────
+  const heroSpotlights = useMemo<HeroSpotlightItem[]>(() => {
+    const liveItems = Array.isArray(liveNowList) ? liveNowList : (liveNowList as any)?.data ?? [];
+    const scheduledItems = liveEventsData?.data ?? [];
+    const combined = [...liveItems, ...scheduledItems];
+
+    if (combined.length > 0) {
+      return combined.slice(0, 8).map((event: any, idx) => {
+        const isLive = event.status === 'LIVE';
+        const channelSlug = event.channel?.slug || 'sport-1';
+        const channelName = event.channel?.name || 'OmniCast';
+        const backdrop =
+          event.thumbnailUrl ||
+          getCategoryThumbnail(event.channel?.category || 'SPORTS', idx);
+        const viewers = event.viewerCount
+          ? event.viewerCount >= 1000
+            ? `${(event.viewerCount / 1000).toFixed(1)}K`
+            : `${event.viewerCount}`
+          : `${(24 + idx * 9).toFixed(1)}K`;
+
+        return {
+          id: event.id || `spot-${idx}`,
+          title: event.title,
+          headline:
+            event.description ||
+            `${event.title} phát sóng trực tiếp chất lượng cao trên ${channelName}`,
+          category: (event.channel?.category || 'TRUYỀN HÌNH').toUpperCase(),
+          badge: isLive ? 'TRỰC TIẾP' : 'SẮP PHÁT SÓNG',
+          isLive,
+          channelName,
+          channelSlug,
+          viewers,
+          quality: '4K UHD 60FPS',
+          audio: 'DOLBY AUDIO',
+          rating: 9.8,
+          backdropUrl: backdrop,
+          targetHref: `/channels/${channelSlug}`,
+        };
+      });
+    }
+
+    if (channels.length > 0) {
+      return channels.slice(0, 6).map((ch, idx) => ({
+        id: `spot-${ch.id}`,
+        title: `${ch.name.toUpperCase()} - ${ch.tagline?.toUpperCase() || 'PHÁT SÓNG 24/7'}`,
+        headline: ch.description || `Kênh truyền hình trực tuyến ${ch.name} chất lượng cao 4K HDR`,
+        category: (ch.category || 'LIVE').toUpperCase(),
+        badge: 'TRỰC TIẾP 24/7',
+        isLive: true,
+        channelName: ch.name,
+        channelSlug: ch.slug,
+        viewers: ch.totalViews ? `${(ch.totalViews / 1000000).toFixed(1)}M` : '35.0K',
+        quality: '4K 60FPS',
+        audio: 'DOLBY 5.1',
+        rating: 9.9,
+        backdropUrl: ch.badgeUrl || ch.logoUrl || getCategoryThumbnail(ch.category, idx),
+        targetHref: `/channels/${ch.slug}`,
+      }));
+    }
+
+    return [];
+  }, [liveNowList, liveEventsData, channels]);
+
+interface ShowcasePosterItem {
+  id: string;
+  title: string;
+  category: string;
+  rating: number;
+  year: number;
+  quality: string;
+  audio: string;
+  channel: string;
+  poster: string;
+  href: string;
+}
+
+  // ── 3. DYNAMIC SHOWCASE VOD RECORDINGS ────────────────────────────────────
+  const showcasePosters = useMemo<ShowcasePosterItem[]>(() => {
+    const list = Array.isArray(recordingsData)
+      ? recordingsData
+      : (recordingsData as any)?.data ?? [];
+    if (list.length > 0) {
+      return list.slice(0, 10).map((r: any, idx: number) => {
+        const year = r.publishedAt ? new Date(r.publishedAt).getFullYear() : 2026;
+        const channelName = r.channel?.name || 'OmniCast VOD';
+        return {
+          id: r.id,
+          title: r.title,
+          category: r.category || 'VOD',
+          rating: 4.9,
+          year,
+          quality: '4K HDR',
+          audio: 'Dolby Atmos',
+          channel: channelName,
+          poster: r.thumbnailUrl || getCategoryThumbnail(r.category || 'CINE', idx),
+          href: `/programs/recording/${r.id}`,
+        };
+      });
+    }
+    return [];
+  }, [recordingsData]);
+
+  // ── 4. CAROUSEL SLIDE STATE ───────────────────────────────────────────────
   const [activeSpotlightIdx, setActiveSpotlightIdx] = useState(0);
   const [isAutoSlide, setIsAutoSlide] = useState(true);
   const channelScrollRef = useRef<HTMLDivElement>(null);
 
-  const currentHero = HERO_SPOTLIGHTS[activeSpotlightIdx];
-  const prevHero = HERO_SPOTLIGHTS[(activeSpotlightIdx - 1 + HERO_SPOTLIGHTS.length) % HERO_SPOTLIGHTS.length];
-  const nextHero = HERO_SPOTLIGHTS[(activeSpotlightIdx + 1) % HERO_SPOTLIGHTS.length];
+  const heroLen = heroSpotlights.length;
+  const safeIdx = heroLen > 0 ? activeSpotlightIdx % heroLen : 0;
+  const currentHero = heroLen > 0 ? heroSpotlights[safeIdx] : null;
+  const prevHero = heroLen > 0 ? heroSpotlights[(safeIdx - 1 + heroLen) % heroLen] : null;
+  const nextHero = heroLen > 0 ? heroSpotlights[(safeIdx + 1) % heroLen] : null;
 
   // Auto rotate hero carousel every 8 seconds
   useEffect(() => {
-    if (!isAutoSlide) return;
+    if (!isAutoSlide || heroLen <= 1) return;
     const interval = setInterval(() => {
-      setActiveSpotlightIdx((prev) => (prev + 1) % HERO_SPOTLIGHTS.length);
+      setActiveSpotlightIdx((prev) => (prev + 1) % heroLen);
     }, 8000);
     return () => clearInterval(interval);
-  }, [isAutoSlide]);
+  }, [isAutoSlide, heroLen]);
 
   const handleScrollChannels = (dir: 'left' | 'right') => {
     if (channelScrollRef.current) {
@@ -317,154 +202,167 @@ export function OmniCastHomeExperience() {
 
         <div className="max-w-[1720px] mx-auto px-4 lg:px-8 relative z-10">
           
-          <div className="relative flex items-center justify-center min-h-[380px] md:min-h-[480px] lg:min-h-[560px]">
-            
-            {/* Left Flanking 3D Angled Card (VTVGo Style) */}
-            <div
-              onClick={() => {
-                setIsAutoSlide(false);
-                setActiveSpotlightIdx((p) => (p === 0 ? HERO_SPOTLIGHTS.length - 1 : p - 1));
-              }}
-              className="hidden lg:block absolute left-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 -translate-x-4 rotate-y-12 scale-90"
-              style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(18deg) scale(0.88)' }}
-            >
-              <Image
-                src={prevHero.backdropUrl}
-                alt={prevHero.title}
-                fill
-                unoptimized
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <span className="text-[10px] font-black text-cyan-400 uppercase">{prevHero.channelName}</span>
-                <h4 className="text-xs font-black text-white line-clamp-1">{prevHero.title}</h4>
-              </div>
+          {loadingLive && !currentHero ? (
+            <div className="w-full aspect-[16/9] max-h-[520px] rounded-3xl bg-[#09111e] border border-[#16253c] flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+              <span className="text-xs font-mono text-cyan-300">Đang tải luồng sự kiện trực tiếp...</span>
             </div>
-
-            {/* Center Main Spotlight Stage Card */}
-            <div className="relative w-full lg:w-[68%] rounded-3xl overflow-hidden bg-[#0a111c] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] aspect-[16/9] z-20 group">
+          ) : currentHero ? (
+            <div className="relative flex items-center justify-center min-h-[380px] md:min-h-[480px] lg:min-h-[560px]">
               
-              <Image
-                src={currentHero.backdropUrl}
-                alt={currentHero.title}
-                fill
-                unoptimized
-                priority
-                className="object-cover object-center group-hover:scale-102 transition-transform duration-700"
-              />
-
-              {/* Gradient Vignette Overlays */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060910] via-black/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#060910]/90 via-[#060910]/40 to-transparent w-full md:w-3/4" />
-
-              {/* Center Play Button Overlay */}
-              <Link
-                href={currentHero.targetHref}
-                className="absolute inset-0 flex items-center justify-center z-25 group/play"
-              >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600/90 group-hover/play:bg-red-500 text-white flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.7)] group-hover/play:scale-110 transition-transform">
-                  <Play className="w-7 h-7 md:w-9 md:h-9 fill-current ml-1" />
+              {/* Left Flanking 3D Angled Card (VTVGo Style) */}
+              {prevHero && (
+                <div
+                  onClick={() => {
+                    setIsAutoSlide(false);
+                    setActiveSpotlightIdx((p) => (p === 0 ? heroLen - 1 : p - 1));
+                  }}
+                  className="hidden lg:block absolute left-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 -translate-x-4 rotate-y-12 scale-90"
+                  style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(18deg) scale(0.88)' }}
+                >
+                  <Image
+                    src={prevHero.backdropUrl}
+                    alt={prevHero.title}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase">{prevHero.channelName}</span>
+                    <h4 className="text-xs font-black text-white line-clamp-1">{prevHero.title}</h4>
+                  </div>
                 </div>
-              </Link>
+              )}
 
-              {/* VTVGo-Style Lower Third Headline Banner */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-30 flex flex-col justify-end space-y-2">
+              {/* Center Main Spotlight Stage Card */}
+              <div className="relative w-full lg:w-[68%] rounded-3xl overflow-hidden bg-[#0a111c] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] aspect-[16/9] z-20 group">
                 
-                {/* Channel & Live Badge */}
-                <div className="flex items-center gap-2">
-                  {currentHero.isLive && (
-                    <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-red-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      LIVE
+                <Image
+                  src={currentHero.backdropUrl}
+                  alt={currentHero.title}
+                  fill
+                  unoptimized
+                  priority
+                  className="object-cover object-center group-hover:scale-102 transition-transform duration-700"
+                />
+
+                {/* Gradient Vignette Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060910] via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#060910]/90 via-[#060910]/40 to-transparent w-full md:w-3/4" />
+
+                {/* Center Play Button Overlay */}
+                <Link
+                  href={currentHero.targetHref}
+                  className="absolute inset-0 flex items-center justify-center z-25 group/play"
+                >
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600/90 group-hover/play:bg-red-500 text-white flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.7)] group-hover/play:scale-110 transition-transform">
+                    <Play className="w-7 h-7 md:w-9 md:h-9 fill-current ml-1" />
+                  </div>
+                </Link>
+
+                {/* VTVGo-Style Lower Third Headline Banner */}
+                <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-30 flex flex-col justify-end space-y-2">
+                  
+                  {/* Channel & Live Badge */}
+                  <div className="flex items-center gap-2">
+                    {currentHero.isLive && (
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-red-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        LIVE
+                      </span>
+                    )}
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-black/70 backdrop-blur-md text-cyan-300 border border-cyan-500/30">
+                      {currentHero.channelName}
                     </span>
-                  )}
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-black/70 backdrop-blur-md text-cyan-300 border border-cyan-500/30">
-                    {currentHero.channelName}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-black/60">
-                    {currentHero.quality}
-                  </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-black/60">
+                      {currentHero.quality}
+                    </span>
+                  </div>
+
+                  {/* Main White Lower-Third Box (VTVGo Signature) */}
+                  <div className="bg-white/95 text-black px-4 py-2.5 rounded-xl shadow-2xl max-w-2xl">
+                    <h2 className="text-sm md:text-lg font-black tracking-tight uppercase leading-snug line-clamp-2">
+                      {currentHero.title}
+                    </h2>
+                    <p className="text-[11px] md:text-xs text-slate-700 line-clamp-1 mt-0.5">
+                      {currentHero.headline}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Main White Lower-Third Box (VTVGo Signature) */}
-                <div className="bg-white/95 text-black px-4 py-2.5 rounded-xl shadow-2xl max-w-2xl">
-                  <h2 className="text-sm md:text-lg font-black tracking-tight uppercase leading-snug line-clamp-2">
-                    {currentHero.title}
-                  </h2>
-                  <p className="text-[11px] md:text-xs text-slate-700 line-clamp-1 mt-0.5">
-                    {currentHero.headline}
-                  </p>
+                {/* Left / Right Carousel Controls */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsAutoSlide(false);
+                    setActiveSpotlightIdx((p) => (p === 0 ? heroLen - 1 : p - 1));
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsAutoSlide(false);
+                    setActiveSpotlightIdx((p) => (p + 1) % heroLen);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Right Flanking 3D Angled Card (VTVGo Style) */}
+              {nextHero && (
+                <div
+                  onClick={() => {
+                    setIsAutoSlide(false);
+                    setActiveSpotlightIdx((p) => (p + 1) % heroLen);
+                  }}
+                  className="hidden lg:block absolute right-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 translate-x-4 -rotate-y-12 scale-90"
+                  style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(-18deg) scale(0.88)' }}
+                >
+                  <Image
+                    src={nextHero.backdropUrl}
+                    alt={nextHero.title}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase">{nextHero.channelName}</span>
+                    <h4 className="text-xs font-black text-white line-clamp-1">{nextHero.title}</h4>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Left / Right Carousel Controls */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsAutoSlide(false);
-                  setActiveSpotlightIdx((p) => (p === 0 ? HERO_SPOTLIGHTS.length - 1 : p - 1));
-                }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsAutoSlide(false);
-                  setActiveSpotlightIdx((p) => (p + 1) % HERO_SPOTLIGHTS.length);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
-
-            {/* Right Flanking 3D Angled Card (VTVGo Style) */}
-            <div
-              onClick={() => {
-                setIsAutoSlide(false);
-                setActiveSpotlightIdx((p) => (p + 1) % HERO_SPOTLIGHTS.length);
-              }}
-              className="hidden lg:block absolute right-0 w-[24%] h-[78%] rounded-3xl overflow-hidden border border-white/10 opacity-40 hover:opacity-75 transition-all duration-500 cursor-pointer shadow-2xl z-10 translate-x-4 -rotate-y-12 scale-90"
-              style={{ perspective: '1000px', transform: 'perspective(1000px) rotateY(-18deg) scale(0.88)' }}
-            >
-              <Image
-                src={nextHero.backdropUrl}
-                alt={nextHero.title}
-                fill
-                unoptimized
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <span className="text-[10px] font-black text-cyan-400 uppercase">{nextHero.channelName}</span>
-                <h4 className="text-xs font-black text-white line-clamp-1">{nextHero.title}</h4>
-              </div>
-            </div>
-
-          </div>
+          ) : null}
 
           {/* Centered Dots Indicator (VTVGo Style) */}
-          <div className="flex items-center justify-center gap-1.5 mt-3">
-            {HERO_SPOTLIGHTS.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setIsAutoSlide(false);
-                  setActiveSpotlightIdx(idx);
-                }}
-                className={cn(
-                  'h-1.5 rounded-full transition-all cursor-pointer',
-                  activeSpotlightIdx === idx
-                    ? 'w-6 bg-white shadow-[0_0_8px_white]'
-                    : 'w-1.5 bg-slate-600 hover:bg-slate-400'
-                )}
-              />
-            ))}
-          </div>
+          {heroLen > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mt-3">
+              {heroSpotlights.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setIsAutoSlide(false);
+                    setActiveSpotlightIdx(idx);
+                  }}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all cursor-pointer',
+                    activeSpotlightIdx % heroLen === idx
+                      ? 'w-6 bg-white shadow-[0_0_8px_white]'
+                      : 'w-1.5 bg-slate-600 hover:bg-slate-400'
+                  )}
+                />
+              ))}
+            </div>
+          )}
 
         </div>
       </section>
@@ -473,9 +371,16 @@ export function OmniCastHomeExperience() {
       <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-3">
         
         <div className="flex items-center justify-between">
-          <h3 className="text-sm md:text-base font-black text-white tracking-wide">
-            Kênh truyền hình
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm md:text-base font-black text-white tracking-wide">
+              Kênh truyền hình trực tuyến
+            </h3>
+            {channels.length > 0 && (
+              <span className="text-xs font-mono text-cyan-400 px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-800">
+                {channels.length} Kênh
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5">
             <button
@@ -506,39 +411,50 @@ export function OmniCastHomeExperience() {
             ref={channelScrollRef}
             className="flex items-center gap-3 overflow-x-auto scrollbar-none"
           >
-            <div className="animate-ticker-marquee flex items-center gap-3">
-              {/* First Set of 25 Channel Cards */}
-              {ALL_25_CHANNELS.map((ch) => (
-                <Link
-                  key={ch.slug}
-                  href={`/channels/${ch.slug}`}
-                  className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
-                >
-                  <ChannelLogo
-                    slug={ch.slug}
-                    name={ch.name}
-                    size="md"
-                    className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
+            {loadingChannels && channels.length === 0 ? (
+              <div className="flex items-center gap-3 py-2">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] border border-[#18283e] animate-pulse"
                   />
-                </Link>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <div className="animate-ticker-marquee flex items-center gap-3">
+                {/* First Set of Channels */}
+                {channels.map((ch) => (
+                  <Link
+                    key={ch.id}
+                    href={`/channels/${ch.slug}`}
+                    className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
+                  >
+                    <ChannelLogo
+                      slug={ch.slug}
+                      name={ch.name}
+                      size="md"
+                      className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
+                    />
+                  </Link>
+                ))}
 
-              {/* Second Set of 25 Channel Cards for Infinite Seamless Loop */}
-              {ALL_25_CHANNELS.map((ch) => (
-                <Link
-                  key={`loop-${ch.slug}`}
-                  href={`/channels/${ch.slug}`}
-                  className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
-                >
-                  <ChannelLogo
-                    slug={ch.slug}
-                    name={ch.name}
-                    size="md"
-                    className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
-                  />
-                </Link>
-              ))}
-            </div>
+                {/* Second Set of Channels for Infinite Seamless Loop */}
+                {channels.map((ch) => (
+                  <Link
+                    key={`loop-${ch.id}`}
+                    href={`/channels/${ch.slug}`}
+                    className="flex-shrink-0 w-24 h-12 md:w-28 md:h-14 rounded-2xl bg-[#0b1320] hover:bg-[#121f33] border border-[#18283e] hover:border-cyan-400/80 p-2 flex items-center justify-center shadow-lg transition-all duration-300 group/card hover:scale-105 hover:shadow-[0_0_15px_rgba(0,242,254,0.3)] cursor-pointer"
+                  >
+                    <ChannelLogo
+                      slug={ch.slug}
+                      name={ch.name}
+                      size="md"
+                      className="w-full h-full object-contain pointer-events-none group-hover/card:scale-110 transition-transform"
+                    />
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -550,10 +466,10 @@ export function OmniCastHomeExperience() {
           <div>
             <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2">
               <Film className="w-5 h-5 text-cyan-400" />
-              Kho Nội Dung & Sự Kiện Nổi Bật
+              Kho Nội Dung & Bản Ghi VOD
             </h2>
             <p className="text-xs text-slate-400">
-              Tuyển tập phim chiếu rạp, trận cầu đỉnh cao và show truyền hình chất lượng 4K HDR
+              Tuyển tập phim chiếu rạp, trận cầu đỉnh cao và show truyền hình phát lại từ thư viện OmniCast
             </p>
           </div>
 
@@ -567,61 +483,70 @@ export function OmniCastHomeExperience() {
 
         {/* 5-Column Vertical Poster Showcase Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-          {SHOWCASE_POSTERS.map((item) => (
-            <div
-              key={item.id}
-              className="group relative rounded-2xl overflow-hidden bg-[#0a111d] border border-[#162338] hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(0,242,254,0.25)] transition-all duration-300 flex flex-col"
-            >
-              <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
-                <Image
-                  src={item.poster}
-                  alt={item.title}
-                  fill
-                  unoptimized
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+          {loadingRecs && showcasePosters.length === 0 ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[2/3] w-full rounded-2xl bg-[#09111e] border border-[#16253c] animate-pulse"
+              />
+            ))
+          ) : (
+            showcasePosters.map((item) => (
+              <div
+                key={item.id}
+                className="group relative rounded-2xl overflow-hidden bg-[#0a111d] border border-[#162338] hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(0,242,254,0.25)] transition-all duration-300 flex flex-col"
+              >
+                <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
+                  <Image
+                    src={item.poster}
+                    alt={item.title}
+                    fill
+                    unoptimized
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
 
-                <div className="absolute top-2 left-2 z-10">
-                  <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
-                    {item.quality}
-                  </span>
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
+                      {item.quality}
+                    </span>
+                  </div>
+
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
+                    <Star className="w-2.5 h-2.5 fill-amber-400" />
+                    {item.rating}
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
+                    <Link
+                      href={item.href}
+                      className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.5)] transition-transform group-hover:scale-105 cursor-pointer"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      XEM NGAY
+                    </Link>
+                    <div className="text-[10px] text-center text-slate-300 font-medium">
+                      {item.audio} • {item.channel}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                  <Star className="w-2.5 h-2.5 fill-amber-400" />
-                  {item.rating}
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
-                  <Link
-                    href={item.href}
-                    className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.5)] transition-transform group-hover:scale-105 cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    XEM NGAY
-                  </Link>
-                  <div className="text-[10px] text-center text-slate-300 font-medium">
-                    {item.audio} • {item.channel}
+                <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
+                  <div>
+                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                      {item.category}
+                    </span>
+                    <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-[#131f32]">
+                    <span>{item.year}</span>
+                    <span className="text-slate-400 font-bold">{item.channel}</span>
                   </div>
                 </div>
               </div>
-
-              <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
-                <div>
-                  <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
-                    {item.category}
-                  </span>
-                  <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
-                    {item.title}
-                  </h3>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-[#131f32]">
-                  <span>{item.year}</span>
-                  <span className="text-slate-400 font-bold">{item.channel}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
@@ -636,10 +561,10 @@ export function OmniCastHomeExperience() {
               </span>
             </div>
             <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
-              Khung Giờ Vàng Tối Nay (18:00 - 22:00) Trên 25 Kênh
+              Khung Giờ Vàng Toàn Hệ Thống Trên OmniCast
             </h3>
             <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              Dễ dàng tra cứu lịch thi đấu thể thao, các tập phim mới nhất và sử dụng tính năng xem lại trong 7 ngày với đầy đủ thuyết minh & phụ đề.
+              Dễ dàng tra cứu lịch thi đấu thể thao, các tập phim mới nhất và sử dụng tính năng xem lại trong 7 ngày từ hệ thống API đồng bộ hóa thời gian thực.
             </p>
           </div>
 

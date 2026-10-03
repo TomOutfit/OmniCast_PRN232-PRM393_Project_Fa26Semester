@@ -10,7 +10,7 @@ interface FooterLinkItem {
 const footerLinks: Record<'live_epg' | 'features' | 'company' | 'legal', FooterLinkItem[]> = {
   live_epg: [
     { name: 'Lịch Phát Sóng EPG 24h', href: '/epg' },
-    { name: 'Danh Sách 12 Kênh Live', href: '/channels' },
+    { name: 'Danh Sách 25 Kênh Live', href: '/channels' },
     { name: 'Catch-Up Xem Lại 7 Ngày', href: '/epg' },
     { name: 'Kho Bản Ghi Cloud VOD', href: '/recordings' },
   ],
