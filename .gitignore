@@ -58,4 +58,9 @@ playwright/
 test-results/
 playwright-report/
 
+# Test outputs & reports
+*-results*.json
+reports/
+coverage/
+
 
