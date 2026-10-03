@@ -62,7 +62,7 @@ export default function SearchPage() {
             
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#101b2c] border border-cyan-500/30 text-xs font-bold text-cyan-400">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>TÌM KIẾM THÔNG MINH // TOÀN BỘ 12 KÊNH & VOD</span>
+              <span>TÌM KIẾM THÔNG MINH // TOÀN BỘ 25 KÊNH & VOD</span>
             </div>
 
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
@@ -76,7 +76,7 @@ export default function SearchPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Nhập tên đội bóng, giải đấu Ngoại Hạng Anh, phim chiếu rạp..."
+                placeholder="Nhập tên kênh, đội bóng, giải đấu Ngoại Hạng Anh, phim chiếu rạp..."
                 className="w-full pl-12 pr-12 py-4 rounded-2xl bg-[#0b1422] border-2 border-[#1c2e47] focus:border-cyan-400 text-sm text-white placeholder:text-slate-500 shadow-[0_0_25px_rgba(0,0,0,0.6)] focus:outline-none transition-all"
                 autoFocus
               />
@@ -93,7 +93,7 @@ export default function SearchPage() {
             {/* Popular Quick Searches */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-slate-400">
               <span className="font-bold text-slate-500">Gợi ý tìm kiếm:</span>
-              {['Champions League', 'Manchester City', 'Dune 2', 'Nữ Hoàng Nước Mắt', 'F1 Monaco'].map((tag) => (
+              {['Omni Sport', 'Champions League', 'Cine', 'Dune 2', 'Omni Esports', 'News 24/7'].map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setSearchQuery(tag)}
@@ -117,7 +117,7 @@ export default function SearchPage() {
           <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
             <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
             <h3 className="text-base font-bold text-white mb-1">Hãy nhập từ khóa để bắt đầu tìm kiếm</h3>
-            <p className="text-xs text-slate-400">Hệ thống sẽ tự động quét qua toàn bộ 12 kênh trực tiếp và kho bản ghi VOD 4K.</p>
+            <p className="text-xs text-slate-400">Hệ thống sẽ tự động quét qua toàn bộ 25 kênh truyền hình trực tiếp và kho bản ghi VOD 4K.</p>
           </div>
         ) : total === 0 ? (
           <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
@@ -127,6 +127,41 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Matching Channels */}
+            {channels.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <Tv className="w-4 h-4 text-cyan-400" />
+                  Kênh Truyền Hình Phù Hợp ({channels.length})
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {channels.map((ch) => (
+                    <Link
+                      key={ch.id}
+                      href={`/channels/${ch.slug}`}
+                      className="group p-4 rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 transition-all flex items-center gap-3.5 shadow-lg"
+                    >
+                      <ChannelLogo slug={ch.slug} name={ch.name} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
+                          <span className="text-[10px] font-bold uppercase text-cyan-400 truncate">
+                            {ch.category || 'LIVE TV'}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-black text-white group-hover:text-cyan-300 transition-colors truncate">
+                          {ch.name}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                          {ch.tagline || `${ch.followerCount ?? 0} người theo dõi`}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Live & Upcoming Events */}
             {liveEvents.length > 0 && (
               <div className="space-y-4">

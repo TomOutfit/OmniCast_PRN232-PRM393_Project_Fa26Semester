@@ -89,9 +89,9 @@ export default function WatchlistPage() {
     setData((prev) => {
       if (!prev) return prev;
       return {
-        upcoming: prev.upcoming.filter((i) => i.id !== id),
-        live: prev.live.filter((i) => i.id !== id),
-        past: prev.past.filter((i) => i.id !== id),
+        upcoming: (prev.upcoming || []).filter((i) => i.id !== id),
+        live: (prev.live || []).filter((i) => i.id !== id),
+        past: (prev.past || []).filter((i) => i.id !== id),
       };
     });
     try {
@@ -192,46 +192,53 @@ export default function WatchlistPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-4 shadow-xl transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-bold text-cyan-400 uppercase">
-                      {item.program.channel?.name || 'Kênh OmniCast'}
-                    </span>
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      title="Xóa khỏi danh sách"
+            {items.map((item) => {
+              const program = item.program;
+              const channel = program?.channel;
+              const targetProgramId = item.programId || program?.id;
+              return (
+                <div
+                  key={item.id}
+                  className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-4 shadow-xl transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="text-[10px] font-bold text-cyan-400 uppercase truncate">
+                        {channel?.name || 'OmniCast Network'}
+                      </span>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Xóa khỏi danh sách"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                      {program?.title || 'Chương trình phát sóng'}
+                    </h3>
+
+                    {program?.scheduledAt && (
+                      <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                        <Clock className="w-3 h-3 text-slate-500" />
+                        <span>{formatDateTime(program.scheduledAt)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/5">
+                    <Link
+                      href={targetProgramId ? `/programs/${targetProgramId}` : `/channels/${channel?.slug || 'sport-1'}`}
+                      className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)] transition-transform hover:scale-102"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
-                    {item.program.title}
-                  </h3>
-
-                  <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    <span>{formatDateTime(item.program.scheduledAt)}</span>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      Xem Ngay
+                    </Link>
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-white/5">
-                  <Link
-                    href={`/programs/${item.programId}`}
-                    className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)]"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    Xem Ngay
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

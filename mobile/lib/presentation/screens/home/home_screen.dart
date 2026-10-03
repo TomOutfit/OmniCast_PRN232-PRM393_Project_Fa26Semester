@@ -6,12 +6,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
+import '../../../logic/recordings/recordings_bloc.dart';
 import '../../../core/constants/program_categories.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
+import '../../../data/models/recording_model.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
@@ -56,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _loadData() {
     context.read<ChannelsBloc>().add(const LoadChannels());
     context.read<ProgramsBloc>().add(LoadLiveNow());
+    context.read<RecordingsBloc>().add(const LoadRecordings(limit: 10));
   }
 
   Future<void> _onRefresh() async {
@@ -402,6 +406,62 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
 
+              // ── KHO BẢN GHI CLOUD DVR & VOD ─────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  child: _sectionHeader(
+                    icon: Icons.video_library_rounded,
+                    iconColor: const Color(0xFF38BDF8),
+                    title: 'KHO BẢN GHI CLOUD DVR & VOD',
+                    trailing: TextButton.icon(
+                      onPressed: () => context.push('/recordings'),
+                      icon: const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Color(0xFF00E5FF),
+                      ),
+                      label: const Text(
+                        'Xem tất cả',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: BlocBuilder<RecordingsBloc, RecordingsState>(
+                  builder: (context, state) {
+                    if (state is RecordingsLoading && state.previous.isEmpty) {
+                      return const _LoadingRail(height: 200);
+                    }
+                    final list = state is RecordingsLoaded
+                        ? state.recordings
+                        : (state is RecordingsLoading ? state.previous : <RecordingModel>[]);
+                    if (list.isEmpty) {
+                      return _emptyState(
+                        icon: Icons.video_library_outlined,
+                        text: 'Chưa có bản ghi nào sẵn sàng.',
+                      );
+                    }
+                    return _recordingsRail(list.take(8).toList());
+                  },
+                ),
+              ),
+
+              // ── LỊCH KHUNG GIỜ VÀNG EPG PREVIEW BANNER ──────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                  child: _buildEpgPrimeTimeBanner(context),
+                ),
+              ),
+
               // ── DANH MỤC TRUYỀN HÌNH (19 CATEGORIES) ───────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -578,6 +638,98 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _recordingsRail(List<RecordingModel> recordings) {
+    return SizedBox(
+      height: 205,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: recordings.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = recordings[index];
+          return _RecordingRailCard(recording: item);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEpgPrimeTimeBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF09111F), Color(0xFF0D1B30), Color(0xFF09111F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF1E3A5F)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.calendar_month_rounded, color: Color(0xFF00E5FF), size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'LỊCH PHÁT SÓNG ĐIỆN TỬ & CATCH-UP 7 NGÀY',
+                  style: TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Khung Giờ Vàng Toàn Hệ Thống',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Lịch phát sóng đồng bộ trực tiếp từ Backend API với thời lượng linh hoạt tự do theo từng chương trình phát sóng.',
+            style: TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/epg'),
+              icon: const Icon(Icons.calendar_today_rounded, size: 16),
+              label: const Text(
+                'Xem Lịch Phát Sóng EPG',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00E5FF),
+                foregroundColor: const Color(0xFF070B12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -772,6 +924,149 @@ class _CategoryTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecordingRailCard extends StatelessWidget {
+  final RecordingModel recording;
+
+  const _RecordingRailCard({required this.recording});
+
+  @override
+  Widget build(BuildContext context) {
+    final qualityStr = recording.quality ?? 'HD';
+    final durationMin = recording.duration > 0 ? recording.duration ~/ 60 : 45;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.push('/recording/${recording.id}'),
+        child: Container(
+          width: 140,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B1320),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF16253C)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Poster / Thumbnail
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (recording.thumbnailUrl != null)
+                      CachedNetworkImage(
+                        imageUrl: recording.thumbnailUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) =>
+                            const ColoredBox(color: Color(0xFF121E30)),
+                        errorWidget: (_, __, ___) =>
+                            const ColoredBox(color: Color(0xFF121E30)),
+                      )
+                    else
+                      const ColoredBox(color: Color(0xFF121E30)),
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E5FF),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          qualityStr,
+                          style: const TextStyle(
+                            color: Color(0xFF070B12),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${durationMin}p',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Color(0xFF00E5FF),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Meta
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      recording.channel?.name ?? 'OmniCast',
+                      style: const TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      recording.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],
