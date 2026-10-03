@@ -168,7 +168,7 @@ export default function ChannelDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Live Broadcast Stream Player */}
-            {liveEvent && (
+            {liveEvent ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -185,6 +185,41 @@ export default function ChannelDetailPage() {
                     poster={liveEvent.thumbnailUrl || channel.bannerUrl || undefined}
                     className="rounded-2xl"
                   />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+                    <span className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono">
+                      LUỒNG PHÁT SÓNG TIÊU CHUẨN // ON-AIR STANDBY
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 bg-[#0d1624] px-2 py-0.5 rounded border border-[#18273c]">
+                    SẴN SÀNG 24/7
+                  </span>
+                </div>
+                <div className="rounded-2xl overflow-hidden bg-black border border-[#16253c] shadow-2xl relative aspect-video flex flex-col items-center justify-center text-center p-6 bg-gradient-to-b from-[#0b1424] to-[#040810]">
+                  <ChannelLogo slug={channel.slug} name={channel.name} size="lg" className="mb-4 shadow-[0_0_20px_rgba(0,242,254,0.3)]" />
+                  <h3 className="text-lg font-black text-white mb-1">{channel.name}</h3>
+                  <p className="text-xs text-slate-400 max-w-md mb-4">
+                    Kênh đang trong khung giờ phát sóng luân phiên EPG 24/7. Bạn có thể theo dõi lịch trình sắp tới hoặc chọn bản ghi VOD chất lượng 4K.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/epg"
+                      className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black shadow-[0_0_12px_rgba(0,242,254,0.3)] transition-transform hover:scale-105"
+                    >
+                      Lịch Phát Sóng EPG
+                    </Link>
+                    <Link
+                      href="/recordings"
+                      className="px-4 py-2 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30"
+                    >
+                      Kho Bản Ghi VOD
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
