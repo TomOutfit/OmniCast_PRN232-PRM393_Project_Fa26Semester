@@ -338,7 +338,27 @@ export function EPGGrid() {
                   </p>
                 </div>
               ) : (
-                filteredChannels.map((ch) => (
+                <>
+                  {/* 24-Hour Timeline Ruler Header Bar (00:00 -> 24:00) */}
+                  <div className="flex items-center gap-3 pb-2 border-b border-[#142236]/80 text-[11px] font-mono text-slate-400">
+                    <div className="flex-shrink-0 w-44 md:w-52 px-3 text-cyan-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      LỊCH 0:00 - 24:00
+                    </div>
+                    <div className="flex-1 flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+                      {Array.from({ length: 25 }).map((_, h) => (
+                        <div
+                          key={h}
+                          className="flex-shrink-0 text-center py-1 px-2.5 rounded-lg bg-[#0b1320] border border-[#16253c] text-cyan-300 font-mono text-[10px] font-bold shadow-sm"
+                          style={{ minWidth: '78px' }}
+                        >
+                          {String(h).padStart(2, '0')}:00
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {filteredChannels.map((ch) => (
                 <div key={ch.id} className="flex items-stretch gap-3 group/row">
                   
                   {/* Channel Header (Sticky Left) */}
@@ -436,8 +456,9 @@ export function EPGGrid() {
                   </div>
 
                 </div>
-              ))
-              )}
+              ))}
+            </>
+          )}
 
             </div>
           </div>
