@@ -324,34 +324,34 @@ export function buildFallbackChannels(
     const rotated = [...catalog.slice(shift), ...catalog.slice(0, shift), ...catalog, ...catalog];
 
     const programs: RealEpgProgram[] = [];
-    let currentMinute = 360; // 06:00 AM (360 mins from 00:00)
-    const dayEndMinute = 360 + 1440; // 06:00 AM next day (1800 mins)
+    let currentMinute = 0; // 00:00 (0 mins from 00:00)
+    const dayEndMinute = 1440; // 24:00 (1440 mins)
 
     let pIdx = 0;
     while (currentMinute < dayEndMinute && pIdx < 35) {
       const show = rotated[pIdx % rotated.length];
       let dur = show.duration;
 
-      // Ensure that if we approach 06:00 next day, we clamp cleanly
+      // Ensure that if we approach 24:00, we clamp cleanly
       if (currentMinute + dur > dayEndMinute) {
         dur = dayEndMinute - currentMinute;
         if (dur < 15 && programs.length > 0) {
           // Merge tiny tail into last program
           const last = programs[programs.length - 1];
           last.durationMinutes += dur;
-          last.endTime = '06:00';
+          last.endTime = '24:00';
           break;
         }
       }
 
-      const startH = Math.floor((currentMinute % 1440) / 60);
+      const startH = Math.floor(currentMinute / 60);
       const startM = currentMinute % 60;
       const startTime = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
 
       const nextMinute = currentMinute + dur;
-      const endH = Math.floor((nextMinute % 1440) / 60);
+      const endH = Math.floor(nextMinute / 60);
       const endM = nextMinute % 60;
-      const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      const endTime = nextMinute >= 1440 ? '24:00' : `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
       const progId = `epg-${slug}-d${dayOffset}-${pIdx}`;
 
@@ -430,7 +430,9 @@ export function mapApiEpgToRealChannels(
         : 30;
 
       const startTimeStr = `${String(startHours).padStart(2, '0')}:${String(startMins).padStart(2, '0')}`;
-      const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+      const endTimeStr = (endHours === 0 && endMins === 0 && startMinutes > 0)
+        ? '24:00'
+        : `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
 
       return {
         id: p.id || `epg-${ch.channelId}-${pIdx}`,

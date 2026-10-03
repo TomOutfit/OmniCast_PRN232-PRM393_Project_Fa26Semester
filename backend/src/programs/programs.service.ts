@@ -282,7 +282,9 @@ export class ProgramsService {
    */
   async findEpgByDay(opts: {
     date: Date;
+    dateStr?: string;
     channelIds?: string[];
+    timezoneOffsetHours?: number;
   }): Promise<{
     date: string;
     generatedAt: string;
@@ -306,7 +308,7 @@ export class ProgramsService {
       }>;
     }>;
   }> {
-    const dateKey = this.formatYmd(opts.date);
+    const dateKey = opts.dateStr || this.formatYmd(opts.date);
     const channelKey = opts.channelIds && opts.channelIds.length
       ? [...opts.channelIds].sort().join(',')
       : '*';
@@ -317,10 +319,24 @@ export class ProgramsService {
       return cached.value as any;
     }
 
-    const dayStart = new Date(opts.date);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    // Anchor the 24-hour schedule strictly from 00:00 -> 24:00 in Vietnam broadcast time (+7 ICT):
+    // 00:00:00 VN time (UTC+7) = 17:00:00 UTC previous calendar day
+    // 24:00:00 VN time (UTC+7) = 17:00:00 UTC requested calendar day
+    const tzOffsetHours = opts.timezoneOffsetHours ?? 7;
+    let dayStart: Date;
+    let dayEnd: Date;
+
+    if (opts.dateStr && /^\d{4}-\d{2}-\d{2}$/.test(opts.dateStr)) {
+      const [y, m, d] = opts.dateStr.split('-').map(Number);
+      dayStart = new Date(Date.UTC(y, m - 1, d, -tzOffsetHours, 0, 0, 0));
+      dayEnd = new Date(Date.UTC(y, m - 1, d + 1, -tzOffsetHours, 0, 0, 0));
+    } else {
+      const y = opts.date.getUTCFullYear();
+      const m = opts.date.getUTCMonth();
+      const d = opts.date.getUTCDate();
+      dayStart = new Date(Date.UTC(y, m, d, -tzOffsetHours, 0, 0, 0));
+      dayEnd = new Date(Date.UTC(y, m, d + 1, -tzOffsetHours, 0, 0, 0));
+    }
 
     const channelWhere: any = { isActive: true };
     if (opts.channelIds && opts.channelIds.length) {
@@ -439,6 +455,8 @@ export class ProgramsService {
       const programs = this.expandChannelSchedule({
         channel,
         date: opts.date,
+        dayStart,
+        dayEnd,
         realPrograms,
         recordings: recordingsByChannel.get(channel.id) ?? [],
       });
@@ -488,6 +506,8 @@ export class ProgramsService {
       category: string;
     };
     date: Date;
+    dayStart?: Date;
+    dayEnd?: Date;
     realPrograms: FillerExpandedProgram[];
     recordings: Array<{
       id: string;
@@ -505,6 +525,8 @@ export class ProgramsService {
         category: opts.channel.category,
       },
       date: opts.date,
+      dayStart: opts.dayStart,
+      dayEnd: opts.dayEnd,
       realPrograms: opts.realPrograms,
       recordings: opts.recordings.map((r) => ({
         id: r.id,

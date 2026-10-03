@@ -116,18 +116,21 @@ class ProgramsRepository {
         if (cached != null) {
           final parsed = _tryDecodeEpg(cached);
           if (parsed != null && parsed.isNotEmpty) {
-            if (channelId != null) {
-              final filtered = parsed
-                  .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
-                  .toList();
-              if (filtered.isNotEmpty) return filtered;
-            } else if (channelIds != null && channelIds.isNotEmpty) {
-              final filtered = parsed
-                  .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
-                  .toList();
-              if (filtered.isNotEmpty) return filtered;
-            } else {
-              return parsed;
+            final firstHour = parsed.first.scheduledAt.hour;
+            if (firstHour <= 1) {
+              if (channelId != null) {
+                final filtered = parsed
+                    .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
+                    .toList();
+                if (filtered.isNotEmpty) return filtered;
+              } else if (channelIds != null && channelIds.isNotEmpty) {
+                final filtered = parsed
+                    .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
+                    .toList();
+                if (filtered.isNotEmpty) return filtered;
+              } else {
+                return parsed;
+              }
             }
           }
         }
