@@ -378,7 +378,7 @@ class _TimelineHeader extends StatelessWidget {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: List.generate(24, (index) {
+                children: List.generate(25, (index) {
                   return Container(
                     width: 58,
                     alignment: Alignment.center,
@@ -932,7 +932,7 @@ class _EpgEventCard extends StatelessWidget {
                   ),
                   if (event.endedAt != null) ...[
                     Text(
-                      _formatTime(event.endedAt!),
+                      _formatTime(event.endedAt!, isEndTime: true, startHour: event.scheduledAt.hour),
                       style: TextStyle(
                         color: isLive ? const Color(0xFFFCA5A5) : const Color(0xFF64748B),
                         fontWeight: FontWeight.w700,
@@ -1072,7 +1072,10 @@ class _EpgEventCard extends StatelessWidget {
     );
   }
 
-  String _formatTime(DateTime dateTime) {
+  String _formatTime(DateTime dateTime, {bool isEndTime = false, int startHour = 0}) {
+    if (isEndTime && dateTime.hour == 0 && dateTime.minute == 0 && startHour >= 20) {
+      return '24:00';
+    }
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 

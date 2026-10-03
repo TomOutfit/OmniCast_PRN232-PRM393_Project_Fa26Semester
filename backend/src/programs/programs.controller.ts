@@ -133,6 +133,7 @@ export class ProgramsController {
       ? (query.channelIds as string[])
       : undefined;
     return this.programsService.findEpgByDay({
+      dateStr: query.date,
       date: query.date ? new Date(`${query.date}T00:00:00Z`) : new Date(),
       channelIds,
     });
