@@ -18,6 +18,7 @@ import {
   Calendar,
   Radio,
   ChevronDown,
+  Bookmark,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,18 @@ export function Navbar() {
               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
 
+            {/* Quick Watchlist Bookmark Button */}
+            <Link
+              href="/watchlist"
+              className={cn(
+                'p-1.5 sm:p-2 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] transition-colors',
+                pathname === '/watchlist' ? 'text-cyan-400 border-cyan-500/40 bg-cyan-950/30' : 'text-slate-300 hover:text-cyan-400'
+              )}
+              title="Danh sách xem sau & Yêu thích"
+            >
+              <Bookmark className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Link>
+
             {/* Notification Bell */}
             <button
               className="relative p-1.5 sm:p-2 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-slate-300 hover:text-white transition-colors"
@@ -194,7 +207,7 @@ export function Navbar() {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-3 py-2 border-b border-[#1a273b] mb-1">
                       <p className="text-xs font-semibold text-white truncate">
                         {user.fullName || 'Thành viên OmniCast'}
@@ -203,12 +216,39 @@ export function Navbar() {
                     </div>
 
                     <Link
+                      href="/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-cyan-400" />
+                      Hồ sơ cá nhân
+                    </Link>
+
+                    <Link
+                      href="/watchlist"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                    >
+                      <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
+                      Danh sách yêu thích
+                    </Link>
+
+                    <Link
                       href="/settings"
                       onClick={() => setIsUserMenuOpen(false)}
                       className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
                     >
                       <Settings className="w-3.5 h-3.5 text-cyan-400" />
                       Cài đặt & OmniPass
+                    </Link>
+
+                    <Link
+                      href="/studio/curator"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                    >
+                      <Radio className="w-3.5 h-3.5 text-purple-400" />
+                      Studio & AI Curator
                     </Link>
 
                     {userRole === 'ADMIN' && (
@@ -331,6 +371,27 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
+          {isAuthenticated && (
+            <>
+              <div className="my-1 border-t border-[#18273c]" />
+              <Link
+                href="/watchlist"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
+              >
+                <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
+                Danh sách xem sau & Yêu thích
+              </Link>
+              <Link
+                href="/profile"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
+              >
+                <User className="w-3.5 h-3.5 text-cyan-400" />
+                Hồ sơ cá nhân
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
