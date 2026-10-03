@@ -107,15 +107,23 @@ export class EpScheduleFillerService {
   expandChannelSchedule(opts: {
     channel: FillerChannel;
     date: Date;
+    dayStart?: Date;
+    dayEnd?: Date;
     realPrograms: FillerRealProgram[];
     recordings: FillerRecording[];
   }): FillerExpandedProgram[] {
     const { channel, date, realPrograms, recordings } = opts;
 
-    const dayStart = new Date(date);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    const dayStart = opts.dayStart ?? (() => {
+      const d = new Date(date);
+      d.setUTCHours(0, 0, 0, 0);
+      return d;
+    })();
+    const dayEnd = opts.dayEnd ?? (() => {
+      const d = new Date(dayStart);
+      d.setUTCDate(d.getUTCDate() + 1);
+      return d;
+    })();
     const dayStartMs = dayStart.getTime();
     const dayEndMs = dayEnd.getTime();
 

@@ -177,7 +177,7 @@ class EpgBloc extends Bloc<EpgEvent, EpgState> {
   }
 
   List<String> _generateTimeSlots() {
-    return List.generate(24, (index) => '${index.toString().padLeft(2, '0')}:00');
+    return List.generate(25, (index) => '${index.toString().padLeft(2, '0')}:00');
   }
 
   String _ymd(DateTime d) =>
