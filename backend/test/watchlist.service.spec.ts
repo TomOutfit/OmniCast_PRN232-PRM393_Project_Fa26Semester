@@ -157,7 +157,7 @@ test('list keeps LIVE programs even when scheduledAt is in the past', async () =
     }),
   ]);
   // Mark it LIVE
-  service['prisma'].rows[0].program.status = 'LIVE';
+  (service['prisma'] as any).rows[0].program.status = 'LIVE';
   const out = await service.list(fakeUserId, { upcomingOnly: true });
   assert.equal(out.total, 1, 'LIVE items must be kept even when upcomingOnly=true');
 });
@@ -176,7 +176,7 @@ test('listGrouped buckets items into upcoming/live/past correctly', async () => 
     buildRow({ programId: 'prog-past', scheduledAt: past }),
     buildRow({ programId: 'prog-live', scheduledAt: liveStart, duration: 90 }),
   ]);
-  service['prisma'].rows.find((r) => r.programId === 'prog-live').program.status = 'LIVE';
+  (service['prisma'] as any).rows.find((r: any) => r.programId === 'prog-live').program.status = 'LIVE';
 
   const out = await service.listGrouped(fakeUserId);
   assert.equal(out.upcoming.length, 1);

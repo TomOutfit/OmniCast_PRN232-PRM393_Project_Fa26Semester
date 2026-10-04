@@ -28,6 +28,10 @@ import { HealthSource } from './sources/health-source.service';
 import { TravelSource } from './sources/travel-source.service';
 import { ArtSource } from './sources/art-source.service';
 import { LifestyleSource } from './sources/lifestyle-source.service';
+import { TvmazeSource } from './sources/tvmaze-source.service';
+import { NasaSource } from './sources/nasa-source.service';
+import { MarketWeatherSource } from './sources/market-weather-source.service';
+import { CocktailSource } from './sources/cocktail-source.service';
 
 const SOURCE_PROVIDERS = [
   SportsSource,
@@ -42,6 +46,10 @@ const SOURCE_PROVIDERS = [
   TravelSource,
   ArtSource,
   LifestyleSource,
+  TvmazeSource,
+  NasaSource,
+  MarketWeatherSource,
+  CocktailSource,
 ];
 
 @Module({

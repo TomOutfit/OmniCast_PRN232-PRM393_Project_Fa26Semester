@@ -396,12 +396,13 @@ export class EpScheduleFillerService {
       return true;
     }
 
-    // Fallback: branded placeholder. Used when the library is empty or
-    // every recording has already hit the replay cap. This guarantees the
-    // day is never blank, which is the whole point of the filler.
+    // Fallback: branded placeholder with realistic time-of-day appropriate title.
+    // Used when library is empty or every recording has hit the replay cap.
+    // Guaranteed non-empty day while reflecting realistic TV broadcasting time slots.
+    const title = this.getBrandedTitle(channel.name, channel.category, slotStartMs, out);
     out.push({
       id: `filler-brand-${channel.id}-${slotStartMs}`,
-      title: `${channel.name} — Đang phát sóng`,
+      title,
       startTime: new Date(slotStartMs).toISOString(),
       endTime: new Date(slotEndMs).toISOString(),
       status: 'SCHEDULED' as EventStatus,
@@ -415,6 +416,75 @@ export class EpScheduleFillerService {
       sourceRecordingOrigin: null,
     });
     return true;
+  }
+
+  /**
+   * Determine a realistic, time-appropriate program title for synthetic filler slots.
+   * Matches real Vietnamese television dayparts (UTC+7) so morning news is in morning,
+   * lunch news at 11h30, prime-time at 20h, etc.
+   */
+  private getBrandedTitle(
+    channelName: string,
+    category: string,
+    slotStartMs: number,
+    existingPrograms: FillerExpandedProgram[],
+  ): string {
+    const date = new Date(slotStartMs);
+    // Convert UTC to Vietnam local hour (UTC+7)
+    const localHour = (date.getUTCHours() + 7) % 24;
+    const cat = (category || '').toUpperCase();
+
+    let candidate = '';
+    if (localHour >= 0 && localHour < 6) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Replay Trận Cầu Kinh Điển Đêm Muộn`;
+      else if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) candidate = `${channelName}: Điện Ảnh Kinh Điển Đêm Khuya`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Ký Sự & Phóng Sự Quốc Tế Đêm`;
+      else if (cat.includes('KID')) candidate = `${channelName}: Kể Chuyện Cổ Tích Ru Ngủ Bé Yêu`;
+      else if (cat.includes('MUSIC') || cat.includes('ENTERTAIN')) candidate = `${channelName}: Acoustic Chillout & Nhạc Thư Giãn`;
+      else candidate = `${channelName}: Tuyển Tập Đặc Sắc Đêm Muộn`;
+    } else if (localHour >= 6 && localHour < 9) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Điểm Tin Thể Thao Sáng 24H`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Chào Ngày Mới & Điểm Báo Toàn Cầu`;
+      else if (cat.includes('KID')) candidate = `${channelName}: Thể Dục Vui Nhộn & Hoạt Hình Sáng`;
+      else candidate = `${channelName}: Khởi Động Ngày Mới`;
+    } else if (localHour >= 9 && localHour < 11) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Tạp Chí Thể Thao & Đua Xe Tốc Độ`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Tọa Đàm Kinh Tế & Thị Trường Số`;
+      else candidate = `${channelName}: Tạp Chí Chuyên Đề & Khám Phá`;
+    } else if (localHour >= 11 && localHour < 14) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Thể Thao Trưa & Phỏng Vấn Chuyên Sâu`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Thời Sự Trưa 11H30 (Toàn Cảnh)`;
+      else if (cat.includes('KID')) candidate = `${channelName}: Giờ Hoạt Hình Trưa Của Bé`;
+      else candidate = `${channelName}: Tiêu Điểm Buổi Trưa`;
+    } else if (localHour >= 14 && localHour < 18) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Quần Vợt & Bóng Chuyền Quốc Tế`;
+      else if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) candidate = `${channelName}: Phim Truyền Hình & Series Chiều`;
+      else if (cat.includes('ESPORT') || cat.includes('GAME')) candidate = `${channelName}: Đấu Trường Esports Chiều`;
+      else candidate = `${channelName}: Chương Trình Chiều Đặc Sắc`;
+    } else if (localHour >= 18 && localHour < 20) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Studio Tiền Trận & Tiêu Điểm Sân Cỏ`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Thời Sự 19H: Bản Tin Quốc Gia`;
+      else if (cat.includes('KID')) candidate = `${channelName}: Hoạt Hình Giờ Vàng Thiếu Nhi`;
+      else candidate = `${channelName}: Tiêu Điểm Đầu Tối`;
+    } else if (localHour >= 20 && localHour < 22) {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Trận Cầu Đỉnh Cao Khung Giờ Vàng`;
+      else if (cat.includes('CINE') || cat.includes('MOVIE')) candidate = `${channelName}: Bom Tấn Điện Ảnh Chiếu Rạp 4K`;
+      else if (cat.includes('SHOW') || cat.includes('ENTERTAIN')) candidate = `${channelName}: Mega Show Khung Giờ Vàng`;
+      else if (cat.includes('ESPORT')) candidate = `${channelName}: Đại Chiến Chung Kết Esports 4K`;
+      else candidate = `${channelName}: Khung Giờ Vàng Truyền Hình`;
+    } else {
+      if (cat.includes('SPORT')) candidate = `${channelName}: Omni Extra Time (Phỏng Vấn Sau Trận)`;
+      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Bản Tin Đêm: Toàn Cảnh Thế Giới 23H`;
+      else if (cat.includes('CINE') || cat.includes('MOVIE')) candidate = `${channelName}: Phim Tâm Lý Ly Kỳ Đêm Muộn`;
+      else candidate = `${channelName}: Tổng Hợp Sự Kiện & Đêm Muộn`;
+    }
+
+    // Ensure no two consecutive programs have the exact same title
+    const lastProg = existingPrograms.length > 0 ? existingPrograms[existingPrograms.length - 1] : null;
+    if (lastProg && lastProg.title === candidate) {
+      return `${candidate} (Phần tiếp theo)`;
+    }
+    return candidate;
   }
 }
 
