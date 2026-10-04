@@ -340,7 +340,24 @@ export class ProgramsService {
 
     const channelWhere: any = { isActive: true };
     if (opts.channelIds && opts.channelIds.length) {
-      channelWhere.id = { in: opts.channelIds };
+      // Accept both UUIDs and slugs: partition the list so Prisma can use
+      // an OR query — UUID-looking values go into `id IN (...)` and the rest
+      // go into `slug IN (...)`.  This lets mobile clients pass slugs (which
+      // are stable across environments) without breaking UUID-based callers.
+      const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      const uuids = opts.channelIds.filter((id) => uuidPattern.test(id));
+      const slugs = opts.channelIds.filter((id) => !uuidPattern.test(id));
+
+      if (uuids.length > 0 && slugs.length > 0) {
+        channelWhere.OR = [
+          { id: { in: uuids } },
+          { slug: { in: slugs } },
+        ];
+      } else if (uuids.length > 0) {
+        channelWhere.id = { in: uuids };
+      } else {
+        channelWhere.slug = { in: slugs };
+      }
     }
 
     const channels = await this.prisma.liveChannel.findMany({
@@ -522,6 +539,7 @@ export class ProgramsService {
       channel: {
         id: opts.channel.id,
         name: opts.channel.name,
+        slug: (opts.channel as any).slug,
         category: opts.channel.category,
       },
       date: opts.date,

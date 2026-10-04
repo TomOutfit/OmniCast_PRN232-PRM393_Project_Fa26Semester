@@ -14,6 +14,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -114,8 +115,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Deactivate user (Admin only)' })
   @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User deactivated successfully' })
+  @ApiResponse({ status: 400, description: 'Admin cannot deactivate self' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async deactivate(@Param('id') id: string) {
+  async deactivate(@Request() req: any, @Param('id') id: string) {
+    if (req.user?.sub === id) {
+      throw new BadRequestException('Admin cannot deactivate their own account');
+    }
     return this.usersService.deactivate(id);
   }
 
@@ -134,9 +139,16 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user role (Admin only)' })
   @ApiParam({ name: 'id', description: 'User UUID', example: '99999999-9999-9999-9999-999999999999' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid role specified' })
+  @ApiResponse({ status: 400, description: 'Invalid role or self-modification forbidden' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async updateRole(@Param('id') id: string, @Body('role') role: string) {
+  async updateRole(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body('role') role: string,
+  ) {
+    if (req.user?.sub === id) {
+      throw new BadRequestException('Admin cannot modify their own role');
+    }
     return this.usersService.updateRole(id, role);
   }
 }

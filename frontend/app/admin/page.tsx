@@ -26,6 +26,7 @@ import { useLiveNow } from '@/lib/hooks/usePrograms';
 import { useAdminUsers } from '@/lib/hooks/useUsers';
 import { toast } from 'sonner';
 import type { LiveEvent } from '@/types';
+import { AdminRealtimeCharts } from '@/components/admin/admin-realtime-charts';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -152,6 +153,11 @@ export default function AdminDashboardPage() {
               </Card>
             </Link>
           ))}
+        </div>
+
+        {/* Real-time Dynamic Data Charts & Streaming Metrics */}
+        <div className="mb-8">
+          <AdminRealtimeCharts />
         </div>
 
         {/* Stats Grid */}

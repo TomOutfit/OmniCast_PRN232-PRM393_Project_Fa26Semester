@@ -20,40 +20,12 @@ import {
   ChevronDown,
   Bookmark,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n/i18n-provider';
 import { cn } from '@/lib/utils';
 import { useChannels } from '@/lib/hooks/useChannels';
-
-export const CHANNELS_TICKER_LIST = [
-  { id: '1', slug: 'sport-1', name: 'Omni Sport 1', isLive: true },
-  { id: '2', slug: 'sport-2', name: 'Sport 2', isLive: true },
-  { id: '3', slug: 'cine', name: 'Omni Cine', isLive: true },
-  { id: '4', slug: 'drama', name: 'Omni Drama', isLive: false },
-  { id: '5', slug: 'news', name: 'News 24/7', isLive: true },
-  { id: '6', slug: 'music', name: 'Music Hits', isLive: false },
-  { id: '7', slug: 'show', name: 'Omni Show', isLive: false },
-  { id: '8', slug: 'entertain', name: 'Omni Entertain', isLive: false },
-  { id: '9', slug: 'esports', name: 'Omni Esports', isLive: true },
-  { id: '10', slug: 'indie-games', name: 'Indie Games', isLive: false },
-  { id: '11', slug: 'discovery', name: 'Omni Discovery', isLive: true },
-  { id: '12', slug: 'tech', name: 'Omni Tech', isLive: false },
-  { id: '13', slug: 'food', name: 'Food Life', isLive: false },
-  { id: '14', slug: 'kids', name: 'Kids Zone', isLive: false },
-  { id: '15', slug: 'podcast', name: 'Omni Podcast', isLive: false },
-  { id: '16', slug: 'audiobook', name: 'Audiobook', isLive: false },
-  { id: '17', slug: 'academy', name: 'Omni Academy', isLive: false },
-  { id: '18', slug: 'skill-lab', name: 'Skill Lab', isLive: false },
-  { id: '19', slug: 'wellness', name: 'Omni Wellness', isLive: false },
-  { id: '20', slug: 'fashion', name: 'Omni Fashion', isLive: false },
-  { id: '21', slug: 'travel-vn', name: 'Travel VN', isLive: false },
-  { id: '22', slug: 'travel-world', name: 'Travel World', isLive: false },
-  { id: '23', slug: 'art-design', name: 'Art & Design', isLive: false },
-  { id: '24', slug: 'business', name: 'Omni Business', isLive: false },
-  { id: '25', slug: 'health', name: 'Omni Health', isLive: false },
-];
 
 export function Navbar() {
   const pathname = usePathname();
@@ -64,14 +36,20 @@ export function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const { data: channelsData } = useChannels({ limit: 50 });
-  const dynamicChannels = channelsData?.data && channelsData.data.length > 0
-    ? channelsData.data.map((c) => ({
-        id: c.id,
-        slug: c.slug,
-        name: c.name,
-        isLive: c.isActive,
-      }))
-    : CHANNELS_TICKER_LIST;
+  const dynamicChannels = useMemo<Array<{ id: string; slug: string; name: string; isLive?: boolean }>>(() => {
+    if (!channelsData) return [];
+    const list = Array.isArray(channelsData)
+      ? channelsData
+      : Array.isArray((channelsData as any)?.data)
+      ? (channelsData as any).data
+      : [];
+    return list.map((c: any) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      isLive: c.isActive,
+    }));
+  }, [channelsData]);
 
   const userRole = user?.role;
 
@@ -102,15 +80,15 @@ export function Navbar() {
           
           {/* Brand Logo & Compact Navigation Links */}
           <div className="flex items-center gap-3 sm:gap-6 xl:gap-8 flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.25)]">
+            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.25)] overflow-hidden">
                 <Image
-                  src="/logo.svg"
-                  alt="OmniCast Logo"
-                  width={22}
-                  height={22}
+                  src="/omnicast_logo.png"
+                  alt="OmniCast Network Logo"
+                  width={32}
+                  height={32}
                   unoptimized
-                  className="w-5 h-5 object-contain drop-shadow-[0_0_6px_rgba(0,242,254,0.8)]"
+                  className="w-full h-full object-contain p-0.5 drop-shadow-[0_0_6px_rgba(0,242,254,0.8)]"
                 />
               </div>
               <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
@@ -209,9 +187,21 @@ export function Navbar() {
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-3 py-2 border-b border-[#1a273b] mb-1">
-                      <p className="text-xs font-semibold text-white truncate">
-                        {user.fullName || 'Thành viên OmniCast'}
-                      </p>
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <p className="text-xs font-semibold text-white truncate">
+                          {user.fullName || 'Thành viên OmniCast'}
+                        </p>
+                        <span className={cn(
+                          'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border',
+                          userRole === 'ADMIN'
+                            ? 'bg-amber-950/70 border-amber-500/50 text-amber-300'
+                            : userRole === 'STAFF'
+                            ? 'bg-purple-950/70 border-purple-500/50 text-purple-300'
+                            : 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300'
+                        )}>
+                          {userRole === 'ADMIN' ? 'ADMIN [3]' : userRole === 'STAFF' ? 'STAFF [1]' : 'VIEWER [2]'}
+                        </span>
+                      </div>
                       <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                     </div>
 
@@ -242,22 +232,26 @@ export function Navbar() {
                       Cài đặt & OmniPass
                     </Link>
 
-                    <Link
-                      href="/studio/curator"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                    >
-                      <Radio className="w-3.5 h-3.5 text-purple-400" />
-                      Studio & AI Curator
-                    </Link>
+                    {/* RBAC: Studio & AI Curator for STAFF (1) & ADMIN (3) only */}
+                    {(userRole === 'STAFF' || userRole === 'ADMIN') && (
+                      <Link
+                        href="/studio/curator"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/30 rounded-lg transition-colors"
+                      >
+                        <Radio className="w-3.5 h-3.5 text-purple-400" />
+                        Studio & AI Curator
+                      </Link>
+                    )}
 
+                    {/* RBAC: Admin Portal for ADMIN (3) only */}
                     {userRole === 'ADMIN' && (
                       <Link
                         href="/admin"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/30 rounded-lg transition-colors"
                       >
-                        <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                        <Shield className="w-3.5 h-3.5 text-amber-400" />
                         Quản trị hệ thống
                       </Link>
                     )}

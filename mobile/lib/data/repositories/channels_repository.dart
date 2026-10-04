@@ -100,8 +100,11 @@ class ChannelsRepository {
 
   Future<List<ChannelCategory>> getCategories() async {
     final response = await _dioClient.get('${AppEndpoints.channels}/categories');
-    final data = response.data['data'] as List;
-    return data
+    final raw = response.data;
+    final list = (raw is Map && raw['data'] is List)
+        ? raw['data'] as List
+        : (raw is List ? raw : <dynamic>[]);
+    return list
         .map((e) => ChannelCategory.fromJson(e as Map<String, dynamic>))
         .toList();
   }

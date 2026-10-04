@@ -37,19 +37,25 @@ import {
   type RealEpgProgram,
   type RealEpgChannel,
   CATEGORY_FILTERS,
-  buildFallbackChannels,
   mapApiEpgToRealChannels,
 } from './epg-channels-data';
 export type { RealEpgProgram, RealEpgChannel };
 
+// ── VTVGo Synchronized Timeline Geometry ──
+const TOTAL_HOURS = 24;
+const HOUR_WIDTH = 240; // 240px per hour => 4px per minute (roomy enough for 15-min cards with title & time)
+const MINUTE_WIDTH = HOUR_WIDTH / 60; // 4px / minute
+const TOTAL_WIDTH = TOTAL_HOURS * HOUR_WIDTH; // 5760px
+
 export function EPGGrid() {
   const [selectedDayOffset, setSelectedDayOffset] = useState<number>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [activeChannelId, setActiveChannelId] = useState<string>('ch-01');
+  const [activeChannelId, setActiveChannelId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'timeline' | 'schedule_list'>('timeline');
   const [selectedProgram, setSelectedProgram] = useState<RealEpgProgram | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   // Compute wall-clock target date from selected offset
   const selectedDate = useMemo(() => {
@@ -83,6 +89,14 @@ export function EPGGrid() {
     return now.getHours() * 60 + now.getMinutes();
   });
 
+  // Auto-scroll timeline to current time on mount / offset 0
+  useEffect(() => {
+    if (selectedDayOffset === 0 && timelineScrollRef.current) {
+      const scrollPos = Math.max(0, currentTimeMinutes * MINUTE_WIDTH - 240);
+      timelineScrollRef.current.scrollLeft = scrollPos;
+    }
+  }, [selectedDayOffset, currentTimeMinutes]);
+
   // Update clock every minute
   useEffect(() => {
     const timer = setInterval(() => {
@@ -113,18 +127,13 @@ export function EPGGrid() {
     return days;
   }, []);
 
-  // Combine API data or rotated 25-channel fallback without jarring flicker
+  // Use API data only - no hardcoded fallback
   const allChannels = useMemo<RealEpgChannel[]>(() => {
     if (epgResponse?.channels && epgResponse.channels.length > 0) {
       return mapApiEpgToRealChannels(epgResponse, rawChannels);
     }
-    // Only fall back to local schedule if API has finished loading and returned no channels,
-    // avoiding the jarring 1-2s flash of different content before API response settles.
-    if (!isEpgLoading && rawChannels.length > 0) {
-      return buildFallbackChannels(selectedDayOffset, channelMetaMap);
-    }
     return [];
-  }, [epgResponse, rawChannels, selectedDayOffset, channelMetaMap, isEpgLoading]);
+  }, [epgResponse, rawChannels]);
 
   // Filter channels by category
   const filteredChannels = useMemo(() => {
@@ -297,193 +306,202 @@ export function EPGGrid() {
 
       </div>
 
-      {/* ── 2. VIEW MODE 1: CONTINUOUS 24-HOUR TIMELINE GRID ────────── */}
+      {/* ── 2. VIEW MODE 1: CONTINUOUS 24-HOUR TIMELINE GRID (VTVGo Style) ────────── */}
       {viewMode === 'timeline' && (
-        <div className="p-4 md:p-6 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl space-y-4 overflow-hidden">
+        <div className="rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl overflow-hidden">
           
-          <div className="flex items-center justify-between text-xs text-slate-400 border-b border-[#142236] pb-3">
+          {/* Subheader bar with legend & live clock */}
+          <div className="px-4 py-3 bg-[#070b13] border-b border-[#142236] flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="font-bold text-white">Trực Quan Thời Lượng Thực:</span>
-              <span>Độ rộng thẻ tự động co giãn theo số phút thực tế (15p, 30p, 45p, 90p, 150p...)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
+              <span className="font-black text-white text-xs">Lưới Phát Sóng Chuẩn VTVGo:</span>
+              <span className="text-slate-400 hidden sm:inline">Khung giờ bắt đầu tự nhiên (:00, :15, :30, :45), độ dài linh hoạt 15p - 120p, thước thời gian cuộn đồng bộ.</span>
             </div>
-            <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /> Đang Chiếu</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-cyan-400" /> Xem Lại (Catch-Up)</span>
+
+            <div className="flex items-center gap-4 text-[11px] font-mono">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /> Đang Phát</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-cyan-400" /> Đã Chiếu (Catch-Up)</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-500" /> Sắp Chiếu</span>
             </div>
           </div>
 
-          {/* Timeline Scrollable Grid Container */}
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/20 pb-4">
-            <div className="min-w-[1400px] space-y-3">
-              {isEpgFetching && filteredChannels.length > 0 && (
-                <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 text-xs font-mono shadow-md animate-pulse mb-2">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-                    <span>Đang đồng bộ dữ liệu lịch phát sóng ngày {SEVEN_DAYS.find(d => d.offset === selectedDayOffset)?.dayName ?? ''}...</span>
-                  </div>
-                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">REALTIME EPG SYNC</span>
+          {/* THE SINGLE SYNCHRONIZED SCROLL CONTAINER */}
+          <div
+            ref={timelineScrollRef}
+            className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-[#080d16]"
+          >
+            <div style={{ width: `${TOTAL_WIDTH + 208}px` }} className="relative select-none min-h-[400px]">
+              
+              {/* Red vertical "LIVE NOW" line tracking real time */}
+              {selectedDayOffset === 0 && (
+                <div
+                  style={{ left: `${208 + currentTimeMinutes * MINUTE_WIDTH}px` }}
+                  className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-20 pointer-events-none shadow-[0_0_10px_#ef4444]"
+                >
+                  <div className="sticky top-0 -ml-1.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-[0_0_8px_#ef4444] animate-pulse" />
                 </div>
               )}
 
-              {isEpgLoading && filteredChannels.length === 0 ? (
-                <div className="space-y-4 py-2">
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-cyan-300 text-xs font-mono">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-                    <span>Đang nạp dữ liệu lịch phát sóng 24H chuẩn thực tế...</span>
+              {/* ── HEADER ROW: STICKY CHANNEL LABEL + TIME RULER ── */}
+              <div className="flex items-stretch sticky top-0 z-30 bg-[#090f1a] border-b border-[#18283e] h-12 shadow-md">
+                {/* Sticky Left Header */}
+                <div className="sticky left-0 z-40 w-44 md:w-52 flex-shrink-0 bg-[#090f1a] border-r border-[#18283e] flex items-center justify-between px-3 text-cyan-400 font-mono text-[11px] font-bold shadow-md">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>LỊCH 0:00 - 24:00</span>
                   </div>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="flex items-stretch gap-3">
-                      <div className="w-44 md:w-52 h-24 rounded-2xl bg-[#0b1320] border border-[#18283e] animate-pulse flex items-center p-3 gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800/80 animate-pulse flex-shrink-0" />
-                        <div className="space-y-2 flex-1">
-                          <div className="h-3 w-24 bg-slate-800 rounded animate-pulse" />
-                          <div className="h-2 w-16 bg-slate-800/60 rounded animate-pulse" />
+                </div>
+
+                {/* Time Ruler with Hour & Half-Hour Marks (VTVGo Style) */}
+                <div className="relative flex-1 h-full bg-[#070c16]">
+                  {Array.from({ length: TOTAL_HOURS }).map((_, h) => {
+                    const hourLeft = h * HOUR_WIDTH;
+                    return (
+                      <React.Fragment key={h}>
+                        {/* Hour mark */}
+                        <div
+                          style={{ left: `${hourLeft}px` }}
+                          className="absolute top-0 bottom-0 flex flex-col justify-between border-l border-slate-700/70 pl-2 pt-1 text-[11px] font-mono font-bold text-slate-200"
+                        >
+                          <span>{String(h).padStart(2, '0')}:00</span>
+                          <div className="flex items-end gap-[13px] pb-1 opacity-50">
+                            <span className="w-px h-2 bg-slate-500" />
+                            <span className="w-px h-1 bg-slate-600" />
+                            <span className="w-px h-1.5 bg-slate-500" />
+                            <span className="w-px h-1 bg-slate-600" />
+                          </div>
                         </div>
+
+                        {/* Half-hour mark (:30) */}
+                        <div
+                          style={{ left: `${hourLeft + HOUR_WIDTH / 2}px` }}
+                          className="absolute top-0 bottom-0 border-l border-dashed border-slate-700/40 pl-1.5 pt-1.5 text-[9px] font-mono text-slate-400"
+                        >
+                          <span>{String(h).padStart(2, '0')}:30</span>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── CHANNEL ROWS ── */}
+              {isEpgLoading && filteredChannels.length === 0 ? (
+                <div className="p-8 text-center space-y-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
+                  <p className="text-xs text-slate-400">Đang nạp dữ liệu lịch phát sóng 24H...</p>
+                </div>
+              ) : filteredChannels.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs">
+                  Không tìm thấy kênh hoặc chương trình phù hợp với bộ lọc đã chọn.
+                </div>
+              ) : (
+                <div className="divide-y divide-[#142032]">
+                  {filteredChannels.map((ch) => (
+                    <div key={ch.id} className="flex items-stretch h-24 hover:bg-slate-900/30 transition-colors group/row">
+                      
+                      {/* Sticky Left: Channel Logo, Name & Badge */}
+                      <Link
+                        href={`/channels/${ch.slug}`}
+                        className="sticky left-0 z-30 w-44 md:w-52 flex-shrink-0 bg-[#090f1a] border-r border-[#18283e] p-3 flex items-center gap-3 hover:bg-[#0d1624] transition-colors shadow-md group-hover/row:border-cyan-500/40"
+                      >
+                        <ChannelLogo slug={ch.slug} name={ch.name} size="md" />
+                        <div className="overflow-hidden">
+                          <div className="text-xs font-black text-white truncate group-hover/row:text-cyan-300">
+                            {ch.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono truncate">
+                            {ch.chNumber} • {ch.categoryLabel}
+                          </div>
+                        </div>
+                      </Link>
+
+                      {/* Relative Timeline Track */}
+                      <div className="relative flex-1 h-full bg-[#080d16]/50">
+                        {/* Hour background grid lines */}
+                        {Array.from({ length: TOTAL_HOURS }).map((_, h) => (
+                          <div
+                            key={h}
+                            style={{ left: `${h * HOUR_WIDTH}px` }}
+                            className="absolute top-0 bottom-0 border-l border-[#131f32]/60 pointer-events-none"
+                          />
+                        ))}
+
+                        {/* Program Cards positioned accurately by startMinutes and durationMinutes */}
+                        {ch.programs.map((prog) => {
+                          const status = getProgramStatus(prog);
+                          const isLive = status === 'live';
+                          const isCatchUp = status === 'catchup';
+
+                          const leftPx = prog.startMinutes * MINUTE_WIDTH;
+                          const widthPx = Math.max(50, prog.durationMinutes * MINUTE_WIDTH - 2);
+
+                          return (
+                            <div
+                              key={prog.id}
+                              style={{
+                                left: `${leftPx}px`,
+                                width: `${widthPx}px`,
+                              }}
+                              onClick={() => setSelectedProgram({ ...prog, channelSlug: ch.slug, channelName: ch.name })}
+                              className={cn(
+                                'absolute top-1.5 bottom-1.5 rounded-xl border p-2 flex flex-col justify-between cursor-pointer transition-all duration-150 overflow-hidden group/card shadow-sm',
+                                isLive
+                                  ? 'bg-gradient-to-r from-red-950/80 to-[#1c0d1b] border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.25)] ring-1 ring-red-500/60 z-10'
+                                  : isCatchUp
+                                  ? 'bg-[#0d1624]/90 hover:bg-[#132034] border-[#18273c] hover:border-cyan-400/60'
+                                  : 'bg-[#090f1b]/85 hover:bg-[#0e1728] border-[#142032] hover:border-slate-500'
+                              )}
+                            >
+                              {/* Top line: Time + Category */}
+                              <div className="flex items-center justify-between gap-1 text-[9px] font-mono text-slate-400 z-10">
+                                <span className="font-bold text-slate-300">
+                                  {prog.startTime}
+                                </span>
+                                {isLive ? (
+                                  <span className="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-red-600 text-white animate-pulse">
+                                    LIVE
+                                  </span>
+                                ) : (
+                                  <span className="truncate max-w-[75px] text-slate-400">
+                                    {prog.category}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Title */}
+                              <div className="my-auto z-10">
+                                <h4 className={cn(
+                                  'text-[11px] font-bold leading-snug line-clamp-2 transition-colors',
+                                  isLive ? 'text-red-100 group-hover/card:text-white' : 'text-white group-hover/card:text-cyan-300'
+                                )}>
+                                  {prog.title}
+                                </h4>
+                              </div>
+
+                              {/* Bottom line: End time + Duration Badge */}
+                              <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 z-10">
+                                <span>{prog.endTime}</span>
+                                <span className={cn(
+                                  'text-[8px] font-bold px-1 rounded',
+                                  prog.durationMinutes <= 30
+                                    ? 'bg-amber-950/60 text-amber-300'
+                                    : prog.durationMinutes <= 60
+                                    ? 'bg-cyan-950/60 text-cyan-300'
+                                    : 'bg-indigo-950/60 text-indigo-300'
+                                )}>
+                                  {prog.durationMinutes}p
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="flex-1 flex items-center gap-2 overflow-hidden py-1">
-                        <div className="w-36 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
-                        <div className="w-56 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
-                        <div className="w-48 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
-                        <div className="w-64 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
-                        <div className="w-44 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
-                      </div>
+
                     </div>
                   ))}
                 </div>
-              ) : filteredChannels.length === 0 ? (
-                <div className="py-16 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-400 mx-auto flex items-center justify-center">
-                    <Calendar className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-base font-bold text-white">Không có chương trình nào</h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Chưa có lịch phát sóng cho ngày hoặc bộ lọc đã chọn từ máy chủ. Vui lòng chọn ngày khác.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* 24-Hour Timeline Ruler Header Bar (00:00 -> 24:00) */}
-                  <div className="flex items-center gap-3 pb-2 border-b border-[#142236]/80 text-[11px] font-mono text-slate-400">
-                    <div className="flex-shrink-0 w-44 md:w-52 px-3 text-cyan-400 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      LỊCH 0:00 - 24:00
-                    </div>
-                    <div className="flex-1 flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
-                      {Array.from({ length: 25 }).map((_, h) => (
-                        <div
-                          key={h}
-                          className="flex-shrink-0 text-center py-1 px-2.5 rounded-lg bg-[#0b1320] border border-[#16253c] text-cyan-300 font-mono text-[10px] font-bold shadow-sm"
-                          style={{ minWidth: '78px' }}
-                        >
-                          {String(h).padStart(2, '0')}:00
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {filteredChannels.map((ch) => (
-                <div key={ch.id} className="flex items-stretch gap-3 group/row">
-                  
-                  {/* Channel Header (Sticky Left) */}
-                  <Link
-                    href={`/channels/${ch.slug}`}
-                    className="flex-shrink-0 w-44 md:w-52 p-3 rounded-2xl bg-[#0b1320] border border-[#18283e] hover:border-cyan-400/60 flex items-center gap-3 transition-colors shadow-lg"
-                  >
-                    <ChannelLogo slug={ch.slug} name={ch.name} size="md" />
-                    <div className="overflow-hidden">
-                      <div className="text-xs font-black text-white truncate group-hover/row:text-cyan-300">
-                        {ch.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-mono truncate">
-                        {ch.chNumber} • {ch.categoryLabel}
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Flexible Programs Flow with Natural Durations */}
-                  <div className="flex-1 flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
-                    {ch.programs.map((prog) => {
-                      const status = getProgramStatus(prog);
-                      const isLive = status === 'live';
-                      const isCatchUp = status === 'catchup';
-
-                      // Width proportional to realistic duration: min 140px, max 380px
-                      const cardWidth = Math.max(140, Math.min(380, prog.durationMinutes * 2.2));
-
-                      return (
-                        <div
-                          key={prog.id}
-                          style={{ width: `${cardWidth}px` }}
-                          onClick={() => setSelectedProgram({ ...prog, channelSlug: ch.slug, channelName: ch.name })}
-                          className={cn(
-                            'flex-shrink-0 h-24 p-3 rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer relative group/prog overflow-hidden',
-                            isLive
-                              ? 'bg-gradient-to-r from-red-950/60 to-[#120a14] border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.25)] ring-1 ring-red-500/50'
-                              : isCatchUp
-                              ? 'bg-[#0d1624] hover:bg-[#132034] border-[#18273c] hover:border-cyan-400/60'
-                              : 'bg-[#080d17] hover:bg-[#0e1624] border-[#142032] opacity-85 hover:opacity-100'
-                          )}
-                        >
-                          {/* Top Badges */}
-                          <div className="flex items-center justify-between gap-1 z-10">
-                            <span className="text-[10px] font-mono font-bold text-slate-300">
-                              {prog.startTime} - {prog.endTime}
-                            </span>
-                            {isLive ? (
-                              <span className="flex items-center gap-1 text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-red-600 text-white animate-pulse">
-                                LIVE
-                              </span>
-                            ) : prog.badge ? (
-                              <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                                {prog.badge}
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-mono text-slate-500">
-                                {prog.durationMinutes}p
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Title */}
-                          <div className="z-10">
-                            <h4 className="text-xs font-bold text-white line-clamp-1 group-hover/prog:text-cyan-300 transition-colors">
-                              {prog.title}
-                            </h4>
-                            <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                              {prog.category} {prog.quality ? `• ${prog.quality}` : ''}
-                            </div>
-                          </div>
-
-                          {/* Hover Play / Catchup Icon */}
-                          <div className="absolute right-2 bottom-2 z-10 opacity-0 group-hover/prog:opacity-100 transition-opacity">
-                            {isLive || isCatchUp ? (
-                              <div className="w-6 h-6 rounded-full bg-cyan-500 text-black flex items-center justify-center shadow-[0_0_8px_#00f2fe]">
-                                <Play className="w-3 h-3 fill-current ml-0.5" />
-                              </div>
-                            ) : (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSetReminder(prog);
-                                }}
-                                className="w-6 h-6 rounded-full bg-[#18283e] hover:bg-cyan-500 hover:text-black text-slate-300 flex items-center justify-center transition-colors"
-                                title="Đặt lịch nhắc nhở"
-                              >
-                                <Bell className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                </div>
-              ))}
-            </>
-          )}
+              )}
 
             </div>
           </div>

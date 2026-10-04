@@ -225,14 +225,27 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Staff/Admin AI Curator Highlight
+                        // Admin Control Hub (Role 3: System Administrator)
+                        if (user.isAdmin) ...[
+                          _buildModernMenuItem(
+                            icon: Icons.admin_panel_settings_rounded,
+                            iconColor: const Color(0xFFF59E0B),
+                            title: 'Admin Control Hub',
+                            subtitle: 'Quản trị hệ thống, kiểm toán gRPC & tài khoản',
+                            highlight: true,
+                            onTap: () => context.push('/admin'),
+                          ),
+                          const Divider(color: Color(0xFF162338), height: 1),
+                        ],
+
+                        // Staff/Admin AI Curator Studio (Role 1 & 3)
                         if (user.isStaff || user.isAdmin) ...[
                           _buildModernMenuItem(
                             icon: Icons.auto_awesome_rounded,
-                            iconColor: const Color(0xFF00E5FF),
+                            iconColor: const Color(0xFFA855F7),
                             title: 'AI Curator Studio',
-                            subtitle: 'Quản lý & gợi ý chương trình bằng AI',
-                            highlight: true,
+                            subtitle: 'Biên tập & thẩm định chương trình bằng AI',
+                            highlight: !user.isAdmin,
                             onTap: () => context.push('/ai-curator'),
                           ),
                           const Divider(color: Color(0xFF162338), height: 1),
@@ -514,39 +527,48 @@ class ProfileScreen extends StatelessWidget {
   Color _getRoleColor(String role) {
     switch (role.toUpperCase()) {
       case 'ADMIN':
-        return const Color(0xFFEF4444);
+      case '3':
+        return const Color(0xFFF59E0B);
       case 'STAFF':
+      case '1':
+        return const Color(0xFFA855F7);
+      case 'VIEWER':
+      case '2':
         return const Color(0xFF00E5FF);
-      case 'VIP':
-        return const Color(0xFFFBBF24);
       default:
-        return const Color(0xFF38BDF8);
+        return const Color(0xFF94A3B8);
     }
   }
 
   Color _getRoleBgColor(String role) {
     switch (role.toUpperCase()) {
       case 'ADMIN':
-        return const Color(0xFF450A0A);
+      case '3':
+        return const Color(0xFF78350F).withOpacity(0.35);
       case 'STAFF':
-        return const Color(0xFF083344);
-      case 'VIP':
-        return const Color(0xFF451A03);
+      case '1':
+        return const Color(0xFF581C87).withOpacity(0.35);
+      case 'VIEWER':
+      case '2':
+        return const Color(0xFF083344).withOpacity(0.35);
       default:
-        return const Color(0xFF072740);
+        return const Color(0xFF1E293B).withOpacity(0.35);
     }
   }
 
   String _getRoleDisplayName(String role) {
     switch (role.toUpperCase()) {
       case 'ADMIN':
-        return 'Quản trị viên';
+      case '3':
+        return 'Quản Trị Viên (Role 3)';
       case 'STAFF':
-        return 'Biên tập viên';
-      case 'VIP':
-        return 'Thành viên VIP';
+      case '1':
+        return 'Biên Tập Viên (Role 1)';
+      case 'VIEWER':
+      case '2':
+        return 'Khán Giả (Role 2)';
       default:
-        return 'Khách hàng';
+        return 'Khách Vãng Lai (Role 0)';
     }
   }
 }

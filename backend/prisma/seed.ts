@@ -1116,6 +1116,7 @@ async function main() {
   // ============================================================
 
   const newChannels = channels.filter(c =>
+    ['sport-1', 'sport-2'].includes(c.slug) ||
     !['sport-1','sport-2','show','entertain','cine','drama','news','music','kids','tech','food','discovery'].includes(c.slug),
   );
 
@@ -1297,6 +1298,50 @@ async function main() {
       'Phòng Ngừa Đột Quỵ Vào Mùa Lạnh Cho Người Cao Tuổi',
       'Hướng Dẫn Kiểm Soát Đường Huyết Cho Người Tiểu Đường',
     ],
+    SPORTS_1: [
+      'Trực Tiếp: Trận Siêu Kinh Điển Champions League 2026',
+      'Ngoại Hạng Anh: Trận Thư Hùng Manchester City vs Arsenal',
+      'Đại Chiến Derby Luân Đôn: Chelsea vs Tottenham',
+      'El Clásico Kinh Điển: Real Madrid vs FC Barcelona',
+      'Derby Nước Ý: Juventus vs Inter Milan',
+      'Bundesliga: Bayern Munich vs Borussia Dortmund',
+      'Trực Tiếp V-League: Hà Nội FC vs Công An Hà Nội',
+      'Cúp C1 Châu Á AFC Champions League: Vòng Knock-out',
+      'Vòng Loại World Cup 2026 Khu Vực Châu Á',
+      'Top 10 Bàn Thắng Đẹp Nhất Ngoại Hạng Anh Mùa Giải',
+      'Tạp Chí Ngoại Hạng Anh: Bàn Thắng Vàng & Tình Huống VAR',
+      'Studio Tiền Trận: Nhận Định Siêu Kinh Điển Ngoại Hạng Anh',
+      'Ký Sự Cầu Thủ: Hành Trình Chinh Phục Quả Bóng Vàng',
+      'Toàn Cảnh Bảng Xếp Hạng & Điểm Nhấn Bóng Đá Châu Âu',
+      'Trực Tiếp: Vòng Bán Kết Cúp C1 Châu Âu 4K',
+      'Tuyển Tập Những Pha Cứu Thua Không Tưởng Premier League',
+      'Bình Luận Sau Trận Đấu & Phỏng Vấn Phòng Thay Đồ',
+      'Chung Kết Cúp FA: Trận Cầu Rực Lửa Wembley',
+      'Extra Time: Mổ Xẻ Điểm Nóng Trọng Tài & Chiến Thuật',
+      'Huyền Thoại Sân Cỏ: Những Khoảnh Khắc Lịch Sử Bóng Đá',
+    ],
+    SPORTS_2: [
+      'Đua Xe F1: Chặng Đua Huyền Thoại Monaco Grand Prix 4K',
+      'F1 Singapore Grand Prix: Vòng Phân Hạng Q3 Đua Đêm Marina Bay',
+      'Đua Xe MotoGP: Những Pha Nghiêng 65 Độ Bứt Tốc 360km/h',
+      'MotoGP Italian Grand Prix: Đại Chiến Đường Đua Mugello',
+      'Võ Thuật Tổng Hợp UFC 315: Trận Tranh Đai Vô Địch Thế Giới',
+      'UFC Fight Night: Những Cú Knock-Out Sấm Sét Las Vegas',
+      'Quần Vợt Wimbledon Final: Trận Thư Hùng 5 Set Nghẹt Thở',
+      'Quần Vợt US Open: Bán Kết Sân Cứng Đỉnh Cao 4K HDR',
+      'Bóng Rổ NBA Finals: Trận Chung Kết Game 7 Đỉnh Cao',
+      'NBA All-Star: Cuộc Thi Úp Rổ & Ném 3 Điểm Siêu Hạng',
+      'Thể Thao Mạo Hiểm Red Bull: Lướt Sóng Khổng Lồ Nazare',
+      'Tạp Chí Kỹ Thuật F1: Mổ Xẻ Động Cơ Hybrid & Pit-Stop Dưới 2s',
+      'Bản Tin Đối Kháng: Cân Ký & Chạm Trán Face-Off UFC',
+      'Bóng Chuyền Nữ VNL: Trận Thư Hùng Kinh Điển Châu Á',
+      'PGA Tour: Vòng Chung Kết Giải Golf Danh Giá Nhất',
+      'Quyền Anh Hạng Nặng Thế Giới: Trận Thống Nhất Các Đai Vô Địch',
+      'Đua Xe Địa Hình Dakar Rally: Thử Thách Vùng Sa Mạc',
+      'Quần Vợt Roland Garros: Đại Chiến Trên Mặt Sân Đất Nện',
+      'Tuyển Tập Những Pha Ra Đòn Knock-Out Nhanh Nhất Lịch Sử MMA',
+      'Tốc Độ Đêm: Phỏng Vấn Bục Podium F1 & Highlights',
+    ],
   };
 
   const tagsPoolByCategory: Record<string, string[]> = {
@@ -1308,6 +1353,8 @@ async function main() {
     ART: ['Art', 'Design', 'Figma', 'Photoshop', 'Nhiếp Ảnh', 'Vẽ', 'Triển Lãm', 'UI/UX'],
     BUSINESS: ['Business', 'Startup', 'Khởi Nghiệp', 'Marketing', 'Tài Chính', 'Chứng Khoán', 'IPO', 'CEO'],
     HEALTH: ['Health', 'Y Khoa', 'Dinh Dưỡng', 'Phòng Bệnh', 'Sức Khỏe', 'Bác Sĩ', 'Tâm Lý'],
+    SPORTS_1: ['Football', 'ChampionsLeague', 'PremierLeague', 'VLeague', 'ElClasico', 'Bóng Đá'],
+    SPORTS_2: ['F1', 'MotoGP', 'UFC', 'Tennis', 'Wimbledon', 'NBA', 'Combat', 'Tốc Độ'],
   };
 
   const qualities = [StreamQuality.SD_480P, StreamQuality.HD_720P, StreamQuality.FULL_HD_1080P, StreamQuality.QHD_1440P, StreamQuality.UHD_4K];
@@ -1316,8 +1363,16 @@ async function main() {
   let totalNewRecordings = 0;
 
   for (const ch of newChannels) {
-    const titles = titlesByCategory[ch.category] || [];
-    const tagPool = tagsPoolByCategory[ch.category] || [];
+    const titles = ch.slug === 'sport-1'
+      ? titlesByCategory['SPORTS_1']
+      : ch.slug === 'sport-2'
+        ? titlesByCategory['SPORTS_2']
+        : titlesByCategory[ch.category] || [];
+    const tagPool = ch.slug === 'sport-1'
+      ? tagsPoolByCategory['SPORTS_1']
+      : ch.slug === 'sport-2'
+        ? tagsPoolByCategory['SPORTS_2']
+        : tagsPoolByCategory[ch.category] || [];
     const tagSlug = ch.slug.replace(/-/g, '_');
 
     const standardDurationsSec = [1800, 2700, 3600, 5400, 7200]; // 30m, 45m, 60m, 90m, 120m

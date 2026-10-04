@@ -11,10 +11,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../logic/recordings/recordings_bloc.dart';
-import '../../../core/constants/program_categories.dart';
+import '../../../data/repositories/channels_repository.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/recording_model.dart';
+import '../../../core/utils/category_utils.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
@@ -58,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _loadData() {
     context.read<ChannelsBloc>().add(const LoadChannels());
+    context.read<ChannelsBloc>().add(const LoadCategories());
     context.read<ProgramsBloc>().add(LoadLiveNow());
     context.read<RecordingsBloc>().add(const LoadRecordings(limit: 10));
   }
@@ -487,28 +489,43 @@ class _HomeScreenState extends State<HomeScreen>
 
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.9,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final cat = ProgramCategories.all19[index];
-                      return _CategoryTile(
-                        label: cat.label,
-                        icon: cat.icon,
-                        color: cat.color,
-                        onTap: () => context.push(
-                          '/category/${Uri.encodeComponent(cat.value)}',
+                sliver: BlocBuilder<ChannelsBloc, ChannelsState>(
+                  builder: (context, state) {
+                    if (state is CategoriesLoaded) {
+                      return SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.9,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final cat = state.categories[index];
+                            final info = getCategoryInfo(cat.category);
+                            return _CategoryTile(
+                              label: info.label,
+                              icon: info.icon,
+                              color: info.color,
+                              onTap: () => context.push(
+                                '/category/${Uri.encodeComponent(cat.category)}',
+                              ),
+                            );
+                          },
+                          childCount: state.categories.length,
                         ),
                       );
-                    },
-                    childCount: ProgramCategories.all19.length,
-                  ),
+                    }
+                    // Show loading or static grid as fallback
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF00E5FF),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
