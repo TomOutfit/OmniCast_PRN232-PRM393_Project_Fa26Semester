@@ -156,20 +156,19 @@ class ProgramsRepository {
         : raw as Map<String, dynamic>;
     final list = _flattenEpg(body);
 
-    if (list.isNotEmpty) {
-      if (_db != null) {
-        await _db!.putEpgCachePayload(dateKey: dateKey, payload: jsonEncode(raw));
-      }
-      if (channelId != null) {
-        return list
-            .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
-            .toList();
-      }
-      if (channelIds != null && channelIds.isNotEmpty) {
-        return list
-            .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
-            .toList();
-      }
+    if (list.isNotEmpty && _db != null) {
+      await _db!.putEpgCachePayload(dateKey: dateKey, payload: jsonEncode(raw));
+    }
+
+    if (channelId != null) {
+      return list
+          .where((e) => e.channelId == channelId || e.channel?.slug == channelId)
+          .toList();
+    }
+    if (channelIds != null && channelIds.isNotEmpty) {
+      return list
+          .where((e) => channelIds.contains(e.channelId) || channelIds.contains(e.channel?.slug))
+          .toList();
     }
     return list;
   }
@@ -215,6 +214,8 @@ class ProgramsRepository {
     final day = d.day.toString().padLeft(2, '0');
     return '$y-$m-$day';
   }
+
+  List<LiveEventModel>? tryDecodeEpg(String raw) => _tryDecodeEpg(raw);
 
   List<LiveEventModel>? _tryDecodeEpg(String raw) {
     try {
