@@ -133,7 +133,7 @@ class EpgBloc extends Bloc<EpgEvent, EpgState> {
       final cached = await _db.getEpgCachePayload(dateKey);
       if (cached != null) {
         final list = _tryDecode(cached);
-        if (list != null) {
+        if (list != null && list.isNotEmpty) {
           final fetchedAt = await _db.lastEpgFetchAt(dateKey);
           emit(EpgLoaded(
             selectedDate: event.date,
@@ -146,6 +146,7 @@ class EpgBloc extends Bloc<EpgEvent, EpgState> {
           return;
         }
       }
+
       emit(EpgError(e.toString()));
     }
   }
@@ -183,9 +184,7 @@ class EpgBloc extends Bloc<EpgEvent, EpgState> {
   String _ymd(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  List<LiveEventModel>? _tryDecode(String _) {
-    // Repository already decodes; for safety, return null here and let
-    // the previous in-memory state stand.
-    return null;
+  List<LiveEventModel>? _tryDecode(String raw) {
+    return _programsRepository.tryDecodeEpg(raw);
   }
 }

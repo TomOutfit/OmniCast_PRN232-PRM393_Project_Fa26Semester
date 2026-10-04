@@ -59,7 +59,7 @@ export function EPGGrid() {
   }, [selectedDayOffset]);
 
   // Dynamic API queries
-  const { data: epgResponse, isLoading: isEpgLoading } = useEpgDay(selectedDate);
+  const { data: epgResponse, isLoading: isEpgLoading, isFetching: isEpgFetching } = useEpgDay(selectedDate);
   const { data: channelsResponse } = useChannels({ limit: 100, isActive: true });
 
   const rawChannels = useMemo(() => {
@@ -113,16 +113,18 @@ export function EPGGrid() {
     return days;
   }, []);
 
-  // Combine API data or rotated 25-channel fallback
+  // Combine API data or rotated 25-channel fallback without jarring flicker
   const allChannels = useMemo<RealEpgChannel[]>(() => {
     if (epgResponse?.channels && epgResponse.channels.length > 0) {
       return mapApiEpgToRealChannels(epgResponse, rawChannels);
     }
-    if (rawChannels.length > 0) {
+    // Only fall back to local schedule if API has finished loading and returned no channels,
+    // avoiding the jarring 1-2s flash of different content before API response settles.
+    if (!isEpgLoading && rawChannels.length > 0) {
       return buildFallbackChannels(selectedDayOffset, channelMetaMap);
     }
     return [];
-  }, [epgResponse, rawChannels, selectedDayOffset, channelMetaMap]);
+  }, [epgResponse, rawChannels, selectedDayOffset, channelMetaMap, isEpgLoading]);
 
   // Filter channels by category
   const filteredChannels = useMemo(() => {
@@ -315,18 +317,41 @@ export function EPGGrid() {
           {/* Timeline Scrollable Grid Container */}
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/20 pb-4">
             <div className="min-w-[1400px] space-y-3">
-              {isEpgLoading && filteredChannels.length === 0 ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex items-stretch gap-3">
-                    <div className="w-44 md:w-52 h-20 rounded-2xl bg-[#0b1320] border border-[#18283e] animate-pulse" />
-                    <div className="flex-1 flex items-center gap-2">
-                      <div className="w-36 h-20 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse" />
-                      <div className="w-56 h-20 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse" />
-                      <div className="w-48 h-20 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse" />
-                      <div className="w-64 h-20 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse" />
-                    </div>
+              {isEpgFetching && filteredChannels.length > 0 && (
+                <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 text-xs font-mono shadow-md animate-pulse mb-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                    <span>Đang đồng bộ dữ liệu lịch phát sóng ngày {SEVEN_DAYS.find(d => d.offset === selectedDayOffset)?.dayName ?? ''}...</span>
                   </div>
-                ))
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">REALTIME EPG SYNC</span>
+                </div>
+              )}
+
+              {isEpgLoading && filteredChannels.length === 0 ? (
+                <div className="space-y-4 py-2">
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-cyan-300 text-xs font-mono">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                    <span>Đang nạp dữ liệu lịch phát sóng 24H chuẩn thực tế...</span>
+                  </div>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="flex items-stretch gap-3">
+                      <div className="w-44 md:w-52 h-24 rounded-2xl bg-[#0b1320] border border-[#18283e] animate-pulse flex items-center p-3 gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-800/80 animate-pulse flex-shrink-0" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-3 w-24 bg-slate-800 rounded animate-pulse" />
+                          <div className="h-2 w-16 bg-slate-800/60 rounded animate-pulse" />
+                        </div>
+                      </div>
+                      <div className="flex-1 flex items-center gap-2 overflow-hidden py-1">
+                        <div className="w-36 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
+                        <div className="w-56 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
+                        <div className="w-48 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
+                        <div className="w-64 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
+                        <div className="w-44 h-24 rounded-2xl bg-[#0a111c] border border-[#142135] animate-pulse flex-shrink-0" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : filteredChannels.length === 0 ? (
                 <div className="py-16 text-center space-y-3">
                   <div className="w-12 h-12 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-400 mx-auto flex items-center justify-center">
