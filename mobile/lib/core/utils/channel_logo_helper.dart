@@ -66,7 +66,7 @@ class ChannelLogoHelper {
   /// Returns canonical channel prefix (e.g., '01-omni-sport-1') or normalized slug
   static String? normalizeSlug(String? rawSlug) {
     if (rawSlug == null || rawSlug.trim().isEmpty) return null;
-    final cleaned = rawSlug.trim().toLowerCase();
+    final cleaned = rawSlug.trim().toLowerCase().replaceAll('_', '-').replaceAll(' ', '-');
     if (_channelSlugMap.containsKey(cleaned)) {
       return _channelSlugMap[cleaned];
     }
@@ -98,17 +98,23 @@ class ChannelLogoHelper {
 
   /// Resolve a local asset from either logoUrl, badgeUrl, or channel slug
   static String? resolveLocalAsset({String? logoUrl, String? slug, bool preferBadge = false}) {
-    // 1. Check if logoUrl already points to a Channel_Logos path
+    // 1. Check slug first (most reliable identifier across models)
+    if (slug != null && slug.isNotEmpty) {
+      final norm = normalizeSlug(slug);
+      if (norm != null) {
+        return preferBadge
+            ? '$channelAssetsPath$norm-badge.svg'
+            : '$channelAssetsPath$norm-icon.svg';
+      }
+    }
+
+    // 2. Check logoUrl
     if (logoUrl != null && logoUrl.isNotEmpty) {
       final cleanUrl = logoUrl.trim();
-      if (cleanUrl.contains('Channel_Logos/')) {
-        final filename = cleanUrl.split('Channel_Logos/').last.replaceAll('/', '');
-        return '$channelAssetsPath$filename';
-      }
       if (cleanUrl.startsWith('assets/channels/')) {
         return cleanUrl;
       }
-      // Check if filename in URL matches any known channel
+      // Check if filename/URL matches any known channel in _channelSlugMap
       for (final entry in _channelSlugMap.entries) {
         if (cleanUrl.contains(entry.key) || cleanUrl.contains(entry.value)) {
           return preferBadge
@@ -116,15 +122,19 @@ class ChannelLogoHelper {
               : '$channelAssetsPath${entry.value}-icon.svg';
         }
       }
-    }
-
-    // 2. Check slug
-    if (slug != null && slug.isNotEmpty) {
-      final norm = normalizeSlug(slug);
-      if (norm != null) {
-        return preferBadge
-            ? '$channelAssetsPath$norm-badge.svg'
-            : '$channelAssetsPath$norm-icon.svg';
+      if (cleanUrl.contains('Channel_Logos/')) {
+        final filename = cleanUrl.split('Channel_Logos/').last.replaceAll('/', '');
+        final candidate = filename
+            .replaceAll('-badge.svg', '')
+            .replaceAll('-icon.svg', '')
+            .replaceAll('.svg', '');
+        final norm = normalizeSlug(candidate);
+        if (norm != null) {
+          return preferBadge
+              ? '$channelAssetsPath$norm-badge.svg'
+              : '$channelAssetsPath$norm-icon.svg';
+        }
+        return '$channelAssetsPath$filename';
       }
     }
 

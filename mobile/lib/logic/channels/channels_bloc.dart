@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/models/channel_model.dart';
+import 'package:flutter/material.dart';
 
 // Events
 abstract class ChannelsEvent extends Equatable {
@@ -58,6 +59,13 @@ class FollowChannel extends ChannelsEvent {
   List<Object?> get props => [channelId];
 }
 
+class LoadCategories extends ChannelsEvent {
+  const LoadCategories();
+
+  @override
+  List<Object?> get props => [];
+}
+
 // States
 abstract class ChannelsState extends Equatable {
   const ChannelsState();
@@ -101,6 +109,15 @@ class ChannelsError extends ChannelsState {
   List<Object?> get props => [message];
 }
 
+class CategoriesLoaded extends ChannelsState {
+  final List<ChannelCategory> categories;
+
+  const CategoriesLoaded(this.categories);
+
+  @override
+  List<Object?> get props => [categories];
+}
+
 // BLoC
 class ChannelsBloc extends Bloc<ChannelsEvent, ChannelsState> {
   final ChannelsRepository _channelsRepository;
@@ -112,6 +129,7 @@ class ChannelsBloc extends Bloc<ChannelsEvent, ChannelsState> {
     on<LoadChannelDetails>(_onLoadChannelDetails);
     on<SearchChannels>(_onSearchChannels);
     on<FollowChannel>(_onFollowChannel);
+    on<LoadCategories>(_onLoadCategories);
   }
 
   Future<void> _onLoadChannels(
@@ -170,6 +188,18 @@ class ChannelsBloc extends Bloc<ChannelsEvent, ChannelsState> {
       await _channelsRepository.followChannel(event.channelId);
       // Reload channels after following
       add(const LoadChannels());
+    } catch (e) {
+      emit(ChannelsError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadCategories(
+    LoadCategories event,
+    Emitter<ChannelsState> emit,
+  ) async {
+    try {
+      final categories = await _channelsRepository.getCategories();
+      emit(CategoriesLoaded(categories));
     } catch (e) {
       emit(ChannelsError(e.toString()));
     }
