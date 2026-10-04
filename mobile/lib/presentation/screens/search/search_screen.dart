@@ -8,7 +8,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/search/search_bloc.dart';
+import '../../../logic/channels/channels_bloc.dart';
 import '../../../core/constants/program_categories.dart';
+import '../../../core/utils/category_utils.dart';
 import '../../widgets/channel_logo.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   String? _activeCategory;
+  List<Map<String, dynamic>> _categories = [{'key': 'ALL', 'label': 'Tất cả'}];
 
   static const _trendingSearches = [
     'V-League 2026',
@@ -36,6 +39,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(() => setState(() {}));
+    context.read<ChannelsBloc>().add(const LoadCategories());
   }
 
   @override
@@ -299,14 +303,15 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           itemCount: 8,
           itemBuilder: (context, index) {
-            final cat = ProgramCategories.all19[index];
+            final cat = _categories[index % _categories.length];
+            final info = getCategoryInfo(cat['key'] as String);
             return Material(
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  _searchController.text = cat.label;
-                  _setCategory(cat.value);
+                  _searchController.text = cat['label'] as String;
+                  _setCategory(cat['key'] as String);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(10),
@@ -321,15 +326,15 @@ class _SearchScreenState extends State<SearchScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: cat.color.withValues(alpha: 0.15),
+                          color: info.color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(cat.icon, color: cat.color, size: 18),
+                        child: Icon(info.icon, color: info.color, size: 18),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          cat.label,
+                          cat['label'] as String,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -362,9 +367,10 @@ class _SearchScreenState extends State<SearchScreen> {
           _buildHeaderBadge('KÊNH TRUYỀN HÌNH (${state.channels.length})'),
           ...state.channels.map((ch) {
             final model = ch.toChannelModel();
+            final info = getCategoryInfo(ch.category ?? 'ALL');
             return _buildSuggestionItem(
               title: ch.name,
-              subtitle: ProgramCategories.labelFor(ch.category),
+              subtitle: info.label,
               leading: ChannelLogo(channel: model, size: 38),
               onTap: () => _triggerSearch(ch.name),
             );
@@ -436,7 +442,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        ProgramCategories.labelFor(ch.category),
+                        getCategoryInfo(ch.category ?? 'ALL').label,
                         style: const TextStyle(
                           color: Color(0xFF94A3B8),
                           fontSize: 11,
