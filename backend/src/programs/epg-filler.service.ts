@@ -49,6 +49,7 @@ export interface FillerRecording {
 export interface FillerChannel {
   id: string;
   name: string;
+  slug?: string;
   category: string;
 }
 
@@ -142,6 +143,7 @@ export class EpScheduleFillerService {
     const used = new Map<string, number>(); // originId -> count
     const result: FillerExpandedProgram[] = [];
     let cursorMs = dayStartMs;
+    let lastOriginId: string | null = null;
 
     const sortedReal = [...realPrograms].sort(
       (a, b) =>
@@ -157,14 +159,25 @@ export class EpScheduleFillerService {
       // Fill the gap before this event with one-or-more fillers.
       let gapCursor = cursorMs;
       while (gapCursor < clampedStartMs) {
-        const slotEndMs = Math.min(
-          gapCursor + this.DEFAULT_FILLER_MINUTES * 60_000,
-          clampedStartMs,
-        );
-        if (!this.pushFiller(result, channel, gapCursor, slotEndMs, shuffled, used)) {
+        const remainingGapMin = Math.round((clampedStartMs - gapCursor) / 60_000);
+        if (remainingGapMin < this.MIN_SLOT_MINUTES) {
+          if (result.length > 0) {
+            const last = result[result.length - 1];
+            last.endTime = new Date(clampedStartMs).toISOString();
+            last.durationMinutes += remainingGapMin;
+          }
+          break;
+        }
+
+        const ep = this.pickNextEpisode(shuffled, used, lastOriginId, gapCursor, channel.category);
+        const slotDurationMin = this.getSlotDuration(ep, gapCursor, remainingGapMin, channel.category);
+        const slotEndMs = Math.min(gapCursor + slotDurationMin * 60_000, clampedStartMs);
+
+        if (!this.pushFillerSlot(result, channel, gapCursor, slotEndMs, ep, shuffled, used)) {
           break;
         }
         gapCursor = slotEndMs;
+        lastOriginId = result[result.length - 1]?.sourceRecordingOrigin ?? null;
       }
 
       // Place the real event itself.
@@ -182,19 +195,31 @@ export class EpScheduleFillerService {
         sourceRecordingOrigin: null,
       });
       cursorMs = Math.max(cursorMs, clampedEndMs);
+      lastOriginId = null;
     }
 
     // Fill the rest of the day.
     let tail = cursorMs;
     while (tail < dayEndMs) {
-      const slotEndMs = Math.min(
-        tail + this.DEFAULT_FILLER_MINUTES * 60_000,
-        dayEndMs,
-      );
-      if (!this.pushFiller(result, channel, tail, slotEndMs, shuffled, used)) {
+      const remainingGapMin = Math.round((dayEndMs - tail) / 60_000);
+      if (remainingGapMin < this.MIN_SLOT_MINUTES) {
+        if (result.length > 0) {
+          const last = result[result.length - 1];
+          last.endTime = new Date(dayEndMs).toISOString();
+          last.durationMinutes += remainingGapMin;
+        }
+        break;
+      }
+
+      const ep = this.pickNextEpisode(shuffled, used, lastOriginId, tail, channel.category);
+      const slotDurationMin = this.getSlotDuration(ep, tail, remainingGapMin, channel.category);
+      const slotEndMs = Math.min(tail + slotDurationMin * 60_000, dayEndMs);
+
+      if (!this.pushFillerSlot(result, channel, tail, slotEndMs, ep, shuffled, used)) {
         break;
       }
       tail = slotEndMs;
+      lastOriginId = result[result.length - 1]?.sourceRecordingOrigin ?? null;
     }
 
     return result;
@@ -327,55 +352,234 @@ export class EpScheduleFillerService {
   }
 
   // ---------------------------------------------------------------
-  // Replay limit
+  // Replay limit & Time-of-day selection
   // ---------------------------------------------------------------
 
   /**
-   * Walk the shuffled pool and return the first episode whose
-   * per-day replay count is below the cap. If everything is over
-   * the cap (i.e. the pool is smaller than the day needs), return
-   * `null` so the caller can break out of the loop.
+   * Walk the shuffled pool and return an episode whose per-day replay count
+   * is below the cap. Prioritizes:
+   *   1. Episodes not yet aired today (count === 0) that are NOT the previous origin
+   *      and have high affinity for the current time slot.
+   *   2. Any unused episode that is NOT the previous origin.
+   *   3. Episodes with count < cap that are NOT the previous origin.
+   *   4. Single-item library fallback.
    */
   pickNextEpisode(
     shuffled: EpisodeEntry[],
     used: Map<string, number>,
+    lastOriginId?: string | null,
+    currentSlotMs?: number,
+    channelCategory?: string,
   ): EpisodeEntry | null {
     const cap = this.MAX_REPEATS_PER_ITEM_PER_DAY;
+
+    const getAffinityScore = (ep: EpisodeEntry, slotMs?: number): number => {
+      if (!slotMs) return 0;
+      const hour = (new Date(slotMs).getUTCHours() + 7) % 24;
+      const titleLower = ep.title.toLowerCase();
+      const tagsLower = ep.tags.map((t) => t.toLowerCase()).join(' ');
+      const text = `${titleLower} ${tagsLower}`;
+
+      // Night (00:00 - 06:00)
+      if (hour >= 0 && hour < 6) {
+        if (
+          text.includes('đêm') ||
+          text.includes('khuya') ||
+          text.includes('podcast') ||
+          text.includes('sách') ||
+          text.includes('ngủ') ||
+          text.includes('thiền') ||
+          text.includes('chill') ||
+          text.includes('triết học') ||
+          text.includes('tâm sự') ||
+          text.includes('phim ngắn')
+        ) return 10;
+        if (text.includes('ôn thi') || text.includes('thpt') || text.includes('nấu ăn')) return -10;
+        return 1;
+      }
+      // Morning (06:00 - 09:00)
+      if (hour >= 6 && hour < 9) {
+        if (
+          text.includes('sáng') ||
+          text.includes('chào ngày mới') ||
+          text.includes('khởi động') ||
+          text.includes('yoga') ||
+          text.includes('thể dục') ||
+          text.includes('tin tức') ||
+          text.includes('hoạt hình') ||
+          text.includes('thí nghiệm')
+        ) return 10;
+        return 1;
+      }
+      // Midday (09:00 - 11:30)
+      if (hour >= 9 && hour < 11) {
+        if (
+          text.includes('workshop') ||
+          text.includes('kỹ năng') ||
+          text.includes('khám phá') ||
+          text.includes('khóa học')
+        ) return 10;
+        return 1;
+      }
+      // Lunch (11:30 - 14:00)
+      if (hour >= 11 && hour < 14) {
+        if (
+          text.includes('trưa') ||
+          text.includes('nấu ăn') ||
+          text.includes('ẩm thực') ||
+          text.includes('món') ||
+          text.includes('eat clean') ||
+          text.includes('bản tin')
+        ) return 10;
+        return 1;
+      }
+      // Afternoon (14:00 - 18:00)
+      if (hour >= 14 && hour < 18) {
+        if (
+          text.includes('ôn thi') ||
+          text.includes('thpt') ||
+          text.includes('toán') ||
+          text.includes('lớp học') ||
+          text.includes('khóa học') ||
+          text.includes('ielts') ||
+          text.includes('python') ||
+          text.includes('thiết kế') ||
+          text.includes('chiều')
+        ) return 10;
+        return 1;
+      }
+      // Prime time (18:00 - 22:30)
+      if (hour >= 18 && hour < 22) {
+        if (
+          text.includes('trực tiếp') ||
+          text.includes('đỉnh cao') ||
+          text.includes('bom tấn') ||
+          text.includes('chung kết') ||
+          text.includes('đại chiến') ||
+          text.includes('show') ||
+          text.includes('vàng')
+        ) return 10;
+        return 1;
+      }
+      return 1;
+    };
+
+    // Priority 1: Unused items (count == 0) with high daypart affinity, not matching previous origin
+    let bestUnused: EpisodeEntry | null = null;
+    let bestUnusedScore = -999;
+    for (const ep of shuffled) {
+      const count = used.get(ep.originId) ?? 0;
+      if (count === 0 && (!lastOriginId || ep.originId !== lastOriginId)) {
+        const score = getAffinityScore(ep, currentSlotMs);
+        if (score > bestUnusedScore) {
+          bestUnusedScore = score;
+          bestUnused = ep;
+        }
+      }
+    }
+    if (bestUnused && bestUnusedScore > -10) return bestUnused;
+
+    // Priority 2: Any unused item (count == 0) that does not repeat the previous origin
+    for (const ep of shuffled) {
+      const count = used.get(ep.originId) ?? 0;
+      if (count === 0 && (!lastOriginId || ep.originId !== lastOriginId)) {
+        return ep;
+      }
+    }
+
+    // Priority 3: Replays (count < cap), avoiding consecutive repetition
+    let bestReplay: EpisodeEntry | null = null;
+    let bestReplayScore = -999;
+    for (const ep of shuffled) {
+      const count = used.get(ep.originId) ?? 0;
+      if (count < cap && (!lastOriginId || ep.originId !== lastOriginId)) {
+        const score = getAffinityScore(ep, currentSlotMs);
+        if (score > bestReplayScore) {
+          bestReplayScore = score;
+          bestReplay = ep;
+        }
+      }
+    }
+    if (bestReplay && bestReplayScore > -10) return bestReplay;
+
+    for (const ep of shuffled) {
+      const count = used.get(ep.originId) ?? 0;
+      if (count < cap && (!lastOriginId || ep.originId !== lastOriginId)) {
+        return ep;
+      }
+    }
+
+    // Priority 4: Fallback for single-item pools
     for (const ep of shuffled) {
       const count = used.get(ep.originId) ?? 0;
       if (count < cap) return ep;
     }
+
     return null;
   }
 
   // ---------------------------------------------------------------
-  // Helpers
+  // Slot Duration Determination
   // ---------------------------------------------------------------
 
-  /**
-   * Emit a filler slot covering `[slotStartMs, slotEndMs)`. Returns
-   * `true` when something was emitted, `false` when the gap is too
-   * small to render (< MIN_SLOT_MINUTES) or we've already exhausted
-   * every source of content.
-   *
-   * Selection order:
-   *   1. Try a fresh episode from the library.
-   *   2. If the library is exhausted (every recording has hit the
-   *      replay cap), emit a **branded placeholder** so the grid is
-   *      never empty — this is the safety net the spec requires.
-   */
-  private pushFiller(
+  getSlotDuration(
+    ep: EpisodeEntry | null,
+    slotStartMs: number,
+    remainingGapMin: number,
+    channelCategory: string,
+  ): number {
+    let desired: number;
+    if (ep && ep.durationSeconds > 0) {
+      const rawMin = Math.round(ep.durationSeconds / 60);
+      desired = Math.max(this.MIN_SLOT_MINUTES, Math.min(180, rawMin));
+    } else {
+      const hour = (new Date(slotStartMs).getUTCHours() + 7) % 24;
+      const cat = (channelCategory || '').toUpperCase();
+      if (hour >= 0 && hour < 6) {
+        desired = cat.includes('CINE') || cat.includes('SPORT') ? 90 : 60;
+      } else if (hour >= 6 && hour < 9) {
+        desired = cat.includes('KID') || cat.includes('NEWS') ? 30 : 45;
+      } else if (hour >= 9 && hour < 11) {
+        desired = 45;
+      } else if (hour >= 11 && hour < 14) {
+        desired = cat.includes('NEWS') || cat.includes('KID') ? 30 : 45;
+      } else if (hour >= 14 && hour < 18) {
+        desired = cat.includes('CINE') ? 90 : 60;
+      } else if (hour >= 18 && hour < 20) {
+        desired = cat.includes('KID') ? 30 : 45;
+      } else if (hour >= 20 && hour < 22) {
+        desired = cat.includes('CINE') || cat.includes('SPORT') ? 90 : 60;
+      } else {
+        desired = 60;
+      }
+    }
+
+    if (desired >= remainingGapMin) {
+      return remainingGapMin;
+    }
+    const remainder = remainingGapMin - desired;
+    if (remainder > 0 && remainder < this.MIN_SLOT_MINUTES) {
+      return remainingGapMin;
+    }
+    return desired;
+  }
+
+  // ---------------------------------------------------------------
+  // Push Filler Helpers
+  // ---------------------------------------------------------------
+
+  pushFillerSlot(
     out: FillerExpandedProgram[],
     channel: FillerChannel,
     slotStartMs: number,
     slotEndMs: number,
+    ep: EpisodeEntry | null,
     shuffled: EpisodeEntry[],
     used: Map<string, number>,
   ): boolean {
     const slotMinutes = Math.round((slotEndMs - slotStartMs) / 60_000);
     if (slotMinutes < this.MIN_SLOT_MINUTES) return false;
 
-    const ep = this.pickNextEpisode(shuffled, used);
     if (ep) {
       used.set(ep.originId, (used.get(ep.originId) ?? 0) + 1);
       out.push({
@@ -397,9 +601,7 @@ export class EpScheduleFillerService {
     }
 
     // Fallback: branded placeholder with realistic time-of-day appropriate title.
-    // Used when library is empty or every recording has hit the replay cap.
-    // Guaranteed non-empty day while reflecting realistic TV broadcasting time slots.
-    const title = this.getBrandedTitle(channel.name, channel.category, slotStartMs, out);
+    const title = this.getBrandedTitle(channel.name, channel.category, slotStartMs, out, channel.slug);
     out.push({
       id: `filler-brand-${channel.id}-${slotStartMs}`,
       title,
@@ -418,73 +620,362 @@ export class EpScheduleFillerService {
     return true;
   }
 
+  private pushFiller(
+    out: FillerExpandedProgram[],
+    channel: FillerChannel,
+    slotStartMs: number,
+    slotEndMs: number,
+    shuffled: EpisodeEntry[],
+    used: Map<string, number>,
+  ): boolean {
+    const lastOriginId = out.length > 0 ? (out[out.length - 1].sourceRecordingOrigin ?? null) : null;
+    const ep = this.pickNextEpisode(shuffled, used, lastOriginId, slotStartMs, channel.category);
+    return this.pushFillerSlot(out, channel, slotStartMs, slotEndMs, ep, shuffled, used);
+  }
+
   /**
    * Determine a realistic, time-appropriate program title for synthetic filler slots.
    * Matches real Vietnamese television dayparts (UTC+7) so morning news is in morning,
-   * lunch news at 11h30, prime-time at 20h, etc.
+   * lunch news at 11h30, prime-time at 20h, etc. Guarantees no two consecutive programs
+   * share the same title.
    */
   private getBrandedTitle(
     channelName: string,
     category: string,
     slotStartMs: number,
     existingPrograms: FillerExpandedProgram[],
+    slug?: string,
   ): string {
     const date = new Date(slotStartMs);
-    // Convert UTC to Vietnam local hour (UTC+7)
     const localHour = (date.getUTCHours() + 7) % 24;
     const cat = (category || '').toUpperCase();
+    const slotIdx = existingPrograms.length;
+    const s = (slug || '').toLowerCase();
+    const isSport2 = s === 'sport-2' || s === 'omni-sport-2' || channelName.includes('Sport 2') || channelName.endsWith(' 2');
 
-    let candidate = '';
+    const pickTitle = (candidates: string[]): string => {
+      const lastProg = existingPrograms.length > 0 ? existingPrograms[existingPrograms.length - 1] : null;
+      const lastTitle = lastProg ? lastProg.title : '';
+
+      for (let offset = 0; offset < candidates.length; offset++) {
+        const chosen = candidates[(slotIdx + offset) % candidates.length];
+        if (chosen !== lastTitle) {
+          return chosen;
+        }
+      }
+      return `${candidates[0]} (Tập mới)`;
+    };
+
+    // Overnight (00:00 - 06:00)
     if (localHour >= 0 && localHour < 6) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Replay Trận Cầu Kinh Điển Đêm Muộn`;
-      else if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) candidate = `${channelName}: Điện Ảnh Kinh Điển Đêm Khuya`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Ký Sự & Phóng Sự Quốc Tế Đêm`;
-      else if (cat.includes('KID')) candidate = `${channelName}: Kể Chuyện Cổ Tích Ru Ngủ Bé Yêu`;
-      else if (cat.includes('MUSIC') || cat.includes('ENTERTAIN')) candidate = `${channelName}: Acoustic Chillout & Nhạc Thư Giãn`;
-      else candidate = `${channelName}: Tuyển Tập Đặc Sắc Đêm Muộn`;
-    } else if (localHour >= 6 && localHour < 9) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Điểm Tin Thể Thao Sáng 24H`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Chào Ngày Mới & Điểm Báo Toàn Cầu`;
-      else if (cat.includes('KID')) candidate = `${channelName}: Thể Dục Vui Nhộn & Hoạt Hình Sáng`;
-      else candidate = `${channelName}: Khởi Động Ngày Mới`;
-    } else if (localHour >= 9 && localHour < 11) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Tạp Chí Thể Thao & Đua Xe Tốc Độ`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Tọa Đàm Kinh Tế & Thị Trường Số`;
-      else candidate = `${channelName}: Tạp Chí Chuyên Đề & Khám Phá`;
-    } else if (localHour >= 11 && localHour < 14) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Thể Thao Trưa & Phỏng Vấn Chuyên Sâu`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Thời Sự Trưa 11H30 (Toàn Cảnh)`;
-      else if (cat.includes('KID')) candidate = `${channelName}: Giờ Hoạt Hình Trưa Của Bé`;
-      else candidate = `${channelName}: Tiêu Điểm Buổi Trưa`;
-    } else if (localHour >= 14 && localHour < 18) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Quần Vợt & Bóng Chuyền Quốc Tế`;
-      else if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) candidate = `${channelName}: Phim Truyền Hình & Series Chiều`;
-      else if (cat.includes('ESPORT') || cat.includes('GAME')) candidate = `${channelName}: Đấu Trường Esports Chiều`;
-      else candidate = `${channelName}: Chương Trình Chiều Đặc Sắc`;
-    } else if (localHour >= 18 && localHour < 20) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Studio Tiền Trận & Tiêu Điểm Sân Cỏ`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Thời Sự 19H: Bản Tin Quốc Gia`;
-      else if (cat.includes('KID')) candidate = `${channelName}: Hoạt Hình Giờ Vàng Thiếu Nhi`;
-      else candidate = `${channelName}: Tiêu Điểm Đầu Tối`;
-    } else if (localHour >= 20 && localHour < 22) {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Trận Cầu Đỉnh Cao Khung Giờ Vàng`;
-      else if (cat.includes('CINE') || cat.includes('MOVIE')) candidate = `${channelName}: Bom Tấn Điện Ảnh Chiếu Rạp 4K`;
-      else if (cat.includes('SHOW') || cat.includes('ENTERTAIN')) candidate = `${channelName}: Mega Show Khung Giờ Vàng`;
-      else if (cat.includes('ESPORT')) candidate = `${channelName}: Đại Chiến Chung Kết Esports 4K`;
-      else candidate = `${channelName}: Khung Giờ Vàng Truyền Hình`;
-    } else {
-      if (cat.includes('SPORT')) candidate = `${channelName}: Omni Extra Time (Phỏng Vấn Sau Trận)`;
-      else if (cat.includes('NEWS') || cat.includes('BUSINESS')) candidate = `${channelName}: Bản Tin Đêm: Toàn Cảnh Thế Giới 23H`;
-      else if (cat.includes('CINE') || cat.includes('MOVIE')) candidate = `${channelName}: Phim Tâm Lý Ly Kỳ Đêm Muộn`;
-      else candidate = `${channelName}: Tổng Hợp Sự Kiện & Đêm Muộn`;
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: F1 Replay: Monaco Grand Prix Siêu Tốc Độ (4K)`,
+            `${channelName}: MotoGP: Những Pha Cua Tử Thần Nghiêng 65 Độ & Bứt Tốc 360km/h`,
+            `${channelName}: Tuyển Tập Knock-Out Nhanh Nhất Lịch Sử UFC & Quyền Anh Thế Giới`,
+            `${channelName}: Thể Thao Mạo Hiểm Red Bull: Lướt Sóng Khổng Lồ Nazare`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Replay Trận Cầu Siêu Kinh Điển Champions League (4K Atmos)`,
+          `${channelName}: Top 10 Bàn Thắng Vàng Ngoại Hạng Anh Mọi Thời Đại`,
+          `${channelName}: Huyền Thoại Sân Cỏ: Những Khoảnh Khắc Lịch Sử Bóng Đá`,
+          `${channelName}: Tuyển Tập Trận Thư Hùng El Clásico Kịch Tính Nhất`,
+        ]);
+      }
+      if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) {
+        return pickTitle([
+          `${channelName}: Điện Ảnh Kinh Điển Đêm Khuya`,
+          `${channelName}: Phim Ngắn Độc Lập Đoạt Giải`,
+          `${channelName}: Tuyển Tập Điện Ảnh Tác Giả 4K`,
+          `${channelName}: Ký Sự Hậu Trường Điện Ảnh Thế Giới`,
+        ]);
+      }
+      if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+        return pickTitle([
+          `${channelName}: Ký Sự & Phóng Sự Quốc Tế Đêm`,
+          `${channelName}: Toàn Cảnh Kinh Tế Thế Giới 24H`,
+          `${channelName}: Báo Cáo Chuyên Đề: Thị Trường Toàn Cầu`,
+          `${channelName}: Hồ Sơ Tài Chính & Khởi Nghiệp Quốc Tế`,
+        ]);
+      }
+      if (cat.includes('KID')) {
+        return pickTitle([
+          `${channelName}: Kể Chuyện Cổ Tích Ru Ngủ Bé Yêu`,
+          `${channelName}: Khúc Hát Ru & Giai Điệu Êm Dịu`,
+          `${channelName}: Hoạt Hình Thư Giãn Giấc Ngủ Bé`,
+          `${channelName}: Thế Giới Cổ Tích Huyền Bí Cho Bé`,
+        ]);
+      }
+      if (cat.includes('MUSIC') || cat.includes('ENTERTAIN')) {
+        return pickTitle([
+          `${channelName}: Acoustic Chillout & Nhạc Thư Giãn`,
+          `${channelName}: Những Bản Tình Ca Đêm Muộn`,
+          `${channelName}: Live Session: Giai Điệu Mộc`,
+          `${channelName}: Âm Nhạc Không Lời & Thư Thái Tâm Hồn`,
+        ]);
+      }
+      if (cat.includes('EDUCATION') || cat.includes('TECH') || cat.includes('DOC') || cat.includes('ART')) {
+        return pickTitle([
+          `${channelName}: Bài Giảng Triết Học & Tư Duy Nhân Loại`,
+          `${channelName}: Khám Phá Vũ Trụ & Bí Ẩn Khoa Học`,
+          `${channelName}: Sách Nói Kỹ Năng & Tư Duy Phản Biện`,
+          `${channelName}: Hành Trình Văn Minh & Lịch Sử Thế Giới`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Tuyển Tập Đặc Sắc Đêm Muộn`,
+        `${channelName}: Ký Sự Khám Phá Đêm`,
+        `${channelName}: Góc Nhìn Văn Hóa & Đời Sống`,
+        `${channelName}: Những Câu Chuyện Truyền Cảm Hứng`,
+      ]);
     }
 
-    // Ensure no two consecutive programs have the exact same title
-    const lastProg = existingPrograms.length > 0 ? existingPrograms[existingPrograms.length - 1] : null;
-    if (lastProg && lastProg.title === candidate) {
-      return `${candidate} (Phần tiếp theo)`;
+    // Morning (06:00 - 09:00)
+    if (localHour >= 6 && localHour < 9) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Bản Tin Thể Thao Tốc Độ & Đối Kháng: Điểm Tin F1 & UFC 24 Giờ`,
+            `${channelName}: Bóng Rổ NBA: Highlights Màn Rượt Đuổi Điểm Số Nghẹt Thở`,
+            `${channelName}: Quần Vợt ATP Masters 1000: Highlights Cú Đánh Winner & Ace`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Bản Tin Thể Thao Sáng: Điểm Tin Sân Cỏ 24 Giờ Toàn Cầu`,
+          `${channelName}: Tạp Chí Ngoại Hạng Anh: Bàn Thắng & Tình Huống VAR`,
+          `${channelName}: Toàn Cảnh Kết Quả Cúp C1 Châu Âu Đêm Qua`,
+        ]);
+      }
+      if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+        return pickTitle([
+          `${channelName}: Chào Ngày Mới & Điểm Báo Toàn Cầu`,
+          `${channelName}: Nhịp Đập Thị Trường & Mở Cửa Phiên Giao Dịch`,
+          `${channelName}: Tin Tức Buổi Sáng & Dự Báo Thời Tiết Toàn Quốc`,
+        ]);
+      }
+      if (cat.includes('KID')) {
+        return pickTitle([
+          `${channelName}: Thể Dục Vui Nhộn & Hoạt Hình Sáng`,
+          `${channelName}: Bé Học Điều Hay Cùng Bạn Mới`,
+          `${channelName}: Giờ Hoạt Hình Chào Buổi Sáng`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Khởi Động Ngày Mới Năng Động`,
+        `${channelName}: Năng Lượng Tích Cực Mỗi Ngày`,
+        `${channelName}: Chào Buổi Sáng Cùng OmniCast`,
+      ]);
     }
-    return candidate;
+
+    // Mid-Morning (09:00 - 11:30)
+    if (localHour >= 9 && localHour < 11) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Tạp Chí Kỹ Thuật F1: Mổ Xẻ Động Cơ Hybrid & Khí Động Học Cánh Gió`,
+            `${channelName}: Bản Tin Đối Kháng: Cân Ký & Chạm Trán Face-Off Trước Giờ Đấu`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Phân Tích Chiến Thuật & Đội Hình Derby Rực Lửa`,
+          `${channelName}: Ký Sự Cầu Thủ: Con Đường Trở Thành Siêu Sao`,
+        ]);
+      }
+      if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+        return pickTitle([
+          `${channelName}: Tọa Đàm Kinh Tế & Thị Trường Số`,
+          `${channelName}: Phân Tích Chuyên Sâu Doanh Nghiệp & Đầu Tư`,
+        ]);
+      }
+      if (cat.includes('EDUCATION') || cat.includes('TECH')) {
+        return pickTitle([
+          `${channelName}: Lớp Học Kỹ Năng Số & Lập Trình Cơ Bản`,
+          `${channelName}: Công Nghệ Mới & Ứng Dụng Thực Tiễn`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Tạp Chí Chuyên Đề & Khám Phá`,
+        `${channelName}: Phong Cách Sống Hiện Đại & Sáng Tạo`,
+      ]);
+    }
+
+    // Lunch (11:30 - 14:00)
+    if (localHour >= 11 && localHour < 14) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Tốc Độ Trưa: Phân Tích Đường Đua F1 & Chiến Thuật Pit-Stop`,
+            `${channelName}: Phỏng Vấn Độc Quyền Tay Đua Vô Địch & Võ Sĩ Quyền Anh`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Bóng Đá Trưa & Phỏng Vấn Độc Quyền Huấn Luyện Viên`,
+          `${channelName}: Bản Tin Chuyển Nhượng & Thị Trường Cầu Thủ`,
+        ]);
+      }
+      if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+        return pickTitle([
+          `${channelName}: Thời Sự Trưa 11H30: Bản Tin Toàn Cảnh`,
+          `${channelName}: Kinh Tế Trưa & Cập Nhật Giá Cả Thị Trường`,
+        ]);
+      }
+      if (cat.includes('FOOD')) {
+        return pickTitle([
+          `${channelName}: Ẩm Thực Bốn Phương: Món Ngon Bữa Trưa`,
+          `${channelName}: Bếp Trưởng Vào Bếp & Thực Đơn Gia Đình`,
+        ]);
+      }
+      if (cat.includes('KID')) {
+        return pickTitle([
+          `${channelName}: Giờ Hoạt Hình Trưa Của Bé`,
+          `${channelName}: Thế Giới Diệu Kỳ & Bài Học Vui`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Tiêu Điểm Buổi Trưa`,
+        `${channelName}: Phút Thư Giãn Nghỉ Trưa`,
+      ]);
+    }
+
+    // Afternoon (14:00 - 18:00)
+    if (localHour >= 14 && localHour < 18) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Trực Tiếp Quần Vợt Grand Slam: Vòng Bán Kết Đỉnh Cao (4K HDR)`,
+            `${channelName}: Bóng Chuyền Nữ VNL: Trận Thư Hùng Kinh Điển Châu Á`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Trực Tiếp V-League: Trận Cầu Tâm Điểm Vòng Đấu`,
+          `${channelName}: Cúp C1 Châu Á AFC Champions League: Vòng Bảng 4K`,
+        ]);
+      }
+      if (cat.includes('CINE') || cat.includes('MOVIE') || cat.includes('DRAMA')) {
+        return pickTitle([
+          `${channelName}: Phim Truyền Hình & Series Chiều`,
+          `${channelName}: Điện Ảnh Gia Đình Giờ Chiều`,
+        ]);
+      }
+      if (cat.includes('EDUCATION')) {
+        return pickTitle([
+          `${channelName}: Ôn Thi THPT Quốc Gia: Chuyên Đề Tổng Ôn`,
+          `${channelName}: Workshop Khoa Học & Kỹ Năng Thực Hành`,
+        ]);
+      }
+      if (cat.includes('ESPORT') || cat.includes('GAME')) {
+        return pickTitle([
+          `${channelName}: Đấu Trường Esports Chiều: Vòng Bảng`,
+          `${channelName}: Trận Đấu Thử Thách Game Thủ`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Chương Trình Chiều Đặc Sắc`,
+        `${channelName}: Tạp Chí Văn Hóa & Nghệ Thuật Chiều`,
+      ]);
+    }
+
+    // Early Evening (18:00 - 20:00)
+    if (localHour >= 18 && localHour < 20) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Studio Tốc Độ: Nhận Định Chặng Phân Hạng F1 & Face-Off UFC`,
+            `${channelName}: Cận Cảnh Pit-Lane & Khởi Động Trước Giờ Thượng Đài UFC`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Studio Tiền Trận: Siêu Kinh Điển Ngoại Hạng Anh`,
+          `${channelName}: Bình Luận Trước Giờ Bóng Lăn & Đội Hình Ra Sân`,
+        ]);
+      }
+      if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+        return pickTitle([
+          `${channelName}: Thời Sự 19H: Bản Tin Quốc Gia & Toàn Cầu`,
+          `${channelName}: Điểm Tin 24H: Dòng Chảy Sự Kiện`,
+        ]);
+      }
+      if (cat.includes('KID')) {
+        return pickTitle([
+          `${channelName}: Hoạt Hình Giờ Vàng Thiếu Nhi`,
+          `${channelName}: Chuyến Phiêu Lưu Kỳ Thú Cùng Siêu Nhân Nhí`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Tiêu Điểm Đầu Tối`,
+        `${channelName}: Bản Tin Chiều Tối & Gia Đình`,
+      ]);
+    }
+
+    // Prime Time (20:00 - 22:30)
+    if (localHour >= 20 && localHour < 22) {
+      if (cat.includes('SPORT')) {
+        if (isSport2) {
+          return pickTitle([
+            `${channelName}: Trực Tiếp Đua Xe F1: Vòng Phân Hạng Q3 & Chặng Đua Chính`,
+            `${channelName}: Trực Tiếp UFC 315: Trận Tranh Đai Vô Địch Thế Giới`,
+          ]);
+        }
+        return pickTitle([
+          `${channelName}: Trực Tiếp Ngoại Hạng Anh: Trận Thư Hùng Đỉnh Cao`,
+          `${channelName}: Trực Tiếp Siêu Kinh Điển Champions League (4K Atmos)`,
+        ]);
+      }
+      if (cat.includes('CINE') || cat.includes('MOVIE')) {
+        return pickTitle([
+          `${channelName}: Bom Tấn Điện Ảnh Chiếu Rạp 4K`,
+          `${channelName}: Siêu Phẩm Hành Động Giờ Vàng`,
+        ]);
+      }
+      if (cat.includes('SHOW') || cat.includes('ENTERTAIN')) {
+        return pickTitle([
+          `${channelName}: Mega Show Khung Giờ Vàng`,
+          `${channelName}: Trò Chơi Truyền Hình Đỉnh Cao`,
+        ]);
+      }
+      if (cat.includes('ESPORT')) {
+        return pickTitle([
+          `${channelName}: Đại Chiến Chung Kết Esports 4K`,
+          `${channelName}: Siêu Cúp Thể Thao Điện Tử`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Khung Giờ Vàng Truyền Hình`,
+        `${channelName}: Chương Trình Nghệ Thuật Giờ Vàng`,
+      ]);
+    }
+
+    // Late Evening (22:30 - 24:00)
+    if (cat.includes('SPORT')) {
+      if (isSport2) {
+        return pickTitle([
+          `${channelName}: Tốc Độ Đêm: Phỏng Vấn Bục Podium F1 & Highlights Chặng Đua`,
+          `${channelName}: Đêm Knock-Out: Màn Trao Đai & Phỏng Vấn Sau Lồng Bát Giác`,
+        ]);
+      }
+      return pickTitle([
+        `${channelName}: Omni Extra Time: Phân Tích Điểm Nóng & Phỏng Vấn Sau Trận`,
+        `${channelName}: Tổng Hợp Vòng Đấu & Bảng Xếp Hạng Châu Âu`,
+      ]);
+    }
+    if (cat.includes('NEWS') || cat.includes('BUSINESS')) {
+      return pickTitle([
+        `${channelName}: Bản Tin Đêm: Toàn Cảnh Thế Giới 23H`,
+        `${channelName}: Điểm Lại Sự Kiện Nổi Bật Trong Ngày`,
+      ]);
+    }
+    if (cat.includes('CINE') || cat.includes('MOVIE')) {
+      return pickTitle([
+        `${channelName}: Phim Tâm Lý Ly Kỳ Đêm Muộn`,
+        `${channelName}: Tuyển Tập Điện Ảnh Đêm Khuya`,
+      ]);
+    }
+    return pickTitle([
+      `${channelName}: Tổng Hợp Sự Kiện & Đêm Muộn`,
+      `${channelName}: Không Gian Thư Giãn Đêm`,
+    ]);
   }
 }
 

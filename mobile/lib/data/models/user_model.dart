@@ -32,7 +32,7 @@ class UserModel {
       fullName: json['fullName'] as String,
       avatarUrl: json['avatarUrl'] as String?,
       bio: json['bio'] as String?,
-      role: json['role'] as String,
+      role: _normalizeRole(json['role']),
       isActive: json['isActive'] as bool? ?? true,
       emailVerified: json['emailVerified'] as bool? ?? false,
       lastLoginAt: json['lastLoginAt'] != null
@@ -40,6 +40,16 @@ class UserModel {
           : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
+  }
+
+  static String _normalizeRole(dynamic rawRole) {
+    if (rawRole == null) return 'VIEWER';
+    final str = rawRole.toString().toUpperCase().trim();
+    if (str == '1' || str == 'STAFF') return 'STAFF';
+    if (str == '2' || str == 'VIEWER') return 'VIEWER';
+    if (str == '3' || str == 'ADMIN') return 'ADMIN';
+    if (str == '0' || str == 'GUEST') return 'GUEST';
+    return str;
   }
 
   Map<String, dynamic> toJson() {
@@ -60,4 +70,31 @@ class UserModel {
   bool get isAdmin => role == 'ADMIN';
   bool get isStaff => role == 'STAFF';
   bool get isViewer => role == 'VIEWER';
+  bool get isStaffOrAdmin => role == 'STAFF' || role == 'ADMIN';
+
+  int get roleNumber {
+    switch (role) {
+      case 'ADMIN':
+        return 3;
+      case 'VIEWER':
+        return 2;
+      case 'STAFF':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  String get roleDisplayName {
+    switch (role) {
+      case 'ADMIN':
+        return 'Quản Trị Viên';
+      case 'STAFF':
+        return 'Biên Tập Viên';
+      case 'VIEWER':
+        return 'Khán Giả';
+      default:
+        return 'Khách';
+    }
+  }
 }

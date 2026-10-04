@@ -21,6 +21,7 @@ import '../../presentation/screens/recordings/recording_detail_screen.dart';
 import '../../presentation/screens/watchlist/watchlist_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/studio/ai_curator_screen.dart';
+import '../../presentation/screens/admin/admin_hub_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/main_screen.dart';
 
@@ -48,6 +49,20 @@ class AppRouter {
       // If logged in and currently on auth screen, go to home
       if (isLoggedIn && isOnAuth) {
         return '/home';
+      }
+
+      // RBAC Guard: /ai-curator requires STAFF (1) or ADMIN (3)
+      if (state.matchedLocation == '/ai-curator') {
+        if (!isLoggedIn || !authState.user.isStaffOrAdmin) {
+          return '/home';
+        }
+      }
+
+      // RBAC Guard: /admin requires ADMIN (3)
+      if (state.matchedLocation == '/admin') {
+        if (!isLoggedIn || !authState.user.isAdmin) {
+          return '/home';
+        }
       }
 
       return null;
@@ -154,6 +169,10 @@ class AppRouter {
       GoRoute(
         path: '/ai-curator',
         builder: (context, state) => const AICuratorScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminHubScreen(),
       ),
       // Settings
       GoRoute(
