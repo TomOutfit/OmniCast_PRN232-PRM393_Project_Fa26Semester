@@ -105,6 +105,7 @@ function makeService() {
     auditLogger,
     tmdbEnrichment,
     configService,
+    {} as any,
   );
 
   // Reach into the private method via a cast (TS won't allow otherwise).

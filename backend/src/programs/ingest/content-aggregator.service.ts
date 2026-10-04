@@ -27,6 +27,10 @@ import { HealthSource } from './sources/health-source.service';
 import { TravelSource } from './sources/travel-source.service';
 import { ArtSource } from './sources/art-source.service';
 import { LifestyleSource } from './sources/lifestyle-source.service';
+import { TvmazeSource } from './sources/tvmaze-source.service';
+import { NasaSource } from './sources/nasa-source.service';
+import { MarketWeatherSource } from './sources/market-weather-source.service';
+import { CocktailSource } from './sources/cocktail-source.service';
 
 export interface AggregatorSummaryResult {
   totalChannels: number;
@@ -65,6 +69,10 @@ export class ContentAggregatorService {
     private readonly travelSource: TravelSource,
     private readonly artSource: ArtSource,
     private readonly lifestyleSource: LifestyleSource,
+    private readonly tvmazeSource: TvmazeSource,
+    private readonly nasaSource: NasaSource,
+    private readonly marketWeatherSource: MarketWeatherSource,
+    private readonly cocktailSource: CocktailSource,
   ) {
     this.allSources = [
       this.sportsSource,
@@ -79,11 +87,17 @@ export class ContentAggregatorService {
       this.travelSource,
       this.artSource,
       this.lifestyleSource,
+      this.tvmazeSource,
+      this.nasaSource,
+      this.marketWeatherSource,
+      this.cocktailSource,
     ];
 
     this.registerSource(LiveCategory.SPORTS, this.sportsSource);
     this.registerSource(LiveCategory.NEWS, this.newsSource);
+    this.registerSource(LiveCategory.NEWS, this.marketWeatherSource);
     this.registerSource(LiveCategory.BUSINESS, this.newsSource);
+    this.registerSource(LiveCategory.BUSINESS, this.marketWeatherSource);
     this.registerSource(LiveCategory.CINE, this.tmdbContentSource);
     this.registerSource(LiveCategory.DRAMA, this.tmdbContentSource);
     this.registerSource(LiveCategory.PODCAST, this.itunesSource);
@@ -92,14 +106,18 @@ export class ContentAggregatorService {
     this.registerSource(LiveCategory.TECH, this.techSource);
     this.registerSource(LiveCategory.EDUCATION, this.educationSource);
     this.registerSource(LiveCategory.FOOD, this.foodSource);
+    this.registerSource(LiveCategory.FOOD, this.cocktailSource);
     this.registerSource(LiveCategory.HEALTH, this.healthSource);
     this.registerSource(LiveCategory.TRAVEL, this.travelSource);
+    this.registerSource(LiveCategory.TRAVEL, this.marketWeatherSource);
     this.registerSource(LiveCategory.ART, this.artSource);
     this.registerSource(LiveCategory.LIFESTYLE, this.lifestyleSource);
-    this.registerSource(LiveCategory.SHOW, this.lifestyleSource);
-    this.registerSource(LiveCategory.ENTERTAINMENT, this.lifestyleSource);
-    this.registerSource(LiveCategory.KIDS, this.lifestyleSource);
-    this.registerSource(LiveCategory.DOCUMENTARY, this.lifestyleSource);
+    this.registerSource(LiveCategory.LIFESTYLE, this.cocktailSource);
+    this.registerSource(LiveCategory.SHOW, this.tvmazeSource);
+    this.registerSource(LiveCategory.ENTERTAINMENT, this.tvmazeSource);
+    this.registerSource(LiveCategory.KIDS, this.tvmazeSource);
+    this.registerSource(LiveCategory.DOCUMENTARY, this.tvmazeSource);
+    this.registerSource(LiveCategory.DOCUMENTARY, this.nasaSource);
   }
 
   private registerSource(category: LiveCategory, source: BaseExternalSource) {
