@@ -25,17 +25,17 @@ class OmniCastBrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = borderRadius ?? BorderRadius.circular(size * 0.25);
 
-    Widget logoContent = SvgPicture.asset(
-      ChannelLogoHelper.brandLogoSvg,
+    Widget logoContent = Image.asset(
+      ChannelLogoHelper.brandLogoPng,
       width: size,
       height: size,
       fit: BoxFit.contain,
-      placeholderBuilder: (context) => Image.asset(
-        ChannelLogoHelper.brandLogoPng,
+      errorBuilder: (context, error, stackTrace) => SvgPicture.asset(
+        ChannelLogoHelper.brandLogoSvg,
         width: size,
         height: size,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => Icon(
+        placeholderBuilder: (context) => Icon(
           Icons.tv,
           size: size * 0.7,
           color: AppColors.primary,

@@ -176,9 +176,26 @@ export class UsersService {
     if (!this.isUuid(id)) {
       throw new NotFoundException('User not found');
     }
+    const roleMapping: Record<string, string> = {
+      '1': 'STAFF',
+      STAFF: 'STAFF',
+      '2': 'VIEWER',
+      VIEWER: 'VIEWER',
+      '3': 'ADMIN',
+      ADMIN: 'ADMIN',
+      '0': 'GUEST',
+      GUEST: 'GUEST',
+    };
+    const normalizedRole = roleMapping[role] ?? String(role).toUpperCase();
+    if (normalizedRole === 'ADMIN') {
+      throw new BadRequestException('Security Policy: Cannot promote another user to Admin from API');
+    }
+    if (!['STAFF', 'VIEWER', 'GUEST'].includes(normalizedRole)) {
+      throw new BadRequestException('Invalid target role. Allowed: STAFF (1), VIEWER (2), GUEST (0)');
+    }
     return this.prisma.user.update({
       where: { id },
-      data: { role: role as any },
+      data: { role: normalizedRole as any },
     });
   }
 

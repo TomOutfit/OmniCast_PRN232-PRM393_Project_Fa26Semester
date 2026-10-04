@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
-import { Navbar } from '@/components/layout/navbar';
-import { Footer } from '@/components/layout/footer';
+import { AppLayoutShell } from '@/components/layout/app-layout-shell';
 import './globals.css';
 
 const inter = Inter({
@@ -63,9 +62,9 @@ export const metadata: Metadata = {
     description: 'Enterprise Media & Broadcast Intelligence Network',
   },
   icons: {
-    icon: '/logo.svg',
-    shortcut: '/logo.svg',
-    apple: '/logo.svg',
+    icon: '/omnicast_logo.png',
+    shortcut: '/omnicast_logo.png',
+    apple: '/omnicast_logo.png',
   },
 };
 
@@ -98,11 +97,7 @@ export default function RootLayout({
           Bỏ qua tới nội dung
         </a>
         <Providers>
-          <Navbar />
-          <main id="main-content" className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          <AppLayoutShell>{children}</AppLayoutShell>
         </Providers>
         <Toaster
           position="top-right"

@@ -60,14 +60,14 @@ export function Footer() {
           {/* Brand Col */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-4 group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_15px_rgba(0,242,254,0.2)]">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_15px_rgba(0,242,254,0.2)] overflow-hidden">
                 <Image
-                  src="/logo.svg"
-                  alt="OmniCast Logo"
-                  width={28}
-                  height={28}
+                  src="/omnicast_logo.png"
+                  alt="OmniCast Network Logo"
+                  width={36}
+                  height={36}
                   unoptimized
-                  className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(0,242,254,0.8)]"
+                  className="w-full h-full object-contain p-0.5 drop-shadow-[0_0_8px_rgba(0,242,254,0.8)]"
                 />
               </div>
               <span className="text-xl font-black tracking-tight text-white flex items-center">
