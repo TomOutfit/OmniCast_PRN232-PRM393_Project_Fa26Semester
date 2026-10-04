@@ -98,6 +98,7 @@ function makeService() {
     auditLogger,
     tmdbEnrichment,
     configService,
+    {} as any,
   );
   return { service, prisma };
 }
@@ -140,7 +141,7 @@ test('incrementViewCount increments a recording view counter', async () => {
   const { service, prisma } = makeService();
   prisma.recordingStore.set('rec-1', { id: 'rec-1', viewCount: 100 });
   const out = await service.incrementViewCount('rec-1');
-  assert.equal(out.viewCount, 101);
+  assert.equal(out?.viewCount, 101);
 });
 
 test('incrementRecordingShare returns the new share count', async () => {
