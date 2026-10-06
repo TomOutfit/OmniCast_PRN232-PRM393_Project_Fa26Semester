@@ -12,7 +12,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/constants/program_categories.dart';
+import '../../../core/utils/category_utils.dart';
 import '../../../data/models/program_model.dart';
 import '../../../logic/programs/programs_bloc.dart';
 
@@ -73,9 +73,8 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final category = ProgramCategories.byValue[widget.category];
-    final accentColor =
-        category?.color ?? ProgramCategories.colorFor(widget.category);
+    final categoryInfo = getCategoryInfo(widget.category);
+    final accentColor = categoryInfo.color;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -100,7 +99,7 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
                 ),
               ),
               child: Icon(
-                category?.icon ?? ProgramCategories.iconFor(widget.category),
+                categoryInfo.icon,
                 color: accentColor,
                 size: 20,
               ),
@@ -111,7 +110,7 @@ class _ProgramListScreenState extends State<ProgramListScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    category?.label ?? widget.category,
+                    getCategoryInfo(widget.category).label,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -391,17 +390,13 @@ class _Thumbnail extends StatelessWidget {
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(color: const Color(0xFF0F172A)),
                 errorWidget: (_, __, ___) => _PlaceholderThumb(
-                  icon: ProgramCategories.iconFor(
-                    _guessCategoryFromTags(program.tags),
-                  ),
+                  icon: getCategoryInfo(_guessCategoryFromTags(program.tags) ?? 'ENTERTAINMENT').icon,
                   color: accentColor,
                 ),
               )
             else
               _PlaceholderThumb(
-                icon: ProgramCategories.iconFor(
-                  _guessCategoryFromTags(program.tags),
-                ),
+                icon: getCategoryInfo(_guessCategoryFromTags(program.tags) ?? 'ENTERTAINMENT').icon,
                 color: accentColor,
               ),
             if (program.isLive)
@@ -441,11 +436,10 @@ class _Thumbnail extends StatelessWidget {
   String? _guessCategoryFromTags(List<String> tags) {
     for (final tag in tags) {
       final upper = tag.toUpperCase();
-      if (ProgramCategories.byValue.containsKey(upper)) {
-        return upper;
-      }
+      // Return the first matching category
+      return upper;
     }
-    return null;
+    return 'ENTERTAINMENT';
   }
 }
 
@@ -619,7 +613,7 @@ class _EmptyView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            ProgramCategories.iconFor(category),
+            getCategoryInfo(category).icon,
             size: 56,
             color: const Color(0xFF64748B),
           ),

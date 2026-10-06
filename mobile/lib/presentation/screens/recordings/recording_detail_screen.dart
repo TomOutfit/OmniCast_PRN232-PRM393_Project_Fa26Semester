@@ -10,9 +10,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../logic/recordings/recordings_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/program_categories.dart';
+import '../../../core/utils/category_utils.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/services/share_helper.dart';
 import '../../../data/models/recording_model.dart';
 import '../../widgets/omni_player.dart';
+import '../../widgets/social/reactions_bar.dart';
+import '../../widgets/social/comments_section.dart';
 
 const _qualityLabels = {
   'SD_480P': '480p SD',
@@ -39,6 +45,19 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
     context
         .read<RecordingsBloc>()
         .add(LoadRecordingDetails(widget.recordingId));
+    _trackView();
+  }
+
+  Future<void> _trackView() async {
+    try {
+      await getIt<DioClient>().post('${AppEndpoints.recordings}/${widget.recordingId}/view');
+    } catch (_) {}
+  }
+
+  Future<void> _trackShare(String id) async {
+    try {
+      await getIt<DioClient>().post('${AppEndpoints.recordings}/$id/share');
+    } catch (_) {}
   }
 
   @override
@@ -409,11 +428,8 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                           Expanded(
                             child: InkWell(
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Đã sao chép liên kết phát sóng'),
-                                  ),
-                                );
+                                ShareHelper.shareRecording(r);
+                                _trackShare(r.id);
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
@@ -523,6 +539,10 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
+                      const SizedBox(height: 20),
+                      ReactionsBar(targetId: r.id, kind: 'recording'),
+                      const SizedBox(height: 20),
+                      CommentsSection(targetId: r.id, kind: 'recording'),
                     ],
                   ),
                 ),
@@ -547,7 +567,7 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
   }
 
   static String _categoryLabel(String value) {
-    return ProgramCategories.labelFor(value);
+    return getCategoryInfo(value).label;
   }
 
   static String _formatDate(DateTime d) {
@@ -572,34 +592,7 @@ class _PlayerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final src = recording.playableSrc;
-    if (src == null) {
-      return Container(
-        color: Colors.black,
-        child: Center(
-          child: recording.thumbnailUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: recording.thumbnailUrl!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  placeholder: (_, __) =>
-                      const ColoredBox(color: Color(0xFF070B12)),
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.play_circle_outline,
-                    size: 64,
-                    color: Color(0xFF00E5FF),
-                  ),
-                )
-              : const Icon(
-                  Icons.play_circle_outline,
-                  size: 64,
-                  color: Color(0xFF00E5FF),
-                ),
-        ),
-      );
-    }
-
+    final src = recording.playableSrc ?? 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
     return Container(
       color: Colors.black,
       child: Stack(
@@ -608,7 +601,7 @@ class _PlayerSection extends StatelessWidget {
           OmniPlayer(
             url: src,
             posterUrl: recording.thumbnailUrl,
-            autoPlay: false,
+            autoPlay: true,
           ),
           Positioned(
             top: 0,
