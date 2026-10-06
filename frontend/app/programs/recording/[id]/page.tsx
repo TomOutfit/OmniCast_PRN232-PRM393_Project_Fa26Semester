@@ -116,6 +116,9 @@ export default function RecordingDetailPage() {
   // Choose a playable source
   const playerSrc =
     recording.videoUrl ||
+    ((recording as any).externalPlatform === 'YOUTUBE' && (recording as any).externalId
+      ? `https://www.youtube.com/watch?v=${(recording as any).externalId}`
+      : null) ||
     recording.externalUrl ||
     (recording as any).embedCode ||
     '';
@@ -128,7 +131,6 @@ export default function RecordingDetailPage() {
           <VideoPlayer
             src={playerSrc}
             poster={recording.thumbnailUrl || undefined}
-            type="hls"
             className="rounded-none md:rounded-xl"
           />
         </div>

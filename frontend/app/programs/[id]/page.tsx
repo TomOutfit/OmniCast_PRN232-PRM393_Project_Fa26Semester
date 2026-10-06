@@ -233,7 +233,6 @@ function LiveEventView({ program }: { program: any }) {
             }
             poster={program.thumbnailUrl || undefined}
             autoPlay={true}
-            type="hls"
             className="rounded-none md:rounded-xl"
             initialSeekSeconds={calculateLiveSeekOffset(program.scheduledAt, program.duration)}
             isPremium={isChannelPremium(program.channel?.slug)}
@@ -465,7 +464,6 @@ function RecordingView({ recording }: { recording: any }) {
             src={playerSrc}
             poster={recording.thumbnailUrl || undefined}
             autoPlay={true}
-            type="hls"
             className="rounded-none md:rounded-xl"
           />
         </div>
