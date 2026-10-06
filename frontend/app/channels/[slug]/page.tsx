@@ -227,14 +227,14 @@ export default function ChannelDetailPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#06b6d4]" />
-                      <span className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono">
-                        {liveEvent ? 'LUỒNG PHÁT SÓNG TRỰC TIẾP' : 'LUỒNG PHÁT LẠI VOD CHẤT LƯỢNG CAO 24/7'}
+                      <span className={`w-2 h-2 rounded-full ${liveEvent ? 'bg-red-500 animate-pulse' : 'bg-emerald-400'}`} />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-300 font-sans">
+                        {liveEvent ? 'Phát sóng trực tiếp' : 'Luồng tín hiệu chính thức'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                        1080P • FULL HD VOD
+                      <span className="text-[11px] font-semibold text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded-md border border-slate-700/60">
+                        1080p Full HD
                       </span>
                       {liveEvent ? <LiveBadge size="sm" /> : <ReplayBadge size="sm" />}
                     </div>
