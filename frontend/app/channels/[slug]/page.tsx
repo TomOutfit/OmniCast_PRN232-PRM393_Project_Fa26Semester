@@ -55,36 +55,36 @@ const CATEGORY_LABELS: Record<string, string> = {
 // Sources: Mux Dev, Apple CDN, Unified-Streaming (all HTTPS, no Referer needed)
 // ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_CHANNEL_STREAMS: Record<string, string> = {
-  'sport-1':     'https://www.youtube.com/embed/live_stream?channel=UCblfuW_4rakIf2h6aqANefA', // Red Bull
-  'sport-2':     'https://www.youtube.com/embed/live_stream?channel=UC0R3-zRpeIVUnavcRTPWzZA', // F1
-  'esports':     'https://www.youtube.com/embed/live_stream?channel=UCvqRdlKsE5Q8mf8YXbdIJLw', // LoL Esports
-  'cine':        'https://www.youtube.com/embed/live_stream?channel=UCi8e0iOVk1fEOogdfu4YgfA', // Rotten Tomatoes
-  'movies':      'https://www.youtube.com/embed/live_stream?channel=UCi8e0iOVk1fEOogdfu4YgfA',
-  'drama':       'https://www.youtube.com/embed/live_stream?channel=UCWOA1ZGywLbqmigxE4Qlvuw', // Netflix
-  'show':        'https://www.youtube.com/embed/live_stream?channel=UC8-Th83bH_thdKZDJCrn88g', // The Tonight Show
-  'entertain':   'https://www.youtube.com/embed/live_stream?channel=UCRijo3ddMTht_IHyNSNXpNQ', // Dude Perfect
-  'news':        'https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA', // BBC News
-  'business':    'https://www.youtube.com/embed/live_stream?channel=UCvJJ_dzjViJCoLf5uKUTwoA', // CNBC
-  'music':       'https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow', // Lofi Girl
-  'kids':        'https://www.youtube.com/embed/live_stream?channel=UCXVCgDuD_QCkI7gTKU7-tpg', // Nat Geo Kids
-  'tech':        'https://www.youtube.com/embed/live_stream?channel=UCBJycsmduvYEL83R_U4JriQ', // Marques Brownlee
-  'discovery':   'https://www.youtube.com/embed/live_stream?channel=UCpVm7bg6pXKo1Pr6k5kxG9A', // Nat Geo
-  'food':        'https://www.youtube.com/embed/live_stream?channel=UCJFp8uSYCjXOMnkUyb3CQ3Q', // Tasty
-  'podcast':     'https://www.youtube.com/embed/live_stream?channel=UCAuUUnT6oDeKwE6v1NGQxug', // TED
-  'audiobook':   'https://www.youtube.com/embed/live_stream?channel=UCf099SXtegD4kv9-M3GIgnw', // Greatest AudioBooks
-  'academy':     'https://www.youtube.com/embed/live_stream?channel=UCX6b17PVsYBQ0ip5gyeme-Q', // CrashCourse
-  'skill-lab':   'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ', // freeCodeCamp
-  'wellness':    'https://www.youtube.com/embed/live_stream?channel=UCFKE7WVJfvaHW5q283SxchA', // Yoga With Adriene
-  'fashion':     'https://www.youtube.com/embed/live_stream?channel=UCRXiA3h1no_PFkb1JCP0yMA', // Vogue
-  'travel-vn':   'https://www.youtube.com/embed/live_stream?channel=UCZE88kYvCKUKjM-G0uc8Duw', // Khoai Lang Thang
-  'travel-world':'https://www.youtube.com/embed/live_stream?channel=UCGaOvAFinZ7BCN_FDmw74fQ', // Expedia
-  'art-design':  'https://www.youtube.com/embed/live_stream?channel=UClM2LuQ1q5WEc23462tQzBg', // Proko
-  'health':      'https://www.youtube.com/embed/live_stream?channel=UC0QHWhjbe5fGJEPz3sVb6nw', // Doctor Mike
-  'indie-games': 'https://www.youtube.com/embed/live_stream?channel=UCKy1dAqELo0zrOtPkf0eTMw', // IGN
+  'sport-1':     'https://www.youtube.com/embed/4Uv_WkWN1mE', // Red Bull Rampage
+  'sport-2':     'https://www.youtube.com/embed/3d9_J29Kzsc', // Formula 1 Highlights
+  'esports':     'https://www.youtube.com/embed/v4ByswG2Vsk', // LoL Esports Worlds
+  'cine':        'https://www.youtube.com/embed/shW9i6k8cB0', // Movie Trailers
+  'movies':      'https://www.youtube.com/embed/shW9i6k8cB0',
+  'drama':       'https://www.youtube.com/embed/b9EkMc79ZSU', // Netflix Series
+  'show':        'https://www.youtube.com/embed/3H48aW8oYn8', // The Tonight Show
+  'entertain':   'https://www.youtube.com/embed/O7K_QvU_Yk8', // Dude Perfect
+  'news':        'https://www.youtube.com/embed/gCNeDWCI0vo', // BBC News
+  'business':    'https://www.youtube.com/embed/rQ_TfyY8S_A', // CNBC Business
+  'music':       'https://www.youtube.com/embed/jfKfPfyJRdk', // Lofi Girl
+  'kids':        'https://www.youtube.com/embed/1-n7t9X4Q2k', // Nat Geo Kids
+  'tech':        'https://www.youtube.com/embed/ijFSEb2W6_8', // Marques Brownlee
+  'discovery':   'https://www.youtube.com/embed/v64KOxKVLVg', // Nat Geo Wild
+  'food':        'https://www.youtube.com/embed/g_0U5zPj1D8', // Tasty Cooking
+  'podcast':     'https://www.youtube.com/embed/_QdPW8JrYzQ', // TED Talks
+  'audiobook':   'https://www.youtube.com/embed/2G_6e2a2M1g', // Greatest AudioBooks
+  'academy':     'https://www.youtube.com/embed/Yocja_N5s1I', // CrashCourse
+  'skill-lab':   'https://www.youtube.com/embed/8mAITcNt710', // freeCodeCamp
+  'wellness':    'https://www.youtube.com/embed/v7AYKMP6rOE', // Yoga With Adriene
+  'fashion':     'https://www.youtube.com/embed/5qap5aO4i9A', // Vogue 73 Questions
+  'travel-vn':   'https://www.youtube.com/embed/4yZ3-44_u4k', // Khoai Lang Thang
+  'travel-world':'https://www.youtube.com/embed/1F_9U89B37A', // Expedia Travel
+  'art-design':  'https://www.youtube.com/embed/pMC0Cx3Ukac', // Proko Art
+  'health':      'https://www.youtube.com/embed/wzX_zE3i3u8', // Doctor Mike
+  'indie-games': 'https://www.youtube.com/embed/0Y_J4vA1e4w', // IGN Review
 };
 
-// Universal fallback – YouTube freeCodeCamp stream
-const FALLBACK_STREAM = 'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ';
+// Universal fallback – verified freeCodeCamp full course embed
+const FALLBACK_STREAM = 'https://www.youtube.com/embed/8mAITcNt710';
 
 
 export default function ChannelDetailPage() {
