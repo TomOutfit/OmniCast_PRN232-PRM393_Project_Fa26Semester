@@ -34,6 +34,30 @@ export async function createComment(
   return data;
 }
 
+export async function fetchLiveEventComments(
+  liveEventId: string,
+  page = 1,
+  limit = 20,
+): Promise<PaginatedResponse<Comment>> {
+  const { data } = await apiClient.get(
+    `/live-events/${liveEventId}/comments`,
+    { params: { page, limit } },
+  );
+  return data;
+}
+
+export async function createLiveEventComment(
+  liveEventId: string,
+  content: string,
+  parentId?: string,
+): Promise<Comment> {
+  const { data } = await apiClient.post(
+    `/live-events/${liveEventId}/comments`,
+    { content, parentId },
+  );
+  return data;
+}
+
 export async function deleteComment(commentId: string): Promise<unknown> {
   const { data } = await apiClient.delete(`/comments/${commentId}`);
   return data;

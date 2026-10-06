@@ -28,16 +28,14 @@ interface CommentsSectionProps {
 export function CommentsSection({ targetId, kind = 'recording' }: CommentsSectionProps) {
   const { isAuthenticated, user } = useAuth();
   const { data, isLoading } = useComments(
-    kind === 'recording' ? targetId : undefined,
+    targetId,
     1,
     20,
+    kind,
   );
-  // For LiveEvent we currently render an empty-state hint (the UI
-  // surface is identical to Recording; only the network layer differs).
-  // A dedicated live-event comments hook can be added later.
-  const effectiveData = kind === 'recording' ? data : { data: [], meta: { total: 0 } };
-  const create = useCreateComment(kind === 'recording' ? targetId : '');
-  const remove = useDeleteComment(kind === 'recording' ? targetId : '');
+  const effectiveData = data ?? { data: [], meta: { total: 0 } };
+  const create = useCreateComment(targetId, kind);
+  const remove = useDeleteComment(targetId);
 
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
@@ -45,10 +43,6 @@ export function CommentsSection({ targetId, kind = 'recording' }: CommentsSectio
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.trim()) return;
-    if (kind !== 'recording') {
-      // LiveEvent comments pipeline is being wired separately.
-      return;
-    }
     await create.mutateAsync({
       content: draft.trim(),
       parentId: replyTo?.id,
@@ -59,7 +53,7 @@ export function CommentsSection({ targetId, kind = 'recording' }: CommentsSectio
 
   const comments = effectiveData?.data ?? [];
   const total = effectiveData?.meta?.total ?? 0;
-  const supportComposer = kind === 'recording';
+  const supportComposer = true;
 
   return (
     <Card className="p-6 glass-card">
