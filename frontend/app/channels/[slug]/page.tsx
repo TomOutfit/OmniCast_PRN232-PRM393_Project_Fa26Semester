@@ -83,8 +83,8 @@ const DEFAULT_CHANNEL_STREAMS: Record<string, string> = {
   'indie-games': 'https://www.youtube.com/embed/live_stream?channel=UCKy1dAqELo0zrOtPkf0eTMw', // IGN
 };
 
-// Universal fallback – always works, no auth/Referer required
-const FALLBACK_STREAM = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+// Universal fallback – YouTube freeCodeCamp stream
+const FALLBACK_STREAM = 'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ';
 
 
 export default function ChannelDetailPage() {
