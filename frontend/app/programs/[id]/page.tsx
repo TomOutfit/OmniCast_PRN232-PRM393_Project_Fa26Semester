@@ -49,32 +49,32 @@ const QUALITY_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_PROGRAM_STREAMS: Record<string, string> = {
-  'sport-1':     'https://www.youtube.com/embed/4Uv_WkWN1mE', // Red Bull Rampage
-  'sport-2':     'https://www.youtube.com/embed/3d9_J29Kzsc', // Formula 1 Highlights
-  'esports':     'https://www.youtube.com/embed/v4ByswG2Vsk', // LoL Esports Worlds
-  'cine':        'https://www.youtube.com/embed/shW9i6k8cB0', // Movie Trailers
-  'movies':      'https://www.youtube.com/embed/shW9i6k8cB0',
-  'drama':       'https://www.youtube.com/embed/b9EkMc79ZSU', // Netflix Series
-  'show':        'https://www.youtube.com/embed/3H48aW8oYn8', // The Tonight Show
-  'entertain':   'https://www.youtube.com/embed/O7K_QvU_Yk8', // Dude Perfect
-  'news':        'https://www.youtube.com/embed/gCNeDWCI0vo', // BBC News
-  'business':    'https://www.youtube.com/embed/rQ_TfyY8S_A', // CNBC Business
-  'music':       'https://www.youtube.com/embed/jfKfPfyJRdk', // Lofi Girl
-  'kids':        'https://www.youtube.com/embed/1-n7t9X4Q2k', // Nat Geo Kids
-  'tech':        'https://www.youtube.com/embed/ijFSEb2W6_8', // Marques Brownlee
-  'discovery':   'https://www.youtube.com/embed/v64KOxKVLVg', // Nat Geo Wild
-  'food':        'https://www.youtube.com/embed/g_0U5zPj1D8', // Tasty Cooking
-  'podcast':     'https://www.youtube.com/embed/_QdPW8JrYzQ', // TED Talks
-  'audiobook':   'https://www.youtube.com/embed/2G_6e2a2M1g', // Greatest AudioBooks
-  'academy':     'https://www.youtube.com/embed/Yocja_N5s1I', // CrashCourse
-  'skill-lab':   'https://www.youtube.com/embed/8mAITcNt710', // freeCodeCamp
+  'sport-1':     'https://www.youtube.com/embed/or0kpqcuONA', // Red Bull Rampage 2024
+  'sport-2':     'https://www.youtube.com/embed/U-V7IfBwN1I', // Formula 1 Highlights
+  'esports':     'https://www.youtube.com/embed/3d7CbPj5HTw', // LoL Esports Worlds
+  'cine':        'https://www.youtube.com/embed/cqGjhVJWtEg', // Spider-Man Across the Spider-Verse
+  'movies':      'https://www.youtube.com/embed/mBclQoZ5uz4', // Upcoming Movies Trailer
+  'drama':       'https://www.youtube.com/embed/b9EkMc79ZSU', // Stranger Things Final Trailer
+  'show':        'https://www.youtube.com/embed/fntundUUX_E', // The Tonight Show Starring Jimmy Fallon
+  'entertain':   'https://www.youtube.com/embed/A2FsgKoGD04', // Dude Perfect Trick Shots
+  'news':        'https://www.youtube.com/embed/P0MbDizmwRU', // BBC News
+  'business':    'https://www.youtube.com/embed/l4H3V-jG56M', // CNBC Business News
+  'music':       'https://www.youtube.com/embed/rFZHOHl-L8A', // Lofi Girl Beats
+  'kids':        'https://www.youtube.com/embed/c013wYtubY4', // Nat Geo Kids
+  'tech':        'https://www.youtube.com/embed/ioxRzFnzBoo', // Marques Brownlee Plugin
+  'discovery':   'https://www.youtube.com/embed/v64KOxKVLVg', // Nat Geo 360 Underwater
+  'food':        'https://www.youtube.com/embed/OAZpSsu03VA', // CookTube Pasta Recipe
+  'podcast':     'https://www.youtube.com/embed/ontYRskxytQ', // TED Talks SouthBankWomen
+  'audiobook':   'https://www.youtube.com/embed/A4TU2h_rDlM', // Sherlock Holmes Full Audiobook
+  'academy':     'https://www.youtube.com/embed/Yocja_N5s1I', // CrashCourse World History
+  'skill-lab':   'https://www.youtube.com/embed/8mAITcNt710', // freeCodeCamp CS50
   'wellness':    'https://www.youtube.com/embed/v7AYKMP6rOE', // Yoga With Adriene
-  'fashion':     'https://www.youtube.com/embed/5qap5aO4i9A', // Vogue 73 Questions
-  'travel-vn':   'https://www.youtube.com/embed/4yZ3-44_u4k', // Khoai Lang Thang
-  'travel-world':'https://www.youtube.com/embed/1F_9U89B37A', // Expedia Travel
-  'art-design':  'https://www.youtube.com/embed/pMC0Cx3Ukac', // Proko Art
-  'health':      'https://www.youtube.com/embed/wzX_zE3i3u8', // Doctor Mike
-  'indie-games': 'https://www.youtube.com/embed/0Y_J4vA1e4w', // IGN Review
+  'fashion':     'https://www.youtube.com/embed/MGO4_8YRKro', // Vogue 73 Questions Zendaya
+  'travel-vn':   'https://www.youtube.com/embed/GjtcXliMKjM', // Khoai Lang Thang Cao Bằng
+  'travel-world':'https://www.youtube.com/embed/ka-ZgwCXKho', // Expedia Venice Travel Guide
+  'art-design':  'https://www.youtube.com/embed/5KYAsXuG3SM', // Proko Digital Painting
+  'health':      'https://www.youtube.com/embed/vAbdHiW4TO4', // Doctor Mike Reactions
+  'indie-games': 'https://www.youtube.com/embed/3suNbVmvjN0', // IGN Video Games Review
 };
 
 // Universal fallback – verified freeCodeCamp full course embed
