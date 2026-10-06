@@ -11,7 +11,9 @@ import {
 } from '@tanstack/react-query';
 import {
   fetchComments,
+  fetchLiveEventComments,
   createComment,
+  createLiveEventComment,
   deleteComment,
   fetchReactions,
   fetchLiveEventReactions,
@@ -27,19 +29,27 @@ import type {
 
 export const socialKeys = {
   all: ['social'] as const,
-  comments: (recordingId: string) =>
-    [...socialKeys.all, 'comments', recordingId] as const,
+  comments: (targetId: string, kind: 'recording' | 'liveEvent' = 'recording') =>
+    [...socialKeys.all, 'comments', kind, targetId] as const,
   reactions: (recordingId: string) =>
     [...socialKeys.all, 'reactions', recordingId] as const,
   liveEventReactions: (liveEventId: string) =>
     [...socialKeys.all, 'liveEventReactions', liveEventId] as const,
 };
 
-export function useComments(recordingId: string | undefined, page = 1, limit = 20) {
+export function useComments(
+  targetId: string | undefined,
+  page = 1,
+  limit = 20,
+  kind: 'recording' | 'liveEvent' = 'recording',
+) {
   return useQuery<PaginatedResponse<Comment>>({
-    queryKey: [...socialKeys.comments(recordingId ?? ''), page, limit],
-    queryFn: () => fetchComments(recordingId as string, page, limit),
-    enabled: !!recordingId,
+    queryKey: [...socialKeys.comments(targetId ?? '', kind), page, limit],
+    queryFn: () =>
+      kind === 'liveEvent'
+        ? fetchLiveEventComments(targetId as string, page, limit)
+        : fetchComments(targetId as string, page, limit),
+    enabled: !!targetId,
   });
 }
 
@@ -61,13 +71,18 @@ export function useLiveEventReactions(liveEventId: string | undefined) {
   });
 }
 
-export function useCreateComment(recordingId: string) {
+export function useCreateComment(
+  targetId: string,
+  kind: 'recording' | 'liveEvent' = 'recording',
+) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { content: string; parentId?: string }) =>
-      createComment(recordingId, vars.content, vars.parentId),
+      kind === 'liveEvent'
+        ? createLiveEventComment(targetId, vars.content, vars.parentId)
+        : createComment(targetId, vars.content, vars.parentId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: socialKeys.comments(recordingId) });
+      qc.invalidateQueries({ queryKey: socialKeys.comments(targetId, kind) });
     },
   });
 }

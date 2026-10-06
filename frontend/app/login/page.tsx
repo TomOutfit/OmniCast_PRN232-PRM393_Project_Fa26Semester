@@ -154,33 +154,40 @@ export default function LoginPage() {
 
   return (
     <CheckpointGateway
-      title="Trạm Kiểm Soát Cổng Vào"
-      subtitle="Xác thực danh tính người xem để kích hoạt phiên truy cập mạng phát sóng OmniCast Prime"
-      badgeText="INGRESS CHECKPOINT // GATEWAY 01"
+      title="Đăng Nhập OmniCast"
+      subtitle="Hệ thống truyền hình tương tác trực tuyến 4K UHD · Xác thực phiên truy cập"
+      badgeText="BROADCAST NETWORK // PORTAL ACCESS"
       isScanning={isLoading}
     >
-      <div id="login-form" className="relative space-y-6">
+      <div id="login-form" className="relative space-y-5">
         
         {/* Quick Demo Access Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-[#070d18] border border-cyan-500/20 text-[11px] font-mono">
-          <span className="text-slate-400 flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] text-[11px] font-mono shadow-sm">
+          <span className="text-slate-400 flex items-center gap-1.5 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Tài khoản kiểm thử:</span>
+            <span>Tài khoản trải nghiệm nhanh:</span>
           </span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin@123456')}
-              className="px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold hover:scale-105 transition-all"
+              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
+              className="px-2.5 py-1 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
             >
-              Admin Demo
+              <span>Admin</span>
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('viewer@omnicast.tv', 'Viewer@123456')}
-              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:scale-105 transition-all"
+              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
+              className="px-2.5 py-1 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
             >
-              Viewer Demo
+              <span>Staff</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
+              className="px-2.5 py-1 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
+            >
+              <span>Viewer</span>
             </button>
           </div>
         </div>
@@ -197,12 +204,12 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="email"
-                className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
               >
-                <Mail className="w-3 h-3 text-cyan-400" />
-                <span>ĐỊA CHỈ EMAIL TRUY CẬP</span>
+                <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                <span>ĐỊA CHỈ EMAIL</span>
               </label>
-              <span className="text-[10px] font-mono text-slate-500">REQUIRED</span>
+              <span className="text-[10px] font-mono text-slate-500">BẮT BUỘC</span>
             </div>
 
             <div className="group relative">
@@ -215,7 +222,7 @@ export default function LoginPage() {
                 spellCheck={false}
                 aria-invalid={!!errors.email}
                 className={cn(
-                  'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                  'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                   errors.email && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...emailReg}
@@ -242,16 +249,16 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
-                className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
               >
-                <Lock className="w-3 h-3 text-cyan-400" />
-                <span>MẬT MÃ XÁC THỰC</span>
+                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>MẬT KHẨU</span>
               </label>
               <Link
                 href="/forgot-password"
                 className="font-mono text-[10px] uppercase tracking-wider text-cyan-400 hover:text-cyan-300 hover:underline"
               >
-                Khôi phục mã?
+                Quên mật khẩu?
               </Link>
             </div>
 
@@ -259,11 +266,11 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Nhập mã bảo mật của bạn"
+                placeholder="Nhập mật khẩu của bạn"
                 autoComplete="current-password"
                 aria-invalid={!!errors.password}
                 className={cn(
-                  'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                  'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                   errors.password && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...passwordReg}
@@ -315,14 +322,14 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-white/[0.15] bg-slate-900 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-0"
               />
-              <span>Ghi nhớ phiên trên thiết bị này</span>
+              <span>Ghi nhớ phiên đăng nhập</span>
             </label>
 
             <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" />
-              <span>TLS 1.3 ENCRYPTED</span>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>TLS 1.3 SECURED</span>
             </span>
           </div>
 
@@ -331,22 +338,22 @@ export default function LoginPage() {
             type="submit"
             disabled={isLoading}
             className={cn(
-              'group relative h-12 w-full overflow-hidden rounded-xl font-mono text-xs font-black uppercase tracking-wider text-black transition-all shadow-[0_0_20px_rgba(0,242,254,0.35)]',
+              'group relative h-12 w-full overflow-hidden rounded-xl font-mono text-xs font-black uppercase tracking-wider text-slate-950 transition-all shadow-[0_10px_25px_-5px_rgba(0,242,254,0.35)]',
               'bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 hover:from-cyan-300 hover:to-blue-400',
-              'hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(0,242,254,0.6)]',
+              'hover:scale-[1.008] hover:shadow-[0_12px_32px_-5px_rgba(0,242,254,0.5)] active:scale-[0.99]',
               'disabled:cursor-not-allowed disabled:opacity-60'
             )}
           >
             <span className="relative flex items-center justify-center gap-2">
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin text-black" />
-                  <span>ĐANG MỞ CỔNG KIỂM SOÁT…</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                  <span>ĐANG XÁC THỰC TÀI KHOẢN…</span>
                 </>
               ) : (
                 <>
-                  <Fingerprint className="h-4 w-4 text-black" />
-                  <span>XÁC THỰC CỬA VÀO // TIẾN HÀNH ĐĂNG NHẬP</span>
+                  <Fingerprint className="h-4 w-4 text-slate-950" />
+                  <span>ĐĂNG NHẬP HỆ THỐNG PHÁT SÓNG</span>
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
@@ -354,15 +361,54 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Identity Cards for Grading / Testing */}
+        <div className="pt-3 border-t border-white/[0.08]">
+          <p className="text-[10px] font-mono text-slate-400 mb-2 text-center uppercase tracking-wider">
+            Phân quyền tài khoản hệ thống (RBAC 4 Cấp)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
+              className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-950/40 text-left transition-all group"
+            >
+              <span className="block text-[10px] font-mono font-bold text-amber-400 group-hover:text-amber-300">
+                👑 ADMIN
+              </span>
+              <span className="block text-[10px] text-slate-400 truncate">Quản trị tối cao</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
+              className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-950/40 text-left transition-all group"
+            >
+              <span className="block text-[10px] font-mono font-bold text-purple-400 group-hover:text-purple-300">
+                🛠️ STAFF
+              </span>
+              <span className="block text-[10px] text-slate-400 truncate">Biên tập & Studio</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
+              className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400/60 hover:bg-cyan-950/40 text-left transition-all group"
+            >
+              <span className="block text-[10px] font-mono font-bold text-cyan-400 group-hover:text-cyan-300">
+                📺 VIEWER
+              </span>
+              <span className="block text-[10px] text-slate-400 truncate">Khán giả 4K HDR</span>
+            </button>
+          </div>
+        </div>
+
         {/* Gate Switch Footer */}
-        <div className="pt-2 text-center border-t border-slate-800">
+        <div className="pt-2 text-center border-t border-white/[0.08]">
           <p className="text-xs text-slate-400">
-            Chưa có phù hiệu nhận diện?{' '}
+            Chưa có tài khoản OmniCast?{' '}
             <Link
               href="/register"
               className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 hover:underline"
             >
-              Cấp mới hồ sơ ngay
+              Tạo tài khoản mới
               <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </p>

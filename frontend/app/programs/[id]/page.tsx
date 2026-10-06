@@ -37,6 +37,7 @@ import { useT } from '@/lib/i18n/i18n-provider';
 import { useAuth } from '@/lib/auth-context';
 import { bumpLiveEventShare, bumpLiveEventView, bumpRecordingShare, bumpRecordingView } from '@/lib/api/social';
 import { cn } from '@/lib/utils';
+import { calculateLiveSeekOffset, isChannelPremium } from '@/lib/constants/channel-tiers';
 
 const QUALITY_LABELS: Record<string, string> = {
   SD_480P: '480p',
@@ -46,6 +47,23 @@ const QUALITY_LABELS: Record<string, string> = {
   UHD_4K: '4K',
   AUTO: 'Tự động',
 };
+
+const DEFAULT_PROGRAM_STREAMS: Record<string, string> = {
+  'sport-1':       'https://test-streams.mux.dev/test_001/stream.m3u8',
+  'sport-2':       'https://test-streams.mux.dev/test_001/stream.m3u8',
+  'esports':       'https://test-streams.mux.dev/test_001/stream.m3u8',
+  'cine':          'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+  'movies':        'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+  'drama':         'https://test-streams.mux.dev/pts_shift/master.m3u8',
+  'show':          'https://test-streams.mux.dev/pts_shift/master.m3u8',
+  'news':          'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+  'news-2':        'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+  'music':         'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+  'kids':          'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  'tech':          'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+};
+
+const FALLBACK_STREAM = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
 function formatCompact(n: number | string | bigint | undefined): string {
   if (n == null) return '0';
@@ -189,9 +207,20 @@ function LiveEventView({ program }: { program: any }) {
       <div className="bg-black">
         <div className="max-w-7xl mx-auto px-0 md:px-4">
           <VideoPlayer
-            src={program.streamUrl || program.embedCode || program.externalUrl || ''}
+            src={
+              program.streamUrl ||
+              program.embedCode ||
+              program.externalUrl ||
+              (program.channel?.slug ? DEFAULT_PROGRAM_STREAMS[program.channel.slug] : undefined) ||
+              FALLBACK_STREAM
+            }
             poster={program.thumbnailUrl || undefined}
+            autoPlay={true}
+            type="hls"
             className="rounded-none md:rounded-xl"
+            initialSeekSeconds={calculateLiveSeekOffset(program.scheduledAt, program.duration)}
+            isPremium={isChannelPremium(program.channel?.slug)}
+            channelName={program.channel?.name || program.title}
           />
         </div>
       </div>
@@ -395,7 +424,18 @@ function RecordingView({ recording }: { recording: any }) {
     return list.filter((r: any) => r.id !== recording.id).slice(0, 4);
   }, [relatedData, recording.id]);
 
-  const playerSrc = recording.videoUrl || recording.externalUrl || recording.embedCode || '';
+  const playerSrc =
+    recording.videoUrl ||
+    recording.externalUrl ||
+    recording.embedCode ||
+    (recording.channel?.slug ? DEFAULT_PROGRAM_STREAMS[recording.channel.slug] : undefined) ||
+    'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+  useEffect(() => {
+    if (recording?.id) {
+      bumpRecordingView(recording.id).catch(() => {});
+    }
+  }, [recording?.id]);
 
   return (
     <div className="min-h-[80vh]">
@@ -404,6 +444,7 @@ function RecordingView({ recording }: { recording: any }) {
           <VideoPlayer
             src={playerSrc}
             poster={recording.thumbnailUrl || undefined}
+            autoPlay={true}
             type="hls"
             className="rounded-none md:rounded-xl"
           />
