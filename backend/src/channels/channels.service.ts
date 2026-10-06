@@ -120,6 +120,10 @@ export class ChannelsService {
     const channel = await this.prisma.liveChannel.findUnique({
       where: this.isUuid(id) ? { id } : { slug: id },
       include: {
+        liveEvents: {
+          where: { status: 'LIVE' },
+          take: 1,
+        },
         _count: {
           select: {
             liveEvents: true,

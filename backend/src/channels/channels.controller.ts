@@ -184,6 +184,7 @@ export class ChannelsController {
     return this.channelsService.isFollowing(id, req.user.sub);
   }
 
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('STAFF', 'ADMIN')
@@ -205,9 +206,9 @@ export class ChannelsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('STAFF', 'ADMIN')
+  @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete channel (Staff/Admin only)' })
+  @ApiOperation({ summary: 'Delete channel (Admin only)' })
   @ApiParam({ name: 'id', description: 'Channel ID (UUID) or Slug (e.g. vtv1-hd)', example: '11111111-1111-1111-1111-111111111117' })
   @ApiResponse({ status: 200, description: '200 OK — Channel deleted' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })

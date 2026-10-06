@@ -14,112 +14,47 @@ const prisma = new PrismaClient();
 // Map OmniCast channels → real public YouTube channels.
 // Source: youtube.com/<customUrl> → channel ID lookup.
 const YT_CHANNEL_MAP: Record<string, { yt?: string; twitch?: string }> = {
-  // === 6 kênh cũ đã có RSS ===
-  // Tech → Google for Developers (UC_x5XG1OV2P6uZZ5FSM9Ttw)
-  '11111111-1111-1111-1111-111111111110': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-    twitch: '36028955', // Riot Games — public Twitch broadcaster
-  },
-  // Music → Google for Developers as a fallback public feed
-  '11111111-1111-1111-1111-111111111108': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // Cine → Google for Developers as a fallback public feed
-  '11111111-1111-1111-1111-111111111105': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // News → Google for Developers as a fallback public feed
-  '11111111-1111-1111-1111-111111111107': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // Discovery → Google for Developers as a fallback public feed
-  '11111111-1111-1111-1111-111111111112': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // Show → Google for Developers as a fallback public feed
-  '11111111-1111-1111-1111-111111111103': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
+  // Tech / Coding → freeCodeCamp (UC8butISFwT-Wl7EV0hUK0BQ)
+  '11111111-1111-1111-1111-111111111110': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ', twitch: '36028955' },
+  // Music → Linus Tech Tips VOD Feed (UCXuqSBlHAE6Xw-yeJA0Tunw)
+  '11111111-1111-1111-1111-111111111108': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  // Cine → freeCodeCamp
+  '11111111-1111-1111-1111-111111111105': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  // News → Linus Tech Tips
+  '11111111-1111-1111-1111-111111111107': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  // Discovery → freeCodeCamp
+  '11111111-1111-1111-1111-111111111112': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  // Show → Linus Tech Tips
+  '11111111-1111-1111-1111-111111111103': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
 
-  // === 6 kênh cũ bổ sung RSS (đã được 6 → 12) ===
-  // Sport 1 → TNT Sports (UCGW5wsjkeM7i0Y9YOVjzngg)
-  '11111111-1111-1111-1111-111111111101': {
-    yt: 'UCGW5wsjkeM7i0Y9YOVjzngg',
-  },
-  // Sport 2 → DAZN (UCKy1dAqELo0zrD3FhT_mxgw) — fallback IGN gaming feed
-  '11111111-1111-1111-1111-111111111102': {
-    yt: 'UCKy1dAqELo0zrD3FhT_mxgw',
-  },
-  // Entertain → FailArmy (UC_j5X4lhKEyY3hJ0v6E6J-g) — fallback GoogleDev
-  '11111111-1111-1111-1111-111111111104': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // Drama → Google for Developers (dùng làm fallback phim ngắn)
-  '11111111-1111-1111-1111-111111111106': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // Kids → TED-Ed (UCsooa4yRKGN_zEE8iknghZA) — kids educational
-  '11111111-1111-1111-1111-111111111109': {
-    yt: 'UCsooa4yRKGN_zEE8iknghZA',
-  },
-  // Food → 5-Minute Crafts (UC282fu4jM2RQBWwgd_JUwbg) — DIY + cooking
-  '11111111-1111-1111-1111-111111111111': {
-    yt: 'UC282fu4jM2RQBWwgd_JUwbg',
-  },
+  // === 6 kênh cũ bổ sung RSS ===
+  // Sport 1 → freeCodeCamp
+  '11111111-1111-1111-1111-111111111101': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  // Sport 2 → Linus Tech Tips
+  '11111111-1111-1111-1111-111111111102': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  // Entertain → freeCodeCamp
+  '11111111-1111-1111-1111-111111111104': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  // Drama → Linus Tech Tips
+  '11111111-1111-1111-1111-111111111106': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  // Kids → freeCodeCamp
+  '11111111-1111-1111-1111-111111111109': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  // Food → Linus Tech Tips
+  '11111111-1111-1111-1111-111111111111': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
 
   // === 13 kênh mới ===
-  // 13. Esports → Riot Games
-  '11111111-1111-1111-1111-111111111113': {
-    yt: 'UCJ7Vz4ShldjJld9H3yPtHNA',
-  },
-  // 14. Indie Games → IGN (UC_Ky1dAqELo0zrD3FhT_mxgw mapped above)
-  '11111111-1111-1111-1111-111111111114': {
-    yt: 'UCKy1dAqELo0zrD3FhT_mxgw',
-  },
-  // 15. Podcast → TED-Ed
-  '11111111-1111-1111-1111-111111111115': {
-    yt: 'UCsooa4yRKGN_zEE8iknghZA',
-  },
-  // 16. Audiobook → Google for Developers (long-form talks)
-  '11111111-1111-1111-1111-111111111116': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // 17. Academy → Khan Academy (UC4a-GbdwGvPJzC6Jb41NmXA)
-  '11111111-1111-1111-1111-111111111117': {
-    yt: 'UC4a-GbdwGvPJzC6Jb41NmXA',
-  },
-  // 18. Skill Lab → Google for Developers
-  '11111111-1111-1111-1111-111111111118': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // 19. Wellness → 5-Minute Crafts (lifestyle)
-  '11111111-1111-1111-1111-111111111119': {
-    yt: 'UC282fu4jM2RQBWwgd_JUwbg',
-  },
-  // 20. Fashion → 5-Minute Crafts (lifestyle/fashion DIY)
-  '11111111-1111-1111-1111-111111111120': {
-    yt: 'UC282fu4jM2RQBWwgd_JUwbg',
-  },
-  // 21. Travel VN → Google for Developers (travel tips)
-  '11111111-1111-1111-1111-111111111121': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // 22. Travel World → Google for Developers
-  '11111111-1111-1111-1111-111111111122': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // 23. Art & Design → Google for Developers
-  '11111111-1111-1111-1111-111111111123': {
-    yt: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-  },
-  // 24. Business → Bloomberg Markets (UCIALMKvObZNtJ6amD3RkiCgg)
-  '11111111-1111-1111-1111-111111111124': {
-    yt: 'UCIALMKvObZNtJ6amD3RkiCgg',
-  },
-  // 25. Health → WHO (UC07-dxCPCLAm9lyM1t7KSw)
-  '11111111-1111-1111-1111-111111111125': {
-    yt: 'UC07-dxCPCLAm9lyM1t7KSw',
-  },
+  '11111111-1111-1111-1111-111111111113': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111114': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111115': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111116': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111117': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111118': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111119': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111120': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111121': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111122': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111123': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
+  '11111111-1111-1111-1111-111111111124': { yt: 'UCXuqSBlHAE6Xw-yeJA0Tunw' },
+  '11111111-1111-1111-1111-111111111125': { yt: 'UC8butISFwT-Wl7EV0hUK0BQ' },
 };
 
 async function main() {
