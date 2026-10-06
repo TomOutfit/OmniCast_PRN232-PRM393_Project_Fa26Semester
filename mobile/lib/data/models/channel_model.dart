@@ -70,51 +70,45 @@ class ChannelModel {
   // Sources: Mux Dev, Apple CDN, Unified-Streaming, Azure Media (all HTTPS)
   // ─────────────────────────────────────────────────────────────────────────
   static const Map<String, String> defaultChannelStreams = {
-    // Sports channels (Action / Sports Stream)
-    'sport-1':   'https://test-streams.mux.dev/test_001/stream.m3u8',
-    'sport-2':   'https://test-streams.mux.dev/test_001/stream.m3u8',
-    'esports':   'https://test-streams.mux.dev/test_001/stream.m3u8',
-    // Cinema / Movies (Tears of Steel)
-    'cine':      'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    'movies':    'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    // Drama / Series (Cosmos Laundromat)
-    'drama':     'https://test-streams.mux.dev/pts_shift/master.m3u8',
-    'show':      'https://test-streams.mux.dev/pts_shift/master.m3u8',
-    'variety':   'https://test-streams.mux.dev/pts_shift/master.m3u8',
-    // News channels (NASA Live / News Broadcast)
-    'news':      'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
-    'news-2':    'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
-    'business':  'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
-    // Music (Concert / Variety)
-    'music':     'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
-    'music-vn':  'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
-    // Kids (3D Cartoon / Big Buck Bunny)
-    'kids':      'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    'entertain': 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    // Tech / Discovery / Science / Education / Lifestyle
-    'tech':      'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'discovery': 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'food':      'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'lifestyle': 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'travel':    'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'documentary': 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'education': 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'health':    'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
-    'art':       'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    'podcast':   'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    'sport-1':     'https://www.youtube.com/embed/live_stream?channel=UCblfuW_4rakIf2h6aqANefA', // Red Bull
+    'sport-2':     'https://www.youtube.com/embed/live_stream?channel=UC0R3-zRpeIVUnavcRTPWzZA', // F1
+    'esports':     'https://www.youtube.com/embed/live_stream?channel=UCvqRdlKsE5Q8mf8YXbdIJLw', // LoL Esports
+    'cine':        'https://www.youtube.com/embed/live_stream?channel=UCi8e0iOVk1fEOogdfu4YgfA', // Rotten Tomatoes
+    'movies':      'https://www.youtube.com/embed/live_stream?channel=UCi8e0iOVk1fEOogdfu4YgfA',
+    'drama':       'https://www.youtube.com/embed/live_stream?channel=UCWOA1ZGywLbqmigxE4Qlvuw', // Netflix
+    'show':        'https://www.youtube.com/embed/live_stream?channel=UC8-Th83bH_thdKZDJCrn88g', // The Tonight Show
+    'entertain':   'https://www.youtube.com/embed/live_stream?channel=UCRijo3ddMTht_IHyNSNXpNQ', // Dude Perfect
+    'news':        'https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA', // BBC News
+    'business':    'https://www.youtube.com/embed/live_stream?channel=UCvJJ_dzjViJCoLf5uKUTwoA', // CNBC
+    'music':       'https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow', // Lofi Girl
+    'kids':        'https://www.youtube.com/embed/live_stream?channel=UCXVCgDuD_QCkI7gTKU7-tpg', // Nat Geo Kids
+    'tech':        'https://www.youtube.com/embed/live_stream?channel=UCBJycsmduvYEL83R_U4JriQ', // Marques Brownlee
+    'discovery':   'https://www.youtube.com/embed/live_stream?channel=UCpVm7bg6pXKo1Pr6k5kxG9A', // Nat Geo
+    'food':        'https://www.youtube.com/embed/live_stream?channel=UCJFp8uSYCjXOMnkUyb3CQ3Q', // Tasty
+    'podcast':     'https://www.youtube.com/embed/live_stream?channel=UCAuUUnT6oDeKwE6v1NGQxug', // TED
+    'audiobook':   'https://www.youtube.com/embed/live_stream?channel=UCf099SXtegD4kv9-M3GIgnw', // Greatest AudioBooks
+    'academy':     'https://www.youtube.com/embed/live_stream?channel=UCX6b17PVsYBQ0ip5gyeme-Q', // CrashCourse
+    'skill-lab':   'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ', // freeCodeCamp
+    'wellness':    'https://www.youtube.com/embed/live_stream?channel=UCFKE7WVJfvaHW5q283SxchA', // Yoga With Adriene
+    'fashion':     'https://www.youtube.com/embed/live_stream?channel=UCRXiA3h1no_PFkb1JCP0yMA', // Vogue
+    'travel-vn':   'https://www.youtube.com/embed/live_stream?channel=UCZE88kYvCKUKjM-G0uc8Duw', // Khoai Lang Thang
+    'travel-world':'https://www.youtube.com/embed/live_stream?channel=UCGaOvAFinZ7BCN_FDmw74fQ', // Expedia
+    'art-design':  'https://www.youtube.com/embed/live_stream?channel=UClM2LuQ1q5WEc23462tQzBg', // Proko
+    'health':      'https://www.youtube.com/embed/live_stream?channel=UC0QHWhjbe5fGJEPz3sVb6nw', // Doctor Mike
+    'indie-games': 'https://www.youtube.com/embed/live_stream?channel=UCKy1dAqELo0zrOtPkf0eTMw', // IGN
   };
 
   // Category-level fallback stream (when slug not in map above)
   static const Map<String, String> _categoryFallbackStreams = {
-    'SPORTS':        'https://test-streams.mux.dev/test_001/stream.m3u8',
-    'CINE':          'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    'DRAMA':         'https://test-streams.mux.dev/pts_shift/master.m3u8',
-    'SHOW':          'https://test-streams.mux.dev/pts_shift/master.m3u8',
-    'ENTERTAINMENT': 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    'NEWS':          'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
-    'MUSIC':         'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
-    'KIDS':          'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    'TECH':          'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+    'SPORTS':        'https://www.youtube.com/embed/live_stream?channel=UCblfuW_4rakIf2h6aqANefA',
+    'CINE':          'https://www.youtube.com/embed/live_stream?channel=UCi8e0iOVk1fEOogdfu4YgfA',
+    'DRAMA':         'https://www.youtube.com/embed/live_stream?channel=UCWOA1ZGywLbqmigxE4Qlvuw',
+    'SHOW':          'https://www.youtube.com/embed/live_stream?channel=UC8-Th83bH_thdKZDJCrn88g',
+    'ENTERTAINMENT': 'https://www.youtube.com/embed/live_stream?channel=UCRijo3ddMTht_IHyNSNXpNQ',
+    'NEWS':          'https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA',
+    'MUSIC':         'https://www.youtube.com/embed/live_stream?channel=UCSJ4gkVC6NrvII8umztf0Ow',
+    'KIDS':          'https://www.youtube.com/embed/live_stream?channel=UCXVCgDuD_QCkI7gTKU7-tpg',
+    'TECH':          'https://www.youtube.com/embed/live_stream?channel=UCBJycsmduvYEL83R_U4JriQ',
   };
 
   static String resolveDefaultStream(String slug, [String? category]) {
@@ -126,8 +120,8 @@ class ChannelModel {
       final byCat = _categoryFallbackStreams[category.toUpperCase()];
       if (byCat != null) return byCat;
     }
-    // 3. Universal fallback (Mux dev stream – always works)
-    return 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+    // 3. Universal fallback
+    return 'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ';
   }
 
   factory ChannelModel.fromJson(Map<String, dynamic> json) {

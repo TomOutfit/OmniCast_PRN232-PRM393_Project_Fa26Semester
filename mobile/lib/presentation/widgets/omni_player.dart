@@ -7,7 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_theme.dart';
 
 // Fallback stream used when the primary URL fails
-const _kFallbackStream = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+const _kFallbackStream = 'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ';
 
 class OmniPlayer extends StatefulWidget {
   final String url;
