@@ -39,6 +39,7 @@ export interface FillerRecording {
   id: string;
   title: string;
   thumbnailUrl: string | null;
+  videoUrl?: string | null;
   /** Total recording duration in seconds (the *whole* recording, before
    *  any episode splitting). */
   duration: number;
@@ -60,6 +61,7 @@ export interface FillerRealProgram {
   endTime: string;
   status: EventStatus;
   thumbnailUrl: string | null;
+  streamUrl?: string | null;
   durationMinutes: number;
   tags: string[];
   category: string;
@@ -249,6 +251,7 @@ export class EpScheduleFillerService {
           originId: r.id,
           title: r.title,
           thumbnailUrl: r.thumbnailUrl,
+          videoUrl: r.videoUrl,
           tags: r.tags ?? [],
           category: r.category,
           durationSeconds: r.duration,
@@ -266,6 +269,7 @@ export class EpScheduleFillerService {
           originId: r.id,
           title: `${r.title} — Tập ${i + 1}`,
           thumbnailUrl: r.thumbnailUrl,
+          videoUrl: r.videoUrl,
           tags: [...(r.tags ?? []), `Tập ${i + 1}`],
           category: r.category,
           durationSeconds: thisChunk,
@@ -589,6 +593,7 @@ export class EpScheduleFillerService {
         endTime: new Date(slotEndMs).toISOString(),
         status: 'SCHEDULED' as EventStatus,
         thumbnailUrl: ep.thumbnailUrl ?? null,
+        streamUrl: ep.videoUrl ?? null,
         durationMinutes: slotMinutes,
         tags: [...(ep.tags ?? []), 'Replay'],
         category: channel.category,
@@ -989,6 +994,7 @@ export interface EpisodeEntry {
   originId: string;
   title: string;
   thumbnailUrl: string | null;
+  videoUrl?: string | null;
   tags: string[];
   category: LiveCategory | string | null;
   durationSeconds: number;

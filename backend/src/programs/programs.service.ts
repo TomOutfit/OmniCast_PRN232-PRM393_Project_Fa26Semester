@@ -550,6 +550,7 @@ export class ProgramsService {
         id: r.id,
         title: r.title,
         thumbnailUrl: r.thumbnailUrl,
+        videoUrl: (r as any).videoUrl ?? null,
         duration: r.duration ?? 0,
         tags: r.tags ?? [],
         category: r.category ?? null,
