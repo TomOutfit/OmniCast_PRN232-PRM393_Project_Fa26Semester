@@ -8,7 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../logic/recordings/recordings_bloc.dart';
-import '../../../core/constants/program_categories.dart';
+import '../../../logic/channels/channels_bloc.dart';
+import '../../../core/utils/category_utils.dart';
 import '../../../data/models/recording_model.dart';
 
 class RecordingsScreen extends StatefulWidget {
@@ -23,12 +24,14 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String? _selectedCategory;
+  List<Map<String, dynamic>> _categories = [{'key': 'ALL', 'label': 'Tất cả'}];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     context.read<RecordingsBloc>().add(const LoadRecordings(limit: 24));
+    context.read<ChannelsBloc>().add(const LoadCategories());
   }
 
   @override
@@ -171,31 +174,37 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
           ),
 
           // Category filter chips
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: ProgramCategories.all19.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  final selected = _selectedCategory == null;
-                  return _VodFilterChip(
-                    label: 'Tất cả VOD',
-                    selected: selected,
-                    onTap: () => _onCategoryChanged(null),
-                  );
-                }
-                final cat = ProgramCategories.all19[index - 1];
-                final selected = _selectedCategory == cat.value;
-                return _VodFilterChip(
-                  label: cat.label,
-                  selected: selected,
-                  onTap: () => _onCategoryChanged(cat.value),
-                );
-              },
-            ),
+          BlocBuilder<ChannelsBloc, ChannelsState>(
+            builder: (context, channelsState) {
+              if (channelsState is CategoriesLoaded) {
+                _categories = [
+                  {'key': 'ALL', 'label': 'Tất cả'},
+                  ...channelsState.categories.map((c) {
+                    final info = getCategoryInfo(c.category);
+                    return {'key': c.category, 'label': info.label};
+                  }),
+                ];
+              }
+              return SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    final cat = _categories[index];
+                    final key = cat['key'] as String;
+                    final selected = _selectedCategory == (key == 'ALL' ? null : key);
+                    return _VodFilterChip(
+                      label: cat['label'] as String,
+                      selected: selected,
+                      onTap: () => _onCategoryChanged(key == 'ALL' ? null : key),
+                    );
+                  },
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 8),
@@ -210,7 +219,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${state.total} BẢN GHI${_selectedCategory != null ? ' // ${ProgramCategories.labelFor(_selectedCategory).toUpperCase()}' : ''}',
+                        '${state.total} BẢN GHI${_selectedCategory != null ? ' // ${getCategoryInfo(_selectedCategory!).label.toUpperCase()}' : ''}',
                         style: const TextStyle(
                           color: Color(0xFF00E5FF),
                           fontSize: 10,

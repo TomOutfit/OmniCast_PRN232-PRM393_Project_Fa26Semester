@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
   Eye,
   Share2,
+  Check,
   Play,
   Calendar,
   Clock,
@@ -31,6 +32,7 @@ import {
   useChannelBySlug,
 } from '@/lib/hooks/useChannels';
 import { useLiveNow, useLiveEvents } from '@/lib/hooks/usePrograms';
+import { calculateLiveSeekOffset, isChannelPremium } from '@/lib/constants/channel-tiers';
 import type { Channel } from '@/types';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,6 +49,49 @@ const CATEGORY_LABELS: Record<string, string> = {
   DOCUMENTARY: 'Khám phá',
   EDUCATION: 'Giáo dục',
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Verified-working public HLS test streams (HLS.js + Safari native compatible)
+// Sources: Mux Dev, Apple CDN, Unified-Streaming (all HTTPS, no Referer needed)
+// ─────────────────────────────────────────────────────────────────────────────
+const DEFAULT_CHANNEL_STREAMS: Record<string, string> = {
+  // Sports (Action Stream)
+  'sport-1':     'https://test-streams.mux.dev/test_001/stream.m3u8',
+  'sport-2':     'https://test-streams.mux.dev/test_001/stream.m3u8',
+  'esports':     'https://test-streams.mux.dev/test_001/stream.m3u8',
+  // Cinema / Movies
+  'cine':        'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+  'movies':      'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+  // Drama / Series
+  'drama':       'https://test-streams.mux.dev/pts_shift/master.m3u8',
+  'show':        'https://test-streams.mux.dev/pts_shift/master.m3u8',
+  'variety':     'https://test-streams.mux.dev/pts_shift/master.m3u8',
+  // News (Live Broadcast / NASA News)
+  'news':        'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+  'news-2':      'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+  'business':    'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+  // Music (Concert / Variety)
+  'music':       'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+  'music-vn':    'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+  // Kids (Animation 3D)
+  'kids':        'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  'entertain':   'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  // Tech / Discovery / Science / Education / Lifestyle
+  'tech':        'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'discovery':   'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'food':        'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'lifestyle':   'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'travel':      'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'documentary': 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'education':   'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'health':      'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8',
+  'art':         'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+  'podcast':     'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+};
+
+// Universal fallback – always works, no auth/Referer required
+const FALLBACK_STREAM = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
 
 export default function ChannelDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -168,61 +213,44 @@ export default function ChannelDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Live Broadcast Stream Player */}
-            {liveEvent ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" />
-                    <span className="text-xs font-black uppercase tracking-wider text-red-400 font-mono">
-                      LUỒNG PHÁT SÓNG TRỰC TIẾP
-                    </span>
+            {(() => {
+              const activeStreamUrl =
+                liveEvent?.streamUrl ||
+                liveEvent?.embedCode ||
+                liveEvent?.externalUrl ||
+                DEFAULT_CHANNEL_STREAMS[channel.slug] ||
+                FALLBACK_STREAM;
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_#ef4444]" />
+                      <span className="text-xs font-black uppercase tracking-wider text-red-400 font-mono">
+                        {liveEvent ? 'LUỒNG PHÁT SÓNG TRỰC TIẾP' : 'LUỒNG TIẾP SÓNG CHÍNH THỨC 24/7'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+                        HLS 1080P • ADAPTIVE
+                      </span>
+                      <LiveBadge size="sm" />
+                    </div>
                   </div>
-                  <LiveBadge size="sm" />
-                </div>
-                <div className="rounded-2xl overflow-hidden bg-black border border-dark-700 shadow-2xl">
-                  <VideoPlayer
-                    src={liveEvent.streamUrl || liveEvent.embedCode || liveEvent.externalUrl || ''}
-                    poster={liveEvent.thumbnailUrl || channel.bannerUrl || undefined}
-                    className="rounded-2xl"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
-                    <span className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono">
-                      LUỒNG PHÁT SÓNG TIÊU CHUẨN // ON-AIR STANDBY
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-slate-400 bg-[#0d1624] px-2 py-0.5 rounded border border-[#18273c]">
-                    SẴN SÀNG 24/7
-                  </span>
-                </div>
-                <div className="rounded-2xl overflow-hidden bg-black border border-[#16253c] shadow-2xl relative aspect-video flex flex-col items-center justify-center text-center p-6 bg-gradient-to-b from-[#0b1424] to-[#040810]">
-                  <ChannelLogo slug={channel.slug} name={channel.name} size="lg" className="mb-4 shadow-[0_0_20px_rgba(0,242,254,0.3)]" />
-                  <h3 className="text-lg font-black text-white mb-1">{channel.name}</h3>
-                  <p className="text-xs text-slate-400 max-w-md mb-4">
-                    Kênh đang trong khung giờ phát sóng luân phiên EPG 24/7. Bạn có thể theo dõi lịch trình sắp tới hoặc chọn bản ghi VOD chất lượng 4K.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href="/epg"
-                      className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black shadow-[0_0_12px_rgba(0,242,254,0.3)] transition-transform hover:scale-105"
-                    >
-                      Lịch Phát Sóng EPG
-                    </Link>
-                    <Link
-                      href="/recordings"
-                      className="px-4 py-2 rounded-xl bg-[#121f33] hover:bg-[#1a2b45] text-cyan-300 text-xs font-bold border border-cyan-500/30"
-                    >
-                      Kho Bản Ghi VOD
-                    </Link>
+                  <div className="rounded-2xl overflow-hidden bg-black border border-dark-700 shadow-2xl relative">
+                    <VideoPlayer
+                      src={activeStreamUrl}
+                      poster={liveEvent?.thumbnailUrl || channel.bannerUrl || undefined}
+                      autoPlay={true}
+                      className="rounded-2xl"
+                      initialSeekSeconds={calculateLiveSeekOffset(liveEvent?.scheduledAt, liveEvent?.duration)}
+                      isPremium={isChannelPremium(channel.slug)}
+                      channelName={channel.name}
+                    />
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Current/Live Program Info Card */}
             {liveEvent && (
@@ -380,28 +408,33 @@ function StatCard({
 }
 
 function ShareButton({ channel }: { channel: Channel }) {
+  const [copied, setCopied] = useState(false);
+
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
     if (navigator.share) {
       try {
         await navigator.share({ title: channel.name, url });
+        return;
       } catch {
         /* canceled */
       }
-    } else if (navigator.clipboard) {
+    }
+    if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      alert('Đã sao chép liên kết vào bộ nhớ tạm');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
 
   return (
     <Button
       variant="outline"
-      className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2"
+      className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2 transition-all"
       onClick={handleShare}
     >
-      <Share2 className="w-4 h-4" />
-      Chia sẻ
+      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+      {copied ? 'Đã sao chép!' : 'Chia sẻ'}
     </Button>
   );
 }

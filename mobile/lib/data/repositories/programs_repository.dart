@@ -154,7 +154,7 @@ class ProgramsRepository {
       final raw = response.data;
       final body = (raw is Map && raw['data'] is Map)
           ? raw['data'] as Map<String, dynamic>
-          : raw as Map<String, dynamic>;
+          : (raw is Map ? raw as Map<String, dynamic> : <String, dynamic>{});
       list = _flattenEpg(body);
 
       if (list.isNotEmpty && _db != null) {

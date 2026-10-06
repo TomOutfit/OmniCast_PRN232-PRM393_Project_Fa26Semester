@@ -23,6 +23,7 @@ import { useChannels, useChannelCategories } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
 import type { Channel, LiveCategory } from '@/types';
 import { cn } from '@/lib/utils';
+import { isChannelPremium } from '@/lib/constants/channel-tiers';
 
 const CATEGORY_LABELS: Record<string, string> = {
   SPORTS: 'Thể thao',
@@ -49,6 +50,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function ChannelsPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [tierFilter, setTierFilter] = useState<'ALL' | 'FREE' | 'VIP'>('ALL');
   const [quickViewChannel, setQuickViewChannel] = useState<Channel | null>(null);
 
   const { data, isLoading } = useChannels({
@@ -61,12 +63,20 @@ export default function ChannelsPage() {
   const { data: liveEvents } = useLiveNow();
 
   const channels = useMemo<Channel[]>(() => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (Array.isArray((data as any).data)) return (data as any).data;
-    if (Array.isArray((data as any).items)) return (data as any).items;
-    return [];
-  }, [data]);
+    let list: Channel[] = [];
+    if (data) {
+      if (Array.isArray(data)) list = data;
+      else if (Array.isArray((data as any).data)) list = (data as any).data;
+      else if (Array.isArray((data as any).items)) list = (data as any).items;
+    }
+    if (tierFilter === 'FREE') {
+      return list.filter((c) => !isChannelPremium(c.slug));
+    }
+    if (tierFilter === 'VIP') {
+      return list.filter((c) => isChannelPremium(c.slug));
+    }
+    return list;
+  }, [data, tierFilter]);
 
   const liveChannelMap = useMemo(() => {
     const list = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
@@ -131,22 +141,62 @@ export default function ChannelsPage() {
           </div>
         </div>
 
-        {/* ── Category Filter Bar ────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#080d17] border border-[#142033]">
-          {categories.map((cat) => (
+        {/* ── Tier & Category Filter Bar ────────────────────────────── */}
+        <div className="space-y-3">
+          {/* Tier Switcher */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#090f1d] border border-white/[0.08] w-fit">
             <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(cat.key)}
+              onClick={() => setTierFilter('ALL')}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-bold transition-all',
-                selectedCategory === cat.key
-                  ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)] font-black'
-                  : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
+                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all',
+                tierFilter === 'ALL'
+                  ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
               )}
             >
-              {cat.label}
+              TẤT CẢ (25 KÊNH)
             </button>
-          ))}
+            <button
+              onClick={() => setTierFilter('FREE')}
+              className={cn(
+                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5',
+                tierFilter === 'FREE'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md'
+                  : 'text-emerald-400/80 hover:text-emerald-300'
+              )}
+            >
+              <span>GÓI FREE (5 KÊNH)</span>
+            </button>
+            <button
+              onClick={() => setTierFilter('VIP')}
+              className={cn(
+                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5',
+                tierFilter === 'VIP'
+                  ? 'bg-amber-400 text-slate-950 shadow-md'
+                  : 'text-amber-400/80 hover:text-amber-300'
+              )}
+            >
+              <span>👑 GÓI VIP 4K (20 KÊNH)</span>
+            </button>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#080d17] border border-[#142033]">
+            {categories.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setSelectedCategory(cat.key)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all',
+                  selectedCategory === cat.key
+                    ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)] font-black'
+                    : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Channels Grid ──────────────────────────────────────────── */}
@@ -166,6 +216,7 @@ export default function ChannelsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {channels.map((channel, idx) => {
               const liveEvent = liveChannelMap.get(channel.id);
+              const isPremium = isChannelPremium(channel.slug);
               return (
                 <div
                   key={channel.id}
@@ -200,11 +251,22 @@ export default function ChannelsPage() {
                         </div>
                       </div>
 
-                      {/* Live Badge */}
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-950/80 text-red-400 border border-red-800 shadow-[0_0_8px_rgba(239,68,68,0.3)]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-                        LIVE
-                      </span>
+                      {/* Tier & Live Badges */}
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-950/80 text-red-400 border border-red-800 shadow-[0_0_8px_rgba(239,68,68,0.3)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                          LIVE
+                        </span>
+                        {isPremium ? (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 border border-amber-500/40 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                            VIP 4K
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                            FREE
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Current Broadcasting Info */}

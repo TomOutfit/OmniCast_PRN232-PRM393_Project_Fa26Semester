@@ -7,6 +7,7 @@ import 'package:equatable/equatable.dart';
 import '../../../data/datasources/local/database_helper.dart';
 import '../../../data/repositories/programs_repository.dart';
 import '../../../data/models/program_model.dart';
+import '../../../core/utils/error_utils.dart';
 
 // ============================================================
 // EVENTS
@@ -147,7 +148,7 @@ class EpgBloc extends Bloc<EpgEvent, EpgState> {
         }
       }
 
-      emit(EpgError(e.toString()));
+      emit(EpgError(ErrorUtils.parseError(e, defaultMsg: 'Chưa có lịch phát sóng cho ngày này.')));
     }
   }
 

@@ -1,13 +1,27 @@
 // OmniCast - Categories Browse Screen
-// Landing screen for browsing all 19 program categories with Cyber-Dark styling.
+// Landing screen for browsing all program categories with Cyber-Dark styling.
+// Categories loaded dynamically from backend API.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/program_categories.dart';
+import '../../../logic/channels/channels_bloc.dart';
+import '../../../core/utils/category_utils.dart';
 
-class CategoriesScreen extends StatelessWidget {
+class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
+
+  @override
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends State<CategoriesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChannelsBloc>().add(const LoadCategories());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +78,45 @@ class CategoriesScreen extends StatelessWidget {
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.35,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final cat = ProgramCategories.all19[index];
-                  return _CategoryTile(category: cat);
-                },
-                childCount: ProgramCategories.all19.length,
-              ),
+            sliver: BlocBuilder<ChannelsBloc, ChannelsState>(
+              builder: (context, state) {
+                if (state is ChannelsLoading) {
+                  return const SliverToBoxAdapter(
+                    child: Center(
+                      child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                    ),
+                  );
+                }
+                if (state is CategoriesLoaded) {
+                  return SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.35,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final cat = state.categories[index];
+                        final info = getCategoryInfo(cat.category);
+                        return _CategoryTile(
+                          value: cat.category,
+                          label: info.label,
+                          icon: info.icon,
+                          color: info.color,
+                          count: cat.count,
+                        );
+                      },
+                      childCount: state.categories.length,
+                    ),
+                  );
+                }
+                return const SliverToBoxAdapter(
+                  child: Center(
+                    child: Text('Không thể tải danh mục'),
+                  ),
+                );
+              },
             ),
           ),
           const SliverToBoxAdapter(
@@ -90,9 +129,19 @@ class CategoriesScreen extends StatelessWidget {
 }
 
 class _CategoryTile extends StatelessWidget {
-  final ProgramCategory category;
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final int count;
 
-  const _CategoryTile({required this.category});
+  const _CategoryTile({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.count,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +150,7 @@ class _CategoryTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () =>
-            context.push('/category/${Uri.encodeComponent(category.value)}'),
+            context.push('/category/${Uri.encodeComponent(value)}'),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -110,13 +159,13 @@ class _CategoryTile extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                category.color.withValues(alpha: 0.25),
+                color.withValues(alpha: 0.25),
                 const Color(0xFF0B1320),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: category.color.withValues(alpha: 0.35),
+              color: color.withValues(alpha: 0.35),
               width: 1,
             ),
             boxShadow: const [
@@ -138,12 +187,12 @@ class _CategoryTile extends StatelessWidget {
                   color: const Color(0xFF070B12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: category.color.withValues(alpha: 0.3),
+                    color: color.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Icon(
-                  category.icon,
-                  color: category.color,
+                  icon,
+                  color: color,
                   size: 20,
                 ),
               ),
@@ -151,7 +200,7 @@ class _CategoryTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    category.label,
+                    label,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -164,7 +213,7 @@ class _CategoryTile extends StatelessWidget {
                       Text(
                         'Xem kênh & VOD',
                         style: TextStyle(
-                          color: category.color,
+                          color: color,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -173,7 +222,7 @@ class _CategoryTile extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward_rounded,
                         size: 10,
-                        color: category.color,
+                        color: color,
                       ),
                     ],
                   ),

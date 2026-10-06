@@ -641,28 +641,40 @@ class _CategoryFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        children: [
-          _PillItem(
-            label: 'Tất cả',
-            selected: activeCategory == null,
-            onTap: () => onSelect(null),
+    return BlocBuilder<ChannelsBloc, ChannelsState>(
+      builder: (context, state) {
+        final List<Map<String, String>> categories = [
+          {'key': 'ALL', 'label': 'Tất cả'},
+          if (state is CategoriesLoaded)
+            ...state.categories.map((c) {
+              final info = getCategoryInfo(c.category);
+              return {'key': c.category, 'label': info.label};
+            }),
+        ];
+        return Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              _PillItem(
+                label: 'Tất cả',
+                selected: activeCategory == null,
+                onTap: () => onSelect(null),
+              ),
+              for (final cat in categories.skip(1)) ...[
+                const SizedBox(width: 6),
+                _PillItem(
+                  label: cat['label'] as String,
+                  selected: activeCategory == cat['key'],
+                  onTap: () => onSelect(cat['key'] as String),
+                ),
+              ],
+            ],
           ),
-          for (final cat in ProgramCategories.all19) ...[
-            const SizedBox(width: 6),
-            _PillItem(
-              label: cat.label,
-              selected: activeCategory == cat.value,
-              onTap: () => onSelect(cat.value),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

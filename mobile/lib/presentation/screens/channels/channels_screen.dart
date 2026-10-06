@@ -14,6 +14,7 @@ import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../widgets/channel_logo.dart';
 import 'channel_quick_view_sheet.dart';
+import '../../../core/constants/channel_tiers.dart';
 
 class ChannelsScreen extends StatefulWidget {
   const ChannelsScreen({super.key});
@@ -597,52 +598,87 @@ class _ChannelsScreenState extends State<ChannelsScreen>
                     ),
                   ),
 
-                  // LIVE badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF450A0A),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF991B1B)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x33EF4444),
-                          blurRadius: 6,
+                  // Badges: Tier (VIP/FREE) + LIVE
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, _) {
-                            return Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444)
-                                    .withValues(alpha: _pulseAnimation.value),
-                                shape: BoxShape.circle,
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'LIVE',
-                          style: TextStyle(
-                            color: Color(0xFFF87171),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
+                        decoration: BoxDecoration(
+                          color: ChannelTiers.isPremium(channel.slug)
+                              ? const Color(0xFFEAB308).withValues(alpha: 0.15)
+                              : const Color(0xFF10B981).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: ChannelTiers.isPremium(channel.slug)
+                                ? const Color(0xFFFACC15).withValues(alpha: 0.5)
+                                : const Color(0xFF34D399).withValues(alpha: 0.5),
                           ),
                         ),
-                      ],
-                    ),
+                        child: Text(
+                          ChannelTiers.isPremium(channel.slug) ? 'VIP 4K' : 'FREE',
+                          style: TextStyle(
+                            color: ChannelTiers.isPremium(channel.slug)
+                                ? const Color(0xFFFDE047)
+                                : const Color(0xFF6EE7B7),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      // LIVE badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF450A0A),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF991B1B)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x33EF4444),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, _) {
+                                return Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444)
+                                        .withValues(alpha: _pulseAnimation.value),
+                                    shape: BoxShape.circle,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Color(0xFFF87171),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
