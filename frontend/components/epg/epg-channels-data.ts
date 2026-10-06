@@ -42,14 +42,25 @@ export interface RealEpgChannel {
 }
 
 export const CATEGORY_FILTERS = [
-  { id: 'ALL', label: 'Tất Cả Kênh' },
-  { id: 'sports', label: 'Thể Thao' },
-  { id: 'movies', label: 'Điện Ảnh' },
-  { id: 'news', label: 'Thời Sự' },
-  { id: 'entertainment', label: 'Giải Trí' },
-  { id: 'esports', label: 'Esports' },
-  { id: 'discovery', label: 'Khám Phá' },
-  { id: 'kids', label: 'Thiếu Nhi' },
+  { id: 'ALL', label: 'Tất Cả (25 Kênh)' },
+  { id: 'SPORTS', label: 'Thể Thao' },
+  { id: 'CINE', label: 'Điện Ảnh' },
+  { id: 'DRAMA', label: 'Phim Truyện' },
+  { id: 'SHOW', label: 'Show & Reality' },
+  { id: 'NEWS', label: 'Tin Tức 24/7' },
+  { id: 'MUSIC', label: 'Âm Nhạc' },
+  { id: 'KIDS', label: 'Thiếu Nhi' },
+  { id: 'TECH', label: 'Công Nghệ' },
+  { id: 'FOOD', label: 'Ẩm Thực' },
+  { id: 'DOCUMENTARY', label: 'Khám Phá' },
+  { id: 'GAMING', label: 'Esports' },
+  { id: 'PODCAST', label: 'Podcast' },
+  { id: 'EDUCATION', label: 'Giáo Dục' },
+  { id: 'LIFESTYLE', label: 'Phong Cách Sống' },
+  { id: 'TRAVEL', label: 'Du Lịch' },
+  { id: 'ART', label: 'Nghệ Thuật' },
+  { id: 'BUSINESS', label: 'Kinh Doanh' },
+  { id: 'HEALTH', label: 'Sức Khỏe' },
 ];
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -170,7 +181,6 @@ export function mapApiEpgToRealChannels(
     const meta = channelMetaMap.get(ch.channelId) || (ch.channelSlug ? channelMetaMap.get(ch.channelSlug) : null);
     const slug = ch.channelSlug || meta?.slug || ch.channelName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const catKey = (meta?.category || ch.channelCategory || 'ENTERTAINMENT').toUpperCase();
-    const category = mapCategory(catKey);
     const categoryLabel = CATEGORY_LABELS[catKey] || ch.channelCategory || 'Tổng Hợp';
 
     const programs: RealEpgProgram[] = ch.programs.map((p, pIdx) => {
@@ -184,7 +194,7 @@ export function mapApiEpgToRealChannels(
         id: p.id,
         title: p.title,
         subtitle: p.tags?.join(', '),
-        category: p.category || category,
+        category: p.category || catKey,
         startTime: `${String(startHours).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
         endTime: `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`,
         startMinutes,
@@ -192,7 +202,7 @@ export function mapApiEpgToRealChannels(
         badge: p.isFiller ? (p.fillerKind === 'recording-replay' ? 'REPLAY' : 'FILLER') : undefined,
         quality: undefined,
         audio: undefined,
-        description: p.title, // Backend doesn't provide description in EPG, use title
+        description: p.title,
         thumbnailUrl: p.thumbnailUrl || getCategoryThumbnail(p.category || catKey, pIdx),
         directorOrHost: undefined,
         rating: undefined,
@@ -209,7 +219,7 @@ export function mapApiEpgToRealChannels(
       slug,
       chNumber: `CH ${idx + 1}`,
       name: ch.channelName,
-      category,
+      category: catKey as any,
       categoryLabel,
       logo: ch.channelLogoUrl || meta?.logoUrl || '/Channel_Logos/default.svg',
       color: getChannelColor(catKey, idx),
