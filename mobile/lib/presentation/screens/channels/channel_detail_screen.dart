@@ -14,6 +14,7 @@ import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../widgets/live_pulse_widget.dart';
 import '../../widgets/channel_logo.dart';
+import '../../widgets/omni_player.dart';
 import '../../../core/services/share_helper.dart';
 
 class ChannelDetailScreen extends StatefulWidget {
@@ -137,6 +138,11 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
         slivers: [
           // App Bar with Channel Banner
           _buildAppBar(),
+
+          // Live Broadcast Video Player
+          SliverToBoxAdapter(
+            child: _buildLivePlayerSection(),
+          ),
 
           // Channel Info
           SliverToBoxAdapter(
@@ -293,6 +299,86 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLivePlayerSection() {
+    final streamUrl = _channel?.streamUrl;
+    if (streamUrl == null || streamUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF090D16),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Live Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            color: const Color(0xFF0F1523),
+            child: Row(
+              children: [
+                const LiveBadge(),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _channel?.currentProgram ?? 'PHÁT SÓNG TRỰC TIẾP 24/7',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.remove_red_eye_outlined, size: 12, color: Colors.redAccent),
+                      SizedBox(width: 4),
+                      Text(
+                        '12.4K',
+                        style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // OmniPlayer Container
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: OmniPlayer(
+              url: streamUrl,
+              posterUrl: AppConstants.resolveAssetUrl(_channel?.bannerUrl),
+              autoPlay: true,
+              showControls: true,
+            ),
+          ),
+        ],
       ),
     );
   }
