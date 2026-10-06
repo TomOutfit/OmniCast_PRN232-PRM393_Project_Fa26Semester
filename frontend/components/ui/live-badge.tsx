@@ -80,3 +80,34 @@ export function EndedBadge({ className }: EndedBadgeProps) {
     </span>
   );
 }
+
+interface ReplayBadgeProps {
+  size?: 'sm' | 'md' | 'lg';
+  showIcon?: boolean;
+  className?: string;
+}
+
+export function ReplayBadge({
+  size = 'md',
+  showIcon = true,
+  className,
+}: ReplayBadgeProps) {
+  const sizeClasses = {
+    sm: 'text-[10px] px-1.5 py-0.5',
+    md: 'text-xs px-2 py-1',
+    lg: 'text-sm px-3 py-1.5',
+  };
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 font-bold uppercase tracking-wider rounded',
+        'bg-cyan-600 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]',
+        sizeClasses[size],
+        className
+      )}
+    >
+      Phát lại 24/7
+    </span>
+  );
+}

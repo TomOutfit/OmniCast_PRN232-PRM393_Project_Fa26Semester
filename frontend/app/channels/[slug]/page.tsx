@@ -23,7 +23,7 @@ import { vi } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { LiveBadge } from '@/components/ui/live-badge';
+import { LiveBadge, ReplayBadge } from '@/components/ui/live-badge';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { FollowButton } from '@/components/channels/follow-button';
 import { VideoPlayer } from '@/components/programs/video-player';
@@ -227,16 +227,16 @@ export default function ChannelDetailPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_#ef4444]" />
-                      <span className="text-xs font-black uppercase tracking-wider text-red-400 font-mono">
-                        {liveEvent ? 'LUỒNG PHÁT SÓNG TRỰC TIẾP' : 'LUỒNG TIẾP SÓNG CHÍNH THỨC 24/7'}
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#06b6d4]" />
+                      <span className="text-xs font-black uppercase tracking-wider text-cyan-400 font-mono">
+                        {liveEvent ? 'LUỒNG PHÁT SÓNG TRỰC TIẾP' : 'LUỒNG PHÁT LẠI VOD CHẤT LƯỢNG CAO 24/7'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                        HLS 1080P • ADAPTIVE
+                        1080P • FULL HD VOD
                       </span>
-                      <LiveBadge size="sm" />
+                      {liveEvent ? <LiveBadge size="sm" /> : <ReplayBadge size="sm" />}
                     </div>
                   </div>
                   <div className="rounded-2xl overflow-hidden bg-black border border-dark-700 shadow-2xl relative">
