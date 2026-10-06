@@ -347,4 +347,36 @@ export class ProgramsController {
   async deleteRecording(@Param('id') id: string, @Request() req: any) {
     return this.programsService.deleteRecording(id, req.user.sub);
   }
+
+  // ============================================================
+  // SOCIAL ENGAGEMENT (SHARE & VIEW COUNTERS)
+  // ============================================================
+
+  @Post('live-events/:id/share')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Increment share count for a live event' })
+  async bumpLiveEventShare(@Param('id') id: string) {
+    return this.programsService.incrementLiveEventShare(id);
+  }
+
+  @Post('live-events/:id/view')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Increment viewer count for a live event' })
+  async bumpLiveEventView(@Param('id') id: string) {
+    return this.programsService.incrementLiveEventView(id);
+  }
+
+  @Post('recordings/:id/share')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Increment share count for a recording' })
+  async bumpRecordingShare(@Param('id') id: string) {
+    return this.programsService.incrementRecordingShare(id);
+  }
+
+  @Post('recordings/:id/view')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Increment view count for a recording' })
+  async bumpRecordingView(@Param('id') id: string) {
+    return this.programsService.incrementRecordingView(id);
+  }
 }

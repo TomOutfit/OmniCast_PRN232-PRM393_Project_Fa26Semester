@@ -208,16 +208,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 16),
                             _DemoAccountsCard(
                               onViewer: () => _applyDemo(
-                                'testviewer@omnicast.tv',
-                                'Password@123',
+                                'viewer1@omnicast.tv',
+                                'Admin123!',
                               ),
                               onAdmin: () => _applyDemo(
                                 'admin@omnicast.tv',
-                                'Admin@123456',
+                                'Admin123!',
                               ),
                               onStaff: () => _applyDemo(
                                 'staff@omnicast.tv',
-                                'Admin@123456',
+                                'Admin123!',
                               ),
                             ),
                             const Spacer(),
@@ -297,9 +297,9 @@ class _BackgroundBackdrop extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: const Alignment(0, -0.6),
-                  radius: 1.1,
+                  radius: 1.2,
                   colors: [
-                    AppColors.stitchPrimaryContainer.withValues(alpha: 0.10),
+                    AppColors.stitchPrimaryContainer.withValues(alpha: 0.08),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 1.0],
@@ -310,29 +310,29 @@ class _BackgroundBackdrop extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(painter: _GridPainter()),
           ),
-          // Glow orbs
+          // Studio spatial lighting orbs
           Positioned(
             top: -120,
-            left: -100,
-            child: _Orb(
-              size: 320,
-              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.18),
-            ),
-          ),
-          Positioned(
-            top: 280,
-            right: -120,
-            child: _Orb(
-              size: 280,
-              color: AppColors.stitchSecondary.withValues(alpha: 0.12),
-            ),
-          ),
-          Positioned(
-            bottom: 60,
             left: -80,
             child: _Orb(
-              size: 240,
-              color: AppColors.stitchTertiaryContainer.withValues(alpha: 0.08),
+              size: 300,
+              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.12),
+            ),
+          ),
+          Positioned(
+            top: 260,
+            right: -100,
+            child: _Orb(
+              size: 260,
+              color: AppColors.stitchSecondary.withValues(alpha: 0.08),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: -60,
+            child: _Orb(
+              size: 220,
+              color: AppColors.stitchTertiaryContainer.withValues(alpha: 0.06),
             ),
           ),
         ],
@@ -345,9 +345,9 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.stitchOutlineVariant.withValues(alpha: 0.08)
-      ..strokeWidth = 0.6;
-    const step = 32.0;
+      ..color = AppColors.stitchOutlineVariant.withValues(alpha: 0.025)
+      ..strokeWidth = 0.5;
+    const step = 44.0;
     for (double x = 0; x < size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
@@ -407,17 +407,18 @@ class _BrandHeader extends StatelessWidget {
       child: Column(
         children: [
           const Center(
-            child: OmniCastBrandLogo(size: 80, showGlow: true),
+            child: OmniCastBrandLogo(size: 76, showGlow: true),
           ),
-          const SizedBox(height: 16),
-          // Secure login pill
+          const SizedBox(height: 14),
+          // Broadcast Studio Pill
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.12),
+              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(AppColors.rPill),
               border: Border.all(
-                color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.30),
+                color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.28),
+                width: 0.8,
               ),
             ),
             child: Row(
@@ -426,9 +427,9 @@ class _BrandHeader extends StatelessWidget {
                 _LivePulseDot(color: AppColors.stitchPrimaryContainer),
                 const SizedBox(width: 6),
                 Text(
-                  'SECURE LOGIN // ĐANG TRỰC TUYẾN',
+                  'BROADCAST PORTAL // PHIÊN BẢO MẬT',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9.5,
                     fontFamily: AppFonts.mono,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.18 * 10 / 10,
@@ -438,7 +439,7 @@ class _BrandHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           ShaderMask(
             shaderCallback: (rect) => const LinearGradient(
               colors: [AppColors.stitchPrimary, AppColors.stitchSecondary],
@@ -447,10 +448,10 @@ class _BrandHeader extends StatelessWidget {
             ).createShader(rect),
             blendMode: BlendMode.srcIn,
             child: const Text(
-              'Đăng nhập vào',
+              'Đăng nhập OmniCast',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 30,
+                fontSize: 28,
                 fontFamily: AppFonts.display,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -458,33 +459,33 @@ class _BrandHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           ShaderMask(
             shaderCallback: (rect) => const LinearGradient(
               colors: [AppColors.stitchPrimaryContainer, AppColors.stitchSecondary],
             ).createShader(rect),
             blendMode: BlendMode.srcIn,
             child: const Text(
-              'không gian phát sóng',
+              'Hạ tầng truyền hình 4K',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontFamily: AppFonts.display,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
-                letterSpacing: -0.4,
+                letterSpacing: -0.3,
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const Text(
-            'Tiếp tục theo dõi các kênh yêu thích và đồng bộ EPG trên mọi thiết bị.',
+            'Hệ thống truyền hình tương tác độ trễ thấp & đồng bộ đa thiết bị.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13.5,
               fontFamily: AppFonts.body,
               color: AppColors.stitchOnSurfaceVariant,
-              height: 1.45,
+              height: 1.4,
             ),
           ),
         ],
@@ -1511,28 +1512,38 @@ class _GuestButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppColors.rPill),
+        color: AppColors.stitchSurfaceContainerLowest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(AppColors.rLg),
         border: Border.all(
-          color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.5),
-          width: 1.2,
+          color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.35),
+          width: 0.9,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppColors.rPill),
+          borderRadius: BorderRadius.circular(AppColors.rLg),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 13),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.explore_outlined,
-                    color: AppColors.stitchPrimaryContainer, size: 18),
+                Icon(
+                  Icons.explore_outlined,
+                  color: AppColors.stitchPrimaryContainer,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'KHÁM PHÁ NGAY (KHÔNG CẦN ĐĂNG NHẬP)',
+                  'TRẢI NGHIỆM KHÁCH // GUEST MODE',
                   style: TextStyle(
                     color: AppColors.stitchPrimaryContainer,
                     fontSize: 11,
@@ -1563,26 +1574,37 @@ class _DemoAccountsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.stitchSurfaceContainer.withValues(alpha: 0.55),
+        color: AppColors.stitchSurfaceContainerLowest.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(AppColors.rLg),
         border: Border.all(
-          color: AppColors.stitchOutlineVariant.withValues(alpha: 0.60),
+          color: AppColors.stitchOutlineVariant.withValues(alpha: 0.45),
+          width: 0.8,
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 20,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.science_outlined,
-                  color: AppColors.stitchSecondary, size: 16),
+              Icon(
+                Icons.verified_user_outlined,
+                color: AppColors.stitchPrimaryContainer,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
-                'TÀI KHOẢN DÙNG THỬ',
+                'TÀI KHOẢN TRẢI NGHIỆM (RBAC 4 CẤP)',
                 style: TextStyle(
-                  color: AppColors.stitchOnSurfaceVariant,
+                  color: AppColors.stitchOnSurface,
                   fontSize: 11,
                   fontFamily: AppFonts.mono,
                   fontWeight: FontWeight.w800,
@@ -1591,23 +1613,41 @@ class _DemoAccountsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: 12),
+          Row(
             children: [
-              _DemoChip(
-                  label: 'KHÁN GIẢ',
-                  icon: Icons.person_outline,
-                  onTap: onViewer),
-              _DemoChip(
-                  label: 'STAFF',
-                  icon: Icons.support_agent_outlined,
-                  onTap: onStaff),
-              _DemoChip(
-                  label: 'ADMIN',
-                  icon: Icons.admin_panel_settings_outlined,
-                  onTap: onAdmin),
+              Expanded(
+                child: _RoleIdentityCard(
+                  title: 'ADMIN',
+                  subtitle: 'Quản trị viên',
+                  roleBadge: 'CẤP 3',
+                  accentColor: const Color(0xFFF59E0B),
+                  icon: Icons.admin_panel_settings_rounded,
+                  onTap: onAdmin,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _RoleIdentityCard(
+                  title: 'STAFF',
+                  subtitle: 'Biên tập viên',
+                  roleBadge: 'CẤP 1',
+                  accentColor: const Color(0xFFA855F7),
+                  icon: Icons.support_agent_rounded,
+                  onTap: onStaff,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _RoleIdentityCard(
+                  title: 'VIEWER',
+                  subtitle: 'Khán giả 4K',
+                  roleBadge: 'CẤP 2',
+                  accentColor: AppColors.stitchPrimaryContainer,
+                  icon: Icons.tv_rounded,
+                  onTap: onViewer,
+                ),
+              ),
             ],
           ),
         ],
@@ -1616,12 +1656,19 @@ class _DemoAccountsCard extends StatelessWidget {
   }
 }
 
-class _DemoChip extends StatelessWidget {
-  final String label;
+class _RoleIdentityCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String roleBadge;
+  final Color accentColor;
   final IconData icon;
   final VoidCallback onTap;
-  const _DemoChip({
-    required this.label,
+
+  const _RoleIdentityCard({
+    required this.title,
+    required this.subtitle,
+    required this.roleBadge,
+    required this.accentColor,
     required this.icon,
     required this.onTap,
   });
@@ -1629,31 +1676,66 @@ class _DemoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.stitchSurfaceContainerLowest,
-      borderRadius: BorderRadius.circular(AppColors.rPill),
+      color: accentColor.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppColors.rPill),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppColors.rPill),
-            border:
-                Border.all(color: AppColors.stitchOutlineVariant, width: 0.8),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.35),
+              width: 0.8,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 14, color: AppColors.stitchOnSurfaceVariant),
-              const SizedBox(width: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, size: 16, color: accentColor),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      roleBadge,
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 8,
+                        fontFamily: AppFonts.mono,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
               Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.stitchOnSurfaceVariant,
+                title,
+                style: const TextStyle(
+                  color: AppColors.stitchOnSurface,
                   fontSize: 11,
                   fontFamily: AppFonts.mono,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.18 * 11 / 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.stitchOnSurfaceVariant,
+                  fontSize: 9.5,
+                  fontFamily: AppFonts.body,
                 ),
               ),
             ],

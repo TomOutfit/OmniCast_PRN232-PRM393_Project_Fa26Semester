@@ -12,6 +12,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/share_helper.dart';
 import '../../../data/models/program_model.dart';
+import '../../../data/models/channel_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
 import '../../../logic/watchlist/watchlist_bloc.dart';
 import '../../widgets/omni_player.dart';
@@ -20,6 +21,7 @@ import '../../widgets/social/comments_section.dart';
 import '../../widgets/social/reactions_bar.dart';
 import '../../widgets/save_to_watchlist_button.dart';
 import '../../widgets/live_pulse_widget.dart';
+import '../../../core/constants/channel_tiers.dart';
 
 class ProgramDetailScreen extends StatefulWidget {
   final String programId;
@@ -64,17 +66,12 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
             if (state is ProgramDetailsLoaded) {
               final program = state.program;
-              if (!_playerStarted && program.isLive) {
-                final hasUrl =
-                    (program.streamUrl?.isNotEmpty ?? false) ||
-                        (program.externalUrl?.isNotEmpty ?? false);
-                if (hasUrl) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) setState(() => _playerStarted = true);
-                  });
-                }
+              if (!_playerStarted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _playerStarted = true);
+                });
               }
-              if (!_viewBumped && program.isLive) {
+              if (!_viewBumped) {
                 _viewBumped = true;
                 _bumpView(program);
               }
@@ -92,7 +89,14 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                     actions: [
                       _roundIconButton(
                         icon: Icons.ios_share_outlined,
-                        onTap: () => ShareHelper.shareLiveEvent(program),
+                        onTap: () {
+                          ShareHelper.shareLiveEvent(program);
+                          context
+                              .read<ProgramsBloc>()
+                              .repository
+                              .bumpLiveEventShare(program.id)
+                              .catchError((_) => null);
+                        },
                       ),
                       const SizedBox(width: 8),
                       SaveToWatchlistButton(
@@ -479,7 +483,14 @@ class _PrimaryActionButton extends StatelessWidget {
         _IconAction(
           icon: Icons.ios_share_outlined,
           label: 'Chia sẻ',
-          onTap: () => ShareHelper.shareLiveEvent(program),
+          onTap: () {
+            ShareHelper.shareLiveEvent(program);
+            context
+                .read<ProgramsBloc>()
+                .repository
+                .bumpLiveEventShare(program.id)
+                .catchError((_) => null);
+          },
         ),
       ],
     );
@@ -729,17 +740,27 @@ class _VideoPlayerState extends State<_VideoPlayer> {
     if (widget.program.externalUrl != null && widget.program.externalUrl!.isNotEmpty) {
       return widget.program.externalUrl;
     }
-    return null;
+    final slug = widget.program.channel?.slug ?? '';
+    return ChannelModel.resolveDefaultStream(slug);
   }
 
   @override
   Widget build(BuildContext context) {
     final streamUrl = _streamUrl;
     if (streamUrl != null && widget.started) {
+      final offset = ChannelTiers.calculateLiveSeekOffset(
+        scheduledAt: widget.program.scheduledAt,
+        durationMinutes: widget.program.duration,
+      );
+      final isPremium = ChannelTiers.isPremium(widget.program.channel?.slug);
+
       return OmniPlayer(
         url: streamUrl,
         posterUrl: AppConstants.resolveAssetUrl(widget.program.thumbnailUrl),
         autoPlay: widget.program.isLive,
+        initialSeekSeconds: offset,
+        isPremium: isPremium,
+        channelName: widget.program.channel?.name ?? widget.program.title,
       );
     }
 

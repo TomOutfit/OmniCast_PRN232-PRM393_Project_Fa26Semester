@@ -119,15 +119,15 @@ export default function RegisterPage() {
 
   return (
     <CheckpointGateway
-      title="Trạm Cấp Phù Hiệu Truy Cập"
-      subtitle="Thiết lập danh tính số và chứng thư bảo mật để mở quyền kết nối vào toàn bộ mạng lưới OmniCast"
-      badgeText="ENROLLMENT CHECKPOINT // CLEARANCE PROTOCOL"
+      title="Tạo Tài Khoản Mới"
+      subtitle="Đăng ký tài khoản để trải nghiệm toàn bộ hệ sinh thái truyền hình tương tác 4K UHD"
+      badgeText="BROADCAST NETWORK // REGISTRATION"
       isScanning={isLoading}
     >
-      <div id="register-form" className="relative space-y-6">
+      <div id="register-form" className="relative space-y-5">
         
         {/* Step Progress Bar */}
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#070d18] border border-cyan-500/20">
+        <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] shadow-sm">
           {STEPS.map((s, idx) => {
             const Icon = s.icon;
             const isCompleted = step > s.id;
@@ -136,12 +136,12 @@ export default function RegisterPage() {
               <div key={s.id} className="flex items-center gap-2 flex-1">
                 <div
                   className={cn(
-                    'flex items-center justify-center w-7 h-7 rounded-lg text-xs font-mono font-bold transition-all',
+                    'flex items-center justify-center w-7 h-7 rounded-xl text-xs font-mono font-bold transition-all',
                     isCurrent
-                      ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,242,254,0.6)]'
+                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-md font-bold'
                       : isCompleted
                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                      : 'bg-slate-900 border border-slate-800 text-slate-500'
+                      : 'bg-slate-900 border border-white/[0.06] text-slate-500'
                   )}
                 >
                   {isCompleted ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
@@ -177,10 +177,10 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="fullName"
-                  className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
                 >
-                  <User className="w-3 h-3 text-cyan-400" />
-                  <span>HỌ TÊN NGƯỜI SỬ DỤNG</span>
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>HỌ TÊN NGƯỜI DÙNG</span>
                 </label>
                 <Input
                   id="fullName"
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                   placeholder="Ví dụ: Nguyễn Văn A"
                   autoComplete="name"
                   className={cn(
-                    'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                    'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                     errors.fullName && 'border-rose-500 focus:border-rose-500'
                   )}
                   {...register('fullName')}
@@ -205,10 +205,10 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="reg-email"
-                  className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
                 >
-                  <Mail className="w-3 h-3 text-cyan-400" />
-                  <span>EMAIL KÍCH HOẠT DANH TÍNH</span>
+                  <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>ĐỊA CHỈ EMAIL ĐĂNG KÝ</span>
                 </label>
                 <Input
                   id="reg-email"
@@ -216,7 +216,7 @@ export default function RegisterPage() {
                   placeholder="nguoidung@omnicast.tv"
                   autoComplete="email"
                   className={cn(
-                    'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                    'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                     errors.email && 'border-rose-500 focus:border-rose-500'
                   )}
                   {...register('email')}
@@ -232,9 +232,9 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="group relative h-12 w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_0_20px_rgba(0,242,254,0.35)] transition-all"
+                className="group relative h-12 w-full rounded-xl bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-slate-950 font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_10px_25px_-5px_rgba(0,242,254,0.35)] transition-all hover:scale-[1.008] active:scale-[0.99]"
               >
-                <span>TIẾP TỤC: THIẾT LẬP MẬT MÃ BẢO VỆ</span>
+                <span>TIẾP TỤC: THIẾT LẬP MẬT KHẨU</span>
                 <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
@@ -247,10 +247,10 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="reg-password"
-                  className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
                 >
-                  <Lock className="w-3 h-3 text-cyan-400" />
-                  <span>MẬT MÃ AN TOÀN (TỐI THIỂU 8 KÝ TỰ)</span>
+                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>MẬT KHẨU BẢO MẬT (TỐI THIỂU 8 KÝ TỰ)</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -258,7 +258,7 @@ export default function RegisterPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Mật khẩu bảo mật"
                     className={cn(
-                      'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                      'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                       errors.password && 'border-rose-500 focus:border-rose-500'
                     )}
                     {...register('password')}
@@ -274,7 +274,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Password Requirements Checklist */}
-              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#070d18] border border-cyan-500/20 text-[11px] font-mono">
+              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#070d18] border border-white/[0.08] text-[11px] font-mono">
                 {PASSWORD_REQUIREMENTS.map((r) => {
                   const passed = reqStatus[r.id];
                   return (
@@ -296,10 +296,10 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="confirmPassword"
-                  className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300 flex items-center gap-1"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
                 >
-                  <Lock className="w-3 h-3 text-cyan-400" />
-                  <span>XÁC NHẬN LẠI MẬT MÃ</span>
+                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>XÁC NHẬN LẠI MẬT KHẨU</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -307,7 +307,7 @@ export default function RegisterPage() {
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Nhập lại mật khẩu vừa đặt"
                     className={cn(
-                      'h-12 rounded-xl border border-slate-700 bg-[#060a12]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all',
+                      'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
                       errors.confirmPassword && 'border-rose-500 focus:border-rose-500'
                     )}
                     {...register('confirmPassword')}
@@ -332,7 +332,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="h-12 px-4 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center gap-1 font-mono text-xs font-bold transition-all"
+                  className="h-12 px-4 rounded-xl border border-white/[0.1] bg-[#0b1322] text-slate-300 hover:text-white flex items-center justify-center gap-1 font-mono text-xs font-bold transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Quay Lại</span>
@@ -340,9 +340,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_0_20px_rgba(0,242,254,0.35)] transition-all"
+                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-slate-950 font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_10px_25px_-5px_rgba(0,242,254,0.35)] transition-all hover:scale-[1.008] active:scale-[0.99]"
                 >
-                  <span>TIẾP TỤC: XÁC NHẬN CẤP QUYỀN</span>
+                  <span>TIẾP TỤC: XÁC THỰC THÔNG TIN</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -352,11 +352,11 @@ export default function RegisterPage() {
           {/* ── STEP 3: Xác nhận & Hoàn tất cấp phù hiệu ── */}
           {step === 3 && (
             <div className="space-y-4 animate-fade-in">
-              <div className="p-4 rounded-xl bg-[#070d18] border border-cyan-500/30 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="font-mono text-[11px] text-slate-400">HỒ SƠ CẤP PHÙ HIỆU</span>
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/40">
-                    SẴN SÀNG INGRESS
+              <div className="p-4 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] space-y-3 shadow-inner">
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                  <span className="font-mono text-[11px] text-slate-400 font-bold">TÓM TẮT THÔNG TIN TÀI KHOẢN</span>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+                    SẴN SÀNG KÍCH HOẠT
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
@@ -369,9 +369,9 @@ export default function RegisterPage() {
                     <span className="text-cyan-300 font-bold">{email || 'Chưa nhập'}</span>
                   </div>
                 </div>
-                <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Cấp quyền xem 500+ kênh trực tiếp, EPG linh hoạt và Multi-Cam 4K.</span>
+                <div className="text-[11px] font-mono text-slate-400 pt-2 border-t border-white/[0.08] flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>Kích hoạt quyền xem hơn 500 sự kiện truyền hình 4K HDR, kho VOD và bình luận tương tác.</span>
                 </div>
               </div>
 
@@ -379,7 +379,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="h-12 px-4 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center gap-1 font-mono text-xs font-bold transition-all"
+                  className="h-12 px-4 rounded-xl border border-white/[0.1] bg-[#0b1322] text-slate-300 hover:text-white flex items-center justify-center gap-1 font-mono text-xs font-bold transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Sửa thông tin</span>
@@ -388,17 +388,17 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-black font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_0_25px_rgba(0,242,254,0.5)] transition-all disabled:opacity-60"
+                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-slate-950 font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:from-cyan-300 hover:to-blue-400 shadow-[0_12px_28px_-5px_rgba(0,242,254,0.45)] transition-all disabled:opacity-60 hover:scale-[1.008] active:scale-[0.99]"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-black" />
-                      <span>ĐANG KÍCH HOẠT HỒ SƠ…</span>
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                      <span>ĐANG KÍCH HOẠT TÀI KHOẢN…</span>
                     </>
                   ) : (
                     <>
-                      <Fingerprint className="h-4 w-4 text-black" />
-                      <span>HOÀN TẤT & MỞ CỔNG PHÁT SÓNG</span>
+                      <Fingerprint className="h-4 w-4 text-slate-950" />
+                      <span>HOÀN TẤT & VÀO HỆ THỐNG PHÁT SÓNG</span>
                       <ChevronRight className="h-4 w-4" />
                     </>
                   )}
@@ -410,14 +410,14 @@ export default function RegisterPage() {
         </form>
 
         {/* Gate Switch Footer */}
-        <div className="pt-2 text-center border-t border-slate-800">
+        <div className="pt-2 text-center border-t border-white/[0.08]">
           <p className="text-xs text-slate-400">
-            Đã có phù hiệu hoặc tài khoản?{' '}
+            Đã có tài khoản OmniCast?{' '}
             <Link
               href="/login"
               className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 hover:underline"
             >
-              Đăng nhập tại trạm kiểm soát
+              Đăng nhập ngay
               <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </p>

@@ -186,6 +186,86 @@ export class SocialService {
     return { message: 'Comment deleted', id: commentId };
   }
 
+  async listCommentsByLiveEvent(
+    liveEventId: string,
+    options: { page?: number; limit?: number } = {},
+  ) {
+    if (!this.isUuid(liveEventId)) {
+      throw new NotFoundException('Live event not found');
+    }
+    const event = await this.prisma.liveEvent.findUnique({
+      where: { id: liveEventId },
+      select: { id: true, channelId: true },
+    });
+    if (!event) {
+      throw new NotFoundException('Live event not found');
+    }
+
+    const recording = await this.prisma.recording.findFirst({
+      where: {
+        OR: [
+          { generatedFromEventId: liveEventId },
+          { channelId: event.channelId },
+        ],
+      },
+      select: { id: true },
+    });
+    if (!recording) {
+      return {
+        data: [],
+        meta: {
+          page: options.page || 1,
+          limit: options.limit || 20,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+    return this.listCommentsByRecording(recording.id, options);
+  }
+
+  async createCommentOnLiveEvent(
+    liveEventId: string,
+    userId: string,
+    dto: CreateCommentDto,
+  ) {
+    if (!this.isUuid(liveEventId)) {
+      throw new NotFoundException('Live event not found');
+    }
+    const event = await this.prisma.liveEvent.findUnique({
+      where: { id: liveEventId },
+      select: { id: true, channelId: true, title: true },
+    });
+    if (!event) {
+      throw new NotFoundException('Live event not found');
+    }
+
+    let recording = await this.prisma.recording.findFirst({
+      where: {
+        OR: [
+          { generatedFromEventId: liveEventId },
+          { channelId: event.channelId },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!recording) {
+      recording = await this.prisma.recording.create({
+        data: {
+          title: `Stream Archive: ${event.title}`,
+          channelId: event.channelId,
+          generatedFromEventId: liveEventId,
+          duration: 3600,
+          videoUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+        },
+        select: { id: true },
+      });
+    }
+
+    return this.createComment(recording.id, userId, dto);
+  }
+
   // ============================================================
   // REACTIONS
   // ============================================================
