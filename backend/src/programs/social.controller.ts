@@ -25,7 +25,7 @@ export class SocialController {
   // COMMENTS
   // ============================================================
 
-  @Get('recordings/:id/comments')
+  @Get(['recordings/:id/comments', 'programs/recordings/:id/comments'])
   @ApiOperation({ summary: 'List comments for a recording' })
   @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -43,7 +43,7 @@ export class SocialController {
     });
   }
 
-  @Post('recordings/:id/comments')
+  @Post(['recordings/:id/comments', 'programs/recordings/:id/comments'])
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a comment on a recording' })
@@ -59,6 +59,41 @@ export class SocialController {
     @Request() req: any,
   ) {
     return this.socialService.createComment(recordingId, req.user.sub, dto);
+  }
+
+  @Get(['live-events/:id/comments', 'programs/live-events/:id/comments'])
+  @ApiOperation({ summary: 'List comments for a live event' })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: '200 OK — Paginated comments list' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event not found' })
+  async listLiveEventComments(
+    @Param('id') liveEventId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.socialService.listCommentsByLiveEvent(liveEventId, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+    });
+  }
+
+  @Post(['live-events/:id/comments', 'programs/live-events/:id/comments'])
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a comment on a live event' })
+  @ApiParam({ name: 'id', description: 'Live event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
+  @ApiResponse({ status: 201, description: '201 Created — Comment posted' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Empty content' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event not found' })
+  async createLiveEventComment(
+    @Param('id') liveEventId: string,
+    @Body() dto: CreateCommentDto,
+    @Request() req: any,
+  ) {
+    return this.socialService.createCommentOnLiveEvent(liveEventId, req.user.sub, dto);
   }
 
   @Delete('comments/:id')
@@ -82,7 +117,7 @@ export class SocialController {
   // REACTIONS
   // ============================================================
 
-  @Get('recordings/:id/reactions')
+  @Get(['recordings/:id/reactions', 'programs/recordings/:id/reactions'])
   @ApiOperation({ summary: 'Get aggregated reactions for a recording' })
   @ApiParam({ name: 'id', description: 'Recording UUID', example: '2a6057c6-8474-8035-baa7-386cfab781c7' })
   @ApiResponse({ status: 200, description: '200 OK — Aggregated reaction counts' })
@@ -91,7 +126,7 @@ export class SocialController {
     return this.socialService.listReactionsByRecording(recordingId);
   }
 
-  @Post('recordings/:id/reactions')
+  @Post(['recordings/:id/reactions', 'programs/recordings/:id/reactions'])
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle a reaction on a recording' })
@@ -115,7 +150,7 @@ export class SocialController {
 
   // ---- LiveEvent mirror of the above ----
 
-  @Get('live-events/:id/reactions')
+  @Get(['live-events/:id/reactions', 'programs/live-events/:id/reactions'])
   @ApiOperation({ summary: 'Get aggregated reactions for a live event' })
   @ApiParam({ name: 'id', description: 'Live Event UUID', example: '207ce17f-082c-469e-a51e-da274ef20734' })
   @ApiResponse({ status: 200, description: '200 OK — Aggregated live reaction counts' })
@@ -124,7 +159,7 @@ export class SocialController {
     return this.socialService.listReactionsByLiveEvent(liveEventId);
   }
 
-  @Post('live-events/:id/reactions')
+  @Post(['live-events/:id/reactions', 'programs/live-events/:id/reactions'])
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle a reaction on a live event' })
