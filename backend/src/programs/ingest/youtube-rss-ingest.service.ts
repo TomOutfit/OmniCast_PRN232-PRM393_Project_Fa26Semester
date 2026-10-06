@@ -40,7 +40,13 @@ export class YoutubeRssIngestService {
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
   ) {
-    this.http = axios.create({ timeout: 15000 });
+    this.http = axios.create({
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/atom+xml, application/xml, text/xml, */*',
+      },
+    });
   }
 
   /**
@@ -97,10 +103,16 @@ export class YoutubeRssIngestService {
         const result = await this.ingestChannel(ch.id, ch.youtubeChannelId);
         totalUpserted += result.upserted;
         totalSkipped += result.skipped;
-      } catch (err) {
-        this.logger.warn(
-          `YouTube RSS ingest failed for channel ${ch.youtubeChannelId}: ${(err as Error).message}`,
-        );
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && (err.response?.status === 404 || err.response?.status === 500)) {
+          this.logger.debug(
+            `YouTube RSS channel ${ch.youtubeChannelId} (${ch.name}) unaccessible (HTTP ${err.response.status}), skipping.`,
+          );
+        } else {
+          this.logger.debug(
+            `YouTube RSS ingest skipped for channel ${ch.youtubeChannelId}: ${err.message}`,
+          );
+        }
         totalSkipped += 1;
       }
     }
