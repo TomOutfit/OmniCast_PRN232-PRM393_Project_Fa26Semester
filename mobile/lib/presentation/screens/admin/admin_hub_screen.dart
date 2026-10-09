@@ -419,6 +419,10 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
                         ],
                       ),
                     ),
+
+                    // ── LIVE STUDIO SHORTCUT (Admin) ───────────────────
+                    const SizedBox(height: 20),
+                    const _LiveStudioShortcutCard(),
                   ],
                 ),
               ),
@@ -507,6 +511,88 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
       default:
         return const Color(0xFF10B981);
     }
+  }
+}
+
+// ── LIVE STUDIO SHORTCUT CARD (Admin) ───────────────────────────
+// Opens the new Curated Live + Self-Record control surface. We
+// keep it as a self-contained widget so it doesn't pollute the
+// analytics dashboard.
+class _LiveStudioShortcutCard extends StatelessWidget {
+  const _LiveStudioShortcutCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/studio/live'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0x33FF2A55), Color(0x1100F2FE)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFFF2A55).withValues(alpha: 0.4),
+            width: 0.8,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF2A55).withValues(alpha: 0.08),
+              blurRadius: 16,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.podcasts_rounded,
+                color: Color(0xFFFF2A55),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Live Studio',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Chọn nội dung phát lên màn hình hoặc tự ghi hình Livestream. '
+                    'Có chống vi phạm bản quyền tự động.',
+                    style: TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Color(0xFFFF2A55),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

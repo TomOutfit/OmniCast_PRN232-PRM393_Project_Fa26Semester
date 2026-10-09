@@ -8,6 +8,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../logic/programs/programs_bloc.dart';
+import '../../../logic/epg/epg_sync_bloc.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/share_helper.dart';
@@ -38,6 +41,9 @@ class ProgramDetailScreen extends StatefulWidget {
 class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
   bool _playerStarted = false;
   bool _viewBumped = false;
+  String? _syncedStreamUrl;
+  String? _activeProgramId;
+  int _seekOffset = 0;
 
   @override
   void initState() {
@@ -45,9 +51,48 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
     context.read<ProgramsBloc>().add(LoadProgramDetails(widget.programId));
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Start EpgSyncBloc as soon as we know which channel we're on. We pick
+    // the channel from the loaded program (or from `program_id` once the
+    // fetch completes) so we don't poll the wrong URL on first paint.
+    final state = context.read<ProgramsBloc>().state;
+    String? slug;
+    if (state is ProgramDetailsLoaded) {
+      slug = state.program.channel?.slug;
+    }
+    if (slug != null && _activeProgramId == null) {
+      _activeProgramId = slug;
+      _startSync(slug);
+    }
+  }
+
+  void _startSync(String slug) {
+    final bloc = context.read<EpgSyncBloc>();
+    if (!bloc.isClosed) {
+      bloc.add(EpgSyncStart(slug));
+    }
+  }
+
   Future<void> _refresh() async {
     context.read<ProgramsBloc>().add(LoadProgramDetails(widget.programId));
+    final sync = context.read<EpgSyncBloc>();
+    if (!sync.isClosed && _activeProgramId != null) {
+      sync.add(EpgSyncStart(_activeProgramId!));
+    }
     await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  void dispose() {
+    // Stop the sync bloc when the screen leaves the tree. We don't `close()`
+    // it because the bloc is owned by the DI container — just emit stop.
+    try {
+      final sync = context.read<EpgSyncBloc>();
+      if (!sync.isClosed) sync.add(const EpgSyncStop());
+    } catch (_) {/* context gone, fine */}
+    super.dispose();
   }
 
   @override
@@ -58,62 +103,100 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
         color: AppColors.primary,
         backgroundColor: AppColors.surfaceRaised,
         onRefresh: _refresh,
-        child: BlocBuilder<ProgramsBloc, ProgramsState>(
-          builder: (context, state) {
-            if (state is ProgramsLoading) {
-              return const _DetailLoading();
+        // EpgSyncBloc sits OUTSIDE ProgramsBloc so a sync-state change
+        // re-evaluates the entire subtree (including the player widget).
+        // listenWhen limits setState calls to actual program changes so the
+        // UI doesn't flicker on every 60s tick.
+        child: BlocConsumer<EpgSyncBloc, EpgSyncState>(
+          listenWhen: (prev, curr) {
+            if (curr is EpgSyncRunning && prev is EpgSyncRunning) {
+              return curr.currentProgramId != prev.currentProgramId ||
+                  curr.streamUrl != prev.streamUrl;
             }
+            return curr is EpgSyncRunning;
+          },
+          listener: (context, syncState) {
+            if (syncState is EpgSyncRunning) {
+              setState(() {
+                _syncedStreamUrl = syncState.streamUrl;
+                _seekOffset = syncState.currentOffsetSeconds;
+              });
+              _maybeToastProgramChange(syncState);
+            }
+          },
+          builder: (context, syncState) {
+            return BlocConsumer<ProgramsBloc, ProgramsState>(
+              listener: (context, state) {
+                // As soon as the program detail loads, kick off EpgSyncBloc
+                // for the channel (if we haven't already). This handles the
+                // common case where didChangeDependencies ran before the
+                // program finished loading.
+                if (state is ProgramDetailsLoaded) {
+                  final slug = state.program.channel?.slug;
+                  if (slug != null && _activeProgramId == null) {
+                    _activeProgramId = slug;
+                    _startSync(slug);
+                  }
+                }
+              },
+              builder: (context, state) {
+                if (state is ProgramsLoading) {
+                  return const _DetailLoading();
+                }
 
-            if (state is ProgramDetailsLoaded) {
-              final program = state.program;
-              if (!_playerStarted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) setState(() => _playerStarted = true);
-                });
-              }
-              if (!_viewBumped) {
-                _viewBumped = true;
-                _bumpView(program);
-              }
-              return CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 260,
-                    pinned: true,
-                    backgroundColor: AppColors.bg,
-                    surfaceTintColor: Colors.transparent,
-                    leading: _roundIconButton(
-                      icon: Icons.arrow_back,
-                      onTap: () => context.pop(),
-                    ),
-                    actions: [
-                      _roundIconButton(
-                        icon: Icons.ios_share_outlined,
-                        onTap: () {
-                          ShareHelper.shareLiveEvent(program);
-                          context
-                              .read<ProgramsBloc>()
-                              .repository
-                              .bumpLiveEventShare(program.id)
-                              .catchError((_) => null);
-                        },
+                if (state is ProgramDetailsLoaded) {
+                  final program = state.program;
+                  if (!_playerStarted) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _playerStarted = true);
+                    });
+                  }
+                  if (!_viewBumped) {
+                    _viewBumped = true;
+                    _bumpView(program);
+                  }
+                  return CustomScrollView(
+                    slivers: [
+                      SliverAppBar(
+                        expandedHeight: 260,
+                        pinned: true,
+                        backgroundColor: AppColors.bg,
+                        surfaceTintColor: Colors.transparent,
+                        leading: _roundIconButton(
+                          icon: Icons.arrow_back,
+                          onTap: () => context.pop(),
+                        ),
+                        actions: [
+                          _roundIconButton(
+                            icon: Icons.ios_share_outlined,
+                            onTap: () {
+                              ShareHelper.shareLiveEvent(program);
+                              context
+                                  .read<ProgramsBloc>()
+                                  .repository
+                                  .bumpLiveEventShare(program.id)
+                                  .catchError((_) => null);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          SaveToWatchlistButton(
+                            programId: program.id,
+                            channelId: program.channelId,
+                            program: program,
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        flexibleSpace: FlexibleSpaceBar(
+                          background: _VideoPlayer(
+                            program: program,
+                            started: _playerStarted,
+                            onStart: () =>
+                                setState(() => _playerStarted = true),
+                            fallbackUrl: _syncedStreamUrl,
+                            seekOffset: _seekOffset,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      SaveToWatchlistButton(
-                        programId: program.id,
-                        channelId: program.channelId,
-                        program: program,
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: _VideoPlayer(
-                        program: program,
-                        started: _playerStarted,
-                        onStart: () => setState(() => _playerStarted = true),
-                      ),
-                    ),
-                  ),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -197,6 +280,16 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                             targetId: program.id,
                             kind: 'liveEvent',
                           ),
+                          const SizedBox(height: 24),
+                          // "Coming up next…" ribbon backed by
+                          // `/v1/programs/epg/timeline`. We only fetch
+                          // it once on mount and reuse it; the block
+                          // has its own soft-fail so a miss doesn't
+                          // disturb the rest of the screen.
+                          _ComingUpNext(
+                            channelSlug:
+                                program.channel?.slug ?? _activeProgramId,
+                          ),
                           const SizedBox(height: 100),
                         ],
                       ),
@@ -212,10 +305,38 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
 
             return const SizedBox();
           },
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  ),
+);
+}
+
+/// Show a small banner when the EPG swaps from one program to the next.
+/// Only fires when the *current program id* changes — not on every 60s
+/// tick.
+String? _lastNotifiedProgramId;
+void _maybeToastProgramChange(EpgSyncRunning next) {
+  if (_lastNotifiedProgramId == null) {
+    _lastNotifiedProgramId = next.currentProgramId;
+    return;
   }
+  if (_lastNotifiedProgramId == next.currentProgramId) return;
+  _lastNotifiedProgramId = next.currentProgramId;
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        next.currentProgramId != 'unknown'
+            ? '📺 Đã chuyển sang chương trình mới'
+            : '📺 Đang phát chương trình mới',
+      ),
+      backgroundColor: AppColors.primary,
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
 
   Widget _roundIconButton({
     required IconData icon,
@@ -715,17 +836,28 @@ class _TagPill extends StatelessWidget {
   }
 }
 
-/* ── Video player (unchanged behaviour, polished visuals) ────────────── */
+/* ── Video player (EPG-sync aware) ───────────────────────────────────── */
 
 class _VideoPlayer extends StatefulWidget {
   final LiveEventModel program;
   final bool started;
   final VoidCallback? onStart;
+  /// Stream URL resolved by `EpgSyncBloc` (more recent than the program
+  /// model's own `streamUrl`). When non-null and non-empty, this URL
+  /// wins so the player picks up the current EPG slot immediately.
+  final String? fallbackUrl;
+  /// Server-computed seek offset (more accurate than the local
+  /// `calculateLiveSeekOffset` heuristic, since the server knows the
+  /// filler slot's actual start time). When `null`, fall back to the
+  /// heuristic.
+  final int seekOffset;
 
   const _VideoPlayer({
     required this.program,
     this.started = false,
     this.onStart,
+    this.fallbackUrl,
+    this.seekOffset = 0,
   });
 
   @override
@@ -733,7 +865,16 @@ class _VideoPlayer extends StatefulWidget {
 }
 
 class _VideoPlayerState extends State<_VideoPlayer> {
+  /// Resolve the actual stream URL. Priority:
+  ///   1. EpgSyncBloc-provided URL (always freshest; reflects the slot
+  ///      that's actually on-air right now, including filler replays).
+  ///   2. The program row's `streamUrl` (set when Studio team scheduled it).
+  ///   3. The program row's `externalUrl` (YouTube / Vimeo / etc.).
+  ///   4. ChannelModel.resolveDefaultStream (last-resort CDN root).
   String? get _streamUrl {
+    if (widget.fallbackUrl != null && widget.fallbackUrl!.isNotEmpty) {
+      return widget.fallbackUrl;
+    }
     if (widget.program.streamUrl != null && widget.program.streamUrl!.isNotEmpty) {
       return widget.program.streamUrl;
     }
@@ -748,10 +889,14 @@ class _VideoPlayerState extends State<_VideoPlayer> {
   Widget build(BuildContext context) {
     final streamUrl = _streamUrl;
     if (streamUrl != null && widget.started) {
-      final offset = ChannelTiers.calculateLiveSeekOffset(
-        scheduledAt: widget.program.scheduledAt,
-        durationMinutes: widget.program.duration,
-      );
+      // Server-side offset (fresher) wins; client heuristic is the fallback
+      // when the sync bloc hasn't reported yet.
+      final offset = widget.seekOffset > 0
+          ? widget.seekOffset
+          : ChannelTiers.calculateLiveSeekOffset(
+              scheduledAt: widget.program.scheduledAt,
+              durationMinutes: widget.program.duration,
+            );
       final isPremium = ChannelTiers.isPremium(widget.program.channel?.slug);
 
       return OmniPlayer(
@@ -878,5 +1023,192 @@ class _VideoPlayerState extends State<_VideoPlayer> {
       return '${(number / 1000).toStringAsFixed(1)}K';
     }
     return number.toString();
+  }
+}
+
+/* ── "Coming up next…" ribbon ────────────────────────────────────────── */
+
+/// Lightweight widget that fetches `/v1/programs/epg/timeline` once on
+/// mount and renders the upcoming programs (entries after the first)
+/// as small horizontal cards. The first entry is the current program
+/// (already shown at the top of the screen) so we skip it here.
+///
+/// Failure is silent — the widget just hides itself. The detail
+/// screen's content (player, comments, reactions) is the priority
+/// and must not be disturbed by a flaky EPG fetch.
+class _ComingUpNext extends StatefulWidget {
+  final String? channelSlug;
+  const _ComingUpNext({this.channelSlug});
+
+  @override
+  State<_ComingUpNext> createState() => _ComingUpNextState();
+}
+
+class _ComingUpNextState extends State<_ComingUpNext> {
+  late Future<List<_ComingUpEntry>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _fetch();
+  }
+
+  Future<List<_ComingUpEntry>> _fetch() async {
+    final slug = widget.channelSlug;
+    if (slug == null || slug.isEmpty) return const [];
+    try {
+      final dio = getIt<DioClient>();
+      final resp = await dio.get(
+        AppEndpoints.epgTimeline(channelSlug: slug, limit: 6),
+      );
+      final raw = resp.data;
+      final body = (raw is Map && raw['data'] is Map)
+          ? raw['data'] as Map<String, dynamic>
+          : (raw as Map<String, dynamic>);
+      final entries = (body['timeline'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      // Skip the first entry — it's the on-air program, already shown
+      // at the top of the screen.
+      return entries
+          .skip(1)
+          .map(_ComingUpEntry.fromJson)
+          .toList(growable: false);
+    } catch (_) {
+      // Soft-fail — hide the section rather than block the screen.
+      return const [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FutureBuilder<List<_ComingUpEntry>>(
+      future: _future,
+      builder: (context, snapshot) {
+        final entries = snapshot.data ?? const <_ComingUpEntry>[];
+        if (entries.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.schedule,
+                    size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'Sắp phát sóng',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const Spacer(),
+                Text(
+                  '${entries.length} chương trình',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 96,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: entries.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final e = entries[i];
+                  return Container(
+                    width: 220,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceRaised,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: e.isFiller
+                                    ? AppColors.textDim.withValues(alpha: 0.25)
+                                    : AppColors.live.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                e.isFiller ? 'Tái phát' : 'Trực tiếp',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              e.startLabel,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                                color: AppColors.textDim,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          e.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ComingUpEntry {
+  final String id;
+  final String title;
+  final DateTime startTime;
+  final bool isFiller;
+
+  const _ComingUpEntry({
+    required this.id,
+    required this.title,
+    required this.startTime,
+    required this.isFiller,
+  });
+
+  factory _ComingUpEntry.fromJson(Map<String, dynamic> j) => _ComingUpEntry(
+        id: j['id']?.toString() ?? '',
+        title: j['title']?.toString() ?? '',
+        startTime: DateTime.tryParse(j['startTime']?.toString() ?? '') ??
+            DateTime.now(),
+        isFiller: j['isFiller'] == true,
+      );
+
+  String get startLabel {
+    final h = startTime.hour.toString().padLeft(2, '0');
+    final m = startTime.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }

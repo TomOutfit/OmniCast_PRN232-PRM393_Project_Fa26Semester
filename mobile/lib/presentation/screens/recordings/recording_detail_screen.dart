@@ -539,6 +539,89 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
+
+                      // Catalog v2.1 — licensing & attribution card.
+                      // Surfaces the full source/credit line and the
+                      // license tag (CC0, PEXELS_LICENSE, …) so the
+                      // attribution that overlays the player is never
+                      // the only place a viewer sees the credit.
+                      if (r.license != null ||
+                          r.sourceAttribution != null ||
+                          r.thumbnailAttribution != null) ...[
+                        const Text(
+                          'BẢN QUYỀN & NGUỒN',
+                          style: TextStyle(
+                            color: Color(0xFF00E5FF),
+                            fontSize: 12,
+                            fontFamily: 'JetBrainsMono',
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0B1320),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0x1F00E5FF),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (r.license != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.verified_user_outlined,
+                                        color: Color(0xFF00E5FF),
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Giấy phép: ${_licenseLabel(r.license!)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'JetBrainsMono',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (r.sourceAttribution != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Text(
+                                    'Video: ${r.sourceAttribution}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFCBD5E1),
+                                      fontSize: 12,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              if (r.thumbnailAttribution != null)
+                                Text(
+                                  'Ảnh: ${r.thumbnailAttribution}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 11,
+                                    height: 1.5,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                       const SizedBox(height: 20),
                       ReactionsBar(targetId: r.id, kind: 'recording'),
                       const SizedBox(height: 20),
@@ -568,6 +651,24 @@ class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
 
   static String _categoryLabel(String value) {
     return getCategoryInfo(value).label;
+  }
+
+  /// Translate the Prisma `ContentLicense` enum into a Vietnamese label
+  /// for the License card. Falls back to the raw enum string when we
+  /// don't recognise it so future licenses surface gracefully.
+  static String _licenseLabel(String raw) {
+    const labels = {
+      'PEXELS_LICENSE': 'Pexels License (miễn phí thương mại)',
+      'CC0_PUBLIC_DOMAIN': 'CC0 — Public Domain',
+      'BLENDER_OPEN_MOVIE': 'Blender Open Movie (CC-BY 3.0)',
+      'ARCHIVE_ORG_PUBLIC': 'Internet Archive (public domain)',
+      'YOUTUBE_EMBED': 'YouTube Embed (giữ nguyên credit)',
+      'BUNNY_SELF_HOSTED': 'Bunny CDN self-host (mirror nội bộ)',
+      'SELF_RECORDED': 'Tự ghi hình (Live Studio)',
+      'DEV_ONLY_TEST_FIXTURE': 'Test fixture (chỉ dùng cho dev)',
+      'MUX_TEST_FIXTURE': 'Mux test stream (chỉ dùng cho dev)',
+    };
+    return labels[raw] ?? raw;
   }
 
   static String _formatDate(DateTime d) {
@@ -600,9 +701,16 @@ class _PlayerSection extends StatelessWidget {
         children: [
           OmniPlayer(
             url: src,
+            // Catalog v2.1 — wire the configured fallback chain so a
+            // Bunny mirror outage silently falls back to the original
+            // Pexels / Blender / Archive.org upstream the orchestrator
+            // kept around in `fallbackUrl`.
+            fallbackSrc: recording.fallbackUrl,
+            sourceAttribution: recording.sourceAttribution,
             posterUrl: recording.thumbnailUrl,
             autoPlay: true,
           ),
+          // Top gradient (kept for the back button contrast)
           Positioned(
             top: 0,
             left: 0,
@@ -618,6 +726,100 @@ class _PlayerSection extends StatelessWidget {
                     Colors.transparent,
                   ],
                 ),
+              ),
+            ),
+          ),
+          // Source badge (top-right): "PEXELS", "BUNNY CDN", "YOUTUBE", …
+          // Helps the viewer understand why a stream might swap and
+          // confirms the licensing path in use.
+          if (recording.sourceType != null && recording.sourceType!.isNotEmpty)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _SourceBadge(label: recording.sourceBadgeLabel),
+            ),
+          // Attribution caption (bottom-left): the credit line required
+          // by Pexels / Blender / Archive.org licenses. Sits above the
+          // player's own transport overlay so it never overlaps controls.
+          if (recording.sourceAttribution != null &&
+              recording.sourceAttribution!.isNotEmpty)
+            Positioned(
+              left: 12,
+              right: 60,
+              bottom: 8,
+              child: _AttributionCaption(text: recording.sourceAttribution!),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// SOURCE BADGE
+// ============================================================
+
+class _SourceBadge extends StatelessWidget {
+  final String label;
+  const _SourceBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+          width: 0.6,
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF00E5FF),
+          fontSize: 9,
+          fontFamily: 'JetBrainsMono',
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// ATTRIBUTION CAPTION
+// ============================================================
+
+class _AttributionCaption extends StatelessWidget {
+  final String text;
+  const _AttributionCaption({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.copyright_rounded, color: Colors.white70, size: 10),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 9,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

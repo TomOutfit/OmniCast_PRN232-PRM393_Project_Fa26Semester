@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
@@ -66,6 +67,14 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
           ],
         ),
         actions: [
+          // Live Studio shortcut — opens the new Curated Live +
+          // Self-Record control surface. Distinct from the AI
+          // Curator analytics surface (which only inspects data).
+          IconButton(
+            tooltip: 'Live Studio',
+            icon: const Icon(Icons.podcasts_rounded, color: Color(0xFFFF2A55)),
+            onPressed: () => context.push('/studio/live'),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline_rounded, color: Color(0xFF00E5FF)),
             onPressed: () => _showInfoDialog(context),
@@ -81,6 +90,12 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             _buildHeader(),
             const SizedBox(height: 20),
 
+            // Live Studio shortcut card — Staff can drop straight into
+            // the Curated Live / Self-Record control surface without
+            // going through Admin Hub.
+            _buildLiveStudioShortcut(),
+            const SizedBox(height: 20),
+
             // Filters
             _buildFilters(),
             const SizedBox(height: 20),
@@ -93,6 +108,72 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             if (_error != null) _buildError(),
             if (_analysisResult != null) _buildResults(),
             const SizedBox(height: 36),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveStudioShortcut() {
+    return GestureDetector(
+      onTap: () => context.push('/studio/live'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0x33FF2A55), Color(0x1100E5FF)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFFF2A55).withValues(alpha: 0.4),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.podcasts_rounded,
+                color: Color(0xFFFF2A55),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Live Studio',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Chọn nội dung phát lên màn hình hoặc tự ghi hình Livestream',
+                    style: TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Color(0xFFFF2A55),
+              size: 16,
+            ),
           ],
         ),
       ),
