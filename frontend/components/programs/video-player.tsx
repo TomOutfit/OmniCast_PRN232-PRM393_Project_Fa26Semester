@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element, react-hooks/exhaustive-deps */
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -226,7 +227,7 @@ export function VideoPlayer({
         /* ignore */
       }
     };
-  }, [resolvedSrc, resolvedType, onError, hasAccess, autoPlay, advanceToFallback]);
+  }, [resolvedSrc, resolvedType, onError, hasAccess, autoPlay, advanceToFallback, applySeek, initialSeekSeconds]);
 
   // Activate Demo VIP subscription on 1 click
   const handleActivateVipDemo = () => {
