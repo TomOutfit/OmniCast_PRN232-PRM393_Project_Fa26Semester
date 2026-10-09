@@ -135,13 +135,13 @@ class _OfflineBannerContent extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.warning.withOpacity(0.95),
-            AppColors.warning.withOpacity(0.9),
+            AppColors.warning.withValues(alpha: 0.95),
+            AppColors.warning.withValues(alpha: 0.9),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.warning.withOpacity(0.3),
+            color: AppColors.warning.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -177,7 +177,7 @@ class _OfflineBannerContent extends StatelessWidget {
                   Text(
                     'Vui lòng kiểm tra kết nối WiFi hoặc dữ liệu di động',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                     ),
                   ),
@@ -187,7 +187,7 @@ class _OfflineBannerContent extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
@@ -272,7 +272,7 @@ class OfflineIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.9),
+        color: AppColors.warning.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(4),
       ),
       child: const Row(
@@ -314,8 +314,8 @@ class ConnectionStatusChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: isOffline
-                ? AppColors.warning.withOpacity(0.2)
-                : AppColors.success.withOpacity(0.2),
+                ? AppColors.warning.withValues(alpha: 0.2)
+                : AppColors.success.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isOffline ? AppColors.warning : AppColors.success,

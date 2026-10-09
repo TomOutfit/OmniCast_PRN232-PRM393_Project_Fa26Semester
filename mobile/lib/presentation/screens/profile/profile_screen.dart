@@ -544,15 +544,15 @@ class ProfileScreen extends StatelessWidget {
     switch (role.toUpperCase()) {
       case 'ADMIN':
       case '3':
-        return const Color(0xFF78350F).withOpacity(0.35);
+        return const Color(0xFF78350F).withValues(alpha: 0.35);
       case 'STAFF':
       case '1':
-        return const Color(0xFF581C87).withOpacity(0.35);
+        return const Color(0xFF581C87).withValues(alpha: 0.35);
       case 'VIEWER':
       case '2':
-        return const Color(0xFF083344).withOpacity(0.35);
+        return const Color(0xFF083344).withValues(alpha: 0.35);
       default:
-        return const Color(0xFF1E293B).withOpacity(0.35);
+        return const Color(0xFF1E293B).withValues(alpha: 0.35);
     }
   }
 

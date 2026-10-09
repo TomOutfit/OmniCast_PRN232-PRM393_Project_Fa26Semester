@@ -71,10 +71,10 @@ class ChannelLogo extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: categoryColor.withOpacity(0.12),
+            color: categoryColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(size * 0.22),
             border: Border.all(
-              color: categoryColor.withOpacity(0.4),
+              color: categoryColor.withValues(alpha: 0.4),
               width: 1.2,
             ),
           ),
@@ -106,7 +106,7 @@ class ChannelLogo extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.liveRed.withOpacity(0.6),
+                    color: AppColors.liveRed.withValues(alpha: 0.6),
                     blurRadius: 4,
                     spreadRadius: 1,
                   ),
@@ -174,8 +174,8 @@ class ChannelLogo extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            categoryColor.withOpacity(0.3),
-            categoryColor.withOpacity(0.1),
+            categoryColor.withValues(alpha: 0.3),
+            categoryColor.withValues(alpha: 0.1),
           ],
         ),
       ),
@@ -309,9 +309,9 @@ class ChannelBadge extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: categoryColor.withOpacity(0.2),
+        color: categoryColor.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: categoryColor.withOpacity(0.4)),
+        border: Border.all(color: categoryColor.withValues(alpha: 0.4)),
       ),
       child: Center(
         child: Text(
