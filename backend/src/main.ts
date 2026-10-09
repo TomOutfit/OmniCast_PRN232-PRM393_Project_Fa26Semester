@@ -110,6 +110,31 @@ async function bootstrap() {
   // Global Response Interceptor
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  // Serve self-recorded uploads (Live Studio "Tự ghi hình" flow).
+  // Files are written to <cwd>/uploads/ by StorageService and read
+  // back here. We sit OUTSIDE the /api prefix so mobile players
+  // can fetch them as plain MP4s without auth.
+  const expressStatic = require('express');
+  const pathModule = require('path');
+  const fsModule = require('fs');
+  const uploadRoot = pathModule.resolve(
+    process.env.UPLOAD_ROOT ?? pathModule.join(process.cwd(), 'uploads'),
+  );
+  try {
+    fsModule.mkdirSync(uploadRoot, { recursive: true });
+  } catch (_) {/* read-only FS — request handlers will surface a 500 */}
+  app.use(
+    '/uploads',
+    expressStatic.static(uploadRoot, {
+      // Allow the player to do range requests so seeking works.
+      acceptRanges: true,
+      // 24h cache — files are content-addressed, so the URL
+      // already includes a content hash.
+      maxAge: '24h',
+      fallthrough: false,
+    }),
+  );
+
   // Swagger Documentation Setup
   setupSwagger(app);
 
