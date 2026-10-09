@@ -31,7 +31,7 @@ import { bumpChannelView, bumpLiveEventView } from '@/lib/api/social';
 import {
   useChannelBySlug,
 } from '@/lib/hooks/useChannels';
-import { useLiveNow, useLiveEvents } from '@/lib/hooks/usePrograms';
+import { useLiveNow, useLiveEvents, useEpgDay } from '@/lib/hooks/usePrograms';
 import { calculateLiveSeekOffset, isChannelPremium } from '@/lib/constants/channel-tiers';
 import type { Channel } from '@/types';
 
@@ -92,34 +92,46 @@ export default function ChannelDetailPage() {
   const slug = params?.slug ?? '';
   const { data: channel, isLoading, error } = useChannelBySlug(slug);
   const { data: liveEvents } = useLiveNow();
-  const { data: scheduleData } = useLiveEvents({ channelId: channel?.id, limit: 50 });
+  // CONSISTENCY FIX (2026-10-09): use the SAME EPG-day endpoint as
+  // /epg/page.tsx, /channels → ChannelQuickView, and mobile
+  // EpgScreen. Previously this page called `useLiveEvents({channelId})`
+  // which only returns `LiveEvent` rows from the DB — so when the
+  // channel had 0-5 schedule rows the sidebar was empty while the EPG
+  // page showed 24h of filler titles. Both surfaces now pull from
+  // `/programs/epg/day` so the "Lịch phát sóng hôm nay" panel always
+  // matches what /epg shows, including `isFiller` slots.
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const { data: epgDayData } = useEpgDay(
+    today,
+    channel ? [channel.id] : undefined,
+  );
+  const channelPrograms = useMemo(() => {
+    if (!epgDayData?.channels || !channel) return [];
+    const ch = epgDayData.channels.find((c) => c.channelId === channel.id);
+    return ch?.programs ?? [];
+  }, [epgDayData, channel]);
   const liveEvent = useMemo(() => {
     if (!channel || !liveEvents) return null;
     const list = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
     return list.find((e: any) => e.channelId === channel.id) ?? null;
   }, [channel, liveEvents]);
 
+  // Use the EPG-day programs directly. They already cover 24h and
+  // mix `LiveEvent` rows + `filler` (recording-replay / channel-branding)
+  // slots, so the sidebar always shows the same titles as /epg.
   const todayEvents = useMemo(() => {
-    if (!scheduleData?.data || !channel) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const filtered = scheduleData.data
-      .filter((e) => {
-        const at = new Date(e.scheduledAt);
-        return at >= today && at < tomorrow;
-      })
-      .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt));
-
-    if (filtered.length > 0) return filtered;
-
-    // Fallback: return schedule items so sidebar is never empty
-    return [...scheduleData.data]
-      .sort((a, b) => +new Date(a.scheduledAt) - +new Date(b.scheduledAt))
+    if (!channel || !channelPrograms) return [];
+    const now = Date.now();
+    const upcoming = channelPrograms
+      .filter((p) => new Date(p.endTime).getTime() > now)
+      .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime))
       .slice(0, 10);
-  }, [scheduleData, channel]);
+    return upcoming;
+  }, [channel, channelPrograms]);
 
   useEffect(() => {
     if (channel?.id) {
@@ -347,26 +359,53 @@ export default function ChannelDetailPage() {
 
                 {todayEvents
                   .filter((e) => e.id !== liveEvent?.id)
-                  .map((program) => (
-                    <div key={program.id} className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan" />
-                        <span className="text-xs text-dark-400 font-medium">
-                          {format(parseISO(program.scheduledAt), 'HH:mm')}
-                        </span>
+                  .map((program) => {
+                    // CONSISTENCY: `todayEvents` now comes from the EPG-day
+                    // API (same source as /epg page). EPG-day programs use
+                    // `startTime` / `durationMinutes` rather than the
+                    // LiveEvent shape. Render the title and the EPG-style
+                    // time exactly as the /epg grid does so the two surfaces
+                    // are pixel-identical.
+                    const start = new Date(program.startTime);
+                    const end = new Date(program.endTime);
+                    const hhmm = (d: Date) =>
+                      `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                    return (
+                      <div key={program.id} className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {program.isFiller ? (
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-700/40">
+                              {program.fillerKind === 'recording-replay' ? 'REPLAY' : 'BRANDING'}
+                            </span>
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan" />
+                          )}
+                          <span className="text-xs text-dark-400 font-medium">
+                            {hhmm(start)} – {hhmm(end)}
+                          </span>
+                        </div>
+                        <Link
+                          href={
+                            program.sourceRecordingId
+                              ? `/programs/recording/${program.sourceRecordingId}`
+                              : program.isFiller
+                                ? `/channels/${channel.slug}`
+                                : `/programs/${program.id}`
+                          }
+                          className="group"
+                        >
+                          <h4 className="font-medium text-white group-hover:text-primary-400 transition-colors line-clamp-2">
+                            {program.title}
+                          </h4>
+                        </Link>
+                        {program.durationMinutes ? (
+                          <p className="text-xs text-dark-500 mt-1">
+                            {program.durationMinutes} phút
+                          </p>
+                        ) : null}
                       </div>
-                      <Link href={`/programs/${program.id}`} className="group">
-                        <h4 className="font-medium text-white group-hover:text-primary-400 transition-colors line-clamp-2">
-                          {program.title}
-                        </h4>
-                      </Link>
-                      {program.duration && (
-                        <p className="text-xs text-dark-500 mt-1">
-                          {program.duration} phút
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
 
                 {todayEvents.length === 0 && !liveEvent && (
                   <div className="p-6 text-center text-dark-400 text-sm">

@@ -63,4 +63,8 @@ playwright-report/
 reports/
 coverage/
 
+# Local file uploads (Live Studio self-record flow)
+backend/uploads/
+uploads/
+
 

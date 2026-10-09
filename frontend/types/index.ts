@@ -189,6 +189,18 @@ export interface Recording {
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
+  // -----------------------------------------------------------------
+  // Catalog v2.1 — health + license + fallback fields. Optional so
+  // older client builds keep working against newer server responses.
+  // -----------------------------------------------------------------
+  fallbackUrl?: string;
+  sourceAttribution?: string;
+  thumbnailAttribution?: string;
+  sourceType?: string;
+  license?: string;
+  isActive?: boolean;
+  lastCheckedAt?: string;
+  lastStatus?: string;
   channel?: {
     id: string;
     name: string;
