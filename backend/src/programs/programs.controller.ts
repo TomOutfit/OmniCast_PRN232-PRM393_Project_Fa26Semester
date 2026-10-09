@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProgramsService } from './programs.service';
+import { EpgNowService } from './epg-now.service';
+import { EpgNowResponseDto } from './dto/epg-now.dto';
 import {
   CreateLiveEventDto,
   UpdateLiveEventDto,
@@ -29,7 +31,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @ApiTags('programs')
 @Controller('programs')
 export class ProgramsController {
-  constructor(private readonly programsService: ProgramsService) {}
+  constructor(
+    private readonly programsService: ProgramsService,
+    private readonly epgNowService: EpgNowService,
+  ) {}
 
   // ============================================================
   // LIVE EVENTS
@@ -147,6 +152,85 @@ export class ProgramsController {
   @ApiResponse({ status: 200, description: '200 OK — Channel now-next snapshots' })
   async getEpgSnapshot() {
     return this.programsService.getChannelSnapshots();
+  }
+
+  /**
+   * Now-playing payload for a SINGLE channel. Mobile clients call this
+   * every 60s while the player is open so the stream URL can be swapped
+   * when the EPG slot changes (e.g. one program ends, the next begins).
+   *
+   * Accepts either the channel UUID or the slug.
+   */
+  @Get('epg/now')
+  @ApiOperation({
+    summary:
+      'Now-playing payload for a single channel. Mobile/web call this ' +
+      'every 60s so the player can swap streams when the EPG slot ' +
+      'rolls over. Returns the resolved HLS `streamUrl`, `currentOffset`, ' +
+      'and the next program so the UI can pre-warm.',
+  })
+  @ApiQuery({
+    name: 'channelId',
+    required: false,
+    type: String,
+    description: 'Channel UUID or slug. Slug is preferred by mobile clients.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '200 OK — Now-playing payload for the requested channel',
+    type: EpgNowResponseDto,
+  })
+  @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
+  async getEpgNow(@Query('channelId') channelId?: string) {
+    const identifier = channelId ?? 'sport-1';
+    return this.epgNowService.getNowPlaying(identifier);
+  }
+
+  /**
+   * "Coming up next…" timeline for a single channel.
+   *
+   * Returns the currently airing program (or the next one if the
+   * player is paused on a gap), followed by up to `limit` upcoming
+   * programs sorted by `startTime`. Cached for 60s via the shared
+   * day-grid cache.
+   *
+   * Mobile clients call it once on screen mount and refresh every
+   * minute alongside the `/epg/now` poll.
+   */
+  @Get('epg/timeline')
+  @ApiOperation({
+    summary:
+      'Coming-up-next timeline for a single channel. On-air program ' +
+      '(or next-up if nothing is airing) followed by up to `limit` ' +
+      'upcoming programs, sorted by `startTime` ascending. Useful for ' +
+      '"Sắp phát sóng" ribbons on the detail screen.',
+  })
+  @ApiQuery({
+    name: 'channelId',
+    required: false,
+    type: String,
+    description: 'Channel UUID or slug. Slug is preferred by mobile clients.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max entries to return (1–20). Default 6 (1 now + 5 next).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '200 OK — Timeline payload for the requested channel',
+  })
+  @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
+  async getEpgTimeline(
+    @Query('channelId') channelId?: string,
+    @Query('limit') limit?: number,
+  ) {
+    const identifier = channelId ?? 'sport-1';
+    return this.epgNowService.getChannelTimeline(
+      identifier,
+      Math.min(Math.max(Number(limit) || 6, 1), 20),
+    );
   }
 
   @Get('live-events/:id')
