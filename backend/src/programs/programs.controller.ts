@@ -11,6 +11,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Header,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProgramsService } from './programs.service';
@@ -125,6 +126,7 @@ export class ProgramsController {
   // ============================================================
 
   @Get('epg/day')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=30')
   @ApiOperation({
     summary:
       'EPG for a single day (UTC), grouped by channel. Cached 60s.',
