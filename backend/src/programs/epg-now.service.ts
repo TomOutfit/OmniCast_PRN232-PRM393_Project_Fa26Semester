@@ -85,11 +85,11 @@ export interface NowPlayingDto {
  */
 /**
  * Demo fallback. Big Buck Bunny — Creative Commons MP4 hosted on
- * Google's GCS bucket. Renders directly in `video_player`, no API key,
+ * verified CDN mirror. Renders directly in `video_player`, no API key,
  * no service billing. Safe for the demo when no recording matches.
  */
 const SAMPLE_MP4_FALLBACK =
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+  'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
 
 export interface EpgTimelineEntryDto {
   id: string;

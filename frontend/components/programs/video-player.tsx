@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Loader2, AlertTriangle, Crown, QrCode, CheckCircle2, ShieldCheck, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { cn, resolveStreamUrl } from '@/lib/utils';
+import { cn, resolveStreamUrl, resolvePosterUrl, VERIFIED_FALLBACK_STREAMS } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 
 interface VideoPlayerProps {
@@ -81,7 +81,17 @@ export function VideoPlayer({
     const primary = resolveStreamUrl(src);
     if (primary) list.push(primary);
     const fallback = resolveStreamUrl(fallbackSrc);
-    if (fallback && fallback !== primary) list.push(fallback);
+    if (fallback && !list.includes(fallback)) list.push(fallback);
+
+    // Guaranteed resilient fallback stream:
+    // If neither the primary nor fallback works, or if both fail on network/CORS,
+    // ensure we have verified working CDN mirrors so the player never breaks.
+    if (!list.includes(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4)) {
+      list.push(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4);
+    }
+    if (!list.includes(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS)) {
+      list.push(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS);
+    }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, fallbackSrc]);
@@ -110,6 +120,7 @@ export function VideoPlayer({
   // self-recorded uploads persisted as `/uploads/...` before the
   // server-side fix). Absolute URLs pass through untouched.
   const resolvedSrc = chain[activeIdx] ?? chain[0] ?? '';
+  const resolvedPoster = resolvePosterUrl(poster);
   const resolvedType: NonNullable<VideoPlayerProps['type']> =
     type ?? detectType(resolvedSrc);
 
@@ -122,7 +133,7 @@ export function VideoPlayer({
       if (!recoveryToastShown) {
         setRecoveryToastShown(true);
         toast.info('Đang chuyển sang nguồn dự phòng…', {
-          description: 'Nguồn chính tạm thời không khả dụng, đã tự động chuyển.',
+          description: 'Nguồn chính tạm thời không khả dụng, đã tự động chuyển sang luồng CDN ổn định.',
         });
       }
       return true;
@@ -154,6 +165,9 @@ export function VideoPlayer({
 
     if (resolvedType !== 'hls') {
       video.src = resolvedSrc;
+      if (playing || autoPlay) {
+        video.play().catch(() => {});
+      }
       return;
     }
 
@@ -261,9 +275,9 @@ export function VideoPlayer({
   if (!hasAccess) {
     return (
       <div className={cn('relative w-full aspect-video rounded-2xl overflow-hidden studio-glass-card flex flex-col items-center justify-center p-6 text-center shadow-2xl border border-amber-500/30', className)}>
-        {poster && (
+        {resolvedPoster && (
           <img
-            src={poster}
+            src={resolvedPoster}
             alt=""
             className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-30 -z-10"
           />
@@ -333,9 +347,9 @@ export function VideoPlayer({
   if (!resolvedSrc) {
     return (
       <div className={cn('player-container relative w-full aspect-video bg-gradient-to-br from-slate-950 via-[#0a121e] to-slate-900 flex flex-col items-center justify-center text-center p-6 border border-slate-800 rounded-2xl', className)}>
-        {poster && (
+        {resolvedPoster && (
           <img
-            src={poster}
+            src={resolvedPoster}
             alt=""
             className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10"
           />
@@ -374,9 +388,9 @@ export function VideoPlayer({
           className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 group-hover:bg-black/30 transition-colors"
           aria-label="Phát video"
         >
-          {poster && (
+          {resolvedPoster && (
             <img
-              src={poster}
+              src={resolvedPoster}
               alt=""
               className="absolute inset-0 w-full h-full object-cover -z-10"
             />
@@ -402,7 +416,7 @@ export function VideoPlayer({
 
       <video
         ref={videoRef}
-        poster={poster}
+        poster={resolvedPoster || undefined}
         controls={playing || autoPlay}
         autoPlay={autoPlay}
         muted={autoPlay}

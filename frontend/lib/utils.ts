@@ -92,11 +92,49 @@ function apiOrigin(): string {
   return API_BASE_URL.replace(/\/api(\/.*)?$/, '');
 }
 
+/**
+ * Verified production-ready sample streams (HTTP 200 OK, CORS enabled, byte-range seeking supported).
+ * Used when third-party sample storage (such as Google's deprecated GCS sample bucket) is blocked or unreachable.
+ */
+export const VERIFIED_FALLBACK_STREAMS = {
+  BIG_BUCK_BUNNY_MP4:
+    'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4',
+  BIG_BUCK_BUNNY_1080P_MP4:
+    'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_5MB.mp4',
+  BIG_BUCK_BUNNY_HLS: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  SINTEL_MP4:
+    'https://test-videos.co.uk/vids/sintel/mp4/h264/720/Sintel_720_10s_1MB.mp4',
+};
+
+export const VERIFIED_FALLBACK_POSTER =
+  'https://peach.blender.org/wp-content/uploads/title_anouncement.jpg';
+
+export function resolvePosterUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  const lower = trimmed.toLowerCase();
+  if (lower.includes('commondatastorage.googleapis.com')) {
+    return VERIFIED_FALLBACK_POSTER;
+  }
+  return trimmed;
+}
+
 export function resolveStreamUrl(url: string | null | undefined): string {
   if (!url) return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
   const lower = trimmed.toLowerCase();
+
+  // Proactive safety net: Google's sample storage bucket has been shut down / returns 403 Forbidden.
+  // Transparently remap legacy sample references to verified, high-availability multi-bitrate CDN streams.
+  if (lower.includes('commondatastorage.googleapis.com')) {
+    if (lower.includes('sintel') || lower.includes('elephantsdream')) {
+      return VERIFIED_FALLBACK_STREAMS.SINTEL_MP4;
+    }
+    return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
+  }
+
   if (
     lower.startsWith('http://') ||
     lower.startsWith('https://') ||

@@ -18,6 +18,9 @@ import {
   slugify,
   getInitials,
   truncate,
+  resolveStreamUrl,
+  resolvePosterUrl,
+  VERIFIED_FALLBACK_STREAMS,
 } from './utils';
 
 describe('cn', () => {
@@ -106,5 +109,53 @@ describe('truncate', () => {
 
   it('appends ... and clips at the requested length', () => {
     expect(truncate('a very long sentence', 10)).toBe('a very lon...');
+  });
+});
+
+describe('resolveStreamUrl', () => {
+  it('returns empty string for empty inputs', () => {
+    expect(resolveStreamUrl('')).toBe('');
+    expect(resolveStreamUrl(null)).toBe('');
+    expect(resolveStreamUrl(undefined)).toBe('');
+  });
+
+  it('remaps deprecated Google sample bucket URLs to verified CDN streams', () => {
+    const googleSample =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    expect(resolveStreamUrl(googleSample)).toBe(
+      VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4,
+    );
+  });
+
+  it('remaps ElephantsDream and Sintel Google sample URLs to verified Sintel stream', () => {
+    const elephants =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
+    expect(resolveStreamUrl(elephants)).toBe(
+      VERIFIED_FALLBACK_STREAMS.SINTEL_MP4,
+    );
+  });
+
+  it('preserves valid absolute http/https streams', () => {
+    const validUrl = 'https://cdn.example.com/live/master.m3u8';
+    expect(resolveStreamUrl(validUrl)).toBe(validUrl);
+  });
+});
+
+describe('resolvePosterUrl', () => {
+  it('returns empty string for empty inputs', () => {
+    expect(resolvePosterUrl('')).toBe('');
+    expect(resolvePosterUrl(null)).toBe('');
+    expect(resolvePosterUrl(undefined)).toBe('');
+  });
+
+  it('remaps deprecated Google sample bucket images to verified title poster', () => {
+    const googleImage =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg';
+    expect(resolvePosterUrl(googleImage)).toMatch(/peach\.blender\.org/);
+  });
+
+  it('preserves valid image URLs', () => {
+    const validImg = 'https://images.unsplash.com/photo-test.jpg';
+    expect(resolvePosterUrl(validImg)).toBe(validImg);
   });
 });

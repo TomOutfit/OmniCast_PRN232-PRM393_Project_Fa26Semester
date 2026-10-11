@@ -8,11 +8,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 
-// Demo fallback stream. Big Buck Bunny — Creative Commons MP4 from
-// Google's public sample bucket. Plays directly in `video_player`,
+// Demo fallback stream. Big Buck Bunny — Creative Commons MP4 hosted
+// on verified CDN mirror. Plays directly in `video_player`,
 // no API key required.
 const _kFallbackStream =
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
 
 /// Returns true when the URL should be rendered in a WebView (YouTube
 /// embed / any iframe-only source). The native `video_player` package
@@ -106,6 +106,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
   static String _resolveAbsoluteUrl(String url) {
     if (url.isEmpty) return url;
     final lower = url.toLowerCase();
+    if (lower.contains('commondatastorage.googleapis.com')) {
+      return _kFallbackStream;
+    }
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
       return url;
     }

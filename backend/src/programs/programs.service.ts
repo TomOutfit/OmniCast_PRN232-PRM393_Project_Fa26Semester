@@ -25,6 +25,36 @@ import {
 } from './dto/program.dto';
 import { EventStatus } from '@prisma/client';
 
+const VERIFIED_CDN_SAMPLE_MP4 =
+  'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
+const VERIFIED_CDN_SAMPLE_HLS =
+  'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+const VERIFIED_CDN_SAMPLE_POSTER =
+  'https://peach.blender.org/wp-content/uploads/title_anouncement.jpg';
+
+function sanitizeRecording<T>(rec: T): T {
+  if (!rec) return rec;
+  const clone: any = { ...rec };
+  const vUrl = String(clone.videoUrl || '').toLowerCase();
+  const eUrl = String(clone.externalUrl || '').toLowerCase();
+  const fUrl = String(clone.fallbackUrl || '').toLowerCase();
+  const tUrl = String(clone.thumbnailUrl || '').toLowerCase();
+
+  if (vUrl.includes('commondatastorage.googleapis.com')) {
+    clone.videoUrl = VERIFIED_CDN_SAMPLE_MP4;
+  }
+  if (eUrl.includes('commondatastorage.googleapis.com')) {
+    clone.externalUrl = VERIFIED_CDN_SAMPLE_MP4;
+  }
+  if (!clone.fallbackUrl || fUrl.includes('commondatastorage.googleapis.com')) {
+    clone.fallbackUrl = VERIFIED_CDN_SAMPLE_HLS;
+  }
+  if (tUrl.includes('commondatastorage.googleapis.com')) {
+    clone.thumbnailUrl = VERIFIED_CDN_SAMPLE_POSTER;
+  }
+  return clone as T;
+}
+
 @Injectable()
 export class ProgramsService {
   /**
@@ -828,7 +858,7 @@ export class ProgramsService {
     ]);
 
     return {
-      data: recordings,
+      data: recordings.map((r) => sanitizeRecording(r)),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -857,7 +887,7 @@ export class ProgramsService {
         throw new NotFoundException('Recording not found');
       }
 
-      return recording;
+      return sanitizeRecording(recording);
     } catch (err) {
       if (
         (err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1013,7 +1043,7 @@ export class ProgramsService {
       });
 
       if (matchCategory.length >= limit) {
-        return matchCategory;
+        return matchCategory.map((r) => sanitizeRecording(r));
       }
 
       // 2) Top off with other recordings from the same channel.
@@ -1033,6 +1063,8 @@ export class ProgramsService {
           },
         },
       });
+
+      return [...matchCategory, ...fallback].map((r) => sanitizeRecording(r));
 
     } catch (err) {
       if (
