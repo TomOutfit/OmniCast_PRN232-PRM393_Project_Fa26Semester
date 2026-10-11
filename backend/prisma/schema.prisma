@@ -557,3 +557,34 @@ enum WatchSource {
   DIRECT_LINK
   SOCIAL_SHARE
 }
+
+model NewsletterSubscriber {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email           String    @unique @db.VarChar(255)
+  // Optional: link to a registered user when they subscribe while signed in
+  userId          String?   @db.Uuid
+  // What topics they opted into. JSON array stored as text.
+  topics          String[]  @default(["weekly_schedule"])
+  // Locale preference: "vi" or "en"
+  locale          String?   @default("vi") @db.VarChar(10)
+  // Whether the email has been double-opt-in confirmed
+  isConfirmed     Boolean?  @default(false)
+  confirmedAt     DateTime? @db.Timestamp(6)
+  // Unsubscribe token — opaque random string
+  unsubscribeToken String?  @unique @db.VarChar(64)
+  // Soft-unsubscribe instead of hard delete
+  unsubscribedAt  DateTime? @db.Timestamp(6)
+  // Source (where the signup happened — footer, settings, modal)
+  source          String?   @db.VarChar(50)
+  // Last email sent timestamp
+  lastSentAt      DateTime? @db.Timestamp(6)
+  // Metadata — IP for anti-abuse, user agent
+  ipAddress       String?   @db.VarChar(50)
+  userAgent       String?   @db.VarChar(500)
+  createdAt       DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@index([email], map: "idx_newsletter_email")
+  @@index([userId], map: "idx_newsletter_user")
+  @@index([unsubscribedAt], map: "idx_newsletter_unsubscribed")
+}
