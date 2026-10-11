@@ -34,7 +34,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      // `User.role` is `UserRole?` in the Prisma schema (legacy users
+      // predating the role column). Default to VIEWER so token validation
+      // never throws for an old account.
+      role: user.role ?? 'VIEWER',
     };
   }
 }

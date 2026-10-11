@@ -142,6 +142,13 @@ export class YoutubeIngestService {
     let skipped = 0;
 
     for (const candidate of candidates) {
+      // `channelId` is nullable in the Prisma schema (a LiveEvent can
+      // exist without a channel assignment). Skip orphans — they have
+      // nowhere to upsert against.
+      if (!candidate.channelId) {
+        skipped += 1;
+        continue;
+      }
       const item = candidate.externalId ? byId.get(candidate.externalId) : null;
       if (!item) {
         skipped += 1;
@@ -221,7 +228,7 @@ export class YoutubeIngestService {
 
     await this.prisma.liveEvent.upsert({
       where: {
-        channel_platform_external_unique: {
+        channelId_externalPlatform_externalId: {
           channelId,
           externalPlatform: ExternalPlatform.YOUTUBE,
           externalId: item.id,

@@ -210,7 +210,7 @@ export class TwitchIngestService {
 
     await this.prisma.liveEvent.upsert({
       where: {
-        channel_platform_external_unique: {
+        channelId_externalPlatform_externalId: {
           channelId,
           externalPlatform: ExternalPlatform.TWITCH,
           externalId: seg.id,

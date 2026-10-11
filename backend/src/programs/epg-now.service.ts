@@ -245,8 +245,11 @@ export class EpgNowService {
         });
         if (ev) {
           description = ev.description;
-          status = ev.status;
-          isLive = ev.status === 'LIVE';
+          // `ev.status` is `EventStatus | null` in the Prisma schema
+          // (column is nullable). Treat null as SCHEDULED — the row
+          // exists so it must be at least scheduled to show up here.
+          status = ev.status ?? EventStatus.SCHEDULED;
+          isLive = status === EventStatus.LIVE;
         }
       } else {
         status = 'FILLER';
@@ -470,7 +473,11 @@ export class EpgNowService {
       thumbnailUrl: string | null;
       streamUrl: string | null;
       externalUrl: string | null;
-      status: EventStatus;
+      // `status` is `EventStatus?` in the Prisma schema; we default to
+      // `SCHEDULED` here so the function signature stays tight (the
+      // caller in `getNowPlaying` only invokes us when the event is
+      // actively broadcasting, but the type system doesn't know that).
+      status: EventStatus | null;
       scheduledAt: Date;
       duration: number | null;
       tags: string[];
@@ -482,6 +489,7 @@ export class EpgNowService {
     const durationSec = event.duration ?? 0;
     const endMs = startMs + durationSec * 1000;
     const offsetSec = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+    const resolvedStatus: EventStatus = event.status ?? EventStatus.SCHEDULED;
 
     const program = {
       id: event.id,
@@ -493,8 +501,8 @@ export class EpgNowService {
       currentOffsetSeconds: offsetSec,
       durationSeconds: Math.max(1, Math.floor((endMs - startMs) / 1000)),
       isFiller: false,
-      isLive: event.status === EventStatus.LIVE,
-      status: event.status,
+      isLive: resolvedStatus === EventStatus.LIVE,
+      status: resolvedStatus,
       tags: event.tags ?? [],
     };
 

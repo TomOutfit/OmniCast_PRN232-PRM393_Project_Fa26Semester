@@ -156,7 +156,7 @@ export class YoutubeRssIngestService {
 
       await this.prisma.liveEvent.upsert({
         where: {
-          channel_platform_external_unique: {
+          channelId_externalPlatform_externalId: {
             channelId,
             externalPlatform: ExternalPlatform.YOUTUBE,
             externalId: entry.id,
