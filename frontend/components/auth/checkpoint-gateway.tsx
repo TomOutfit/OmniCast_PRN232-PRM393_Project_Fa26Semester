@@ -215,30 +215,36 @@ export function CheckpointGateway({
               </p>
 
               {/* Segmented Control Tabs: Login vs Register */}
-              <div className="mt-5 w-full max-w-sm grid grid-cols-2 p-1 rounded-2xl bg-[#090e18]/90 border border-white/[0.08] shadow-inner">
+              <div className="mt-5 w-full max-w-sm grid grid-cols-2 p-1.5 rounded-2xl bg-[#060a14] border border-cyan-500/20 shadow-inner">
                 <Link
                   href="/login"
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold font-mono transition-all',
+                    'relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-mono transition-all',
                     isLogin
-                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-md font-bold'
+                      ? 'bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-slate-950 font-black shadow-[0_4px_20px_rgba(0,242,254,0.4)] ring-1 ring-cyan-200/60'
                       : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   )}
                 >
                   <KeyRound className="w-3.5 h-3.5" />
                   <span>ĐĂNG NHẬP</span>
+                  {isLogin && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse" />
+                  )}
                 </Link>
                 <Link
                   href="/register"
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold font-mono transition-all',
+                    'relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-mono transition-all',
                     isRegister
-                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-md font-bold'
+                      ? 'bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 text-slate-950 font-black shadow-[0_4px_20px_rgba(0,242,254,0.4)] ring-1 ring-cyan-200/60'
                       : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   )}
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>TẠO TÀI KHOẢN</span>
+                  {isRegister && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse" />
+                  )}
                 </Link>
               </div>
 

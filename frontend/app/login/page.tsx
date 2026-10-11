@@ -62,11 +62,12 @@ export default function LoginPage() {
     handleSubmit,
     setValue,
     setFocus,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, touchedFields },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
-    mode: 'onTouched',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
   });
 
   // Hydrate saved email + remember-me preference
@@ -84,13 +85,17 @@ export default function LoginPage() {
     }
   }, [setValue]);
 
-  // Focus email field on mount
+  // Focus email field on mount without triggering touched
   useEffect(() => {
-    const t = setTimeout(() => emailRef.current?.focus(), 250);
+    const t = setTimeout(() => {
+      if (emailRef.current && !emailRef.current.value) {
+        emailRef.current.focus({ preventScroll: true });
+      }
+    }, 250);
     return () => clearTimeout(t);
   }, []);
 
-  // Focus the first invalid field when validation fails
+  // Focus the first invalid field when validation fails after submit
   useEffect(() => {
     if (isSubmitted && (errors.email || errors.password)) {
       setFocus(errors.email ? 'email' : 'password');
@@ -145,10 +150,14 @@ export default function LoginPage() {
   const { ref: emailFieldRef, ...emailReg } = register('email');
   const { ref: passwordFieldRef, ...passwordReg } = register('password');
 
-  // Quick fill helper for demo/grading
+  // Validation visibility: only show error after user interacts (blur/touch) or submits
+  const showEmailError = Boolean(errors.email && (isSubmitted || touchedFields.email));
+  const showPasswordError = Boolean(errors.password && (isSubmitted || touchedFields.password));
+
+  // Quick fill helper for demo/grading (matched with backend database seed)
   const fillDemoAccount = (email: string, pass: string) => {
-    setValue('email', email, { shouldValidate: true });
-    setValue('password', pass, { shouldValidate: true });
+    setValue('email', email, { shouldValidate: true, shouldTouch: true });
+    setValue('password', pass, { shouldValidate: true, shouldTouch: true });
     toast.info('Đã điền tài khoản mẫu', { description: `Email: ${email}` });
   };
 
@@ -159,32 +168,32 @@ export default function LoginPage() {
       badgeText="BROADCAST NETWORK // PORTAL ACCESS"
       isScanning={isLoading}
     >
-      <div id="login-form" className="relative space-y-5">
+      <div id="login-form" className="relative space-y-5.5">
         
         {/* Quick Demo Access Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] text-[11px] font-mono shadow-sm">
-          <span className="text-slate-400 flex items-center gap-1.5 font-medium">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] text-[11px] font-mono shadow-sm">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             <span>Tài khoản trải nghiệm nhanh:</span>
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
               className="px-2.5 py-1 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
             >
               <span>Admin</span>
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
               className="px-2.5 py-1 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
             >
               <span>Staff</span>
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
               className="px-2.5 py-1 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
             >
               <span>Viewer</span>
@@ -195,35 +204,35 @@ export default function LoginPage() {
         {/* Credentials Form */}
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
+          className="space-y-4.5"
           noValidate
-          aria-describedby={errors.email || errors.password ? 'form-error' : undefined}
+          aria-describedby={showEmailError || showPasswordError ? 'form-error' : undefined}
         >
           {/* Email Field */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label
                 htmlFor="email"
-                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
+                className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate-100 flex items-center gap-1.5"
               >
                 <Mail className="w-3.5 h-3.5 text-cyan-400" />
                 <span>ĐỊA CHỈ EMAIL</span>
               </label>
-              <span className="text-[10px] font-mono text-slate-500">BẮT BUỘC</span>
+              <span className="text-[10px] font-mono text-cyan-400/80 font-semibold">BẮT BUỘC</span>
             </div>
 
             <div className="group relative">
               <Input
                 id="email"
                 type="email"
-                placeholder="tennguoidung@omnicast.tv"
+                placeholder="staff@omnicast.dev hoặc viewer@omnicast.dev"
                 autoComplete="email"
                 inputMode="email"
                 spellCheck={false}
-                aria-invalid={!!errors.email}
+                aria-invalid={showEmailError}
                 className={cn(
-                  'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
-                  errors.email && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                  'h-12 rounded-xl border border-white/[0.12] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
+                  showEmailError && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...emailReg}
                 ref={(el) => {
@@ -232,24 +241,24 @@ export default function LoginPage() {
                 }}
               />
             </div>
-            {errors.email && (
+            {showEmailError && (
               <p
                 id="email-error"
                 role="alert"
                 className="flex items-center gap-1.5 font-mono text-[11px] text-rose-400"
               >
                 <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                <span>{errors.email.message}</span>
+                <span>{errors.email?.message}</span>
               </p>
             )}
           </div>
 
           {/* Password Field */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
-                className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 flex items-center gap-1.5"
+                className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate-100 flex items-center gap-1.5"
               >
                 <Lock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>MẬT KHẨU</span>
@@ -266,12 +275,12 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Nhập mật khẩu của bạn"
+                placeholder="Nhập mật khẩu (ví dụ: Staff123!)"
                 autoComplete="current-password"
-                aria-invalid={!!errors.password}
+                aria-invalid={showPasswordError}
                 className={cn(
-                  'h-12 rounded-xl border border-white/[0.1] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
-                  errors.password && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
+                  'h-12 rounded-xl border border-white/[0.12] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
+                  showPasswordError && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...passwordReg}
                 ref={passwordFieldRef}
@@ -288,18 +297,18 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {errors.password && (
+            {showPasswordError && (
               <p
                 id="password-error"
                 role="alert"
                 className="flex items-center gap-1.5 font-mono text-[11px] text-rose-400"
               >
                 <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                <span>{errors.password.message}</span>
+                <span>{errors.password?.message}</span>
               </p>
             )}
 
-            {!errors.password && capsLock.visible && (
+            {!showPasswordError && capsLock.visible && (
               <p
                 id="caps-warning"
                 role="status"
@@ -363,13 +372,13 @@ export default function LoginPage() {
 
         {/* Identity Cards for Grading / Testing */}
         <div className="pt-3 border-t border-white/[0.08]">
-          <p className="text-[10px] font-mono text-slate-400 mb-2 text-center uppercase tracking-wider">
+          <p className="text-[10px] font-mono text-slate-300 mb-2 text-center uppercase tracking-wider font-semibold">
             Phân quyền tài khoản hệ thống (RBAC 4 Cấp)
           </p>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
               className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-950/40 text-left transition-all group"
             >
               <span className="block text-[10px] font-mono font-bold text-amber-400 group-hover:text-amber-300">
@@ -379,7 +388,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
               className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-950/40 text-left transition-all group"
             >
               <span className="block text-[10px] font-mono font-bold text-purple-400 group-hover:text-purple-300">
@@ -389,7 +398,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
+              onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
               className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400/60 hover:bg-cyan-950/40 text-left transition-all group"
             >
               <span className="block text-[10px] font-mono font-bold text-cyan-400 group-hover:text-cyan-300">
@@ -402,11 +411,11 @@ export default function LoginPage() {
 
         {/* Gate Switch Footer */}
         <div className="pt-2 text-center border-t border-white/[0.08]">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-300">
             Chưa có tài khoản OmniCast?{' '}
             <Link
               href="/register"
-              className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 hover:underline"
+              className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
             >
               Tạo tài khoản mới
               <ChevronRight className="h-3.5 w-3.5" />
