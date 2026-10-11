@@ -95,10 +95,19 @@ class AppEndpoints {
   static const String continueWatching = '/v1/programs/continue-watching';
 
   // Notifications
-  static const String notifications = '/v1/users/me/notifications';
-  static String notificationById(String id) =>
-      '/v1/users/me/notifications/$id';
-  static const String notificationsReadAll = '/v1/users/me/notifications/read-all';
+  // Backend exposes these under `/v1/me/notifications/*` (JWT required).
+  static const String notifications = '/v1/me/notifications';
+  static const String notificationsUnreadCount =
+      '/v1/me/notifications/unread-count';
+  static const String notificationsReadAll =
+      '/v1/me/notifications/read-all';
+  static String notificationById(String id) => '/v1/me/notifications/$id';
+  static String notificationMarkRead(String id) =>
+      '/v1/me/notifications/$id/read';
+
+  // Newsletter (public, rate-limited to 5 req/min/IP server-side)
+  static const String newsletterSubscribe = '/v1/newsletter/subscribe';
+  static const String newsletterUnsubscribe = '/v1/newsletter/unsubscribe';
 
   // Public user profile
   static String publicProfile(String userId) => '/v1/users/$userId/public-profile';

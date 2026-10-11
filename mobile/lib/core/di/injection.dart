@@ -14,6 +14,8 @@ import '../../data/repositories/programs_repository.dart';
 import '../../data/repositories/search_repository.dart';
 import '../../data/repositories/watchlist_repository.dart';
 import '../../data/repositories/admin_repository.dart';
+import '../../data/repositories/notifications_repository.dart';
+import '../../data/repositories/newsletter_repository.dart';
 import '../../data/datasources/local/database_helper.dart';
 import '../../logic/auth/auth_bloc.dart';
 import '../../logic/channels/channels_bloc.dart';
@@ -23,6 +25,8 @@ import '../../logic/epg/epg_bloc.dart';
 import '../../logic/epg/epg_sync_bloc.dart';
 import '../../logic/search/search_bloc.dart';
 import '../../logic/watchlist/watchlist_bloc.dart';
+import '../../logic/notifications/notifications_bloc.dart';
+import '../../logic/newsletter/newsletter_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -108,6 +112,16 @@ Future<void> initDependencies() async {
     () => AdminRepository(dioClient: getIt<DioClient>()),
   );
 
+  // Notifications — thin REST wrapper, JWT required
+  getIt.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepository(dioClient: getIt<DioClient>()),
+  );
+
+  // Newsletter — public endpoint, no JWT needed
+  getIt.registerLazySingleton<NewsletterRepository>(
+    () => NewsletterRepository(dioClient: getIt<DioClient>()),
+  );
+
   // BLoCs
   getIt.registerFactory<AuthBloc>(
     () => AuthBloc(authRepository: getIt<AuthRepository>()),
@@ -146,5 +160,22 @@ Future<void> initDependencies() async {
 
   getIt.registerFactory<RecordingsBloc>(
     () => RecordingsBloc(repository: getIt<ProgramsRepository>()),
+  );
+
+  // Notifications — singleton (the bell badge needs a shared
+  // polling source across screens). Use a factory if you ever
+  // want per-screen lifecycles, but right now we want one timer
+  // and one cache.
+  getIt.registerLazySingleton<NotificationsBloc>(
+    () => NotificationsBloc(
+      repository: getIt<NotificationsRepository>(),
+    ),
+  );
+
+  // Newsletter — single shared form state for the settings page
+  getIt.registerFactory<NewsletterBloc>(
+    () => NewsletterBloc(
+      repository: getIt<NewsletterRepository>(),
+    ),
   );
 }

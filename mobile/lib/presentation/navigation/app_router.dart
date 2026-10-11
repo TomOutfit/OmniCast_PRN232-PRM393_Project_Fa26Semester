@@ -25,6 +25,7 @@ import '../../presentation/screens/studio/live_studio_screen.dart';
 import '../../presentation/screens/admin/admin_hub_screen.dart';
 import '../../presentation/screens/admin/admin_users_screen.dart';
 import '../../presentation/screens/admin/admin_audit_logs_screen.dart';
+import '../../presentation/screens/notifications/notifications_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/main_screen.dart';
 
@@ -205,6 +206,12 @@ class AppRouter {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      // Notifications (full screen — bell badge in the AppBar
+      // pushes here).
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
