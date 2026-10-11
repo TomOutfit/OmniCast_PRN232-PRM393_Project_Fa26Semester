@@ -2,7 +2,7 @@
 // OmniCast - Audit Logger Controller
 // ============================================================
 
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AuditLoggerService } from './audit-logger.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -17,6 +17,77 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @ApiResponse({ status: 403, description: 'Forbidden - requires ADMIN role' })
 export class AuditLoggerController {
   constructor(private readonly auditLoggerService: AuditLoggerService) {}
+
+  @Get('export')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Export audit logs as CSV or JSON (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Audit log export downloaded successfully' })
+  @ApiQuery({ name: 'format', required: false, enum: ['csv', 'json'] })
+  @ApiQuery({ name: 'action', required: false })
+  @ApiQuery({ name: 'entityType', required: false })
+  @ApiQuery({ name: 'fromDate', required: false })
+  @ApiQuery({ name: 'toDate', required: false })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async exportLogs(
+    @Res() res: any,
+    @Query('format') format = 'csv',
+    @Query('action') action?: string,
+    @Query('entityType') entityType?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('limit') limit?: number,
+  ) {
+    const logs = await this.auditLoggerService.exportLogs({
+      action,
+      entityType,
+      fromDate: fromDate ? new Date(fromDate) : undefined,
+      toDate: toDate ? new Date(toDate) : undefined,
+      limit: limit ? Number(limit) : 1000,
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="omnicast-audit-logs-${timestamp}.json"`,
+      );
+      return res.send(JSON.stringify(logs, null, 2));
+    }
+
+    // CSV format
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="omnicast-audit-logs-${timestamp}.csv"`,
+    );
+
+    const headers = [
+      'id',
+      'createdAt',
+      'action',
+      'entityType',
+      'entityId',
+      'userId',
+      'userEmail',
+      'ipAddress',
+    ];
+    const csvRows = [headers.join(',')];
+    for (const log of logs) {
+      const row = [
+        `"${log.id || ''}"`,
+        `"${log.createdAt ? (log.createdAt as any).toISOString() : ''}"`,
+        `"${log.action || ''}"`,
+        `"${log.entityType || ''}"`,
+        `"${log.entityId || ''}"`,
+        `"${log.userId || ''}"`,
+        `"${(log.userEmail || '').replace(/"/g, '""')}"`,
+        `"${log.ipAddress || ''}"`,
+      ];
+      csvRows.push(row.join(','));
+    }
+    return res.send(csvRows.join('\n'));
+  }
 
   @Get()
   @Roles('ADMIN')

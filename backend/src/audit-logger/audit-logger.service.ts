@@ -127,6 +127,30 @@ export class AuditLoggerService {
     });
   }
 
+  async exportLogs(options?: {
+    action?: string;
+    entityType?: string;
+    fromDate?: Date;
+    toDate?: Date;
+    limit?: number;
+  }) {
+    const limit = Math.min(5000, Math.max(1, Number(options?.limit) || 1000));
+    const where: any = {};
+    if (options?.action) where.action = options.action;
+    if (options?.entityType) where.entityType = options.entityType;
+    if (options?.fromDate || options?.toDate) {
+      where.createdAt = {};
+      if (options.fromDate) where.createdAt.gte = options.fromDate;
+      if (options.toDate) where.createdAt.lte = options.toDate;
+    }
+
+    return this.prisma.auditLog.findMany({
+      where,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private async getUserEmail(userId: string): Promise<string | null> {
     // userId can be a UUID or a non-UUID system identifier like "system-ingest".
     // Only attempt the lookup if it looks like a valid UUID.

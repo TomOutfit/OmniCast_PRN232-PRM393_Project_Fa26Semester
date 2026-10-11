@@ -14,11 +14,15 @@ import {
   CheckCircle,
   Clock,
   Loader2,
+  Download,
+  FileSpreadsheet,
+  FileJson,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAuditLogs } from '@/lib/hooks/useAuditLogs';
+import { exportAuditLogs } from '@/lib/api/audit-logs';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -54,7 +58,33 @@ export default function AuditLogsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedAction, setSelectedAction] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
   const itemsPerPage = 15;
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      setIsExporting(true);
+      toast.info(`Đang chuẩn bị xuất file ${format.toUpperCase()}...`);
+      const blob = await exportAuditLogs({
+        format,
+        action: selectedAction !== 'all' ? selectedAction : undefined,
+        limit: 1000,
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `omnicast-audit-logs-${Date.now()}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success(`Đã tải về nhật ký kiểm toán (${format.toUpperCase()}) thành công!`);
+    } catch (err: any) {
+      toast.error('Lỗi khi xuất nhật ký: ' + (err.message || 'Vui lòng thử lại'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -123,11 +153,43 @@ export default function AuditLogsPage() {
     <div className="min-h-[80vh]">
       {/* Page Header */}
       <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-white">Nhật ký hoạt động</h1>
-          <p className="text-dark-400">
-            Theo dõi tất cả hoạt động trên hệ thống
-          </p>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Nhật ký hoạt động</h1>
+            <p className="text-dark-400">
+              Theo dõi tất cả hoạt động và xuất báo cáo kiểm toán bảo mật (gRPC Audit)
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+              onClick={() => handleExport('csv')}
+              className="gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4" />
+              )}
+              <span>Xuất CSV</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+              onClick={() => handleExport('json')}
+              className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileJson className="w-4 h-4" />
+              )}
+              <span>Xuất JSON</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -252,11 +314,11 @@ export default function AuditLogsPage() {
                       const Icon = actionIcons[log.action] || Activity;
                       const status =
                         log.action === 'USER_LOGIN_FAILED' ||
-                        log.action === 'CHANNEL_DELETE' ||
-                        log.action === 'DELETE_LIVE_EVENT'
+                          log.action === 'CHANNEL_DELETE' ||
+                          log.action === 'DELETE_LIVE_EVENT'
                           ? 'error'
                           : log.action === 'CONTENT_FLAG' ||
-                              log.action === 'USER_DEACTIVATE'
+                            log.action === 'USER_DEACTIVATE'
                             ? 'warning'
                             : 'success';
                       const statusColors: Record<string, string> = {
