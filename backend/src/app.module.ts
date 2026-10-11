@@ -16,6 +16,7 @@ import { AiCuratorModule } from './ai-curator/ai-curator.module';
 import { AuditLoggerModule } from './audit-logger/audit-logger.module';
 import { HealthModule } from './health/health.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { WatchlistModule } from './watchlist/watchlist.module';
     AuditLoggerModule,
     HealthModule,
     WatchlistModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

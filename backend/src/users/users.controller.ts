@@ -87,16 +87,19 @@ export class UsersController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'role', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiResponse({ status: 200, description: 'User list retrieved successfully' })
   async findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('role') role?: string,
+    @Query('search') search?: string,
   ) {
     return this.usersService.findAll({
       page: Number(page) || 1,
       limit: Number(limit) || 20,
       role,
+      search,
     });
   }
 

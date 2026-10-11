@@ -115,12 +115,23 @@ export class UsersService {
     page?: number;
     limit?: number;
     role?: string;
+    search?: string;
   }) {
     const page = Math.max(1, Number(options?.page) || 1);
     const limit = Math.max(1, Number(options?.limit) || 20);
-    const { role } = options || {};
+    const { role, search } = options || {};
 
-    const where = role ? { role: role as any } : {};
+    const where: any = {};
+    if (role) {
+      where.role = role as any;
+    }
+    if (search && search.trim().length > 0) {
+      const q = search.trim();
+      where.OR = [
+        { email: { contains: q, mode: 'insensitive' } },
+        { fullName: { contains: q, mode: 'insensitive' } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -135,6 +146,8 @@ export class UsersService {
           avatarUrl: true,
           role: true,
           isActive: true,
+          bio: true,
+          lastLoginAt: true,
           createdAt: true,
         },
       }),

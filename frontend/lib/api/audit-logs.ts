@@ -30,3 +30,18 @@ export async function fetchRecentActivity(
   });
   return data;
 }
+
+export async function exportAuditLogs(params: {
+  format?: 'csv' | 'json';
+  action?: string;
+  entityType?: string;
+  fromDate?: string;
+  toDate?: string;
+  limit?: number;
+} = {}): Promise<Blob> {
+  const response = await apiClient.get('/audit-logs/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+}
