@@ -128,11 +128,19 @@ class AppEndpoints {
   static const String billingInvoices = '/v1/billing/me/invoices';
   static const String billingCheckoutMock = '/v1/billing/checkout-mock';
 
-  // Admin analytics
+  // Admin analytics & operations
   static const String adminAnalytics = '/v1/admin/analytics/overview';
+  static const String adminAnnouncement = '/v1/admin/system/announcement';
   static const String adminChannels = '/v1/channels';
   static const String adminScheduleBulk = '/v1/programs/schedule/bulk';
   static const String auditLogsExport = '/v1/audit-logs/export';
+
+  // Admin User Management
+  static const String users = '/v1/users';
+  static String user(String id) => '/v1/users/$id';
+  static String userActivate(String id) => '/v1/users/$id/activate';
+  static String userDeactivate(String id) => '/v1/users/$id/deactivate';
+  static String userRole(String id) => '/v1/users/$id/role';
 
   // Watchlist (Cloud Primary)
   static const String watchlist = '/v1/me/watchlist';

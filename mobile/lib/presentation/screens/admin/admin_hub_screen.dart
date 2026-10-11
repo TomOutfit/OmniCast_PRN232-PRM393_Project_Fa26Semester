@@ -9,7 +9,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/di/injection.dart';
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/repositories/programs_repository.dart';
+import '../../../data/repositories/admin_repository.dart';
 import '../../../data/models/program_model.dart';
+import '../../../data/models/admin_model.dart';
 
 class AdminHubScreen extends StatefulWidget {
   const AdminHubScreen({super.key});
@@ -21,9 +23,11 @@ class AdminHubScreen extends StatefulWidget {
 class _AdminHubScreenState extends State<AdminHubScreen> {
   final ChannelsRepository _channelsRepo = getIt<ChannelsRepository>();
   final ProgramsRepository _programsRepo = getIt<ProgramsRepository>();
+  final AdminRepository _adminRepo = getIt<AdminRepository>();
 
   List<ChannelCategory> _categories = [];
   List<LiveEventModel> _livePrograms = [];
+  AdminOverviewModel? _overview;
   bool _isLoading = true;
   int _rttMs = 0;
   Timer? _realtimeTimer;
@@ -50,17 +54,20 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
       final results = await Future.wait([
         _channelsRepo.getCategories(),
         _programsRepo.getLiveNow(),
+        _adminRepo.getOverview().catchError((_) => null as dynamic),
       ]);
       stopwatch.stop();
 
       if (mounted) {
         final categories = results[0] as List<ChannelCategory>;
         final liveEvents = results[1] as List<LiveEventModel>;
+        final overview = results[2] as AdminOverviewModel?;
         final viewers = liveEvents.fold<int>(0, (sum, p) => sum + p.viewerCount);
 
         setState(() {
           _categories = categories;
           _livePrograms = liveEvents;
+          _overview = overview;
           _rttMs = stopwatch.elapsedMilliseconds;
           _isLoading = false;
           if (_waveformSamples.isEmpty) {
@@ -73,6 +80,115 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showBroadcastDialog() {
+    final titleController = TextEditingController();
+    final messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF1E2D44)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.campaign_rounded, color: Color(0xFFF59E0B), size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Gửi Thông Báo Hệ Thống',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thông báo này sẽ được gửi tới tất cả người dùng đang hoạt động trên hệ sinh thái OmniCast.',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: titleController,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                labelText: 'Tiêu đề thông báo',
+                labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                filled: true,
+                fillColor: const Color(0xFF090E17),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: messageController,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                labelText: 'Nội dung thông báo...',
+                labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                filled: true,
+                fillColor: const Color(0xFF090E17),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(),
+            child: const Text('Hủy', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF59E0B),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              final title = titleController.text.trim();
+              final msg = messageController.text.trim();
+              if (title.isEmpty || msg.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vui lòng điền đủ tiêu đề và nội dung'),
+                    backgroundColor: Color(0xFFEF4444),
+                  ),
+                );
+                return;
+              }
+              ctx.pop();
+              try {
+                await _adminRepo.broadcastAnnouncement(title: title, message: msg);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã gửi thông báo hệ thống thành công!'),
+                      backgroundColor: Color(0xFF10B981),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Lỗi gửi thông báo: $e'),
+                      backgroundColor: const Color(0xFFEF4444),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Phát Thông Báo', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _startRealtimeSampling() {
@@ -170,6 +286,101 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── EXECUTIVE ADMIN QUICK ACTIONS ──────────────────
+                    Row(
+                      children: [
+                        _buildQuickActionCard(
+                          title: 'Tài Khoản',
+                          subtitle: _overview != null ? '${_overview!.totalUsers} Users' : 'Quản Lý RBAC',
+                          icon: Icons.manage_accounts_rounded,
+                          color: const Color(0xFF00F2FE),
+                          onTap: () => context.push('/admin/users'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildQuickActionCard(
+                          title: 'Kiểm Toán',
+                          subtitle: _overview != null ? '${_overview!.auditLogs24h} Logs 24h' : 'gRPC Audit',
+                          icon: Icons.receipt_long_rounded,
+                          color: const Color(0xFFA855F7),
+                          onTap: () => context.push('/admin/audit-logs'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildQuickActionCard(
+                          title: 'Thông Báo',
+                          subtitle: 'Phát Toàn Đài',
+                          icon: Icons.campaign_rounded,
+                          color: const Color(0xFFF59E0B),
+                          onTap: _showBroadcastDialog,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildQuickActionCard(
+                          title: 'Live Studio',
+                          subtitle: 'Curated & Stream',
+                          icon: Icons.sensors_rounded,
+                          color: const Color(0xFFFF2A55),
+                          onTap: () => context.push('/studio/live'),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── USER ACCOUNTS BREAKDOWN (FROM API OVERVIEW) ────
+                    if (_overview != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0A121E),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF1E2D44)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'CƠ CẤU TÀI KHOẢN HỆ THỐNG',
+                                  style: TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.1,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                                Text(
+                                  'SUPABASE AUTH',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildMiniStat('Khán giả (2)', '${_overview!.viewersCount}', const Color(0xFF38BDF8)),
+                                _buildMiniStat('Biên tập (1)', '${_overview!.staffCount}', const Color(0xFF10B981)),
+                                _buildMiniStat('Quản trị (3)', '${_overview!.adminCount}', const Color(0xFFFBBF24)),
+                                _buildMiniStat('Đã khóa', '${_overview!.deactivatedUsers}', const Color(0xFFEF4444)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     // ── REALTIME TELEMETRY STRIP ───────────────────────
                     Row(
                       children: [
@@ -427,6 +638,95 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0C1421),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.05),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'monospace',
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildMiniStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'monospace',
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 10,
+          ),
+        ),
+      ],
     );
   }
 
