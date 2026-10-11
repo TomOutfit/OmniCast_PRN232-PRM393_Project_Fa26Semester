@@ -91,15 +91,6 @@ export interface NowPlayingDto {
 const SAMPLE_MP4_FALLBACK =
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
-/**
- * Now-playing payload shape (per-channel).
- * - `program`  → currently airing (or null during a gap)
- * - `next`     → the program immediately after the current slot
- * - `streamUrl`→ resolved to play after any scroll
- * - `timeline` → on-air + up to `limit` upcoming programs (sorted by
- *                `startTime`), useful for "Coming up next…" ribbons.
- *                Cached for 60s (re-uses the underlying day-grid cache).
- */
 export interface EpgTimelineEntryDto {
   id: string;
   title: string;
@@ -141,6 +132,18 @@ export interface EpgTimelineResponseDto {
   /** ISO timestamp the snapshot was generated. */
   generatedAt: string;
 }
+
+/**
+ * Cache entry shape for `EpgNowService.studioLiveCache`. Defined
+ * at the top level so the Map's type parameter can refer to it
+ * without causing TS7022 (implicit any in own initializer).
+ */
+export type EpgNowStudioLiveCacheEntry = {
+  value: Awaited<
+    ReturnType<EpgNowService['rawQueryActiveLive']>
+  >;
+  expiresAt: number;
+};
 
 @Injectable()
 export class EpgNowService {
@@ -311,9 +314,39 @@ export class EpgNowService {
   }
 
   /**
+   * In-memory channel cache. Channel metadata (name / slug / logo /
+   * category) changes rarely (admin edits only) and is read on
+   * every `/epg/now` and `/epg/timeline` poll. A 60s TTL collapses
+   * the per-channel SELECT into a Map.get for the dashboard burst
+   * case.
+   */
+  private static readonly CHANNEL_CACHE_TTL_MS = 60_000;
+  private channelCache = new Map<
+    string,
+    { value: Awaited<ReturnType<EpgNowService['rawFindChannel']>>; expiresAt: number }
+  >();
+
+  /**
    * Look up a channel by UUID or slug.
    */
   private async findChannel(identifier: string) {
+    const cached = this.channelCache.get(identifier);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
+    const value = await this.rawFindChannel(identifier);
+    this.channelCache.set(identifier, {
+      value,
+      expiresAt: Date.now() + EpgNowService.CHANNEL_CACHE_TTL_MS,
+    });
+    if (this.channelCache.size > 64) {
+      const firstKey = this.channelCache.keys().next().value;
+      if (firstKey) this.channelCache.delete(firstKey);
+    }
+    return value;
+  }
+
+  private async rawFindChannel(identifier: string) {
     const where: Prisma.LiveChannelWhereInput = this.isUuid(identifier)
       ? { id: identifier }
       : { slug: identifier };
@@ -331,6 +364,18 @@ export class EpgNowService {
   }
 
   /**
+   * Cache for `findActiveLiveEvent` lookups. Keys are
+   * `${channelId}:${nowMs10s}` (a 10s window) so the value flips
+   * automatically every 10s without us having to track expiration.
+   * The Studio live lifecycle is measured in minutes, so 10s is
+   * safely below the worst-case perception of "go live" lag while
+   * collapsing the 99% of polls that come from a dashboard burst
+   * into a single DB roundtrip.
+   */
+  private static readonly STUDIO_LIVE_CACHE_TTL_MS = 10_000;
+  private studioLiveCache = new Map<string, EpgNowStudioLiveCacheEntry>();
+
+  /**
    * Find a Studio-curated live event that is currently broadcasting
    * on a channel. An event is considered "active" when:
    *   • `status = LIVE`
@@ -344,6 +389,34 @@ export class EpgNowService {
     channelId: string,
     now: Date,
   ) {
+    const bucketMs =
+      Math.floor(now.getTime() / EpgNowService.STUDIO_LIVE_CACHE_TTL_MS) *
+      EpgNowService.STUDIO_LIVE_CACHE_TTL_MS;
+    const cacheKey = `${channelId}:${bucketMs}`;
+    const cached = this.studioLiveCache.get(cacheKey);
+    if (cached && cached.expiresAt > now.getTime()) {
+      return cached.value;
+    }
+
+    const ev = await this.rawQueryActiveLive(channelId, now);
+    this.studioLiveCache.set(cacheKey, {
+      value: ev,
+      expiresAt: now.getTime() + EpgNowService.STUDIO_LIVE_CACHE_TTL_MS,
+    });
+    // Defensive: avoid unbounded growth if polls come from many channels.
+    if (this.studioLiveCache.size > 64) {
+      const firstKey = this.studioLiveCache.keys().next().value;
+      if (firstKey) this.studioLiveCache.delete(firstKey);
+    }
+    return ev;
+  }
+
+  /**
+   * Single Prisma query for the currently-broadcasting live event on
+   * a channel. Pulled out of `findActiveLiveEvent` so the cache type
+   * inference has a concrete return type to anchor on.
+   */
+  private async rawQueryActiveLive(channelId: string, now: Date) {
     const ev = await this.prisma.liveEvent.findFirst({
       where: {
         channelId,
@@ -355,9 +428,26 @@ export class EpgNowService {
       orderBy: { scheduledAt: 'desc' },
     });
     if (!ev) return null;
-    const endsAt = new Date(ev.scheduledAt.getTime() + (ev.duration ?? 0) * 1000);
+    const endsAt = new Date(
+      ev.scheduledAt.getTime() + (ev.duration ?? 0) * 1000,
+    );
     if (endsAt.getTime() <= now.getTime()) return null;
     return ev;
+  }
+
+  /**
+   * Public hook for write paths (curate / stop / self-record) to
+   * invalidate the in-memory Studio live cache for a given channel.
+   * Without this, a "go live" click would only take effect after
+   * the 10s cache window expires — visible lag during a demo.
+   */
+  invalidateStudioLiveCache(channelId: string): void {
+    const prefix = `${channelId}:`;
+    for (const key of this.studioLiveCache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.studioLiveCache.delete(key);
+      }
+    }
   }
 
   /**
