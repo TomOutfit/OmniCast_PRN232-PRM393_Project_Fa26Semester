@@ -252,6 +252,15 @@ class ProfileScreen extends StatelessWidget {
                         ],
 
                         _buildModernMenuItem(
+                          icon: Icons.notifications_active_outlined,
+                          iconColor: const Color(0xFF00E5FF),
+                          title: 'Thông báo',
+                          subtitle: 'Tin nhắn, theo dõi và nhắc nhở phát sóng',
+                          onTap: () => context.push('/notifications'),
+                        ),
+                        const Divider(color: Color(0xFF162338), height: 1),
+
+                        _buildModernMenuItem(
                           icon: Icons.bookmark_outline_rounded,
                           iconColor: const Color(0xFFFBBF24),
                           title: 'Danh sách theo dõi',

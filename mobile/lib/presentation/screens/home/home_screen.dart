@@ -11,7 +11,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../logic/recordings/recordings_bloc.dart';
-import '../../../data/repositories/channels_repository.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/recording_model.dart';
@@ -21,6 +20,7 @@ import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/hero_program_card.dart';
 import '../../widgets/up_next_card.dart';
+import '../../widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -143,6 +143,10 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Color(0xFFCBD5E1),
                     ),
                     onPressed: () => context.push('/search'),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: NotificationBellAction(),
                   ),
                   IconButton(
                     icon: const Icon(

@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../logic/search/search_bloc.dart';
 import '../../../logic/channels/channels_bloc.dart';
-import '../../../core/constants/program_categories.dart';
 import '../../../core/utils/category_utils.dart';
 import '../../widgets/channel_logo.dart';
 
