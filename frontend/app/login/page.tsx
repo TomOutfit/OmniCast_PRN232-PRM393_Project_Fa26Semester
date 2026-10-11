@@ -164,39 +164,35 @@ export default function LoginPage() {
   return (
     <CheckpointGateway
       title="Đăng Nhập OmniCast"
-      subtitle="Hệ thống truyền hình tương tác trực tuyến 4K UHD · Xác thực phiên truy cập"
-      badgeText="BROADCAST NETWORK // PORTAL ACCESS"
+      subtitle="Đăng nhập để xem truyền hình trực tuyến và quản lý nội dung phát sóng"
       isScanning={isLoading}
     >
-      <div id="login-form" className="relative space-y-5.5">
+      <div id="login-form" className="relative space-y-5">
         
         {/* Quick Demo Access Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-[#090f1c]/90 border border-white/[0.08] text-[11px] font-mono shadow-sm">
-          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Tài khoản trải nghiệm nhanh:</span>
-          </span>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/80 border border-white/[0.08] text-xs">
+          <span className="text-slate-400 font-medium">Tài khoản demo:</span>
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
-              className="px-2.5 py-1 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 text-amber-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-medium transition-colors"
             >
-              <span>Admin</span>
+              Admin
             </button>
             <button
               type="button"
               onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
-              className="px-2.5 py-1 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-medium transition-colors"
             >
-              <span>Staff</span>
+              Staff
             </button>
             <button
               type="button"
               onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
-              className="px-2.5 py-1 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 font-bold hover:scale-[1.02] transition-all shadow-sm flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-medium transition-colors"
             >
-              <span>Viewer</span>
+              Viewer
             </button>
           </div>
         </div>
@@ -204,21 +200,20 @@ export default function LoginPage() {
         {/* Credentials Form */}
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4.5"
+          className="space-y-4"
           noValidate
           aria-describedby={showEmailError || showPasswordError ? 'form-error' : undefined}
         >
           {/* Email Field */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label
                 htmlFor="email"
-                className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate-100 flex items-center gap-1.5"
+                className="text-xs font-semibold text-slate-200"
               >
-                <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                <span>ĐỊA CHỈ EMAIL</span>
+                Địa chỉ email
               </label>
-              <span className="text-[10px] font-mono text-cyan-400/80 font-semibold">BẮT BUỘC</span>
+              <span className="text-[11px] text-slate-400">Bắt buộc</span>
             </div>
 
             <div className="group relative">
@@ -231,7 +226,7 @@ export default function LoginPage() {
                 spellCheck={false}
                 aria-invalid={showEmailError}
                 className={cn(
-                  'h-12 rounded-xl border border-white/[0.12] bg-[#060a14]/90 px-4 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
+                  'h-11 rounded-xl border border-white/[0.1] bg-slate-950/80 px-3.5 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-all',
                   showEmailError && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...emailReg}
@@ -245,27 +240,26 @@ export default function LoginPage() {
               <p
                 id="email-error"
                 role="alert"
-                className="flex items-center gap-1.5 font-mono text-[11px] text-rose-400"
+                className="flex items-center gap-1.5 text-xs text-rose-400"
               >
-                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
                 <span>{errors.email?.message}</span>
               </p>
             )}
           </div>
 
           {/* Password Field */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
-                className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate-100 flex items-center gap-1.5"
+                className="text-xs font-semibold text-slate-200"
               >
-                <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>MẬT KHẨU</span>
+                Mật khẩu
               </label>
               <Link
                 href="/forgot-password"
-                className="font-mono text-[10px] uppercase tracking-wider text-cyan-400 hover:text-cyan-300 hover:underline"
+                className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline"
               >
                 Quên mật khẩu?
               </Link>
@@ -279,7 +273,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 aria-invalid={showPasswordError}
                 className={cn(
-                  'h-12 rounded-xl border border-white/[0.12] bg-[#060a14]/90 pl-4 pr-11 font-sans text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all shadow-inner',
+                  'h-11 rounded-xl border border-white/[0.1] bg-slate-950/80 pl-3.5 pr-10 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition-all',
                   showPasswordError && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30'
                 )}
                 {...passwordReg}
@@ -290,7 +284,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-cyan-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
                 aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -301,9 +295,9 @@ export default function LoginPage() {
               <p
                 id="password-error"
                 role="alert"
-                className="flex items-center gap-1.5 font-mono text-[11px] text-rose-400"
+                className="flex items-center gap-1.5 text-xs text-rose-400"
               >
-                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
                 <span>{errors.password?.message}</span>
               </p>
             )}
@@ -312,9 +306,9 @@ export default function LoginPage() {
               <p
                 id="caps-warning"
                 role="status"
-                className="flex items-center gap-1.5 font-mono text-[11px] text-amber-400"
+                className="flex items-center gap-1.5 text-xs text-amber-400"
               >
-                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
                 <span>Phím Caps Lock đang bật</span>
               </p>
             )}
@@ -324,98 +318,90 @@ export default function LoginPage() {
           <div className="flex items-center justify-between pt-1">
             <label
               htmlFor="remember"
-              className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-300 font-mono"
+              className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-300"
             >
               <input
                 id="remember"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-white/[0.15] bg-slate-900 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-white/[0.2] bg-slate-900 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-0"
               />
-              <span>Ghi nhớ phiên đăng nhập</span>
+              <span>Ghi nhớ đăng nhập</span>
             </label>
-
-            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>TLS 1.3 SECURED</span>
-            </span>
           </div>
 
-          {/* Submit Ingress Button */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
             className={cn(
-              'group relative h-12 w-full overflow-hidden rounded-xl font-mono text-xs font-black uppercase tracking-wider text-slate-950 transition-all shadow-[0_10px_25px_-5px_rgba(0,242,254,0.35)]',
-              'bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 hover:from-cyan-300 hover:to-blue-400',
-              'hover:scale-[1.008] hover:shadow-[0_12px_32px_-5px_rgba(0,242,254,0.5)] active:scale-[0.99]',
-              'disabled:cursor-not-allowed disabled:opacity-60'
+              'group relative h-11 w-full rounded-xl font-semibold text-sm text-slate-950 transition-all',
+              'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400',
+              'hover:shadow-lg hover:shadow-cyan-500/20 active:scale-[0.99]',
+              'disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2'
             )}
           >
-            <span className="relative flex items-center justify-center gap-2">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
-                  <span>ĐANG XÁC THỰC TÀI KHOẢN…</span>
-                </>
-              ) : (
-                <>
-                  <Fingerprint className="h-4 w-4 text-slate-950" />
-                  <span>ĐĂNG NHẬP HỆ THỐNG PHÁT SÓNG</span>
-                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </span>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                <span>Đang đăng nhập…</span>
+              </>
+            ) : (
+              <>
+                <span>Đăng nhập</span>
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </>
+            )}
           </button>
         </form>
 
-        {/* Identity Cards for Grading / Testing */}
+        {/* Demo Accounts List */}
         <div className="pt-3 border-t border-white/[0.08]">
-          <p className="text-[10px] font-mono text-slate-300 mb-2 text-center uppercase tracking-wider font-semibold">
-            Phân quyền tài khoản hệ thống (RBAC 4 Cấp)
+          <p className="text-xs text-slate-400 mb-2 font-medium">
+            Phân quyền tài khoản trải nghiệm:
           </p>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
-              className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-950/40 text-left transition-all group"
+              className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-amber-500/40 text-left transition-all"
             >
-              <span className="block text-[10px] font-mono font-bold text-amber-400 group-hover:text-amber-300">
-                👑 ADMIN
+              <span className="block text-xs font-semibold text-amber-300">
+                Admin
               </span>
-              <span className="block text-[10px] text-slate-400 truncate">Quản trị tối cao</span>
+              <span className="block text-[11px] text-slate-400 truncate">Quản trị viên</span>
             </button>
             <button
               type="button"
               onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
-              className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-950/40 text-left transition-all group"
+              className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-purple-500/40 text-left transition-all"
             >
-              <span className="block text-[10px] font-mono font-bold text-purple-400 group-hover:text-purple-300">
-                🛠️ STAFF
+              <span className="block text-xs font-semibold text-purple-300">
+                Staff
               </span>
-              <span className="block text-[10px] text-slate-400 truncate">Biên tập & Studio</span>
+              <span className="block text-[11px] text-slate-400 truncate">Biên tập viên</span>
             </button>
             <button
               type="button"
               onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
-              className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400/60 hover:bg-cyan-950/40 text-left transition-all group"
+              className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-500/40 text-left transition-all"
             >
-              <span className="block text-[10px] font-mono font-bold text-cyan-400 group-hover:text-cyan-300">
-                📺 VIEWER
+              <span className="block text-xs font-semibold text-cyan-300">
+                Viewer
               </span>
-              <span className="block text-[10px] text-slate-400 truncate">Khán giả 4K HDR</span>
+              <span className="block text-[11px] text-slate-400 truncate">Khán giả</span>
             </button>
           </div>
         </div>
 
-        {/* Gate Switch Footer */}
+        {/* Switch to Register */}
         <div className="pt-2 text-center border-t border-white/[0.08]">
-          <p className="text-xs text-slate-300">
-            Chưa có tài khoản OmniCast?{' '}
+          <p className="text-xs text-slate-400">
+            Chưa có tài khoản?{' '}
             <Link
               href="/register"
-              className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
+              className="inline-flex items-center gap-1 font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
             >
               Tạo tài khoản mới
               <ChevronRight className="h-3.5 w-3.5" />
