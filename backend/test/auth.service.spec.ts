@@ -267,3 +267,95 @@ test('logoutAll revokes every active refresh token for the user', async () => {
   // Other user is untouched
   assert.equal(prisma.refreshTokens.find((t) => t.id === 'r3').isRevoked, false);
 });
+
+test('logoutAll returns revokedCount=0 when the user has no active sessions', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  // Empty token list for u1
+  const out = await service.logoutAll('u1');
+  assert.equal(out.revokedCount, 0);
+  assert.equal(out.message, 'Logged out from all devices');
+});
+
+test('logoutAll preserves already-revoked tokens (idempotent)', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  prisma.refreshTokens.push(
+    { id: 'r1', token: 't1', userId: 'u1', isRevoked: true, expiresAt: new Date(Date.now() + 60_000) },
+    { id: 'r2', token: 't2', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+  );
+  const out = await service.logoutAll('u1');
+  // Only the active token should be counted
+  assert.equal(out.revokedCount, 1);
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r2').isRevoked, true);
+});
+
+test('logout with a specific refreshToken revokes only that session', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  prisma.refreshTokens.push(
+    { id: 'r1', token: 'mobile-token', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+    { id: 'r2', token: 'web-token', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+  );
+  const out = await service.logout('u1', 'mobile-token');
+  assert.equal(out.revokedCount, 1);
+  assert.equal(out.message, 'Logged out from this device');
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r1').isRevoked, true);
+  // The other device's session is untouched
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r2').isRevoked, false);
+});
+
+test('logout with an unknown refreshToken returns revokedCount=0 (no-op)', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  prisma.refreshTokens.push(
+    { id: 'r1', token: 'known', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+  );
+  const out = await service.logout('u1', 'not-this-token');
+  assert.equal(out.revokedCount, 0);
+  // No token should have been revoked
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r1').isRevoked, false);
+});
+
+test('logout without refreshToken revokes the most recent active session', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  const oldest = new Date(Date.now() - 60_000);
+  const middle = new Date(Date.now() - 30_000);
+  const newest = new Date();
+  prisma.refreshTokens.push(
+    { id: 'r1', token: 'old', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000), createdAt: oldest },
+    { id: 'r2', token: 'mid', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000), createdAt: middle },
+    { id: 'r3', token: 'new', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000), createdAt: newest },
+  );
+  const out = await service.logout('u1');
+  assert.equal(out.revokedCount, 1);
+  // The newest session is revoked; older ones remain
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r3').isRevoked, true);
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r1').isRevoked, false);
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r2').isRevoked, false);
+});
+
+test('logout without refreshToken returns "No active session" when user has no active tokens', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  // No refresh tokens at all
+  const out = await service.logout('u1');
+  assert.equal(out.revokedCount, 0);
+  assert.equal(out.message, 'No active session');
+});
+
+test('logout is scoped to a single user (does not revoke other users tokens)', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push({ id: 'u1', email: 'a@test.com' });
+  prisma.users.push({ id: 'u2', email: 'b@test.com' });
+  prisma.refreshTokens.push(
+    { id: 'r1', token: 't1', userId: 'u1', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+    { id: 'r2', token: 't2', userId: 'u2', isRevoked: false, expiresAt: new Date(Date.now() + 60_000) },
+  );
+  const out = await service.logout('u1', 't1');
+  assert.equal(out.revokedCount, 1);
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r1').isRevoked, true);
+  // User 2's token is untouched
+  assert.equal(prisma.refreshTokens.find((t) => t.id === 'r2').isRevoked, false);
+});
