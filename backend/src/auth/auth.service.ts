@@ -48,7 +48,7 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email, user.role, user);
+    return this.generateTokens(user.id, user.email, user.role ?? 'VIEWER', user);
   }
 
   async login(loginDto: LoginDto) {
@@ -79,7 +79,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    return this.generateTokens(user.id, user.email, user.role, user);
+    return this.generateTokens(user.id, user.email, user.role ?? 'VIEWER', user);
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
@@ -103,7 +103,13 @@ export class AuthService {
     });
 
     const user = storedToken.user;
-    return this.generateTokens(user.id, user.email, user.role, user);
+    // `RefreshToken.user` is nullable in the schema (the FK allows
+    // SetNull on user delete). A refresh token without a user is
+    // invalid — reject the refresh attempt.
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token: user not found');
+    }
+    return this.generateTokens(user.id, user.email, user.role ?? 'VIEWER', user);
   }
 
   async logout(userId: string, refreshToken?: string) {
@@ -160,9 +166,12 @@ export class AuthService {
       fullName: string;
       avatarUrl?: string | null;
       bio?: string | null;
-      isActive: boolean;
-      emailVerified: boolean;
-      createdAt: Date;
+      // Match the Prisma User shape — these are all `Boolean?` /
+      // `DateTime?` in the schema. We accept nulls so callers can
+      // pass the raw Prisma row without massaging.
+      isActive?: boolean | null;
+      emailVerified?: boolean | null;
+      createdAt?: Date | null;
     },
   ) {
     const payload: TokenPayload = {

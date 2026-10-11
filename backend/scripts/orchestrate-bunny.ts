@@ -118,6 +118,14 @@ async function main() {
   let mirrored = 0;
   let failed = 0;
   for (const rec of filtered) {
+    // `rec.channel` is nullable in the schema (a Recording can exist
+    // before it's assigned to a channel during ingest). Skip such
+    // records — they have no Bunny collection to upload into.
+    if (!rec.channel) {
+      failed += 1;
+      console.warn(`  ✗ ${rec.id}: orphan recording (no channel) — skipped`);
+      continue;
+    }
     if (!dryRun) {
       try {
         const result = await uploadToBunny({

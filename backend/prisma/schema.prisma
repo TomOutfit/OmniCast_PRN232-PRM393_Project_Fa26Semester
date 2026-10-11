@@ -25,6 +25,17 @@ model User {
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @updatedAt @db.Timestamp(6)
 
+  // ── Back-relations (see `001_init.sql` FK constraints) ───────────
+  ownedChannels     LiveChannel[]    @relation("ChannelOwner")
+  refreshTokens     RefreshToken[]
+  follows           Follow[]         @relation("FollowFollower")
+  comments          Comment[]        @relation("CommentAuthor")
+  commentLikes      CommentLike[]    @relation("CommentLikeUser")
+  reactions         Reaction[]       @relation("ReactionUser")
+  watchHistory      WatchHistory[]
+  notifications     Notification[]   @relation("NotificationRecipient")
+  actorNotifications Notification[]  @relation("NotificationActor")
+
   @@index([email], map: "idx_user_email")
   @@index([role], map: "idx_user_role")
 }
@@ -36,6 +47,8 @@ model RefreshToken {
   expiresAt DateTime  @db.Timestamp(6)
   createdAt DateTime? @default(now()) @db.Timestamp(6)
   isRevoked Boolean?  @default(false)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([expiresAt], map: "idx_refresh_token_expires")
   @@index([userId], map: "idx_refresh_token_user")
@@ -82,6 +95,13 @@ model LiveChannel {
   twitchBroadcasterId String?      @db.VarChar(100)
   youtubeChannelId    String?      @db.VarChar(100)
 
+  // ── Relations (see `001_init.sql` FK constraints) ───────────────
+  owner        User?       @relation("ChannelOwner", fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  liveEvents   LiveEvent[] @relation("LiveEventChannel")
+  recordings   Recording[] @relation("RecordingChannel")
+  podcasts     Podcast[]   @relation("PodcastChannel")
+  followers    Follow[]    @relation("FollowChannel")
+
   @@index([category], map: "idx_live_channel_category")
   @@index([isFeatured, followerCount], map: "idx_live_channel_featured")
   @@index([ownerId], map: "idx_live_channel_owner")
@@ -127,6 +147,9 @@ model LiveEvent {
   curatorReports   AiCuratorReport[]
   reactions        Reaction[]
   watchlistItems   Watchlist[]
+
+  // ── Relation back to LiveChannel (see `001_init.sql:142`) ────────
+  channel LiveChannel? @relation("LiveEventChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([channelId, externalPlatform, externalId], map: "uq_live_event_channel_platform_external")
   @@index([channelId, status], map: "idx_live_event_channel_status")
@@ -179,6 +202,12 @@ model Recording {
   lastCheckedAt        DateTime?
   lastStatus           String?           @db.VarChar(20)
 
+  // ── Relation back to LiveChannel (see `001_init.sql:180`) ────────
+  channel  LiveChannel? @relation("RecordingChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comments Comment[]    @relation("CommentRecording")
+  reactions Reaction[]  @relation("ReactionRecording")
+  watchHistory WatchHistory[]
+
   @@index([isActive, lastCheckedAt])
   @@index([license])
   @@index([sourceType])
@@ -204,6 +233,10 @@ model Podcast {
   createdAt     DateTime?     @default(now()) @db.Timestamp(6)
   updatedAt     DateTime?     @default(now()) @updatedAt @db.Timestamp(6)
 
+  // ── Relation back to LiveChannel (see `001_init.sql:211`) ────────
+  channel LiveChannel? @relation("PodcastChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  episodes PodcastEpisode[]
+
   @@index([channelId], map: "idx_podcast_channel")
 }
 
@@ -221,6 +254,8 @@ model PodcastEpisode {
   publishedAt   DateTime? @default(now()) @db.Timestamp(6)
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
 
+  podcast Podcast? @relation(fields: [podcastId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@index([podcastId], map: "idx_podcast_episode_podcast")
 }
 
@@ -229,6 +264,10 @@ model Follow {
   followerId String?   @db.Uuid
   channelId  String?   @db.Uuid
   createdAt  DateTime? @default(now()) @db.Timestamp(6)
+
+  // ── Relations (see `001_init.sql:244-245`) ──────────────────────
+  follower User?       @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  channel  LiveChannel? @relation("FollowChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([followerId, channelId])
   @@index([channelId], map: "idx_follow_channel")
@@ -247,6 +286,13 @@ model Comment {
   createdAt   DateTime? @default(now()) @db.Timestamp(6)
   updatedAt   DateTime? @default(now()) @updatedAt @db.Timestamp(6)
 
+  // ── Relations (see `001_init.sql:256-258`) ──────────────────────
+  user      User?      @relation("CommentAuthor", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recording Recording? @relation("CommentRecording", fields: [recordingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  replies   Comment[]  @relation("CommentReplies")
+  likes     CommentLike[]
+
   @@index([parentId], map: "idx_comment_parent")
   @@index([recordingId], map: "idx_comment_recording")
 }
@@ -256,6 +302,9 @@ model CommentLike {
   userId    String?   @db.Uuid
   commentId String?   @db.Uuid
   createdAt DateTime? @default(now()) @db.Timestamp(6)
+
+  user    User?    @relation("CommentLikeUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, commentId])
 }
@@ -267,7 +316,11 @@ model Reaction {
   recordingId String?      @db.Uuid
   createdAt   DateTime?    @default(now()) @db.Timestamp(6)
   liveEventId String?      @db.Uuid
-  liveEvent   LiveEvent?   @relation(fields: [liveEventId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // ── Relations (see `001_init.sql:280-282`, `003_live_event_reactions.sql`) ──
+  user      User?      @relation("ReactionUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recording Recording? @relation("ReactionRecording", fields: [recordingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  liveEvent LiveEvent? @relation(fields: [liveEventId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, liveEventId, type], map: "Reaction_user_live_event_type_unique")
   @@unique([userId, recordingId, type], map: "Reaction_user_recording_type_unique")
@@ -284,6 +337,9 @@ model WatchHistory {
   isCompleted      Boolean?  @default(false)
   lastWatchedAt    DateTime? @default(now()) @db.Timestamp(6)
   createdAt        DateTime? @default(now()) @db.Timestamp(6)
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recording Recording? @relation(fields: [recordingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, recordingId])
   @@index([userId, lastWatchedAt], map: "idx_watch_history_user")
@@ -303,6 +359,10 @@ model Notification {
   isRead      Boolean?         @default(false)
   readAt      DateTime?        @db.Timestamp(6)
   createdAt   DateTime?        @default(now()) @db.Timestamp(6)
+
+  // ── Relations (see `001_init.sql:305,310`) ──────────────────────
+  user  User?  @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor User?  @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([userId, createdAt], map: "idx_notification_user_date")
   @@index([userId, isRead], map: "idx_notification_user_read")

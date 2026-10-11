@@ -171,7 +171,7 @@ export class SportsSource extends BaseExternalSource {
       try {
         await this.prisma.liveEvent.upsert({
           where: {
-            channel_platform_external_unique: {
+            channelId_externalPlatform_externalId: {
               channelId,
               externalPlatform: ExternalPlatform.CUSTOM_HLS,
               externalId: ev.externalId,

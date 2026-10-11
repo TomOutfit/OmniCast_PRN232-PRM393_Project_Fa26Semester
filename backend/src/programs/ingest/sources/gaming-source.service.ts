@@ -163,7 +163,7 @@ export class GamingSource extends BaseExternalSource {
       for (const ev of events) {
         await this.prisma.liveEvent.upsert({
           where: {
-            channel_platform_external_unique: {
+            channelId_externalPlatform_externalId: {
               channelId: channel.channelId,
               externalPlatform: ev.externalPlatform as any,
               externalId: ev.externalId,

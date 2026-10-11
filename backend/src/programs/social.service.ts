@@ -170,10 +170,14 @@ export class SocialService {
 
     await this.prisma.comment.delete({ where: { id: commentId } });
 
-    await this.prisma.recording.update({
-      where: { id: comment.recordingId },
-      data: { commentCount: { decrement: 1 } },
-    });
+    // `comment.recordingId` is nullable in the schema. Only update the
+    // counter when there's a recording to attribute the comment to.
+    if (comment.recordingId) {
+      await this.prisma.recording.update({
+        where: { id: comment.recordingId },
+        data: { commentCount: { decrement: 1 } },
+      });
+    }
 
     await this.auditLogger.log({
       userId,

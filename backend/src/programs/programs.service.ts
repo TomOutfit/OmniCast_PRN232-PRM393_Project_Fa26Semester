@@ -209,12 +209,19 @@ export class ProgramsService {
         : event.scheduledAt;
       const newDuration = updateDto.duration ?? this.defaultDurationMinutes;
 
-      await this.checkScheduleConflict(
-        updateDto.channelId || event.channelId,
-        newStart,
-        newDuration,
-        id,
-      );
+      // `channelId` is nullable in the Prisma schema. If the caller
+      // doesn't supply a new channelId and the event has none, there
+      // is nothing to conflict-check against — skip the check.
+      const conflictChannelId =
+        updateDto.channelId ?? event.channelId ?? null;
+      if (conflictChannelId) {
+        await this.checkScheduleConflict(
+          conflictChannelId,
+          newStart,
+          newDuration,
+          id,
+        );
+      }
     }
 
     const updated = await this.prisma.liveEvent.update({
@@ -449,6 +456,9 @@ export class ProgramsService {
       },
     });
     for (const r of recordings) {
+      // `Recording.channelId` is nullable — orphans have no channel
+      // bucket. Skip them for the day-grid.
+      if (!r.channelId) continue;
       const list = recordingsByChannel.get(r.channelId) ?? [];
       list.push(r);
       recordingsByChannel.set(r.channelId, list);
@@ -465,11 +475,16 @@ export class ProgramsService {
           title: e.title,
           startTime: start.toISOString(),
           endTime: end.toISOString(),
-          status: e.status,
+          // `LiveEvent.status` is `EventStatus?` — default to SCHEDULED
+          // for the day-grid (the FillerExpandedProgram contract is
+          // non-nullable).
+          status: e.status ?? 'SCHEDULED',
           thumbnailUrl: e.thumbnailUrl ?? null,
           durationMinutes,
           tags: e.tags ?? [],
-          category: String(e.channel.category),
+          // `e.channel` can theoretically be null even though we filter
+          // by `channelId: { in: channelIds }`; guard anyway.
+          category: String(e.channel?.category ?? 'SHOW'),
           isFiller: false,
           fillerKind: null,
           sourceRecordingId: null,
@@ -1075,11 +1090,15 @@ export class ProgramsService {
 
     await this.prisma.recording.delete({ where: { id } });
 
-    // Decrement channel total videos count
-    await this.prisma.liveChannel.update({
-      where: { id: recording.channelId },
-      data: { totalVideos: { decrement: 1 } },
-    });
+    // Decrement channel total videos count. `recording.channelId` is
+    // nullable in the schema; a recording without a channel has no
+    // counter to decrement.
+    if (recording.channelId) {
+      await this.prisma.liveChannel.update({
+        where: { id: recording.channelId },
+        data: { totalVideos: { decrement: 1 } },
+      });
+    }
 
     await this.auditLogger.log({
       userId,
