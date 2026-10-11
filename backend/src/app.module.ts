@@ -17,6 +17,9 @@ import { AuditLoggerModule } from './audit-logger/audit-logger.module';
 import { HealthModule } from './health/health.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -60,6 +63,9 @@ import { AdminModule } from './admin/admin.module';
     HealthModule,
     WatchlistModule,
     AdminModule,
+    NotificationsModule,
+    NewsletterModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
