@@ -475,20 +475,127 @@ class ProfileScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: Color(0xFF162338)),
         ),
-        title: const Text(
-          'Đăng xuất khỏi OmniCast?',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-          ),
+        title: const Row(
+          children: [
+            Icon(Icons.logout_rounded, color: Color(0xFF00E5FF), size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Tùy Chọn Đăng Xuất',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
         ),
-        content: const Text(
-          'Bạn sẽ cần đăng nhập lại để xem lịch phát sóng cá nhân và danh sách theo dõi.',
-          style: TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 13,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chọn phạm vi đăng xuất tài khoản OmniCast của bạn:',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                context.read<AuthBloc>().add(LogoutRequested());
+                context.go('/login');
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.devices_rounded, color: Color(0xFFF59E0B), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Chỉ thiết bị này',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'Các thiết bị khác vẫn duy trì đăng nhập',
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                context.read<AuthBloc>().add(LogoutAllDevicesRequested());
+                context.go('/login');
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.shield_rounded, color: Color(0xFFEF4444), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mọi thiết bị (Đăng xuất tất cả)',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'Thu hồi toàn bộ token trên tablet, web, điện thoại khác',
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -499,24 +606,6 @@ class ProfileScreen extends StatelessWidget {
                 color: Color(0xFF94A3B8),
                 fontWeight: FontWeight.bold,
               ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<AuthBloc>().add(LogoutRequested());
-              context.go('/login');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text(
-              'Đăng xuất',
-              style: TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
         ],
