@@ -30,6 +30,7 @@ export interface CurateLiveInput {
   description?: string;
   thumbnailUrl?: string;
   duration?: number;
+  allowDevLicense?: boolean;
 }
 
 export interface StopLiveInput {

@@ -159,6 +159,7 @@ export default function WebLiveStudioPage() {
         recordingIds: selectedRecordingIds,
         title: customTitle.trim() || undefined,
         description: customDesc.trim() || undefined,
+        allowDevLicense: true,
       });
       alert(res.message || 'Đã phát sóng trực tiếp!');
       setSelectedRecordingIds([]);

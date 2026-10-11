@@ -131,6 +131,16 @@ export class CurateLiveDto {
   @Min(10)
   @Max(1440)
   duration?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Opt in to broadcasting DEV_ONLY_TEST_FIXTURE entries. Set to ' +
+      '`true` on non-prod environments to test broadcasts with test streams.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowDevLicense?: boolean;
 }
 
 // ============================================================
