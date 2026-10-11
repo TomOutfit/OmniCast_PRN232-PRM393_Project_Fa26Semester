@@ -415,6 +415,12 @@ export class ProgramsService {
     // gap-filler has something to rotate through. The rotation is
     // deterministic per (date, channel) so the same day always shows the
     // same schedule, but different days surface different content.
+    //
+    // `isActive` is the soft-disable flag flipped by the
+    // `StreamHealthCheckService`. Inactive rows are excluded so a
+    // temporarily-down URL doesn't poison the EPG. `as any` until
+    // the operator runs `prisma generate` to refresh the client
+    // types after the schema migration.
     const recordingsByChannel = new Map<
       string,
       Array<{
@@ -429,7 +435,8 @@ export class ProgramsService {
       where: {
         channelId: { in: channelIds },
         isPublished: true,
-      },
+        isActive: true,
+      } as any,
       orderBy: { publishedAt: 'desc' },
       take: channelIds.length * 30,
       select: {

@@ -142,7 +142,40 @@ class AppEndpoints {
   // EPG
   static const String epgDay = '/v1/programs/epg/day';
   static const String epgSnapshot = '/v1/programs/epg/snapshot';
+  static String epgNow({String channelSlug = ''}) =>
+      '/v1/programs/epg/now${channelSlug.isNotEmpty ? '?channelId=$channelSlug' : ''}';
+  static String epgTimeline({
+    String channelSlug = '',
+    int limit = 6,
+  }) =>
+      '/v1/programs/epg/timeline?limit=$limit${channelSlug.isNotEmpty ? '&channelId=$channelSlug' : ''}';
 
   // Preflight
   static const String epgPreflight = '/v1/programs/live-events/preflight';
+
+  // ─────────────────────────────────────────────────────────────────
+  // Live Studio (Staff/Admin)
+  //   * Chọn nội dung phát lên màn hình — Curated Live
+  //   * Tự ghi hình nội dung Livestream — Self-Record
+  // ─────────────────────────────────────────────────────────────────
+  static String studioRecordings(String channelId, {String? search, int? limit}) {
+    final qs = <String, dynamic>{};
+    if (search != null && search.isNotEmpty) qs['search'] = search;
+    if (limit != null) qs['limit'] = limit;
+    final raw = qs.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value.toString())}')
+        .join('&');
+    return '/v1/programs/studio/channels/$channelId/recordings${raw.isNotEmpty ? '?$raw' : ''}';
+  }
+
+  static const String studioCurateLive = '/v1/programs/studio/curate-live';
+  static const String studioRecordingsUpload = '/v1/programs/studio/recordings/upload';
+  static String studioStopLive(String eventId) =>
+      '/v1/programs/studio/live-events/$eventId/stop';
+
+  // Active live events on a channel. Backed by the existing
+  // `/live-events/live-now` endpoint (declared at line 77). We
+  // expose the same `liveNow` name as a const so callers can use
+  // it for `GET /live-events/live-now` without re-importing.
+  static const String liveNowWithChannel = '?channelId=';
 }

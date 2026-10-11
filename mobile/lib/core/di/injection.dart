@@ -9,6 +9,7 @@ import '../services/notification_service.dart';
 import '../constants/app_constants.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/channels_repository.dart';
+import '../../data/repositories/live_studio_repository.dart';
 import '../../data/repositories/programs_repository.dart';
 import '../../data/repositories/search_repository.dart';
 import '../../data/repositories/watchlist_repository.dart';
@@ -18,6 +19,7 @@ import '../../logic/channels/channels_bloc.dart';
 import '../../logic/programs/programs_bloc.dart';
 import '../../logic/recordings/recordings_bloc.dart';
 import '../../logic/epg/epg_bloc.dart';
+import '../../logic/epg/epg_sync_bloc.dart';
 import '../../logic/search/search_bloc.dart';
 import '../../logic/watchlist/watchlist_bloc.dart';
 
@@ -76,6 +78,13 @@ Future<void> initDependencies() async {
     () => ChannelsRepository(dioClient: getIt<DioClient>()),
   );
 
+  // Live Studio repository (Staff/Admin control surface for
+  // Curated Live + Self-Record). Lazy singleton — most users
+  // never reach this code path.
+  getIt.registerLazySingleton<LiveStudioRepository>(
+    () => LiveStudioRepository(dioClient: getIt<DioClient>()),
+  );
+
   getIt.registerLazySingleton<ProgramsRepository>(
     () => ProgramsRepository(
       dioClient: getIt<DioClient>(),
@@ -112,6 +121,10 @@ Future<void> initDependencies() async {
       programsRepository: getIt<ProgramsRepository>(),
       db: getIt<DatabaseHelper>(),
     ),
+  );
+
+  getIt.registerFactory<EpgSyncBloc>(
+    () => EpgSyncBloc(dioClient: getIt<DioClient>()),
   );
 
   getIt.registerFactory<SearchBloc>(

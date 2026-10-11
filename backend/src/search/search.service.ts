@@ -113,12 +113,16 @@ export class SearchService {
       result.liveEvents = liveEvents;
     }
 
-    // Search Recordings
+    // Search Recordings — title, description AND tags. Recording tags
+    // are curated per-channel (e.g. ['Music', 'KPop', 'TopHits'] for
+    // music MVs) so they are the most reliable way to find themed
+    // content beyond literal title text.
     if (type === 'all' || type === 'recordings') {
       const recordingWhere: Prisma.RecordingWhereInput = {
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
+          { tags: { has: query } },
         ],
         isPublished: true,
       };
@@ -196,6 +200,11 @@ export class SearchService {
       status: { in: ['SCHEDULED', 'LIVE'] },
     };
 
+    if (options?.category) {
+      // LiveEvent itself doesn't carry a category — filter through the
+      // related channel so the API contract is consistent.
+      where.channel = { category: options.category as any };
+    }
     if (options?.fromDate || options?.toDate) {
       where.scheduledAt = {};
       if (options.fromDate) where.scheduledAt.gte = options.fromDate;

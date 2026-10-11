@@ -130,8 +130,10 @@ export default function RecordingDetailPage() {
         <div className="max-w-7xl mx-auto px-0 md:px-4">
           <VideoPlayer
             src={playerSrc}
+            fallbackSrc={(recording as any).fallbackUrl || undefined}
             poster={recording.thumbnailUrl || undefined}
             className="rounded-none md:rounded-xl"
+            sourceAttribution={(recording as any).sourceAttribution || undefined}
           />
         </div>
       </div>

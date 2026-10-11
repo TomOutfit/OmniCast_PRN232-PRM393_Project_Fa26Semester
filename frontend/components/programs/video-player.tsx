@@ -1,14 +1,23 @@
+/* eslint-disable @next/next/no-img-element, react-hooks/exhaustive-deps */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Loader2, AlertTriangle, Crown, QrCode, CheckCircle2, ShieldCheck, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, resolveStreamUrl } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 
 interface VideoPlayerProps {
   src: string;
+  /**
+   * Backup URL tried when `src` fails to load. The player automatically
+   * swaps to this URL on `error` events and surfaces a small toast so
+   * the user knows we're recovering. Pair with the backend's
+   * `Recording.fallbackUrl` field which is populated by the Bunny
+   * orchestrator when a clip is mirrored onto our own CDN.
+   */
+  fallbackSrc?: string;
   poster?: string;
   type?: 'hls' | 'mp4' | 'webm' | 'iframe';
   autoPlay?: boolean;
@@ -17,6 +26,12 @@ interface VideoPlayerProps {
   initialSeekSeconds?: number;
   isPremium?: boolean;
   channelName?: string;
+  /**
+   * Optional content-attribution text (e.g. "Blender Foundation, Big
+   * Buck Bunny, CC-BY 3.0"). Rendered as a small overlay so the
+   * production-safe license is visible to viewers.
+   */
+  sourceAttribution?: string;
 }
 
 declare global {
@@ -33,6 +48,7 @@ const VIP_STORAGE_KEY = 'omnicast.isVipUser';
  */
 export function VideoPlayer({
   src,
+  fallbackSrc,
   poster,
   type,
   autoPlay = false,
@@ -41,6 +57,7 @@ export function VideoPlayer({
   initialSeekSeconds = 0,
   isPremium = false,
   channelName = 'Kênh Premium',
+  sourceAttribution,
 }: VideoPlayerProps) {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -48,6 +65,35 @@ export function VideoPlayer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seekDone, setSeekDone] = useState(false);
+  /**
+   * Which URL in the fallback chain is currently active? Index 0 is
+   * the primary `src`, index 1 is `fallbackSrc`. When the primary
+   * errors we bump this to 1 and the useEffect re-attaches the
+   * media element to the new URL.
+   */
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [recoveryToastShown, setRecoveryToastShown] = useState(false);
+
+  // Build the chain of resolved URLs. Empty fallbacks are filtered
+  // out so the player doesn't try to load an empty string.
+  const chain: string[] = useMemo(() => {
+    const list: string[] = [];
+    const primary = resolveStreamUrl(src);
+    if (primary) list.push(primary);
+    const fallback = resolveStreamUrl(fallbackSrc);
+    if (fallback && fallback !== primary) list.push(fallback);
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, fallbackSrc]);
+
+  // Reset to primary whenever the caller passes a new src. We
+  // intentionally skip the fallback on prop change so the player
+  // gives the new primary a fair chance.
+  useEffect(() => {
+    setActiveIdx(0);
+    setError(null);
+    setRecoveryToastShown(false);
+  }, [src, fallbackSrc]);
 
   // Check VIP status: Admin & Staff always bypass; or localStorage VIP demo pass
   const [isVip, setIsVip] = useState<boolean>(() => {
@@ -60,8 +106,29 @@ export function VideoPlayer({
 
   const hasAccess = !isPremium || isVip || user?.role === 'ADMIN' || user?.role === 'STAFF';
 
+  // Resolve relative → absolute URL (frontend safety net for
+  // self-recorded uploads persisted as `/uploads/...` before the
+  // server-side fix). Absolute URLs pass through untouched.
+  const resolvedSrc = chain[activeIdx] ?? chain[0] ?? '';
   const resolvedType: NonNullable<VideoPlayerProps['type']> =
-    type ?? detectType(src);
+    type ?? detectType(resolvedSrc);
+
+  const advanceToFallback = useCallback(() => {
+    if (activeIdx + 1 < chain.length) {
+      const next = activeIdx + 1;
+      setActiveIdx(next);
+      setError(null);
+      setLoading(true);
+      if (!recoveryToastShown) {
+        setRecoveryToastShown(true);
+        toast.info('Đang chuyển sang nguồn dự phòng…', {
+          description: 'Nguồn chính tạm thời không khả dụng, đã tự động chuyển.',
+        });
+      }
+      return true;
+    }
+    return false;
+  }, [activeIdx, chain.length, recoveryToastShown]);
 
   // Apply Client-Side Live Seek
   const applySeek = () => {
@@ -86,13 +153,13 @@ export function VideoPlayer({
     if (!video) return;
 
     if (resolvedType !== 'hls') {
-      video.src = src;
+      video.src = resolvedSrc;
       return;
     }
 
     const canNative = video.canPlayType('application/vnd.apple.mpegurl');
     if (canNative) {
-      video.src = src;
+      video.src = resolvedSrc;
       return;
     }
 
@@ -123,7 +190,7 @@ export function VideoPlayer({
           lowLatencyMode: true,
           backBufferLength: 60,
         });
-        hls.loadSource(src);
+        hls.loadSource(resolvedSrc);
         hls.attachMedia(video);
         hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
           if (initialSeekSeconds > 0) {
@@ -135,6 +202,12 @@ export function VideoPlayer({
         });
         hls.on(window.Hls.Events.ERROR, (_event: unknown, data: any) => {
           if (data?.fatal) {
+            // Try the fallback URL first; only surface a hard
+            // error if we've exhausted the chain.
+            if (advanceToFallback()) {
+              try { hls?.destroy(); } catch { /* ignore */ }
+              return;
+            }
             setError('Lỗi kết nối luồng phát video');
             onError?.(data);
           }
@@ -154,7 +227,7 @@ export function VideoPlayer({
         /* ignore */
       }
     };
-  }, [src, resolvedType, onError, hasAccess, autoPlay]);
+  }, [resolvedSrc, resolvedType, onError, hasAccess, autoPlay, advanceToFallback, applySeek, initialSeekSeconds]);
 
   // Activate Demo VIP subscription on 1 click
   const handleActivateVipDemo = () => {
@@ -170,7 +243,7 @@ export function VideoPlayer({
   };
 
   if (resolvedType === 'iframe') {
-    const embedSrc = getEmbedUrl(src);
+    const embedSrc = getEmbedUrl(resolvedSrc);
     return (
       <div className={cn('player-container relative w-full aspect-video bg-black overflow-hidden', className)}>
         <iframe
@@ -257,7 +330,7 @@ export function VideoPlayer({
     );
   }
 
-  if (!src) {
+  if (!resolvedSrc) {
     return (
       <div className={cn('player-container relative w-full aspect-video bg-gradient-to-br from-slate-950 via-[#0a121e] to-slate-900 flex flex-col items-center justify-center text-center p-6 border border-slate-800 rounded-2xl', className)}>
         {poster && (
@@ -347,10 +420,19 @@ export function VideoPlayer({
         }}
         onWaiting={() => setLoading(true)}
         onError={() => {
+          // Try the fallback before giving up. If we've already
+          // exhausted the chain, surface the user-facing error.
+          if (advanceToFallback()) return;
           setError('Video bị lỗi hoặc URL không khả dụng');
           setLoading(false);
         }}
       />
+
+      {sourceAttribution && (
+        <div className="absolute bottom-2 right-2 z-20 max-w-[60%] px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono text-slate-200/80 leading-snug pointer-events-none">
+          {sourceAttribution}
+        </div>
+      )}
     </div>
   );
 }
