@@ -41,6 +41,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
+import { EpgNowService } from './epg-now.service';
 import {
   AddToLibraryDto,
   CurateLiveDto,
@@ -226,6 +227,29 @@ function inferSourceTypeFromUrl(url: string): StreamSourceType {
   return StreamSourceType.UPLOADED_LOCAL;
 }
 
+function inferDefaultLicenseFromSourceType(sourceType: StreamSourceType): ContentLicense {
+  switch (sourceType) {
+    case StreamSourceType.PEXELS:
+      return ContentLicense.PEXELS_LICENSE;
+    case StreamSourceType.ARCHIVE_ORG:
+      return ContentLicense.CC0_PUBLIC_DOMAIN;
+    case StreamSourceType.BLENDER_CC:
+      return ContentLicense.BLENDER_OPEN_MOVIE;
+    case StreamSourceType.BUNNY_CDN:
+    case StreamSourceType.UPLOADED_LOCAL:
+      return ContentLicense.BUNNY_SELF_HOSTED;
+    case StreamSourceType.GOOGLE_SAMPLE:
+    case StreamSourceType.W3_SAMPLE:
+    case StreamSourceType.SAMPLELIB:
+    case StreamSourceType.CLOUDINARY_DEMO:
+    case StreamSourceType.MUX_TEST:
+    case StreamSourceType.UNIFIED_TEST:
+      return ContentLicense.DEMO_PRODUCTION_OK;
+    default:
+      return ContentLicense.UNKNOWN;
+  }
+}
+
 /**
  * Free-text license string (from the catalog) → ContentLicense enum.
  * Falls back to UNKNOWN so the publish gate can reject it.
@@ -238,10 +262,17 @@ function normalizeLicense(raw: string | null | undefined): ContentLicense {
     PEXELS: ContentLicense.PEXELS_LICENSE,
     PEXELS_LICENSE: ContentLicense.PEXELS_LICENSE,
     CC0: ContentLicense.CC0_PUBLIC_DOMAIN,
+    CC0_PUBLIC_DOMAIN: ContentLicense.CC0_PUBLIC_DOMAIN,
     PUBLIC_DOMAIN: ContentLicense.CC0_PUBLIC_DOMAIN,
+    CC_BY: ContentLicense.CC_BY_4,
     CC_BY_3: ContentLicense.CC_BY_3,
     CC_BY_4: ContentLicense.CC_BY_4,
+    CREATIVE_COMMONS: ContentLicense.CC_BY_4,
+    CREATIVE_COMMONS_BY: ContentLicense.CC_BY_4,
+    CREATIVE_COMMONS_BY_3: ContentLicense.CC_BY_3,
+    CREATIVE_COMMONS_BY_4: ContentLicense.CC_BY_4,
     BLENDER: ContentLicense.BLENDER_OPEN_MOVIE,
+    BLENDER_FOUNDATION: ContentLicense.BLENDER_OPEN_MOVIE,
     BLENDER_OPEN_MOVIE: ContentLicense.BLENDER_OPEN_MOVIE,
     BUNNY: ContentLicense.BUNNY_SELF_HOSTED,
     BUNNY_SELF_HOSTED: ContentLicense.BUNNY_SELF_HOSTED,
@@ -249,6 +280,7 @@ function normalizeLicense(raw: string | null | undefined): ContentLicense {
     DEMO_PRODUCTION_OK: ContentLicense.DEMO_PRODUCTION_OK,
     TEST: ContentLicense.DEV_ONLY_TEST_FIXTURE,
     DEV_ONLY_TEST_FIXTURE: ContentLicense.DEV_ONLY_TEST_FIXTURE,
+    ROYALTY_FREE: ContentLicense.DEMO_PRODUCTION_OK,
   };
   return aliases[upper] ?? ContentLicense.UNKNOWN;
 }
@@ -354,6 +386,7 @@ export class LiveStudioService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
+    private readonly epgNow: EpgNowService,
   ) {}
 
   // ============================================================
@@ -569,6 +602,11 @@ export class LiveStudioService {
       },
     });
 
+    // Invalidate the Studio live cache so the very next /epg/now
+    // poll reflects this new LIVE event (instead of waiting up to
+    // 10s for the cache window to expire).
+    this.epgNow.invalidateStudioLiveCache(channel.id);
+
     return {
       event,
       recordings,
@@ -629,6 +667,15 @@ export class LiveStudioService {
       entityId: eventId,
       newValues: { status: nextStatus },
     });
+
+    // Stop changes the live status — flush the Studio cache so the
+    // very next /epg/now poll returns the day-grid fallback instead
+    // of stale "curated live" data. Guard against test mocks that
+    // don't include the channel relation (defensive — the real
+    // query always returns it).
+    if (event.channel?.id) {
+      this.epgNow.invalidateStudioLiveCache(event.channel.id);
+    }
 
     return {
       event: updated,
@@ -787,7 +834,10 @@ export class LiveStudioService {
     // the internal `StreamSourceType` enum.
     const inferredSourceType = inferSourceTypeFromUrl(dto.videoUrl);
     const sourceType = (dto.sourceTypeOverride as StreamSourceType | undefined) ?? inferredSourceType;
-    const license = normalizeLicense(dto.licenseOverride);
+    let license = normalizeLicense(dto.licenseOverride);
+    if (license === ContentLicense.UNKNOWN) {
+      license = inferDefaultLicenseFromSourceType(sourceType);
+    }
     const gate = enforcePublishGate(
       {
         sourceType,
@@ -920,7 +970,10 @@ export class LiveStudioService {
     // publish gate. The DTO's `allowDevLicense` is the only way
     // for the operator to bypass the DEV_ONLY_TEST_FIXTURE block.
     const sourceType = inferSourceTypeFromUrl(catalogEntry.url);
-    const license = normalizeLicense(catalogEntry.license);
+    let license = normalizeLicense(catalogEntry.license);
+    if (license === ContentLicense.UNKNOWN) {
+      license = inferDefaultLicenseFromSourceType(sourceType);
+    }
     const gate = enforcePublishGate(
       {
         sourceType,
@@ -1113,7 +1166,7 @@ export class LiveStudioService {
    * accepted.
    */
   private assertBroadcastAllowed(
-    contentSource: ContentSource,
+    contentSource: ContentSource | null | undefined,
     externalPlatform: ExternalPlatform | null | undefined,
     recordingId?: string,
   ): void {
@@ -1128,9 +1181,11 @@ export class LiveStudioService {
   }
 
   private isBroadcastAllowed(
-    contentSource: ContentSource,
+    contentSource: ContentSource | null | undefined,
     externalPlatform: ExternalPlatform | null | undefined,
   ): boolean {
+    // No source metadata → treat as opaque and let other guards decide.
+    if (!contentSource) return false;
     if (contentSource === ContentSource.UPLOADED) {
       // Uploaded content is fine regardless of platform field, but
       // we still reject blacklisted platforms to defend against mis-tag.
