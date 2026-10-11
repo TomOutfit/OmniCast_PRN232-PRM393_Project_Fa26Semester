@@ -120,6 +120,7 @@ export class AuthService {
         data: { isRevoked: true },
       });
       return {
+        success: true,
         message: 'Logged out from this device',
         revokedCount: updated.count,
       };
@@ -131,13 +132,14 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
     if (!mostRecent) {
-      return { message: 'No active session', revokedCount: 0 };
+      return { success: true, message: 'No active session', revokedCount: 0 };
     }
     await this.prisma.refreshToken.update({
       where: { id: mostRecent.id },
       data: { isRevoked: true },
     });
     return {
+      success: true,
       message: 'Logged out from this device',
       revokedCount: 1,
     };
@@ -149,6 +151,7 @@ export class AuthService {
       data: { isRevoked: true },
     });
     return {
+      success: true,
       message: 'Logged out from all devices',
       revokedCount: updated.count,
     };
