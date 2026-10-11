@@ -15,6 +15,10 @@
 // ============================================================
 
 import type { UserRole } from '@/types';
+
+// Re-export so consumers can import the role type from a single place
+// (matches the convention used by other constants files).
+export type { UserRole };
 import {
   Home,
   Tv,
