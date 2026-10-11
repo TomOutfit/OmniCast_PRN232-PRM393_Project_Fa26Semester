@@ -13,6 +13,7 @@ import {
   Eye,
   Edit,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -37,7 +38,13 @@ const roleColors: Record<string, string> = {
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+    toast.success('Đã đăng xuất');
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
@@ -119,11 +126,22 @@ export default function AdminUsersPage() {
     <div className="min-h-[80vh]">
       {/* Page Header */}
       <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-white">Quản lý người dùng</h1>
-          <p className="text-dark-400">
-            Xem và quản lý tài khoản người dùng trên hệ thống
-          </p>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Quản lý người dùng</h1>
+            <p className="text-dark-400">
+              Xem và quản lý tài khoản người dùng trên hệ thống
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            Đăng xuất
+          </Button>
         </div>
       </div>
 

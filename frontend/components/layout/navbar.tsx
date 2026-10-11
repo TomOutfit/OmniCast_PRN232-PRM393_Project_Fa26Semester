@@ -306,185 +306,221 @@ export function Navbar() {
             {isLoading ? (
               <div className="w-7 h-7 rounded-full bg-[#172233] animate-pulse" />
             ) : isAuthenticated && user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-1 p-0.5 rounded-full hover:bg-[#152339] border border-[#1b2b42] transition-all cursor-pointer"
-                >
-                  <div className={cn(
-                    'w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm',
-                    userRole === 'ADMIN'
-                      ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
-                      : userRole === 'STAFF'
-                      ? 'bg-gradient-to-tr from-purple-500 to-indigo-600'
-                      : 'bg-gradient-to-tr from-cyan-500 to-blue-600'
-                  )}>
-                    {(user.fullName || user.email || 'U')[0].toUpperCase()}
-                  </div>
-                </button>
-
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-3 py-2 border-b border-[#1a273b] mb-1">
-                      <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <p className="text-xs font-semibold text-white truncate">
-                          {user.fullName || 'Thành viên OmniCast'}
-                        </p>
-                        <span className={cn(
-                          'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border whitespace-nowrap',
-                          userMeta.pillClass
-                        )}>
-                          [{userMeta.rank}] {userMeta.shortLabel}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    aria-expanded={isUserMenuOpen}
+                    aria-label="Menu tài khoản"
+                    className="flex items-center gap-1.5 p-1 sm:px-2 rounded-xl bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] hover:border-cyan-500/40 transition-all cursor-pointer group"
+                    title={user.fullName || user.email}
+                  >
+                    <div className={cn(
+                      'w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shadow-sm flex-shrink-0',
+                      userRole === 'ADMIN'
+                        ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
+                        : userRole === 'STAFF'
+                        ? 'bg-gradient-to-tr from-purple-500 to-indigo-600'
+                        : 'bg-gradient-to-tr from-cyan-500 to-blue-600'
+                    )}>
+                      {(user.fullName || user.email || 'U')[0].toUpperCase()}
                     </div>
+                    <span className="hidden xl:inline text-xs font-semibold text-slate-200 group-hover:text-white max-w-[100px] truncate">
+                      {user.fullName || user.email?.split('@')[0]}
+                    </span>
+                    <ChevronDown className={cn(
+                      'w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-150',
+                      isUserMenuOpen && 'rotate-180 text-cyan-400'
+                    )} />
+                  </button>
 
-                    {/* Role-tailored menu links */}
-                    {userRole === 'ADMIN' ? (
-                      <>
-                        <Link
-                          href="/admin"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors font-bold"
-                        >
-                          <Gauge className="w-3.5 h-3.5 text-amber-400" />
-                          Bảng điều khiển Admin
-                        </Link>
-                        <Link
-                          href="/admin/users"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
-                        >
-                          <Users className="w-3.5 h-3.5 text-amber-400" />
-                          Quản lý người dùng & RBAC
-                        </Link>
-                        <Link
-                          href="/admin/audit-logs"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
-                        >
-                          <FileLock className="w-3.5 h-3.5 text-amber-400" />
-                          Nhật ký Audit Logs
-                        </Link>
-                        <Link
-                          href="/studio/live"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
-                        >
-                          <Radio className="w-3.5 h-3.5 text-purple-400" />
-                          Live Studio
-                        </Link>
-                        <div className="my-1 border-t border-[#1a273b]" />
-                        <Link
-                          href="/profile"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                        >
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          Hồ sơ cá nhân
-                        </Link>
-                        <Link
-                          href="/settings"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                        >
-                          <Settings className="w-3.5 h-3.5 text-slate-400" />
-                          Cài đặt hệ thống
-                        </Link>
-                      </>
-                    ) : userRole === 'STAFF' ? (
-                      <>
-                        <Link
-                          href="/studio/live"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors font-bold"
-                        >
-                          <Radio className="w-3.5 h-3.5 text-purple-400" />
-                          Live Studio Phát Sóng
-                        </Link>
-                        <Link
-                          href="/studio/curator"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
-                        >
-                          <Wand2 className="w-3.5 h-3.5 text-purple-400" />
-                          AI Curator Phân Tích
-                        </Link>
-                        <Link
-                          href="/epg"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                          Lịch Phát Sóng EPG
-                        </Link>
-                        <div className="my-1 border-t border-[#1a273b]" />
-                        <Link
-                          href="/profile"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                        >
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          Hồ sơ cá nhân
-                        </Link>
-                        <Link
-                          href="/settings"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                        >
-                          <Settings className="w-3.5 h-3.5 text-slate-400" />
-                          Cài đặt Studio
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/profile"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors font-bold"
-                        >
-                          <User className="w-3.5 h-3.5 text-cyan-400" />
-                          Hồ sơ cá nhân
-                        </Link>
-                        <Link
-                          href="/watchlist"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
-                        >
-                          <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
-                          Danh sách yêu thích
-                        </Link>
-                        <Link
-                          href="/settings"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                        >
-                          <Settings className="w-3.5 h-3.5 text-slate-400" />
-                          Cài đặt & OmniPass
-                        </Link>
-                      </>
-                    )}
+                  {isUserMenuOpen && (
+                    <>
+                      {/* Transparent backdrop to close dropdown when clicking outside */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        aria-hidden="true"
+                      />
+                      <div className="absolute right-0 mt-2 w-60 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="px-3 py-2 border-b border-[#1a273b] mb-1">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <p className="text-xs font-semibold text-white truncate">
+                              {user.fullName || 'Thành viên OmniCast'}
+                            </p>
+                            <span className={cn(
+                              'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border whitespace-nowrap',
+                              userMeta.pillClass
+                            )}>
+                              [{userMeta.rank}] {userMeta.shortLabel}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                        </div>
 
-                    <button
-                      onClick={openSingleLogout}
-                      disabled={isLoggingOut}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-1 disabled:opacity-50"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Đăng xuất
-                    </button>
-                    <button
-                      onClick={openAllLogout}
-                      disabled={isLoggingOut}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-300/80 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                      title="Đăng xuất khỏi mọi thiết bị (điện thoại, tablet, máy tính khác)"
-                    >
-                      <Shield className="w-3.5 h-3.5" />
-                      Đăng xuất mọi thiết bị
-                    </button>
-                  </div>
-                )}
+                        {/* Role-tailored menu links */}
+                        {userRole === 'ADMIN' ? (
+                          <>
+                            <Link
+                              href="/admin"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors font-bold"
+                            >
+                              <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                              Bảng điều khiển Admin
+                            </Link>
+                            <Link
+                              href="/admin/users"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
+                            >
+                              <Users className="w-3.5 h-3.5 text-amber-400" />
+                              Quản lý người dùng & RBAC
+                            </Link>
+                            <Link
+                              href="/admin/audit-logs"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
+                            >
+                              <FileLock className="w-3.5 h-3.5 text-amber-400" />
+                              Nhật ký Audit Logs
+                            </Link>
+                            <Link
+                              href="/studio/live"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
+                            >
+                              <Radio className="w-3.5 h-3.5 text-purple-400" />
+                              Live Studio
+                            </Link>
+                            <div className="my-1 border-t border-[#1a273b]" />
+                            <Link
+                              href="/profile"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                            >
+                              <User className="w-3.5 h-3.5 text-slate-400" />
+                              Hồ sơ cá nhân
+                            </Link>
+                            <Link
+                              href="/settings"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                            >
+                              <Settings className="w-3.5 h-3.5 text-slate-400" />
+                              Cài đặt hệ thống
+                            </Link>
+                          </>
+                        ) : userRole === 'STAFF' ? (
+                          <>
+                            <Link
+                              href="/studio/live"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors font-bold"
+                            >
+                              <Radio className="w-3.5 h-3.5 text-purple-400" />
+                              Live Studio Phát Sóng
+                            </Link>
+                            <Link
+                              href="/studio/curator"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
+                            >
+                              <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                              AI Curator Phân Tích
+                            </Link>
+                            <Link
+                              href="/epg"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                              Lịch Phát Sóng EPG
+                            </Link>
+                            <div className="my-1 border-t border-[#1a273b]" />
+                            <Link
+                              href="/profile"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                            >
+                              <User className="w-3.5 h-3.5 text-slate-400" />
+                              Hồ sơ cá nhân
+                            </Link>
+                            <Link
+                              href="/settings"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                            >
+                              <Settings className="w-3.5 h-3.5 text-slate-400" />
+                              Cài đặt Studio
+                            </Link>
+                          </>
+                        ) : (
+                          <>
+                            <Link
+                              href="/profile"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors font-bold"
+                            >
+                              <User className="w-3.5 h-3.5 text-cyan-400" />
+                              Hồ sơ cá nhân
+                            </Link>
+                            <Link
+                              href="/watchlist"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
+                            >
+                              <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
+                              Danh sách yêu thích
+                            </Link>
+                            <Link
+                              href="/settings"
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                            >
+                              <Settings className="w-3.5 h-3.5 text-slate-400" />
+                              Cài đặt & OmniPass
+                            </Link>
+                          </>
+                        )}
+
+                        <div className="my-1 border-t border-[#1a273b]" />
+                        <button
+                          type="button"
+                          onClick={openSingleLogout}
+                          disabled={isLoggingOut}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Đăng xuất</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openAllLogout}
+                          disabled={isLoggingOut}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-300/80 hover:text-red-200 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          title="Đăng xuất khỏi mọi thiết bị (điện thoại, tablet, máy tính khác)"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>Đăng xuất mọi thiết bị</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Direct visible Logout button on Navbar */}
+                <button
+                  type="button"
+                  onClick={openSingleLogout}
+                  disabled={isLoggingOut}
+                  title="Đăng xuất khỏi hệ thống"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Đăng xuất</span>
+                </button>
               </div>
             ) : (
               <Link href="/login">

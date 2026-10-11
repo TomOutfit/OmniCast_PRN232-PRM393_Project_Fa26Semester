@@ -17,6 +17,7 @@ import {
   Download,
   FileSpreadsheet,
   FileJson,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,7 +54,13 @@ const ACTION_CATEGORIES = [
 
 export default function AuditLogsPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+    toast.success('Đã đăng xuất');
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedAction, setSelectedAction] = useState('all');
@@ -188,6 +195,15 @@ export default function AuditLogsPage() {
                 <FileJson className="w-4 h-4" />
               )}
               <span>Xuất JSON</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Đăng xuất</span>
             </Button>
           </div>
         </div>
