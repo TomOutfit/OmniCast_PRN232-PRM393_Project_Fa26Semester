@@ -17,6 +17,12 @@ import {
   Bookmark,
   LogIn,
   Crown,
+  Radio,
+  Gauge,
+  Users,
+  Calendar,
+  FileLock,
+  Wand2,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -158,7 +164,7 @@ export function Navbar() {
             {isAuthenticated && (
               <div
                 className={cn(
-                  'hidden lg:inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border font-mono text-[10px] font-black uppercase tracking-wider',
+                  'hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border font-mono text-[10px] font-black uppercase tracking-wider',
                   roleAccent.bg,
                   roleAccent.border,
                   roleAccent.text,
@@ -294,55 +300,130 @@ export function Navbar() {
                       <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                     </div>
 
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                    >
-                      <User className="w-3.5 h-3.5 text-cyan-400" />
-                      Hồ sơ cá nhân
-                    </Link>
-
-                    <Link
-                      href="/watchlist"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                    >
-                      <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
-                      Danh sách yêu thích
-                    </Link>
-
-                    <Link
-                      href="/settings"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
-                    >
-                      <Settings className="w-3.5 h-3.5 text-cyan-400" />
-                      Cài đặt & OmniPass
-                    </Link>
-
-                    {/* RBAC: Studio & AI Curator for STAFF & ADMIN only */}
-                    {(userRole === 'STAFF' || userRole === 'ADMIN') && (
-                      <Link
-                        href="/studio/curator"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/30 rounded-lg transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                        Studio & AI Curator
-                      </Link>
-                    )}
-
-                    {/* RBAC: Admin Portal for ADMIN only */}
-                    {userRole === 'ADMIN' && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/30 rounded-lg transition-colors"
-                      >
-                        <Shield className="w-3.5 h-3.5 text-amber-400" />
-                        Quản trị hệ thống
-                      </Link>
+                    {/* Role-tailored menu links */}
+                    {userRole === 'ADMIN' ? (
+                      <>
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors font-bold"
+                        >
+                          <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                          Bảng điều khiển Admin
+                        </Link>
+                        <Link
+                          href="/admin/users"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
+                        >
+                          <Users className="w-3.5 h-3.5 text-amber-400" />
+                          Quản lý người dùng & RBAC
+                        </Link>
+                        <Link
+                          href="/admin/audit-logs"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-amber-950/40 rounded-lg transition-colors"
+                        >
+                          <FileLock className="w-3.5 h-3.5 text-amber-400" />
+                          Nhật ký Audit Logs
+                        </Link>
+                        <Link
+                          href="/studio/live"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
+                        >
+                          <Radio className="w-3.5 h-3.5 text-purple-400" />
+                          Live Studio
+                        </Link>
+                        <div className="my-1 border-t border-[#1a273b]" />
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        >
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          Hồ sơ cá nhân
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-400" />
+                          Cài đặt hệ thống
+                        </Link>
+                      </>
+                    ) : userRole === 'STAFF' ? (
+                      <>
+                        <Link
+                          href="/studio/live"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors font-bold"
+                        >
+                          <Radio className="w-3.5 h-3.5 text-purple-400" />
+                          Live Studio Phát Sóng
+                        </Link>
+                        <Link
+                          href="/studio/curator"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-lg transition-colors"
+                        >
+                          <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                          AI Curator Phân Tích
+                        </Link>
+                        <Link
+                          href="/epg"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                          Lịch Phát Sóng EPG
+                        </Link>
+                        <div className="my-1 border-t border-[#1a273b]" />
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        >
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          Hồ sơ cá nhân
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-400" />
+                          Cài đặt Studio
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors font-bold"
+                        >
+                          <User className="w-3.5 h-3.5 text-cyan-400" />
+                          Hồ sơ cá nhân
+                        </Link>
+                        <Link
+                          href="/watchlist"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-cyan-300 hover:text-white hover:bg-cyan-950/40 rounded-lg transition-colors"
+                        >
+                          <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
+                          Danh sách yêu thích
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-[#152339] rounded-lg transition-colors"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-400" />
+                          Cài đặt & OmniPass
+                        </Link>
+                      </>
                     )}
 
                     <button
@@ -483,12 +564,75 @@ export function Navbar() {
           {isAuthenticated ? (
             <>
               <div className="my-1 border-t border-[#18273c]" />
+
+              {/* Role-specific shortcuts in mobile */}
+              {userRole === 'ADMIN' && (
+                <>
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-amber-300 hover:bg-amber-950/40"
+                  >
+                    <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                    Bảng điều khiển Admin
+                  </Link>
+                  <Link
+                    href="/admin/users"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-950/40"
+                  >
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
+                    Quản lý người dùng
+                  </Link>
+                  <Link
+                    href="/admin/audit-logs"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-950/40"
+                  >
+                    <FileLock className="w-3.5 h-3.5 text-amber-400" />
+                    Nhật ký Audit Logs
+                  </Link>
+                </>
+              )}
+
+              {userRole === 'STAFF' && (
+                <>
+                  <Link
+                    href="/studio/live"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-purple-300 hover:bg-purple-950/40"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-purple-400" />
+                    Live Studio Phát Sóng
+                  </Link>
+                  <Link
+                    href="/studio/curator"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-purple-300 hover:bg-purple-950/40"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                    AI Curator Phân Tích
+                  </Link>
+                </>
+              )}
+
+              {userRole === 'VIEWER' && (
+                <Link
+                  href="/watchlist"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-cyan-300 hover:bg-cyan-950/40"
+                >
+                  <Bookmark className="w-3.5 h-3.5 text-cyan-400" />
+                  Danh sách yêu thích
+                </Link>
+              )}
+
               <Link
                 href="/profile"
                 onClick={() => setIsMenuOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
               >
-                <User className="w-3.5 h-3.5 text-cyan-400" />
+                <User className="w-3.5 h-3.5 text-slate-400" />
                 Hồ sơ cá nhân
               </Link>
               <Link
@@ -496,7 +640,7 @@ export function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
               >
-                <Settings className="w-3.5 h-3.5 text-cyan-400" />
+                <Settings className="w-3.5 h-3.5 text-slate-400" />
                 Cài đặt
               </Link>
               <button

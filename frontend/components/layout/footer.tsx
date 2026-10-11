@@ -179,10 +179,10 @@ export function Footer() {
 
       {/* ── 4. Main Link Columns (filtered by role) ───────────────── */}
       <div className="max-w-[1680px] mx-auto px-4 lg:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
           {/* Brand Column (always shown) */}
-          <div className="col-span-2">
+          <div className="lg:col-span-4 space-y-4">
             <Link href="/" className="flex items-center gap-3 mb-4 group">
               <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_15px_rgba(0,242,254,0.2)] overflow-hidden">
                 <Image
@@ -198,7 +198,7 @@ export function Footer() {
                 Omni<span className="text-cyan-400">Cast</span>
               </span>
             </Link>
-            <p className="text-slate-400 text-xs leading-relaxed mb-4 max-w-sm">
+            <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
               Nền tảng truyền hình trực tuyến thế hệ mới với hệ thống lịch phát sóng EPG thời gian thực, truyền dẫn Multi-Cam 4K UHD và âm thanh vòm Dolby Atmos.
             </p>
 
@@ -236,14 +236,25 @@ export function Footer() {
 
             {/* Current session indicator (auth only) */}
             {isAuthenticated && user && (
-              <div className="mt-5 p-2.5 rounded-lg border border-[#1f3350] bg-[#0a121f]">
-                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-1">
-                  Phiên đang hoạt động
-                </p>
-                <div className="flex items-center gap-2">
+              <div className="mt-5 p-3 rounded-xl border border-[#1f3350] bg-[#0a121f]/90 shadow-inner">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
+                    Phiên đang hoạt động
+                  </p>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 px-1.5 py-0.2 rounded border font-mono text-[9px] font-black',
+                      userMeta.pillClass,
+                    )}
+                  >
+                    <span className={cn('w-1 h-1 rounded-full', userMeta.dotClass)} />
+                    {userMeta.shortLabel} [{userMeta.rank}]
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5">
                   <div
                     className={cn(
-                      'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white',
+                      'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow',
                       effectiveRole === 'ADMIN'
                         ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
                         : effectiveRole === 'STAFF'
@@ -254,20 +265,12 @@ export function Footer() {
                     {(user.fullName || user.email || 'U')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold text-white truncate">
+                    <p className="text-xs font-bold text-white truncate">
                       {user.fullName || user.email}
                     </p>
-                    <div className="flex items-center gap-1">
-                      <span
-                        className={cn(
-                          'inline-flex items-center gap-1 px-1.5 py-0.2 rounded border font-mono text-[9px] font-black',
-                          userMeta.pillClass,
-                        )}
-                      >
-                        <span className={cn('w-1 h-1 rounded-full', userMeta.dotClass)} />
-                        {userMeta.shortLabel} [{userMeta.rank}]
-                      </span>
-                    </div>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {userMeta.description}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -275,36 +278,47 @@ export function Footer() {
           </div>
 
           {/* Role-filtered columns */}
-          {columns.map((col) => {
-            const Icon: LucideIcon = col.icon;
-            return (
-              <div key={col.title}>
-                <h4
-                  className={cn(
-                    'text-xs font-black uppercase tracking-wider mb-4 flex items-center gap-1.5',
-                    col.accentClass,
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{col.title}</span>
-                </h4>
-                <ul className="space-y-2.5 text-xs">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      <Link
-                        href={link.href}
-                        className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1 group"
-                      >
-                        <span className="group-hover:translate-x-0.5 transition-transform">
-                          {link.label}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+          <div
+            className={cn(
+              'lg:col-span-8 grid gap-8',
+              columns.length <= 3
+                ? 'grid-cols-2 sm:grid-cols-3'
+                : columns.length === 4
+                ? 'grid-cols-2 sm:grid-cols-4'
+                : 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4',
+            )}
+          >
+            {columns.map((col) => {
+              const Icon: LucideIcon = col.icon;
+              return (
+                <div key={col.title}>
+                  <h4
+                    className={cn(
+                      'text-xs font-black uppercase tracking-wider mb-4 flex items-center gap-1.5',
+                      col.accentClass,
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{col.title}</span>
+                  </h4>
+                  <ul className="space-y-2.5 text-xs">
+                    {col.links.map((link) => (
+                      <li key={link.label}>
+                        <Link
+                          href={link.href}
+                          className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1 group"
+                        >
+                          <span className="group-hover:translate-x-0.5 transition-transform">
+                            {link.label}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Bottom Bar */}
