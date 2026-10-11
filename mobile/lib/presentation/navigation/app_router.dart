@@ -23,6 +23,8 @@ import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/studio/ai_curator_screen.dart';
 import '../../presentation/screens/studio/live_studio_screen.dart';
 import '../../presentation/screens/admin/admin_hub_screen.dart';
+import '../../presentation/screens/admin/admin_users_screen.dart';
+import '../../presentation/screens/admin/admin_audit_logs_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/main_screen.dart';
 
@@ -66,8 +68,8 @@ class AppRouter {
         }
       }
 
-      // RBAC Guard: /admin requires ADMIN (3)
-      if (state.matchedLocation == '/admin') {
+      // RBAC Guard: /admin* requires ADMIN (3)
+      if (state.matchedLocation.startsWith('/admin')) {
         if (!isLoggedIn || !authState.user.isAdmin) {
           return '/home';
         }
@@ -190,6 +192,14 @@ class AppRouter {
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminHubScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (context, state) => const AdminUsersScreen(),
+      ),
+      GoRoute(
+        path: '/admin/audit-logs',
+        builder: (context, state) => const AdminAuditLogsScreen(),
       ),
       // Settings
       GoRoute(

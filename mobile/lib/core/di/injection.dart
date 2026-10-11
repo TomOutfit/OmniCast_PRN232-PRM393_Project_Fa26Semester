@@ -13,6 +13,7 @@ import '../../data/repositories/live_studio_repository.dart';
 import '../../data/repositories/programs_repository.dart';
 import '../../data/repositories/search_repository.dart';
 import '../../data/repositories/watchlist_repository.dart';
+import '../../data/repositories/admin_repository.dart';
 import '../../data/datasources/local/database_helper.dart';
 import '../../logic/auth/auth_bloc.dart';
 import '../../logic/channels/channels_bloc.dart';
@@ -101,6 +102,10 @@ Future<void> initDependencies() async {
       dioClient: getIt<DioClient>(),
       db: getIt<DatabaseHelper>(),
     ),
+  );
+
+  getIt.registerLazySingleton<AdminRepository>(
+    () => AdminRepository(dioClient: getIt<DioClient>()),
   );
 
   // BLoCs
