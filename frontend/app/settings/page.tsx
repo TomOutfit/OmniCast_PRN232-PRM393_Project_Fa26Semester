@@ -26,6 +26,8 @@ import {
   EyeOff,
   Loader2,
   CreditCard,
+  LogOut,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +53,43 @@ export default function SettingsPage() {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
+  // Session logout state
+  const { logout, logoutAll } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState<null | 'single' | 'all'>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogoutSingle = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      toast.success('Đã đăng xuất', {
+        description: 'Phiên của bạn đã được kết thúc an toàn trên thiết bị này.',
+      });
+      setShowLogoutDialog(null);
+      window.location.href = '/login';
+    } catch {
+      toast.error('Đăng xuất thất bại');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    setIsLoggingOut(true);
+    try {
+      const res = await logoutAll();
+      toast.success(`Đã thu hồi tất cả phiên (${res.revokedCount} phiên)`, {
+        description: 'Tất cả thiết bị đã được đăng xuất an toàn.',
+      });
+      setShowLogoutDialog(null);
+      window.location.href = '/login';
+    } catch {
+      toast.error('Thu hồi phiên thất bại');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleSave = () => {
     setSavedSuccess(true);
@@ -518,6 +557,49 @@ export default function SettingsPage() {
                     )}
                   </Button>
                 </form>
+
+                {/* Session Security & Logout section */}
+                <div className="pt-6 border-t border-white/10 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-amber-400" />
+                      Quản Lý Phiên Đăng Nhập & Thiết Bị
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Kiểm soát trạng thái đăng nhập và thu hồi phiên làm việc trên các thiết bị khác.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowLogoutDialog('single')}
+                      className="p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition-all group flex items-start gap-3 cursor-pointer"
+                    >
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <LogOut className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-amber-300">Đăng xuất thiết bị này</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">Kết thúc phiên làm việc hiện tại trên trình duyệt này</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowLogoutDialog('all')}
+                      className="p-3.5 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-left transition-all group flex items-start gap-3 cursor-pointer"
+                    >
+                      <div className="p-2 rounded-xl bg-red-500/20 text-red-400 flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-red-300">Đăng xuất mọi thiết bị</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">Thu hồi tất cả refresh token trên điện thoại, tablet, web khác</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -525,6 +607,86 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      {/* ── Logout confirmation modal ────────────────────────── */}
+      {showLogoutDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => !isLoggingOut && setShowLogoutDialog(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-[#090f1a] border border-[#162338] rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'p-2.5 rounded-xl flex-shrink-0',
+                  showLogoutDialog === 'all'
+                    ? 'bg-red-500/15 border border-red-500/40 text-red-400'
+                    : 'bg-amber-500/15 border border-amber-500/40 text-amber-400'
+                )}
+              >
+                {showLogoutDialog === 'all' ? (
+                  <ShieldAlert className="w-5 h-5" />
+                ) : (
+                  <LogOut className="w-5 h-5" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-white mb-1">
+                  {showLogoutDialog === 'all'
+                    ? 'Đăng xuất khỏi mọi thiết bị?'
+                    : 'Đăng xuất khỏi thiết bị này?'}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {showLogoutDialog === 'all'
+                    ? 'Tất cả phiên đăng nhập của bạn (điện thoại, máy tính bảng, trình duyệt khác) sẽ bị thu hồi ngay lập tức. Bạn sẽ cần đăng nhập lại trên từng thiết bị.'
+                    : 'Phiên hiện tại trên trình duyệt này sẽ kết thúc an toàn. Các thiết bị khác của bạn vẫn duy trì đăng nhập bình thường.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowLogoutDialog(null)}
+                disabled={isLoggingOut}
+                className="flex-1 border-[#1e2d44] text-slate-300 hover:text-white text-xs h-9 cursor-pointer"
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={
+                  showLogoutDialog === 'all'
+                    ? handleLogoutAll
+                    : handleLogoutSingle
+                }
+                disabled={isLoggingOut}
+                className={cn(
+                  'flex-1 text-xs font-bold h-9 text-white cursor-pointer',
+                  showLogoutDialog === 'all'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-amber-600 hover:bg-amber-500'
+                )}
+              >
+                {isLoggingOut ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Đang xử lý...
+                  </span>
+                ) : showLogoutDialog === 'all' ? (
+                  'Đăng xuất tất cả'
+                ) : (
+                  'Đăng xuất'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
