@@ -89,7 +89,7 @@ class _LivePulseWidgetState extends State<LivePulseWidget>
                       height: widget.size,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.color.withOpacity(_opacityAnimation.value * 0.5),
+                        color: widget.color.withValues(alpha: _opacityAnimation.value * 0.5),
                       ),
                     ),
                   );
@@ -104,7 +104,7 @@ class _LivePulseWidgetState extends State<LivePulseWidget>
                   color: widget.color,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.5),
+                      color: widget.color.withValues(alpha: 0.5),
                       blurRadius: 4,
                       spreadRadius: 1,
                     ),
@@ -164,7 +164,7 @@ class LiveBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
-            color: AppColors.liveRed.withOpacity(0.3),
+            color: AppColors.liveRed.withValues(alpha: 0.3),
             blurRadius: 8,
             spreadRadius: 1,
           ),
@@ -210,7 +210,7 @@ class LiveStatusIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(

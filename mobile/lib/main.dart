@@ -16,6 +16,7 @@ import 'logic/channels/channels_bloc.dart';
 import 'logic/programs/programs_bloc.dart';
 import 'logic/recordings/recordings_bloc.dart';
 import 'logic/epg/epg_bloc.dart';
+import 'logic/epg/epg_sync_bloc.dart';
 import 'logic/search/search_bloc.dart';
 import 'logic/watchlist/watchlist_bloc.dart';
 import 'presentation/navigation/app_router.dart';
@@ -117,6 +118,14 @@ class _OmniCastAppState extends State<OmniCastApp> {
         ),
         BlocProvider<EpgBloc>(
           create: (_) => getIt<EpgBloc>(),
+        ),
+        BlocProvider<EpgSyncBloc>(
+          // App-wide singleton: the long-running 60s poller that keeps
+          // the player in lock-step with the live EPG grid. Multiple
+          // detail screens would race the timer, so we hoist it to the
+          // root and reset its channel via [EpgSyncStart] events.
+          create: (_) => getIt<EpgSyncBloc>(),
+          lazy: false,
         ),
         BlocProvider<SearchBloc>(
           create: (_) => getIt<SearchBloc>(),

@@ -37,7 +37,7 @@ class AIReportCard extends StatelessWidget {
         color: AppColors.dark800,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getConfidenceColor(confidence).withOpacity(0.3),
+          color: _getConfidenceColor(confidence).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -58,7 +58,7 @@ class AIReportCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -233,7 +233,7 @@ class AIReportCardCompact extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -303,7 +303,7 @@ class _ConfidenceBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
@@ -320,9 +320,9 @@ class _ConfidenceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -428,12 +428,12 @@ class AIAnalyticsCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.2),
-            color.withOpacity(0.05),
+            color.withValues(alpha: 0.2),
+            color.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +443,7 @@ class AIAnalyticsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 22),
@@ -457,8 +457,8 @@ class AIAnalyticsCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: trend! >= 0
-                        ? AppColors.success.withOpacity(0.2)
-                        : AppColors.error.withOpacity(0.2),
+                        ? AppColors.success.withValues(alpha: 0.2)
+                        : AppColors.error.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -539,8 +539,8 @@ class AIStatusIndicator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isActive
-            ? AppColors.success.withOpacity(0.2)
-            : AppColors.error.withOpacity(0.2),
+            ? AppColors.success.withValues(alpha: 0.2)
+            : AppColors.error.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isActive ? AppColors.success : AppColors.error,
@@ -616,11 +616,11 @@ class _PulsingDotState extends State<_PulsingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: widget.color.withOpacity(_animation.value),
+            color: widget.color.withValues(alpha: _animation.value),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.5),
+                color: widget.color.withValues(alpha: 0.5),
                 blurRadius: 4,
                 spreadRadius: 1,
               ),

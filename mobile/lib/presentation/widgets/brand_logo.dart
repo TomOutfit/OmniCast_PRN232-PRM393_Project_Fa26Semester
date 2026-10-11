@@ -51,13 +51,13 @@ class OmniCastBrandLogo extends StatelessWidget {
           color: AppColors.dark900,
           borderRadius: radius,
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: showGlow
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.35),
+                    color: AppColors.primary.withValues(alpha: 0.35),
                     blurRadius: size * 0.3,
                     spreadRadius: 2,
                   ),
@@ -77,7 +77,7 @@ class OmniCastBrandLogo extends StatelessWidget {
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
               blurRadius: size * 0.4,
               spreadRadius: 2,
             ),

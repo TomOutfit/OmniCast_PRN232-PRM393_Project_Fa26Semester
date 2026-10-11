@@ -1,0 +1,120 @@
+// ============================================================
+// OmniCast - Live Studio React Query Hooks
+// ============================================================
+
+'use client';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchBroadcastableRecordings,
+  fetchCatalogStreams,
+  curateLive,
+  stopLive,
+  uploadSelfRecordFile,
+  uploadSelfRecord,
+  addFromCatalog,
+  type CurateLiveInput,
+  type StopLiveInput,
+  type SelfRecordUploadInput,
+  type AddFromCatalogInput,
+} from '@/lib/api/live-studio';
+
+export const liveStudioKeys = {
+  all: ['live-studio'] as const,
+  broadcastable: (channelId: string, search?: string) =>
+    [...liveStudioKeys.all, 'broadcastable', channelId, search] as const,
+  catalog: (channelSlug?: string, search?: string) =>
+    [...liveStudioKeys.all, 'catalog', channelSlug ?? '__all__', search ?? '__none__'] as const,
+};
+
+export function useBroadcastableRecordings(
+  channelId: string | undefined,
+  search?: string,
+  limit: number = 50,
+) {
+  return useQuery({
+    queryKey: liveStudioKeys.broadcastable(channelId || '', search),
+    queryFn: () => fetchBroadcastableRecordings(channelId!, search, limit),
+    enabled: !!channelId,
+    staleTime: 10 * 1000,
+  });
+}
+
+export function useCatalogStreams(
+  channelSlug?: string,
+  options: { verifiedOnly?: boolean; search?: string } = {},
+) {
+  return useQuery({
+    queryKey: liveStudioKeys.catalog(channelSlug, options.search),
+    queryFn: () => fetchCatalogStreams(channelSlug, options),
+    staleTime: 5 * 60 * 1000, // catalog is static — cache for 5 minutes
+  });
+}
+
+export function useCurateLive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CurateLiveInput) => curateLive(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
+    },
+  });
+}
+
+export function useStopLive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      eventId,
+      payload,
+    }: {
+      eventId: string;
+      payload?: StopLiveInput;
+    }) => stopLive(eventId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
+    },
+  });
+}
+
+export function useUploadSelfRecordFile() {
+  return useMutation({
+    mutationFn: ({
+      file,
+      title,
+      onProgress,
+    }: {
+      file: File;
+      title?: string;
+      onProgress?: (percent: number) => void;
+    }) => uploadSelfRecordFile(file, title, onProgress),
+  });
+}
+
+export function useUploadSelfRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SelfRecordUploadInput) => uploadSelfRecord(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'recordings'] });
+    },
+  });
+}
+
+export function useAddFromCatalog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AddFromCatalogInput) => addFromCatalog(payload),
+    onSuccess: () => {
+      // Invalidate broadcastable recordings so the newly added
+      // catalog item appears in the picker immediately.
+      queryClient.invalidateQueries({
+        queryKey: liveStudioKeys.broadcastable(''),
+      });
+    },
+  });
+}

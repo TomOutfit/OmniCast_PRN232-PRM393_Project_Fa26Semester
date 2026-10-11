@@ -4,10 +4,26 @@
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 
-// Fallback stream used when the primary URL fails
-const _kFallbackStream = 'https://www.youtube.com/embed/live_stream?channel=UC8butISFwT-Wl7EV0hUK0BQ';
+// Demo fallback stream. Big Buck Bunny — Creative Commons MP4 from
+// Google's public sample bucket. Plays directly in `video_player`,
+// no API key required.
+const _kFallbackStream =
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+
+/// Returns true when the URL should be rendered in a WebView (YouTube
+/// embed / any iframe-only source). The native `video_player` package
+/// cannot decode YouTube's DASH/SABR manifests, so we route YouTube
+/// embeds through a WebView instead.
+bool _isYouTubeEmbed(String url) {
+  if (url.isEmpty) return false;
+  return url.contains('youtube.com/embed/') ||
+      url.contains('youtu.be/') ||
+      url.contains('youtube.com/watch?v=');
+}
 
 class OmniPlayer extends StatefulWidget {
   final String url;
@@ -19,6 +35,18 @@ class OmniPlayer extends StatefulWidget {
   final bool isPremium;
   final String? channelName;
 
+  /// Optional upstream URL kept around by the Bunny orchestrator as a
+  /// safety net. When the primary [url] fails to initialize, the player
+  /// transparently swaps to [fallbackSrc] before giving up. If even
+  /// [fallbackSrc] is dead, the player falls all the way back to the
+  /// hard-coded Big Buck Bunny demo stream.
+  final String? fallbackSrc;
+
+  /// Short caption ("Video by Pexels", "© Blender Foundation", …) shown
+  /// as a snackbar when the player swaps to a fallback. Also exposed
+  /// for parents that want to render it as a static caption.
+  final String? sourceAttribution;
+
   const OmniPlayer({
     super.key,
     required this.url,
@@ -29,6 +57,8 @@ class OmniPlayer extends StatefulWidget {
     this.initialSeekSeconds = 0,
     this.isPremium = false,
     this.channelName,
+    this.fallbackSrc,
+    this.sourceAttribution,
   });
 
   @override
@@ -64,9 +94,37 @@ class _OmniPlayerState extends State<OmniPlayer> {
     }
   }
 
+  /// Best-effort resolution of a possibly-relative URL into an
+  /// absolute one the native `video_player` can dial.
+  ///
+  /// Live Studio "Tự ghi hình" uploads used to be persisted as
+  /// relative paths (`/uploads/self-record/.../file.mp4`). Native
+  /// `VideoPlayerController.networkUrl` rejects those because they
+  /// have no host. Older rows in the DB still carry the relative
+  /// form, so we transparently prefix them with the API origin
+  /// here. Absolute URLs (the common case) pass through untouched.
+  static String _resolveAbsoluteUrl(String url) {
+    if (url.isEmpty) return url;
+    final lower = url.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      return url;
+    }
+    // Relative — glue to the API origin. baseUrl is the
+    // `…/api` form (e.g. `https://omnicast-api.vercel.app/api`);
+    // strip the trailing `/api` so the result lives on the same
+    // origin as the API host.
+    const apiBase = AppConstants.baseUrl;
+    final origin = apiBase.endsWith('/api')
+        ? apiBase.substring(0, apiBase.length - 4)
+        : apiBase;
+    final path = url.startsWith('/') ? url : '/$url';
+    return '$origin$path';
+  }
+
   Future<void> _initialize(String videoUrl) async {
+    final absoluteUrl = _resolveAbsoluteUrl(videoUrl);
     final controller = VideoPlayerController.networkUrl(
-      Uri.parse(videoUrl),
+      Uri.parse(absoluteUrl),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _controller = controller;
@@ -98,19 +156,60 @@ class _OmniPlayerState extends State<OmniPlayer> {
       await controller.dispose();
       _controller = null;
 
-      // Try fallback stream once
-      if (!_usedFallback && videoUrl != _kFallbackStream) {
+      // Smart fallback chain (Catalog v2.1):
+      //   primary  -> configured [fallbackSrc] (Bunny keeps the
+      //                upstream URL around for exactly this case)
+      //           -> hard-coded Big Buck Bunny demo stream
+      //   failure  -> _hasError overlay
+      if (!_usedFallback) {
         _usedFallback = true;
-        await _initialize(_kFallbackStream);
-      } else {
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-            _initialized = false;
-          });
+
+        // Try the configured upstream fallback first.
+        final fb = widget.fallbackSrc;
+        if (fb != null && fb.isNotEmpty && videoUrl != fb) {
+          if (mounted) {
+            _showFallbackToast(
+              '🔁 Đang chuyển sang nguồn dự phòng${widget.sourceAttribution != null ? ' (${widget.sourceAttribution})' : ''}…',
+            );
+          }
+          await _initialize(fb);
+          return;
+        }
+
+        // Then the demo stream as the last resort.
+        if (videoUrl != _kFallbackStream) {
+          if (mounted) {
+            _showFallbackToast('🔁 Đang kết nối stream dự phòng…');
+          }
+          await _initialize(_kFallbackStream);
+          return;
         }
       }
+
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _initialized = false;
+        });
+      }
     }
+  }
+
+  void _showFallbackToast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF0F172A),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   void _disposeController() {
@@ -257,7 +356,16 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 2. Empty URL
+    // 2. YouTube embed — render in WebView (free, no native YouTube SDK)
+    if (_isYouTubeEmbed(widget.url)) {
+      return _YouTubeEmbed(
+        url: widget.url,
+        posterUrl: widget.posterUrl,
+        channelName: widget.channelName,
+      );
+    }
+
+    // 3. Empty URL
     if (widget.url.isEmpty) {
       return _PosterOnly(
         posterUrl: widget.posterUrl,
@@ -265,7 +373,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 3. Error state with Retry button
+    // 4. Error state with Retry button
     if (_hasError) {
       return _ErrorState(
         posterUrl: widget.posterUrl,
@@ -273,7 +381,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 4. Loading / Buffering
+    // 5. Loading / Buffering
     final controller = _controller;
     if (controller == null || !_initialized) {
       return AspectRatio(
@@ -296,7 +404,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 5. Playing state
+    // 6. Playing state
     return AspectRatio(
       aspectRatio: controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio,
       child: Stack(
@@ -512,6 +620,111 @@ class _PlayerOverlay extends StatelessWidget {
           ),
           const Spacer(),
           const Icon(Icons.hd_rounded, color: Colors.white70, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// YouTube embed widget — renders any youtube.com/embed URL in a WebView.
+// Used when the recording's `videoUrl` points at a YouTube embed (free,
+// no API key, no Bunny / Mux billing). Falls back to a poster image if
+// the WebView fails to load within a few seconds.
+// ─────────────────────────────────────────────────────────────────────────────
+class _YouTubeEmbed extends StatefulWidget {
+  final String url;
+  final String? posterUrl;
+  final String? channelName;
+
+  const _YouTubeEmbed({
+    required this.url,
+    this.posterUrl,
+    this.channelName,
+  });
+
+  @override
+  State<_YouTubeEmbed> createState() => _YouTubeEmbedState();
+}
+
+class _YouTubeEmbedState extends State<_YouTubeEmbed> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          onWebResourceError: (_) {
+            if (mounted) setState(() => _failed = true);
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.posterUrl != null && widget.posterUrl!.isNotEmpty)
+            Image.network(
+              widget.posterUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: Colors.black),
+            )
+          else
+            Container(color: Colors.black),
+          // The WebView sits on the poster so the embed overlays nicely.
+          WebViewWidget(controller: _controller),
+          if (_loading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.45),
+              alignment: Alignment.center,
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white70),
+                  SizedBox(height: 12),
+                  Text(
+                    'Đang tải YouTube embed...',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          if (_failed)
+            Container(
+              color: Colors.black.withValues(alpha: 0.75),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: Color(0xFFEF4444), size: 36),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.channelName ?? 'Không tải được video',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

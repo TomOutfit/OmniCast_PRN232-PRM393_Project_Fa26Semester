@@ -37,6 +37,21 @@ class RecordingModel {
   final DateTime updatedAt;
   final List<String> tags;
 
+  // Catalog v2.1 — licensing & fallback chain.
+  //
+  // Every recording now carries a [sourceType] and [license] tag so the
+  // Studio publish-gate and the EPG filler can make policy decisions
+  // without hard-coding. [fallbackUrl] is the upstream URL the Bunny
+  // orchestrator kept around as a safety net; when the primary mirror
+  // goes down the player transparently swaps to it. The two
+  // *Attribution fields are rendered as a caption under the player so
+  // Pexels / Blender / Archive.org credit lines stay visible.
+  final String? sourceType;
+  final String? license;
+  final String? sourceAttribution;
+  final String? fallbackUrl;
+  final String? thumbnailAttribution;
+
   RecordingModel({
     required this.id,
     required this.title,
@@ -66,6 +81,11 @@ class RecordingModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     this.tags = const [],
+    this.sourceType,
+    this.license,
+    this.sourceAttribution,
+    this.fallbackUrl,
+    this.thumbnailAttribution,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -105,6 +125,14 @@ class RecordingModel {
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updatedAt']) ?? DateTime.now(),
       tags: (json['tags'] as List?)?.cast<String>() ?? const [],
+      // Catalog v2.1 — optional, may be missing on older records that
+      // predate the licensing rollout. Treat them as null and let the
+      // player fall back to the generic Big Buck Bunny demo stream.
+      sourceType: json['sourceType'] as String?,
+      license: json['license'] as String?,
+      sourceAttribution: json['sourceAttribution'] as String?,
+      fallbackUrl: json['fallbackUrl'] as String?,
+      thumbnailAttribution: json['thumbnailAttribution'] as String?,
     );
   }
 
@@ -131,6 +159,44 @@ class RecordingModel {
     final src = playableSrc;
     if (src == null) return false;
     return src.toLowerCase().contains('.m3u8');
+  }
+
+  /// True when the recording carries a separate fallback URL that is
+  /// distinct from the primary [playableSrc]. The player uses this to
+  /// decide whether to attempt a configured fallback before falling all
+  /// the way back to the Big Buck Bunny demo stream.
+  bool get hasFallback {
+    final f = fallbackUrl;
+    if (f == null || f.isEmpty) return false;
+    return f != playableSrc;
+  }
+
+  /// Short, human-readable label for the upstream source. Drives the
+  /// source badge in the player header.
+  String get sourceBadgeLabel {
+    switch (sourceType) {
+      case 'PEXELS':
+        return 'PEXELS';
+      case 'BLENDER_CC':
+        return 'BLENDER';
+      case 'ARCHIVE_ORG':
+        return 'ARCHIVE.ORG';
+      case 'BUNNY_CDN':
+        return 'BUNNY CDN';
+      case 'YOUTUBE_EMBED':
+        return 'YOUTUBE';
+      case 'MUX_TEST':
+        return 'MUX TEST';
+      case 'PEXELS_LIVE':
+        return 'PEXELS LIVE';
+      case 'SELF_RECORDED':
+        return 'TỰ GHI';
+      case 'DEV_ONLY_TEST_FIXTURE':
+        return 'TEST';
+      default:
+        if (sourceType == null || sourceType!.isEmpty) return 'EXTERNAL';
+        return sourceType!;
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -169,6 +235,11 @@ class RecordingModel {
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
         'tags': tags,
+        'sourceType': sourceType,
+        'license': license,
+        'sourceAttribution': sourceAttribution,
+        'fallbackUrl': fallbackUrl,
+        'thumbnailAttribution': thumbnailAttribution,
       };
 
   static int _coerceInt(dynamic value) {
