@@ -175,21 +175,21 @@ export default function LoginPage() {
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
+              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
               className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-medium transition-colors"
             >
               Admin
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
+              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
               className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-medium transition-colors"
             >
               Staff
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
+              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
               className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-medium transition-colors"
             >
               Viewer
@@ -220,7 +220,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="staff@omnicast.dev hoặc viewer@omnicast.dev"
+                placeholder="admin@omnicast.tv hoặc viewer1@omnicast.tv"
                 autoComplete="email"
                 inputMode="email"
                 spellCheck={false}
@@ -364,7 +364,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@omnicast.dev', 'Admin123!')}
+              onClick={() => fillDemoAccount('admin@omnicast.tv', 'Admin123!')}
               className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-amber-500/40 text-left transition-all"
             >
               <span className="block text-xs font-semibold text-amber-300">
@@ -374,7 +374,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('staff@omnicast.dev', 'Staff123!')}
+              onClick={() => fillDemoAccount('staff@omnicast.tv', 'Admin123!')}
               className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-purple-500/40 text-left transition-all"
             >
               <span className="block text-xs font-semibold text-purple-300">
@@ -384,7 +384,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('viewer@omnicast.dev', 'Staff123!')}
+              onClick={() => fillDemoAccount('viewer1@omnicast.tv', 'Admin123!')}
               className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-500/40 text-left transition-all"
             >
               <span className="block text-xs font-semibold text-cyan-300">
