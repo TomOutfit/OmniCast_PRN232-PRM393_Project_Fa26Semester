@@ -199,6 +199,46 @@ void main() {
     );
 
     // -----------------------------------------------------------------
+    // TC-PRM-06: Logout from all devices — must pass
+    // `revokeAllDevices: true` to the repository so the backend
+    // hits `/auth/logout-all` (revokes every refresh token).
+    // -----------------------------------------------------------------
+    blocTest<AuthBloc, AuthState>(
+      'LogoutAllDevicesRequested calls logout(revokeAllDevices: true) and emits Unauthenticated',
+      build: () {
+        when(() => mockRepo.logout(revokeAllDevices: true))
+            .thenAnswer((_) async {});
+        return AuthBloc(authRepository: mockRepo);
+      },
+      seed: () => Authenticated(_makeUser()),
+      act: (bloc) => bloc.add(LogoutAllDevicesRequested()),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<Unauthenticated>(),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.logout(revokeAllDevices: true)).called(1);
+        // CRITICAL: must NOT call the single-device logout
+        verifyNever(() => mockRepo.logout());
+      },
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'LogoutAllDevicesRequested is best-effort (still emits Unauthenticated on failure)',
+      build: () {
+        when(() => mockRepo.logout(revokeAllDevices: true))
+            .thenThrow(Exception('server timeout'));
+        return AuthBloc(authRepository: mockRepo);
+      },
+      seed: () => Authenticated(_makeUser()),
+      act: (bloc) => bloc.add(LogoutAllDevicesRequested()),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<Unauthenticated>(),
+      ],
+    );
+
+    // -----------------------------------------------------------------
     // Register success
     // -----------------------------------------------------------------
     blocTest<AuthBloc, AuthState>(
