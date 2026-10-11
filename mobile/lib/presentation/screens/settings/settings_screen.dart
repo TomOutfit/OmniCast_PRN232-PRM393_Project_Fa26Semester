@@ -7,11 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/di/injection.dart';
 import '../../../core/i18n/app_locale.dart';
 import '../../../core/i18n/strings.dart';
 import '../../../core/utils/token_storage_helper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/repositories/newsletter_repository.dart';
 import '../../../logic/auth/auth_bloc.dart';
+import '../../../logic/newsletter/newsletter_bloc.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -265,11 +268,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Divider(color: Color(0x1A00E5FF), height: 1),
                     ),
-                    _CyberSwitchRow(
-                      title: AppStrings.t('settings.notifications.email', locale),
-                      subtitle: 'Bản tin tổng hợp lịch phát sóng hàng tuần',
-                      value: _email,
-                      onChanged: (v) => setState(() => _email = v),
+                    // Newsletter — REAL API
+                    // Replaces the previous local-only toggle.
+                    // Subscribes via `POST /v1/newsletter/subscribe`
+                    // (public, 5 req/min/IP, idempotent). The form
+                    // pre-fills the current user's email when
+                    // authenticated, and falls back to a manual
+                    // input for guests.
+                    BlocProvider<NewsletterBloc>(
+                      create: (_) => getIt<NewsletterBloc>(),
+                      child: const _NewsletterCard(),
                     ),
                   ],
                 ),
@@ -722,6 +730,364 @@ class _LogoutActionTile extends StatelessWidget {
           child: Text(buttonLabel),
         ),
       ],
+    );
+  }
+}
+
+// ============================================================
+// NEWSLETTER FORM — real API subscriber
+// ------------------------------------------------------------
+// Mounted in the "Thông báo đẩy" section of Settings. Wraps
+// the `NewsletterBloc` so the form is fully self-contained —
+// the parent `SettingsScreen` doesn't need to know about the
+// newsletter domain.
+// ============================================================
+
+class _NewsletterCard extends StatefulWidget {
+  const _NewsletterCard();
+
+  @override
+  State<_NewsletterCard> createState() => _NewsletterCardState();
+}
+
+class _NewsletterCardState extends State<_NewsletterCard> {
+  final _emailCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  // Topic toggles — match the backend enum values.
+  bool _weekly = true;
+  bool _aiPicks = true;
+  bool _liveAlerts = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill with the signed-in user's email so a signed-in
+    // user can subscribe in one tap.
+    final auth = context.read<AuthBloc>().state;
+    if (auth is Authenticated && auth.user.email.isNotEmpty) {
+      _emailCtrl.text = auth.user.email;
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  List<NewsletterTopic> _selectedTopics() {
+    return [
+      if (_weekly) NewsletterTopic.weeklySchedule,
+      if (_aiPicks) NewsletterTopic.aiCuratorPicks,
+      if (_liveAlerts) NewsletterTopic.liveAlerts,
+    ];
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    HapticFeedback.lightImpact();
+    final locale = appLocaleOf(context).code;
+    context.read<NewsletterBloc>().add(
+          NewsletterSubscribeRequested(
+            email: _emailCtrl.text,
+            topics: _selectedTopics(),
+            locale: locale,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<NewsletterBloc, NewsletterState>(
+      listener: (context, state) {
+        if (state is NewsletterSuccess) {
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF091424),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: state.alreadySubscribed
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF00E5FF),
+                  width: 0.8,
+                ),
+              ),
+              content: Row(
+                children: [
+                  Icon(
+                    state.alreadySubscribed
+                        ? Icons.info_outline_rounded
+                        : Icons.check_circle_rounded,
+                    color: state.alreadySubscribed
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF00E5FF),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      state.alreadySubscribed
+                          ? 'Bạn đã đăng ký rồi — ${state.email}'
+                          : 'Đã đăng ký — ${state.email}. Kiểm tra email để xác nhận (có thể trong thư mục spam).',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else if (state is NewsletterFailure) {
+          HapticFeedback.heavyImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF1C0A0A),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFF7F1D1D), width: 0.8),
+              ),
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFF87171),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isSending = state is NewsletterSending;
+        return Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bản tin email',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              const Text(
+                'Lịch phát sóng tuần, gợi ý AI và cảnh báo trực tiếp — không spam.',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                enabled: !isSending,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(
+                    Icons.alternate_email_rounded,
+                    color: Color(0xFF94A3B8),
+                    size: 18,
+                  ),
+                  hintText: 'email@example.com',
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF0F172A),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: Color(0x1F00E5FF),
+                      width: 0.8,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: Color(0x1F00E5FF),
+                      width: 0.8,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF00E5FF),
+                      width: 1.2,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFEF4444),
+                      width: 0.8,
+                    ),
+                  ),
+                ),
+                validator: (v) {
+                  final s = (v ?? '').trim();
+                  if (s.isEmpty) return 'Vui lòng nhập email';
+                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s)) {
+                    return 'Email không hợp lệ';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              // Topic checkboxes
+              _TopicRow(
+                label: 'Lịch phát sóng hàng tuần',
+                value: _weekly,
+                onChanged: isSending
+                    ? null
+                    : (v) => setState(() => _weekly = v),
+              ),
+              _TopicRow(
+                label: 'Gợi ý AI Curator',
+                value: _aiPicks,
+                onChanged: isSending
+                    ? null
+                    : (v) => setState(() => _aiPicks = v),
+              ),
+              _TopicRow(
+                label: 'Cảnh báo trực tiếp',
+                value: _liveAlerts,
+                onChanged: isSending
+                    ? null
+                    : (v) => setState(() => _liveAlerts = v),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: isSending ? null : _submit,
+                  icon: isSending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.send_rounded,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                  label: Text(
+                    isSending ? 'Đang gửi…' : 'Đăng ký nhận bản tin',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00E5FF),
+                    disabledBackgroundColor: const Color(0xFF0F172A),
+                    disabledForegroundColor: const Color(0xFF64748B),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopicRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const _TopicRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onChanged == null;
+    return InkWell(
+      onTap: disabled ? null : () => onChanged!(!value),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: Checkbox(
+                value: value,
+                onChanged: disabled
+                    ? null
+                    : (v) => onChanged!(v ?? false),
+                activeColor: const Color(0xFF00E5FF),
+                checkColor: Colors.black,
+                side: const BorderSide(
+                  color: Color(0x1F00E5FF),
+                  width: 0.8,
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: disabled
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFFCBD5E1),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
