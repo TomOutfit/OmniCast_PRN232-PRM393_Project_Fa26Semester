@@ -41,10 +41,19 @@ import {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, logout, logoutAll } = useAuth();
   const { locale, setLocale } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  // Two-step confirm: when the user clicks "Đăng xuất" we open a
+  // dialog instead of immediately destroying the session. Prevents
+  // accidental clicks on a tiny button from logging the user out.
+  const [logoutDialog, setLogoutDialog] = useState<
+    | null
+    | { mode: 'single' }
+    | { mode: 'all' }
+  >(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: channelsData } = useChannels({ limit: 50 });
   const dynamicChannels = useMemo<Array<{ id: string; slug: string; name: string; isLive?: boolean }>>(() => {
@@ -78,9 +87,40 @@ export function Navbar() {
 
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
-    await logout();
-    router.push('/');
-    router.refresh();
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.push('/');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    setIsUserMenuOpen(false);
+    setIsLoggingOut(true);
+    try {
+      await logoutAll();
+      router.push('/');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const openSingleLogout = () => {
+    setIsUserMenuOpen(false);
+    setLogoutDialog({ mode: 'single' });
+  };
+
+  const openAllLogout = () => {
+    setIsUserMenuOpen(false);
+    setLogoutDialog({ mode: 'all' });
+  };
+
+  const closeLogoutDialog = () => {
+    if (!isLoggingOut) setLogoutDialog(null);
   };
 
   const toggleLanguage = () => {
@@ -427,11 +467,21 @@ export function Navbar() {
                     )}
 
                     <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-1"
+                      onClick={openSingleLogout}
+                      disabled={isLoggingOut}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-1 disabled:opacity-50"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       Đăng xuất
+                    </button>
+                    <button
+                      onClick={openAllLogout}
+                      disabled={isLoggingOut}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-300/80 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                      title="Đăng xuất khỏi mọi thiết bị (điện thoại, tablet, máy tính khác)"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      Đăng xuất mọi thiết bị
                     </button>
                   </div>
                 )}
@@ -644,11 +694,21 @@ export function Navbar() {
                 Cài đặt
               </Link>
               <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10"
+                onClick={openSingleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-50"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Đăng xuất
+              </button>
+              <button
+                onClick={openAllLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-red-300/80 hover:bg-red-500/10 disabled:opacity-50"
+                title="Đăng xuất khỏi mọi thiết bị (điện thoại, tablet, máy tính khác)"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Đăng xuất mọi thiết bị
               </button>
             </>
           ) : (
@@ -661,6 +721,87 @@ export function Navbar() {
               Đăng nhập
             </Link>
           )}
+        </div>
+      )}
+
+      {/* ── 3. Logout Confirm Dialog ─────────────────────────────────────
+          Rendered OUTSIDE the <header> so it stacks above the sticky
+          bar (z-50) and the body content. Two flavours: "single device"
+          (revoke this session) and "all devices" (revoke every session
+          the user owns — phone + tablet + other browsers). */}
+      {logoutDialog && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={closeLogoutDialog}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-[#1e2d44] bg-[#0a1220] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div
+                className={cn(
+                  'p-2 rounded-lg flex-shrink-0',
+                  logoutDialog.mode === 'all'
+                    ? 'bg-red-950/60 border border-red-500/40'
+                    : 'bg-amber-950/60 border border-amber-500/40',
+                )}
+              >
+                {logoutDialog.mode === 'all' ? (
+                  <Shield className="w-5 h-5 text-red-400" />
+                ) : (
+                  <LogOut className="w-5 h-5 text-amber-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-white mb-1">
+                  {logoutDialog.mode === 'all'
+                    ? 'Đăng xuất khỏi mọi thiết bị?'
+                    : 'Đăng xuất khỏi OmniCast?'}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {logoutDialog.mode === 'all'
+                    ? 'Tất cả phiên đăng nhập của bạn (điện thoại, máy tính bảng, trình duyệt khác) sẽ bị đăng xuất ngay lập tức. Bạn sẽ cần đăng nhập lại trên từng thiết bị.'
+                    : 'Phiên đăng nhập hiện tại sẽ bị đăng xuất. Các thiết bị khác của bạn vẫn hoạt động bình thường.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={closeLogoutDialog}
+                disabled={isLoggingOut}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 bg-[#152339] hover:bg-[#1a2c47] border border-[#1e2d44] transition-colors disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={
+                  logoutDialog.mode === 'all' ? handleLogoutAll : handleLogout
+                }
+                disabled={isLoggingOut}
+                className={cn(
+                  'flex-1 px-3 py-2 rounded-lg text-xs font-bold text-white transition-colors disabled:opacity-50',
+                  logoutDialog.mode === 'all'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-amber-600 hover:bg-amber-500',
+                )}
+              >
+                {isLoggingOut ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    Đang xử lý...
+                  </span>
+                ) : logoutDialog.mode === 'all' ? (
+                  'Đăng xuất tất cả'
+                ) : (
+                  'Đăng xuất'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </header>
