@@ -144,25 +144,25 @@ export function Navbar() {
         <div className="flex h-13 md:h-14 items-center justify-between gap-2 sm:gap-4">
 
           {/* Brand Logo & Compact Navigation Links */}
-          <div className="flex items-center gap-3 sm:gap-6 xl:gap-8 flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.25)] overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 xl:gap-5 flex-shrink-0 min-w-0">
+            <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
+              <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center transition-transform group-hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.25)] overflow-hidden">
                 <Image
                   src="/omnicast_logo.png"
                   alt="OmniCast Network Logo"
-                  width={32}
-                  height={32}
+                  width={30}
+                  height={30}
                   unoptimized
                   className="w-full h-full object-contain p-0.5 drop-shadow-[0_0_6px_rgba(0,242,254,0.8)]"
                 />
               </div>
-              <span className="text-base sm:text-lg font-black tracking-tight text-white flex items-center">
+              <span className="text-sm sm:text-base font-black tracking-tight text-white flex items-center">
                 Omni<span className="text-cyan-400">Cast</span>
               </span>
             </Link>
 
-            {/* Desktop Navigation (Fit 100% / 90% without breaking) */}
-            <nav className="hidden md:flex items-center gap-1 xl:gap-1.5">
+            {/* Desktop Navigation (Fit 100% Zoom seamlessly) */}
+            <nav className="hidden md:flex items-center gap-0.5 xl:gap-1 flex-nowrap">
               {visibleNavLinks.map((item) => {
                 const Icon = item.icon;
                 const isActive =
@@ -173,23 +173,23 @@ export function Navbar() {
                 // Per-link accent ring
                 const linkAccent =
                   item.accent === 'purple'
-                    ? 'text-purple-300 bg-purple-950/40 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.18)]'
+                    ? 'text-purple-300 bg-purple-950/40 border-purple-500/30 shadow-[0_0_8px_rgba(168,85,247,0.18)]'
                     : item.accent === 'amber'
-                    ? 'text-amber-300 bg-amber-950/40 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.18)]'
-                    : 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30 shadow-[0_0_10px_rgba(0,242,254,0.15)]';
+                    ? 'text-amber-300 bg-amber-950/40 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.18)]'
+                    : 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30 shadow-[0_0_8px_rgba(0,242,254,0.15)]';
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 text-xs font-bold rounded-lg transition-all duration-150 whitespace-nowrap border',
+                      'inline-flex items-center gap-1 px-1.5 lg:px-2 xl:px-2.5 py-1 text-[11px] xl:text-xs font-bold rounded-lg transition-all duration-150 whitespace-nowrap border',
                       isActive
                         ? cn(linkAccent, 'font-black')
                         : 'text-slate-300 hover:text-white hover:bg-[#0e1726] border-transparent'
                     )}
                   >
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon className="w-3 h-3 xl:w-3.5 xl:h-3.5" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -198,21 +198,21 @@ export function Navbar() {
           </div>
 
           {/* Right Compact Actions (Role-Aware) */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
 
-            {/* Role Pill (visible when authenticated) */}
+            {/* Role Pill (visible on xl+ displays to avoid overflow) */}
             {isAuthenticated && (
               <div
                 className={cn(
-                  'hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border font-mono text-[10px] font-black uppercase tracking-wider',
+                  'hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border font-mono text-[9px] font-black uppercase tracking-wider',
                   roleAccent.bg,
                   roleAccent.border,
                   roleAccent.text,
                 )}
                 title={userMeta.description}
               >
-                <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_6px_currentColor]', roleAccent.dot)} />
-                {userRole === 'ADMIN' && <Crown className="w-3 h-3" />}
+                <span className={cn('w-1 h-1 rounded-full animate-pulse shadow-[0_0_4px_currentColor]', roleAccent.dot)} />
+                {userRole === 'ADMIN' && <Crown className="w-2.5 h-2.5" />}
                 <span>{userMeta.shortLabel}</span>
                 <span className="opacity-60">[{userMeta.rank}]</span>
               </div>
@@ -221,82 +221,42 @@ export function Navbar() {
             {/* Quick Search Button */}
             <Link
               href="/search"
-              className="p-1.5 sm:p-2 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-slate-300 hover:text-cyan-400 transition-colors"
+              className="p-1.5 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-slate-300 hover:text-cyan-400 transition-colors"
               title="Tìm kiếm (⌘K)"
             >
-              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Search className="w-3.5 h-3.5" />
             </Link>
-
-            {/* Quick Watchlist Bookmark Button – only for VIEWER+ */}
-            {(userRole === 'VIEWER' || userRole === 'STAFF' || userRole === 'ADMIN') && (
-              <Link
-                href="/watchlist"
-                className={cn(
-                  'p-1.5 sm:p-2 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] transition-colors',
-                  pathname === '/watchlist' ? 'text-cyan-400 border-cyan-500/40 bg-cyan-950/30' : 'text-slate-300 hover:text-cyan-400'
-                )}
-                title="Danh sách xem sau & Yêu thích"
-              >
-                <Bookmark className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </Link>
-            )}
 
             {/* Notification Bell – for authenticated users only */}
             {isAuthenticated && (
               <button
-                className="relative p-1.5 sm:p-2 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-slate-300 hover:text-white transition-colors"
+                className="relative p-1.5 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-slate-300 hover:text-white transition-colors cursor-pointer"
                 aria-label="Thông báo"
               >
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Bell className="w-3.5 h-3.5" />
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
               </button>
             )}
 
-            {/* Language Switch VIE / ENG */}
+            {/* Language Switch Compact Button */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-[10px] font-bold text-slate-300 hover:text-cyan-400 transition-colors"
-              title="Đổi ngôn ngữ"
+              className="flex items-center justify-center px-1.5 py-1 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-[10px] font-black text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+              title={`Đổi ngôn ngữ (Hiện tại: ${locale.toUpperCase()})`}
             >
-              <span className={cn(locale === 'vi' ? 'text-cyan-400 font-black' : 'text-slate-500')}>VIE</span>
-              <span className="text-slate-600">/</span>
-              <span className={cn(locale === 'en' ? 'text-cyan-400 font-black' : 'text-slate-500')}>ENG</span>
+              <span className="text-cyan-400">{locale.toUpperCase()}</span>
             </button>
 
-            {/* Role-Aware Primary CTA (was "Mua gói" hard-coded) */}
-            {userRole === 'GUEST' || userRole === 'VIEWER' ? (
+            {/* Primary CTA (Chỉ hiện cho GUEST / VIEWER vì STAFF & ADMIN đã có Studio / Quản trị trong thanh điều hướng chính) */}
+            {(userRole === 'GUEST' || userRole === 'VIEWER') && (
               <Link href={headerCta.href} title={headerCta.tooltip}>
                 <button
                   className={cn(
-                    'flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black shadow-[0_0_12px_rgba(249,115,22,0.35)] transition-transform hover:scale-102 cursor-pointer whitespace-nowrap',
+                    'flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-black shadow-[0_0_10px_rgba(249,115,22,0.35)] transition-transform hover:scale-102 cursor-pointer whitespace-nowrap',
                     'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black'
                   )}
                 >
                   <CtaIcon className="w-3 h-3 fill-current" />
-                  <span>{headerCta.label}</span>
-                </button>
-              </Link>
-            ) : userRole === 'STAFF' ? (
-              <Link href={headerCta.href} title={headerCta.tooltip}>
-                <button
-                  className={cn(
-                    'flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black shadow-[0_0_12px_rgba(168,85,247,0.35)] transition-transform hover:scale-102 cursor-pointer whitespace-nowrap',
-                    'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white'
-                  )}
-                >
-                  <CtaIcon className="w-3 h-3" />
-                  <span>{headerCta.label}</span>
-                </button>
-              </Link>
-            ) : (
-              <Link href={headerCta.href} title={headerCta.tooltip}>
-                <button
-                  className={cn(
-                    'flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-transform hover:scale-102 cursor-pointer whitespace-nowrap',
-                    'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black'
-                  )}
-                >
-                  <CtaIcon className="w-3 h-3" />
                   <span>{headerCta.label}</span>
                 </button>
               </Link>
@@ -306,18 +266,18 @@ export function Navbar() {
             {isLoading ? (
               <div className="w-7 h-7 rounded-full bg-[#172233] animate-pulse" />
             ) : isAuthenticated && user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1">
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     aria-expanded={isUserMenuOpen}
                     aria-label="Menu tài khoản"
-                    className="flex items-center gap-1.5 p-1 sm:px-2 rounded-xl bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] hover:border-cyan-500/40 transition-all cursor-pointer group"
+                    className="flex items-center gap-1 p-0.5 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] hover:border-cyan-500/40 transition-all cursor-pointer group"
                     title={user.fullName || user.email}
                   >
                     <div className={cn(
-                      'w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shadow-sm flex-shrink-0',
+                      'w-6 h-6 sm:w-7 sm:h-7 rounded-md flex items-center justify-center text-[10px] font-bold text-white shadow-sm flex-shrink-0',
                       userRole === 'ADMIN'
                         ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
                         : userRole === 'STAFF'
@@ -326,11 +286,8 @@ export function Navbar() {
                     )}>
                       {(user.fullName || user.email || 'U')[0].toUpperCase()}
                     </div>
-                    <span className="hidden xl:inline text-xs font-semibold text-slate-200 group-hover:text-white max-w-[100px] truncate">
-                      {user.fullName || user.email?.split('@')[0]}
-                    </span>
                     <ChevronDown className={cn(
-                      'w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-150',
+                      'w-3 h-3 text-slate-400 group-hover:text-white transition-transform duration-150 pr-0.5',
                       isUserMenuOpen && 'rotate-180 text-cyan-400'
                     )} />
                   </button>
@@ -516,10 +473,10 @@ export function Navbar() {
                   onClick={openSingleLogout}
                   disabled={isLoggingOut}
                   title="Đăng xuất khỏi hệ thống"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-1 p-1.5 sm:px-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Đăng xuất</span>
+                  <span className="hidden xl:inline text-[11px]">Đăng xuất</span>
                 </button>
               </div>
             ) : (
