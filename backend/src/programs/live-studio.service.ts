@@ -522,11 +522,17 @@ export class LiveStudioService {
             `Re-run scripts/health-check.ts to bring it back.`,
         );
       }
-      const gate = enforcePublishGate({
-        sourceType: r.sourceType,
-        license: r.license,
-        sourceAttribution: r.sourceAttribution,
-      });
+      const allowDev =
+        dto.allowDevLicense === true ||
+        process.env.NODE_ENV !== 'production';
+      const gate = enforcePublishGate(
+        {
+          sourceType: r.sourceType,
+          license: r.license,
+          sourceAttribution: r.sourceAttribution,
+        },
+        { allowDevLicense: allowDev },
+      );
       if (!gate.ok) {
         throw new ForbiddenException(
           `Recording ${r.id} cannot be broadcast: ${gate.reason}`,
