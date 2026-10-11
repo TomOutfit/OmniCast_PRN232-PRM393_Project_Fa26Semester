@@ -16,6 +16,7 @@ import {
   ArrowDownRight,
   BarChart3,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,7 +31,13 @@ import { AdminRealtimeCharts } from '@/components/admin/admin-realtime-charts';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+    toast.success('Đã đăng xuất');
+  };
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
@@ -107,6 +114,14 @@ export default function AdminDashboardPage() {
                   <BarChart3 className="w-4 h-4" />
                   Nhật ký
                 </Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                Đăng xuất
               </Button>
             </div>
           </div>
