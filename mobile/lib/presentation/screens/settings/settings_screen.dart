@@ -1,14 +1,17 @@
 // OmniCast - Settings Screen
-// Theme / language / notifications / data saver.
+// Theme / language / notifications / data saver / account security.
 // Re-designed with Cyber-Dark Broadcast System aesthetics.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/i18n/app_locale.dart';
 import '../../../core/i18n/strings.dart';
 import '../../../core/utils/token_storage_helper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../logic/auth/auth_bloc.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -316,6 +319,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 28),
 
+                // ── Account Security Section ─────────────────────────
+                // Two logout actions:
+                //   1. "Đăng xuất" — single device (revoke this refresh
+                //      token; other devices stay signed in).
+                //   2. "Đăng xuất mọi thiết bị" — revoke every refresh
+                //      token owned by the user (use when phone is lost
+                //      or shared account).
+                const _SectionTitle(
+                  icon: Icons.security_rounded,
+                  title: 'BẢO MẬT TÀI KHOẢN',
+                ),
+                _CyberCard(
+                  children: [
+                    _LogoutActionTile(
+                      icon: Icons.logout_rounded,
+                      iconColor: const Color(0xFFF59E0B),
+                      title: 'Đăng xuất khỏi thiết bị này',
+                      subtitle: 'Phiên hiện tại kết thúc. Thiết bị khác vẫn hoạt động.',
+                      buttonLabel: 'Đăng xuất',
+                      buttonColor: const Color(0xFFF59E0B),
+                      onConfirm: () {
+                        context.read<AuthBloc>().add(LogoutRequested());
+                        context.go('/login');
+                      },
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(color: Color(0x1A00E5FF), height: 1),
+                    ),
+                    _LogoutActionTile(
+                      icon: Icons.shield_rounded,
+                      iconColor: const Color(0xFFEF4444),
+                      title: 'Đăng xuất khỏi mọi thiết bị',
+                      subtitle:
+                          'Thu hồi tất cả refresh token. Bạn sẽ cần đăng nhập lại trên mọi thiết bị.',
+                      buttonLabel: 'Đăng xuất tất cả',
+                      buttonColor: const Color(0xFFEF4444),
+                      onConfirm: () {
+                        context.read<AuthBloc>().add(
+                              LogoutAllDevicesRequested(),
+                            );
+                        context.go('/login');
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 28),
+
                 // Save CTA button
                 GestureDetector(
                   onTap: _savePrefs,
@@ -519,6 +571,155 @@ class _CyberSwitchRow extends StatelessWidget {
           activeThumbColor: Colors.black,
           inactiveThumbColor: const Color(0xFF64748B),
           inactiveTrackColor: const Color(0xFF1E293B),
+        ),
+      ],
+    );
+  }
+}
+
+/// Reusable Logout row used by the "Account Security" section of
+/// the Settings screen. Renders a labelled icon, a title/subtitle
+/// explaining the scope of the logout (single vs all devices), and
+/// a destructive CTA button. Confirmation is handled by an
+/// `AlertDialog` that the parent triggers via `onConfirm`.
+class _LogoutActionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String buttonLabel;
+  final Color buttonColor;
+  final VoidCallback onConfirm;
+
+  const _LogoutActionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.buttonLabel,
+    required this.buttonColor,
+    required this.onConfirm,
+  });
+
+  Future<void> _showConfirmDialog(BuildContext context) async {
+    final isAllDevices = buttonColor == const Color(0xFFEF4444);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF090F1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFF162338)),
+        ),
+        title: Text(
+          isAllDevices
+              ? 'Đăng xuất khỏi mọi thiết bị?'
+              : 'Đăng xuất khỏi OmniCast?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: Text(
+          isAllDevices
+              ? 'Tất cả phiên đăng nhập của bạn sẽ bị thu hồi. Bạn sẽ cần đăng nhập lại trên từng thiết bị.'
+              : 'Phiên hiện tại sẽ kết thúc. Các thiết bị khác của bạn vẫn hoạt động bình thường.',
+          style: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 13,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              buttonLabel,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      onConfirm();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 11,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: () => _showConfirmDialog(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: buttonColor.withValues(alpha: 0.15),
+            foregroundColor: buttonColor,
+            side: BorderSide(color: buttonColor.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          child: Text(buttonLabel),
         ),
       ],
     );

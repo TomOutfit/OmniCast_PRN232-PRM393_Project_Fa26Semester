@@ -44,6 +44,11 @@ class RegisterRequested extends AuthEvent {
 
 class LogoutRequested extends AuthEvent {}
 
+/// Logout from **every** device the user has an active session on
+/// (phone + tablet + other browsers). The backend endpoint
+/// `/v1/auth/logout-all` revokes all refresh tokens for the user.
+class LogoutAllDevicesRequested extends AuthEvent {}
+
 class RefreshTokenRequested extends AuthEvent {}
 
 // States
@@ -92,6 +97,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<LogoutAllDevicesRequested>(_onLogoutAllDevicesRequested);
     on<RefreshTokenRequested>(_onRefreshTokenRequested);
   }
 
@@ -152,6 +158,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       await _authRepository.logout();
+      emit(Unauthenticated());
+    } catch (e) {
+      emit(Unauthenticated());
+    }
+  }
+
+  /// Mirror of `_onLogoutRequested` but flips the `revokeAllDevices`
+  /// flag on the repository so the backend hits `/auth/logout-all`
+  /// instead of `/auth/logout`. The local state-machine transitions
+  /// are identical (we still end up `Unauthenticated` either way).
+  Future<void> _onLogoutAllDevicesRequested(
+    LogoutAllDevicesRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      await _authRepository.logout(revokeAllDevices: true);
       emit(Unauthenticated());
     } catch (e) {
       emit(Unauthenticated());

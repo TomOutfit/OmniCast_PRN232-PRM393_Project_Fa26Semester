@@ -22,6 +22,8 @@ import {
   Lock,
   X,
   EyeOff,
+  LogOut,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -151,6 +153,57 @@ export default function ProfilePage() {
     }),
     [],
   );
+
+  // Logout state — mirrors the navbar pattern so behaviour is
+  // identical across the app. We keep two dialogs (single + all)
+  // so the user can pick a different "scope" of logout right from
+  // the profile page.
+  const { logout, logoutAll } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState<
+    | null
+    | { mode: 'single' }
+    | { mode: 'all' }
+  >(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogoutSingle = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      toast.success('Đã đăng xuất', {
+        description: 'Phiên của bạn đã được kết thúc an toàn.',
+      });
+      setShowLogoutDialog(null);
+      router.push('/');
+    } catch {
+      toast.error('Đăng xuất thất bại', {
+        description: 'Đã xảy ra lỗi mạng — vui lòng thử lại.',
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    setIsLoggingOut(true);
+    try {
+      const res = await logoutAll();
+      toast.success(
+        `Đã đăng xuất khỏi ${res.revokedCount} thiết bị`,
+        {
+          description: 'Tất cả phiên đăng nhập đã bị thu hồi.',
+        },
+      );
+      setShowLogoutDialog(null);
+      router.push('/');
+    } catch {
+      toast.error('Đăng xuất thất bại', {
+        description: 'Đã xảy ra lỗi mạng — vui lòng thử lại.',
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   if (authLoading || loadingUser) {
     return (
@@ -507,6 +560,27 @@ export default function ProfilePage() {
                   <Lock className="w-4 h-4" />
                   Đổi mật khẩu
                 </button>
+                <div className="my-3 border-t border-dark-700" />
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-dark-500 font-bold">
+                    Phiên đăng nhập
+                  </p>
+                  <button
+                    onClick={() => setShowLogoutDialog({ mode: 'single' })}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-sm text-amber-300 border border-amber-500/30 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Đăng xuất khỏi thiết bị này
+                  </button>
+                  <button
+                    onClick={() => setShowLogoutDialog({ mode: 'all' })}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-300 border border-red-500/30 transition-colors"
+                    title="Thu hồi mọi refresh token — thoát khỏi điện thoại, tablet, trình duyệt khác cùng lúc"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    Đăng xuất khỏi mọi thiết bị
+                  </button>
+                </div>
               </div>
             </Card>
           </div>
@@ -641,6 +715,84 @@ export default function ProfilePage() {
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Logout confirm dialog (single device vs all devices) ──── */}
+      {showLogoutDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => !isLoggingOut && setShowLogoutDialog(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-dark-900 border border-dark-700 rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div
+                className={`p-2 rounded-lg flex-shrink-0 ${
+                  showLogoutDialog.mode === 'all'
+                    ? 'bg-red-500/15 border border-red-500/40'
+                    : 'bg-amber-500/15 border border-amber-500/40'
+                }`}
+              >
+                {showLogoutDialog.mode === 'all' ? (
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
+                ) : (
+                  <LogOut className="w-5 h-5 text-amber-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-1">
+                  {showLogoutDialog.mode === 'all'
+                    ? 'Đăng xuất khỏi mọi thiết bị?'
+                    : 'Đăng xuất khỏi OmniCast?'}
+                </h3>
+                <p className="text-sm text-dark-300 leading-relaxed">
+                  {showLogoutDialog.mode === 'all'
+                    ? 'Tất cả phiên đăng nhập của bạn (điện thoại, máy tính bảng, trình duyệt khác) sẽ bị thu hồi ngay lập tức. Bạn sẽ cần đăng nhập lại trên từng thiết bị.'
+                    : 'Phiên hiện tại sẽ bị đăng xuất. Các thiết bị khác của bạn vẫn hoạt động bình thường.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="outline"
+                onClick={() => setShowLogoutDialog(null)}
+                disabled={isLoggingOut}
+                className="flex-1"
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={
+                  showLogoutDialog.mode === 'all'
+                    ? handleLogoutAll
+                    : handleLogoutSingle
+                }
+                disabled={isLoggingOut}
+                className={`flex-1 ${
+                  showLogoutDialog.mode === 'all'
+                    ? 'bg-red-600 hover:bg-red-500 text-white'
+                    : 'bg-amber-600 hover:bg-amber-500 text-white'
+                }`}
+              >
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : showLogoutDialog.mode === 'all' ? (
+                  'Đăng xuất tất cả'
+                ) : (
+                  'Đăng xuất'
+                )}
+              </Button>
             </div>
           </div>
         </div>
