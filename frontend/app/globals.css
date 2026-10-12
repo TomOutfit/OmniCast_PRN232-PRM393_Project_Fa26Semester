@@ -58,7 +58,9 @@
       radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255, 87, 34, 0.03), transparent 70%);
     background-attachment: fixed;
   }
+}
 
+@layer components {
   /* Sleek custom scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
@@ -74,9 +76,7 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #00f2fe;
   }
-}
 
-@layer components {
   /* Stitch Live Badge with glowing pulse */
   .badge-live-neon {
     @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-md text-white;
@@ -262,3 +262,20 @@
   }
 }
 
+@layer utilities {
+  /* Hidden scrollbar for horizontal ticker strips */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

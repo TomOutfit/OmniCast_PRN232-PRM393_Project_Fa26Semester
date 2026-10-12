@@ -78,61 +78,64 @@ export function NowPlayingBar() {
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
 
-        {/* Scrollable channel strip — snap-mandatory for "card per view" feel */}
-        <div
-          ref={scrollerRef}
-          className="flex-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth"
-        >
-          <ul className="flex items-center gap-2 sm:gap-2.5 py-0.5">
-            {channels.map((ch) => (
-              <li key={ch.id} className="snap-start flex-shrink-0">
-                <Link
-                  href={`/channels/${ch.slug}`}
-                  className={cn(
-                    'group flex items-center gap-2 px-2 py-1 rounded-lg border',
-                    'bg-[#0a121f] hover:bg-[#0e1726]',
-                    ch.isLive
-                      ? 'border-cyan-500/30 hover:border-cyan-400/60'
-                      : 'border-[#1b2b42] hover:border-slate-500/40',
-                    'transition-all',
-                  )}
-                >
-                  {/* Channel logo / fallback */}
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gradient-to-br from-cyan-500/20 to-blue-700/30 border border-cyan-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {ch.thumbnail ? (
-                      <Image
-                        src={ch.thumbnail}
-                        alt={ch.name}
-                        width={24}
-                        height={24}
-                        unoptimized
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <Tv className="w-3 h-3 text-cyan-400" />
+        {/* Scrollable channel strip — snap-mandatory for "card per view" feel */}{/* flex-1 min-w-0 prevents flex overflow bug in the parent flex row */}
+        <div className="flex-1 min-w-0">
+          <div
+            ref={scrollerRef}
+            className="overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          >
+            <ul className="flex items-center gap-2 sm:gap-2.5 py-0.5">
+              {channels.map((ch) => (
+                <li key={ch.id} className="snap-start flex-shrink-0">
+                  <Link
+                    href={`/channels/${ch.slug}`}
+                    className={cn(
+                      'group flex items-center gap-2 px-2 py-2 min-h-[44px]',
+                      'rounded-lg border',
+                      'bg-[#0a121f] hover:bg-[#0e1726]',
+                      ch.isLive
+                        ? 'border-cyan-500/30 hover:border-cyan-400/60'
+                        : 'border-[#1b2b42] hover:border-slate-500/40',
+                      'transition-all',
                     )}
-                  </div>
+                  >
+                    {/* Channel logo / fallback */}
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gradient-to-br from-cyan-500/20 to-blue-700/30 border border-cyan-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {ch.thumbnail ? (
+                        <Image
+                          src={ch.thumbnail}
+                          alt={ch.name}
+                          width={20}
+                          height={20}
+                          unoptimized
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <Tv className="w-3 h-3 text-cyan-400" />
+                      )}
+                    </div>
 
-                  {/* Channel name */}
-                  <span className="text-[11px] sm:text-xs font-semibold text-slate-200 group-hover:text-white whitespace-nowrap max-w-[80px] sm:max-w-[120px] truncate">
-                    {ch.name}
-                  </span>
+                    {/* Channel name */}
+                    <span className="text-[11px] sm:text-xs font-semibold text-slate-200 group-hover:text-white whitespace-nowrap max-w-[80px] sm:max-w-[120px] truncate">
+                      {ch.name}
+                    </span>
 
-                  {/* Live badge */}
-                  {ch.isLive ? (
-                    <span className="flex-shrink-0 inline-flex items-center gap-0.5 text-[8px] font-black uppercase text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/40">
-                      <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                      Live
-                    </span>
-                  ) : (
-                    <span className="flex-shrink-0 text-[8px] font-bold text-slate-500 uppercase">
-                      Off
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
+                    {/* Live badge — text-[9px] readable, high contrast */}
+                    {ch.isLive ? (
+                      <span className="flex-shrink-0 inline-flex items-center gap-0.5 text-[9px] font-black uppercase text-white bg-red-600 px-1.5 py-0.5 rounded shadow-[0_0_6px_rgba(239,68,68,0.6)]">
+                        <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                        Live
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 text-[9px] font-bold text-slate-500 uppercase">
+                        Off
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Next arrow */}

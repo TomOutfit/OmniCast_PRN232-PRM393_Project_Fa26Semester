@@ -40,6 +40,19 @@ interface HeroSpotlightItem {
   targetHref: string;
 }
 
+interface ShowcasePosterItem {
+  id: string;
+  title: string;
+  category: string;
+  rating: number;
+  year: number;
+  quality: string;
+  audio: string;
+  channel: string;
+  poster: string;
+  href: string;
+}
+
 export function OmniCastHomeExperience() {
   // ── 1. DYNAMIC DATA FROM BACKEND API ──────────────────────────────────────
   const { data: channelsData, isLoading: loadingChannels } = useChannels({
@@ -124,19 +137,6 @@ export function OmniCastHomeExperience() {
 
     return [];
   }, [liveNowList, liveEventsData, channels]);
-
-interface ShowcasePosterItem {
-  id: string;
-  title: string;
-  category: string;
-  rating: number;
-  year: number;
-  quality: string;
-  audio: string;
-  channel: string;
-  poster: string;
-  href: string;
-}
 
   // ── 3. DYNAMIC SHOWCASE VOD RECORDINGS ────────────────────────────────────
   const showcasePosters = useMemo<ShowcasePosterItem[]>(() => {
@@ -244,7 +244,7 @@ interface ShowcasePosterItem {
                   fill
                   unoptimized
                   priority
-                  className="object-cover object-center group-hover:scale-102 transition-transform duration-700"
+                  className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-700"
                 />
 
                 {/* Gradient Vignette Overlays */}
@@ -254,7 +254,7 @@ interface ShowcasePosterItem {
                 {/* Center Play Button Overlay */}
                 <Link
                   href={currentHero.targetHref}
-                  className="absolute inset-0 flex items-center justify-center z-25 group/play"
+                  className="absolute inset-0 flex items-center justify-center z-30 group/play"
                 >
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600/90 group-hover/play:bg-red-500 text-white flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.7)] group-hover/play:scale-110 transition-transform">
                     <Play className="w-7 h-7 md:w-9 md:h-9 fill-current ml-1" />
@@ -295,10 +295,11 @@ interface ShowcasePosterItem {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     setIsAutoSlide(false);
                     setActiveSpotlightIdx((p) => (p === 0 ? heroLen - 1 : p - 1));
                   }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -306,10 +307,11 @@ interface ShowcasePosterItem {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     setIsAutoSlide(false);
                     setActiveSpotlightIdx((p) => (p + 1) % heroLen);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-35 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-white/20 cursor-pointer"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
