@@ -138,7 +138,11 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full max-w-full overflow-hidden',
+        // Removed `overflow-hidden` so the user-menu dropdown (which is
+        // `absolute` inside this header) can extend below the navbar.
+        // The now-playing-bar handles its own horizontal overflow
+        // through `overflow-x-auto` on the inner scroller.
+        'sticky top-0 z-50 w-full',
         'border-b bg-[#070b12]/95 backdrop-blur-xl',
         'transition-shadow duration-200',
         scrolled

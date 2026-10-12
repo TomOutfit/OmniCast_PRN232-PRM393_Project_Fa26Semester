@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { CompactUserMenu } from '@/components/layout/compact-user-menu';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { useLiveEvents, useLiveEventById } from '@/lib/hooks/usePrograms';
@@ -168,37 +169,38 @@ export default function CuratorStudioPage() {
                 </p>
               </div>
             </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42] mr-2">
-                  <button className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-purple-300 bg-purple-950/60 border border-purple-500/30 shadow-sm">
-                    <Bot className="w-4 h-4 text-purple-400" />
-                    <span>AI Curator</span>
-                  </button>
-                  <Link
-                    href="/studio/live"
-                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-                  >
-                    <Radio className="w-4 h-4 text-cyan-400" />
-                    <span>Live Studio</span>
-                  </Link>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-white">
-                    {rows.filter((r) => !r.aiReport).length}
-                  </p>
-                  <p className="text-sm text-dark-400">Chờ phân tích</p>
-                </div>
-                <Button
-                  className="gap-2"
-                  onClick={() => refetch()}
-                  disabled={isFetching}
+              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42] mr-2">
+                <button className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-purple-300 bg-purple-950/60 border border-purple-500/30 shadow-sm">
+                  <Bot className="w-4 h-4 text-purple-400" />
+                  <span>AI Curator</span>
+                </button>
+                <Link
+                  href="/studio/live"
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
                 >
-                  <RefreshCw
-                    className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`}
-                  />
-                  Làm mới
-                </Button>
+                  <Radio className="w-4 h-4 text-cyan-400" />
+                  <span>Live Studio</span>
+                </Link>
               </div>
+              <CompactUserMenu variant="purple" />
+              <div className="text-right">
+                <p className="text-2xl font-bold text-white">
+                  {rows.filter((r) => !r.aiReport).length}
+                </p>
+                <p className="text-sm text-dark-400">Chờ phân tích</p>
+              </div>
+              <Button
+                className="gap-2"
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`}
+                />
+                Làm mới
+              </Button>
+            </div>
           </div>
         </div>
       </div>

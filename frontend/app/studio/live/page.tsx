@@ -33,12 +33,15 @@ import {
   BadgeCheck,
   ExternalLink,
   Zap,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { CompactUserMenu } from '@/components/layout/compact-user-menu';
 import { useAuth } from '@/lib/auth-context';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveEvents } from '@/lib/hooks/usePrograms';
@@ -209,7 +212,12 @@ export default function WebLiveStudioPage() {
 
   const [selfTitle, setSelfTitle] = useState('');
   const [selfDesc, setSelfDesc] = useState('');
-  const [visibility, setVisibility] = useState<VisibilityMode>('IMMEDIATE');
+  // Default to SCHEDULED so an accidental click on "Tải lên & phát sóng"
+  // won't blast raw footage to every viewer on the channel. This also
+  // matches the backend DTO default (`StudioSelfRecordVisibility.ISCHEDULED`).
+  const [visibility, setVisibility] = useState<VisibilityMode>('SCHEDULED');
+  // Confirm dialog state for the high-stakes IMMEDIATE (LIVE NOW) flow.
+  const [showLiveConfirm, setShowLiveConfirm] = useState(false);
 
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -340,6 +348,21 @@ export default function WebLiveStudioPage() {
       return;
     }
 
+    // Going IMMEDIATE is the highest-stakes action in the studio: it
+    // pushes the channel into LIVE NOW, kicking off whatever is
+    // currently broadcasting and replacing it with raw, unmoderated
+    // footage. Require an explicit confirmation step first.
+    if (visibility === 'IMMEDIATE') {
+      setShowLiveConfirm(true);
+      return;
+    }
+
+    await doPublishSelfRecord();
+  };
+
+  const doPublishSelfRecord = async () => {
+    if (!selectedChannel || !recordedFile) return;
+    setShowLiveConfirm(false);
     try {
       setUploadProgress(1);
       // 1. Upload file
@@ -370,6 +393,9 @@ export default function WebLiveStudioPage() {
       setRecordedPreviewUrl(null);
       setRecordingSeconds(0);
       setUploadProgress(0);
+      // Always reset to the safe default so a follow-up upload can't
+      // accidentally re-broadcast the next clip live.
+      setVisibility('SCHEDULED');
       refetchLiveEvents();
     } catch (err: any) {
       alert(
@@ -414,21 +440,24 @@ export default function WebLiveStudioPage() {
               </div>
             </div>
 
-            {/* Sub Nav Tabs */}
-            <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42]">
-              <Link
-                href="/studio/curator"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-              >
-                <Bot className="w-4 h-4 text-purple-400" />
-                <span>AI Curator</span>
-              </Link>
-              <button
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 shadow-sm"
-              >
-                <Radio className="w-4 h-4" />
-                <span>Live Studio</span>
-              </button>
+            {/* Sub Nav Tabs + User Menu */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42]">
+                <Link
+                  href="/studio/curator"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                >
+                  <Bot className="w-4 h-4 text-purple-400" />
+                  <span>AI Curator</span>
+                </Link>
+                <button
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 shadow-sm"
+                >
+                  <Radio className="w-4 h-4" />
+                  <span>Live Studio</span>
+                </button>
+              </div>
+              <CompactUserMenu variant="cyan" />
             </div>
           </div>
         </div>
@@ -976,42 +1005,120 @@ export default function WebLiveStudioPage() {
                       Chế độ phát sóng:
                     </label>
                     <div className="grid grid-cols-1 gap-2">
+                      {/* ── IMMEDIATE — HIGHEST RISK ─────────────────────────
+                          Maps to backend visibility=IMMEDIATE. Toggles the
+                          channel into LIVE NOW and replaces whatever is
+                          currently broadcasting. Red-tinted on selection
+                          to signal the stakes; also requires an extra
+                          confirm dialog before upload. */}
                       <button
                         type="button"
                         onClick={() => setVisibility('IMMEDIATE')}
                         className={`p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-2 ${
                           visibility === 'IMMEDIATE'
-                            ? 'bg-purple-950/80 border-purple-500 text-white'
-                            : 'bg-[#05080e] border-[#1b2b42] text-slate-400'
+                            ? 'bg-red-950/80 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.25)]'
+                            : 'bg-[#05080e] border-[#1b2b42] text-slate-400 hover:border-red-500/40'
                         }`}
                       >
                         <Radio className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        <div>
-                          <p className="font-bold">Phát LIVE Ngay Lập Tức</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold">Phát sóng LIVE ngay</p>
+                            {visibility === 'IMMEDIATE' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-red-600 text-white uppercase">
+                                Cảnh báo cao
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400">
-                            Chuyển kênh sang LIVE NOW ngay sau khi upload
+                            Chuyển kênh sang LIVE NOW, thay thế chương trình
+                            đang phát
                           </p>
                         </div>
                       </button>
 
+                      {/* ── SCHEDULED — DEFAULT (VOD) ───────────────────────
+                          Maps to backend visibility=SCHEDULED. Saves the
+                          clip to the channel's VOD library so viewers can
+                          re-watch on demand. Does NOT push the channel
+                          into LIVE. */}
                       <button
                         type="button"
                         onClick={() => setVisibility('SCHEDULED')}
                         className={`p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-2 ${
                           visibility === 'SCHEDULED'
-                            ? 'bg-purple-950/80 border-purple-500 text-white'
-                            : 'bg-[#05080e] border-[#1b2b42] text-slate-400'
+                            ? 'bg-cyan-950/80 border-cyan-500 text-white'
+                            : 'bg-[#05080e] border-[#1b2b42] text-slate-400 hover:border-cyan-500/40'
                         }`}
                       >
                         <Film className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                        <div>
-                          <p className="font-bold">Xuất Bản Vào Kho Phim</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold">
+                              Lưu VOD cho kênh (mặc định)
+                            </p>
+                            {visibility === 'SCHEDULED' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-600/30 text-cyan-200 border border-cyan-500/40 uppercase">
+                                An toàn
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400">
-                            Lưu dưới dạng Recording để xem lại
+                            Xuất bản lên kho Recording — viewer xem lại được
+                            nhưng không phát live
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* ── PRIVATE — DRAFT (STAFF/ADMIN ONLY) ──────────────
+                          Maps to backend visibility=PRIVATE. Persists the
+                          recording with isPublished=false and pinned to
+                          epoch, so it's hidden from every public surface
+                          (search, channels, EPG, watchlist). Only Staff
+                          and Admin can see it. Use for: test takes, clips
+                          awaiting review, half-finished uploads. */}
+                      <button
+                        type="button"
+                        onClick={() => setVisibility('PRIVATE')}
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-2 ${
+                          visibility === 'PRIVATE'
+                            ? 'bg-slate-800/90 border-slate-500 text-white'
+                            : 'bg-[#05080e] border-[#1b2b42] text-slate-400 hover:border-slate-500/40'
+                        }`}
+                      >
+                        <Lock className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold">Bản nháp nội bộ</p>
+                            {visibility === 'PRIVATE' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-700 text-slate-200 border border-slate-500 uppercase">
+                                Chỉ Staff
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            Lưu bản nháp ẩn — chỉ Staff/Admin thấy, viewer
+                            không truy cập được
                           </p>
                         </div>
                       </button>
                     </div>
+
+                    {/* Inline warning when IMMEDIATE is armed — surfaces
+                        the risk of broadcasting unmoderated footage so
+                        the user must explicitly keep it selected. */}
+                    {visibility === 'IMMEDIATE' && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-red-950/40 border border-red-500/40 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-red-200 leading-relaxed">
+                          <strong>Sẽ thay thế chương trình đang live</strong>{' '}
+                          trên kênh{' '}
+                          <strong>{selectedChannel?.name}</strong> bằng clip
+                          chưa qua duyệt. Bạn sẽ được hỏi xác nhận trước khi
+                          tải lên.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Upload Progress Bar */}
@@ -1293,6 +1400,93 @@ export default function WebLiveStudioPage() {
           </div>
         )}
       </div>
+
+      {/* ── LIVE NOW confirm dialog ────────────────────────────────────
+          Reached only when the user clicks "Tải lên & phát sóng" with
+          visibility=IMMEDIATE. Forces an extra intentional click so we
+          never broadcast unmoderated footage by accident. */}
+      {showLiveConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() =>
+            !uploadFileMutation.isPending &&
+            !uploadRecordMutation.isPending &&
+            setShowLiveConfirm(false)
+          }
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="live-confirm-title"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-red-500/40 bg-[#140b10] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="p-2 rounded-lg flex-shrink-0 bg-red-950/60 border border-red-500/40">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3
+                  id="live-confirm-title"
+                  className="text-base font-bold text-white mb-1 flex items-center gap-2"
+                >
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-red-600 text-white uppercase tracking-wider">
+                    Live Now
+                  </span>
+                  <span>Xác nhận phát sóng LIVE?</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Clip <strong className="text-white">&ldquo;{selfTitle}&rdquo;</strong>{' '}
+                  sẽ được đẩy lên <strong className="text-cyan-300">{selectedChannel?.name}</strong>{' '}
+                  và <strong className="text-red-300">thay thế ngay chương trình đang live</strong>.
+                  Mọi viewer đang xem kênh sẽ chuyển sang clip này trong vài giây.
+                </p>
+                <ul className="mt-2 text-[11px] text-slate-400 space-y-1 list-disc list-inside">
+                  <li>Chưa qua bước AI Curator duyệt nội dung</li>
+                  <li>Không thể hoàn tác — phải bấm &ldquo;Dừng phát sóng&rdquo; thủ công</li>
+                  <li>Nếu chỉ muốn lưu trữ, hãy chọn &ldquo;Lưu VOD cho kênh&rdquo;</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowLiveConfirm(false)}
+                disabled={
+                  uploadFileMutation.isPending ||
+                  uploadRecordMutation.isPending
+                }
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-slate-300 bg-[#152339] hover:bg-[#1a2c47] border border-[#1e2d44] transition-colors disabled:opacity-50"
+              >
+                Hủy — quay lại
+              </button>
+              <button
+                type="button"
+                onClick={doPublishSelfRecord}
+                disabled={
+                  uploadFileMutation.isPending ||
+                  uploadRecordMutation.isPending
+                }
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {uploadFileMutation.isPending ||
+                uploadRecordMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Đang phát sóng...
+                  </>
+                ) : (
+                  <>
+                    <Radio className="w-3 h-3" />
+                    XÁC NHẬN PHÁT LIVE
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
