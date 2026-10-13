@@ -22,29 +22,47 @@ import * as crypto from 'crypto';
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly uploadRoot: string;
+  private uploadRoot: string;
   private readonly publicBaseUrl: string;
 
   constructor(private readonly config: ConfigService) {
-    this.uploadRoot = path.resolve(
-      this.config.get<string>('UPLOAD_ROOT') ??
-        path.join(process.cwd(), 'uploads'),
-    );
+    const isServerless =
+      Boolean(process.env.VERCEL) ||
+      Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+      Boolean(process.env.LAMBDA_TASK_ROOT) ||
+      (typeof process.cwd === 'function' && process.cwd().startsWith('/var/task'));
+
+    const configured = this.config.get<string>('UPLOAD_ROOT');
+    if (configured && !configured.startsWith('/var/task')) {
+      this.uploadRoot = path.resolve(configured);
+    } else {
+      this.uploadRoot = isServerless
+        ? path.join('/tmp', 'uploads')
+        : path.resolve(path.join(process.cwd(), 'uploads'));
+    }
+
     this.publicBaseUrl =
       this.config.get<string>('UPLOAD_PUBLIC_BASE_URL') ?? '';
 
-    // Best-effort: ensure the upload root exists. log if it fails
-    // (e.g. read-only FS) and let the request handler surface a
-    // 500 — better than silently dropping the upload.
-    fs.mkdir(this.uploadRoot, { recursive: true })
-      .then(() => {
-        this.logger.log(`Storage root: ${this.uploadRoot}`);
-      })
-      .catch((e) => {
-        this.logger.error(
-          `Failed to ensure upload root at ${this.uploadRoot}: ${e.message}`,
-        );
-      });
+    // Best-effort: ensure the upload root exists.
+    this.ensureRoot();
+  }
+
+  private async ensureRoot(): Promise<void> {
+    try {
+      await fs.mkdir(this.uploadRoot, { recursive: true });
+      this.logger.log(`Storage root: ${this.uploadRoot}`);
+    } catch (e: any) {
+      if (this.uploadRoot.startsWith('/var/task') || e.code === 'EROFS' || e.code === 'ENOENT' || e.code === 'EACCES') {
+        this.uploadRoot = path.join('/tmp', 'uploads');
+        try {
+          await fs.mkdir(this.uploadRoot, { recursive: true });
+          this.logger.log(`Fallback storage root to /tmp: ${this.uploadRoot}`);
+        } catch (_) {}
+      } else {
+        this.logger.warn(`Failed to ensure upload root at ${this.uploadRoot}: ${e.message}`);
+      }
+    }
   }
 
   /**
@@ -82,8 +100,17 @@ export class StorageService {
     const day = this.formatYmd(new Date());
     const fileName = `${options.prefix}-${Date.now()}-${hash}${ext}`;
     const relativeDir = path.join(options.prefix, day);
-    const absoluteDir = path.join(this.uploadRoot, relativeDir);
-    await fs.mkdir(absoluteDir, { recursive: true });
+    let absoluteDir = path.join(this.uploadRoot, relativeDir);
+
+    try {
+      await fs.mkdir(absoluteDir, { recursive: true });
+    } catch (err: any) {
+      // If mkdir on current uploadRoot fails (e.g. read-only on Vercel), fallback to /tmp
+      this.uploadRoot = path.join('/tmp', 'uploads');
+      absoluteDir = path.join(this.uploadRoot, relativeDir);
+      await fs.mkdir(absoluteDir, { recursive: true });
+    }
+
     const absolutePath = path.join(absoluteDir, fileName);
     await fs.writeFile(absolutePath, buffer);
 
