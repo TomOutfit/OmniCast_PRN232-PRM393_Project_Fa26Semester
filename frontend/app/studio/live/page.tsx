@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Radio,
   Video,
@@ -35,6 +36,11 @@ import {
   Zap,
   Lock,
   AlertTriangle,
+  Mic,
+  MicOff,
+  RotateCcw,
+  X,
+  PlayCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -65,6 +71,14 @@ export default function WebLiveStudioPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<StudioTab>('curated');
 
+  // Preview Modal for any video in Mode 1 or Mode 3
+  const [previewingVideo, setPreviewingVideo] = useState<{
+    title: string;
+    url: string;
+    source?: string;
+    duration?: number;
+  } | null>(null);
+
   // Channel Selection
   const { data: channelsData, isLoading: loadingChannels } = useChannels({
     limit: 50,
@@ -82,6 +96,8 @@ export default function WebLiveStudioPage() {
 
   // Catalog state
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogFormatFilter, setCatalogFormatFilter] = useState<string>('ALL');
+  const [catalogVerifiedOnly, setCatalogVerifiedOnly] = useState<boolean>(false);
   const [addedCatalogIds, setAddedCatalogIds] = useState<Set<string>>(new Set());
 
   const {
@@ -140,6 +156,14 @@ export default function WebLiveStudioPage() {
 
   const curatedRecordings = recordingsData?.items ?? [];
 
+  const selectedRecordings = useMemo(() => {
+    return curatedRecordings.filter((r) => selectedRecordingIds.includes(r.id));
+  }, [curatedRecordings, selectedRecordingIds]);
+
+  const totalSelectedDuration = useMemo(() => {
+    return selectedRecordings.reduce((sum, r) => sum + (r.duration || 0), 0);
+  }, [selectedRecordings]);
+
   const curateLiveMutation = useCurateLive();
   const stopLiveMutation = useStopLive();
 
@@ -152,7 +176,7 @@ export default function WebLiveStudioPage() {
   const handleStartCuratedLive = async () => {
     if (!selectedChannel) return;
     if (selectedRecordingIds.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 nội dung để phát sóng.');
+      toast.warning('Vui lòng chọn ít nhất 1 nội dung để phát sóng.');
       return;
     }
 
@@ -164,13 +188,14 @@ export default function WebLiveStudioPage() {
         description: customDesc.trim() || undefined,
         allowDevLicense: true,
       });
-      alert(res.message || 'Đã phát sóng trực tiếp!');
+      toast.success(res.message || 'Đã phát sóng trực tiếp thành công!');
       setSelectedRecordingIds([]);
       setCustomTitle('');
       setCustomDesc('');
       refetchLiveEvents();
+      refetchRecordings();
     } catch (err: any) {
-      alert(
+      toast.error(
         err.response?.data?.message || 'Có lỗi xảy ra khi bắt đầu phát sóng.',
       );
     }
@@ -191,10 +216,10 @@ export default function WebLiveStudioPage() {
         eventId: activeLiveForChannel.id,
         payload: { keepAsVod: true },
       });
-      alert(res.message || 'Đã dừng phát sóng.');
+      toast.success(res.message || 'Đã dừng phát sóng.');
       refetchLiveEvents();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể dừng phát sóng.');
+      toast.error(err.response?.data?.message || 'Không thể dừng phát sóng.');
     }
   };
 
@@ -209,14 +234,18 @@ export default function WebLiveStudioPage() {
   const [recordedPreviewUrl, setRecordedPreviewUrl] = useState<string | null>(
     null,
   );
+  const [hasActiveStream, setHasActiveStream] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [uploadedFileMeta, setUploadedFileMeta] = useState<{
+    duration: number;
+    width?: number;
+    height?: number;
+    sizeMb?: string;
+  } | null>(null);
 
   const [selfTitle, setSelfTitle] = useState('');
   const [selfDesc, setSelfDesc] = useState('');
-  // Default to SCHEDULED so an accidental click on "Tải lên & phát sóng"
-  // won't blast raw footage to every viewer on the channel. This also
-  // matches the backend DTO default (`StudioSelfRecordVisibility.ISCHEDULED`).
   const [visibility, setVisibility] = useState<VisibilityMode>('SCHEDULED');
-  // Confirm dialog state for the high-stakes IMMEDIATE (LIVE NOW) flow.
   const [showLiveConfirm, setShowLiveConfirm] = useState(false);
 
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
@@ -242,6 +271,21 @@ export default function WebLiveStudioPage() {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
+    setHasActiveStream(false);
+  };
+
+  const toggleAudio = () => {
+    if (mediaStreamRef.current) {
+      const audioTracks = mediaStreamRef.current.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const nextState = !audioEnabled;
+        audioTracks.forEach((t) => (t.enabled = nextState));
+        setAudioEnabled(nextState);
+        toast.info(nextState ? 'Đã bật âm thanh microphone' : 'Đã tắt microphone');
+      } else {
+        toast.warning('Không tìm thấy thiết bị microphone trong luồng hiện tại');
+      }
+    }
   };
 
   const startStreamPreview = async (source: 'camera' | 'screen') => {
@@ -250,35 +294,60 @@ export default function WebLiveStudioPage() {
     setRecordedFile(null);
     if (recordedPreviewUrl) URL.revokeObjectURL(recordedPreviewUrl);
     setRecordedPreviewUrl(null);
+    setUploadedFileMeta(null);
 
     try {
       let stream: MediaStream;
       if (source === 'camera') {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: true,
-        });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: audioEnabled,
+          });
+        } catch {
+          // If microphone fails, retry with video only
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false,
+          });
+          toast.info('Chưa kết nối microphone; luồng phát tạm thời ở chế độ tắt tiếng.');
+        }
       } else {
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: audioEnabled,
+          });
+        } catch {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: false,
+          });
+        }
       }
 
       mediaStreamRef.current = stream;
+      setHasActiveStream(true);
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
-        videoPreviewRef.current.play();
+        videoPreviewRef.current.play().catch(() => {});
       }
+      toast.success(
+        source === 'camera'
+          ? 'Đã kích hoạt luồng Webcam HD'
+          : 'Đã kết nối nguồn chia sẻ màn hình',
+      );
     } catch (err: any) {
-      console.error('Error starting stream:', err);
-      alert('Không thể mở thiết bị ghi hình/màn hình: ' + err.message);
+      setHasActiveStream(false);
+      if (err.name !== 'NotAllowedError') {
+        toast.error('Không thể mở thiết bị ghi hình/màn hình: ' + err.message);
+      }
     }
   };
 
   const startRecording = () => {
     if (!mediaStreamRef.current) {
-      alert('Chưa có nguồn media. Hãy kích hoạt Camera hoặc Màn hình.');
+      toast.warning('Chưa có nguồn media. Hãy kích hoạt Camera hoặc Màn hình trước.');
       return;
     }
 
@@ -306,6 +375,7 @@ export default function WebLiveStudioPage() {
         type: 'video/webm',
       });
       setRecordedFile(file);
+      setHasActiveStream(false);
     };
 
     recorder.start(1000);
@@ -323,6 +393,7 @@ export default function WebLiveStudioPage() {
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
       stopMediaTracks();
+      toast.success('Đã hoàn tất ghi hình! Bạn có thể xem lại trước khi xuất bản.');
     }
   };
 
@@ -335,23 +406,37 @@ export default function WebLiveStudioPage() {
     if (!selfTitle) {
       setSelfTitle(file.name.replace(/\.[^/.]+$/, ''));
     }
+
+    // Auto-probe real duration and resolution of the uploaded clip
+    const tempVideo = document.createElement('video');
+    tempVideo.preload = 'metadata';
+    tempVideo.onloadedmetadata = () => {
+      const detectedDuration = Math.max(1, Math.round(tempVideo.duration));
+      setRecordingSeconds(detectedDuration);
+      setUploadedFileMeta({
+        duration: detectedDuration,
+        width: tempVideo.videoWidth,
+        height: tempVideo.videoHeight,
+        sizeMb: (file.size / (1024 * 1024)).toFixed(1),
+      });
+      toast.success(
+        `Đã nạp file video (${detectedDuration}s, ${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
+      );
+    };
+    tempVideo.src = url;
   };
 
   const handlePublishSelfRecord = async () => {
     if (!selectedChannel) return;
     if (!recordedFile) {
-      alert('Vui lòng quay video hoặc tải file video lên.');
+      toast.warning('Vui lòng quay video hoặc tải file video lên trước.');
       return;
     }
     if (!selfTitle.trim()) {
-      alert('Vui lòng nhập tiêu đề cho video.');
+      toast.warning('Vui lòng nhập tiêu đề cho chương trình phát sóng.');
       return;
     }
 
-    // Going IMMEDIATE is the highest-stakes action in the studio: it
-    // pushes the channel into LIVE NOW, kicking off whatever is
-    // currently broadcasting and replacing it with raw, unmoderated
-    // footage. Require an explicit confirmation step first.
     if (visibility === 'IMMEDIATE') {
       setShowLiveConfirm(true);
       return;
@@ -384,21 +469,21 @@ export default function WebLiveStudioPage() {
         tags: ['web-studio', 'self-record'],
       });
 
-      alert(res.message || 'Đã xuất bản video thành công!');
+      toast.success(res.message || 'Đã xuất bản video thành công!');
       setSelfTitle('');
       setSelfDesc('');
       setRecordedFile(null);
       setRecordedBlob(null);
       if (recordedPreviewUrl) URL.revokeObjectURL(recordedPreviewUrl);
       setRecordedPreviewUrl(null);
+      setUploadedFileMeta(null);
       setRecordingSeconds(0);
       setUploadProgress(0);
-      // Always reset to the safe default so a follow-up upload can't
-      // accidentally re-broadcast the next clip live.
       setVisibility('SCHEDULED');
       refetchLiveEvents();
+      refetchRecordings();
     } catch (err: any) {
-      alert(
+      toast.error(
         err.response?.data?.message || 'Có lỗi xảy ra khi tải lên phát sóng.',
       );
       setUploadProgress(0);
@@ -643,15 +728,33 @@ export default function WebLiveStudioPage() {
                     </p>
                   </div>
                 ) : curatedRecordings.length === 0 ? (
-                  <div className="p-10 text-center rounded-xl bg-[#070b12] border border-[#142032] space-y-2">
+                  <div className="p-8 text-center rounded-xl bg-[#070b12] border border-[#142032] space-y-3">
                     <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
                     <p className="text-xs font-semibold text-slate-300">
-                      Không tìm thấy video hợp lệ trên kênh này.
+                      Chưa có video nào trong kho lưu trữ của kênh này.
                     </p>
-                    <p className="text-[11px] text-slate-500">
-                      Hãy chuyển qua thẻ &quot;Tự ghi hình&quot; để tạo clip mới
-                      hoặc tải lên file MP4.
+                    <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                      Bạn có thể chọn nhanh nguồn từ kho video công khai đã kiểm định (Mode 3) hoặc tự quay/upload clip mới (Mode 2).
                     </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => setActiveTab('catalog')}
+                        className="bg-amber-600/80 hover:bg-amber-600 text-white font-bold text-xs gap-1.5"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        Thêm từ Mode 3 (Kho công khai)
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveTab('self-record')}
+                        className="border-purple-500/40 text-purple-300 hover:bg-purple-950/40 font-bold text-xs gap-1.5"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Tự ghi hình ở Mode 2
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="divide-y divide-[#18273c] max-h-[460px] overflow-y-auto pr-1">
@@ -709,9 +812,25 @@ export default function WebLiveStudioPage() {
                             </div>
                           </div>
 
-                          <div className="flex-shrink-0 text-right">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewingVideo({
+                                  title: rec.title,
+                                  url: rec.videoUrl,
+                                  source: rec.contentSource,
+                                  duration: rec.duration,
+                                });
+                              }}
+                              className="p-1.5 rounded-lg bg-[#0a121e] hover:bg-cyan-950 text-slate-400 hover:text-cyan-300 border border-[#1b2b42] transition-colors"
+                              title="Xem thử video"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                            </button>
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              className={`text-[10px] font-bold px-2 py-1 rounded transition-all ${
                                 selected
                                   ? 'bg-cyan-500 text-black font-black'
                                   : 'bg-[#152339] text-slate-400'
@@ -738,18 +857,28 @@ export default function WebLiveStudioPage() {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                      Đã chọn ({selectedRecordingIds.length} video):
-                    </label>
-                    <div className="p-2.5 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs font-mono text-cyan-300 min-h-[42px] flex items-center">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-400">
+                        Đã chọn ({selectedRecordingIds.length} video):
+                      </label>
+                      {selectedRecordingIds.length > 0 && (
+                        <span className="text-[10px] font-mono font-bold text-cyan-400">
+                          Tổng: {formatTime(totalSelectedDuration)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs font-mono text-cyan-300 min-h-[42px] flex items-center justify-between">
                       {selectedRecordingIds.length === 0 ? (
                         <span className="text-slate-600">
                           Chưa chọn video nào từ danh sách bên trái
                         </span>
                       ) : (
-                        <span>
-                          {selectedRecordingIds.length} clip sẵn sàng nối sóng
-                        </span>
+                        <div className="w-full flex items-center justify-between">
+                          <span>{selectedRecordingIds.length} clip sẵn sàng nối sóng</span>
+                          <span className="text-[10px] text-slate-400 font-sans">
+                            ({formatTime(totalSelectedDuration)})
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -792,6 +921,17 @@ export default function WebLiveStudioPage() {
                       tuyệt đối.
                     </p>
                   </div>
+
+                  {/* Active Live Warning Banner */}
+                  {activeLiveForChannel && (
+                    <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-amber-200 leading-relaxed">
+                        <strong>Kênh đang có luồng LIVE:</strong> &ldquo;{activeLiveForChannel.title}&rdquo;.
+                        Phát sóng danh sách này sẽ dừng luồng hiện tại và thay thế ngay.
+                      </p>
+                    </div>
+                  )}
 
                   <Button
                     onClick={handleStartCuratedLive}
@@ -877,90 +1017,222 @@ export default function WebLiveStudioPage() {
 
                 {/* Recorder / Preview Box */}
                 {recordSource !== 'upload' ? (
-                  <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-[#1e2d44] flex items-center justify-center">
-                    {/* HTML5 Live Stream Preview Video */}
-                    <video
-                      ref={videoPreviewRef}
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-
-                    {/* Timer & Status Overlay */}
-                    {isRecording && (
-                      <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-950/80 border border-red-500/60 backdrop-blur-md">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                        <span className="font-mono text-xs font-black text-white">
-                          REC {formatTime(recordingSeconds)}
+                  recordedPreviewUrl ? (
+                    /* Recorded Video In-Place Review Player */
+                    <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-green-500/50 shadow-2xl flex items-center justify-center">
+                      <video
+                        src={recordedPreviewUrl}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                      />
+                      <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-green-950/90 border border-green-500/60 backdrop-blur-md">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                        <span className="font-mono text-xs font-bold text-white">
+                          BẢN GHI SẴN SÀNG ({formatTime(recordingSeconds)})
                         </span>
                       </div>
-                    )}
-
-                    {/* Action Controls Overlay */}
-                    <div className="absolute bottom-4 flex items-center gap-3">
-                      {!isRecording ? (
+                      <div className="absolute top-3 right-3 flex items-center gap-2">
                         <Button
-                          onClick={startRecording}
-                          className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs gap-2 shadow-xl shadow-red-600/30"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (recordedPreviewUrl) URL.revokeObjectURL(recordedPreviewUrl);
+                            setRecordedPreviewUrl(null);
+                            setRecordedBlob(null);
+                            setRecordedFile(null);
+                            setRecordingSeconds(0);
+                            startStreamPreview(recordSource);
+                          }}
+                          className="border-slate-700 bg-black/80 hover:bg-black text-slate-200 text-xs font-bold gap-1.5 shadow-lg"
                         >
-                          <Video className="w-4 h-4" />
-                          <span>Bắt đầu Ghi Hình</span>
+                          <RotateCcw className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Ghi hình lại</span>
                         </Button>
-                      ) : (
-                        <Button
-                          onClick={stopRecording}
-                          className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs gap-2 shadow-xl"
-                        >
-                          <Square className="w-4 h-4 text-red-400 fill-current" />
-                          <span>Dừng Ghi Hình</span>
-                        </Button>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  ) : hasActiveStream ? (
+                    /* Active Camera / Screen Stream Surface */
+                    <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-purple-500/40 flex items-center justify-center">
+                      <video
+                        ref={videoPreviewRef}
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* Timer & Status Overlay */}
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        {isRecording ? (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-950/90 border border-red-500/60 backdrop-blur-md">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                            <span className="font-mono text-xs font-black text-white">
+                              REC {formatTime(recordingSeconds)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/60 backdrop-blur-md">
+                            <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
+                            <span className="font-mono text-[11px] font-bold text-purple-200 uppercase">
+                              LIVE: {recordSource === 'camera' ? 'Webcam HD' : 'Chia sẻ màn hình'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Audio Meter & Mic Toggle Top-Right */}
+                      <div className="absolute top-3 right-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={toggleAudio}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md transition-all ${
+                            audioEnabled
+                              ? 'bg-slate-900/80 border-slate-700 text-slate-200 hover:text-white'
+                              : 'bg-red-950/90 border-red-500/60 text-red-300'
+                          }`}
+                          title={audioEnabled ? 'Tắt microphone' : 'Bật microphone'}
+                        >
+                          {audioEnabled ? (
+                            <>
+                              <Mic className="w-3.5 h-3.5 text-green-400" />
+                              <span className="hidden sm:inline">Mic Bật</span>
+                            </>
+                          ) : (
+                            <>
+                              <MicOff className="w-3.5 h-3.5 text-red-400" />
+                              <span className="hidden sm:inline">Mic Tắt</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Action Controls Overlay Bottom */}
+                      <div className="absolute bottom-4 flex items-center gap-3">
+                        {!isRecording ? (
+                          <Button
+                            onClick={startRecording}
+                            className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs gap-2 shadow-xl shadow-red-600/30"
+                          >
+                            <Video className="w-4 h-4" />
+                            <span>Bắt đầu Ghi Hình</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={stopRecording}
+                            className="px-6 py-2.5 rounded-xl bg-slate-900/95 hover:bg-slate-800 text-white font-bold text-xs gap-2 border border-red-500 shadow-xl"
+                          >
+                            <Square className="w-4 h-4 text-red-400 fill-current" />
+                            <span>Dừng Ghi Hình & Xem Lại</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Cyber Standby State (No signal yet - solves the black screen!) */
+                    <div className="relative aspect-video rounded-2xl bg-gradient-to-b from-[#090f1a] to-[#04070d] border border-[#1e2d44] flex flex-col items-center justify-center p-6 text-center space-y-4">
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-500/10">
+                          {recordSource === 'camera' ? (
+                            <Camera className="w-8 h-8 animate-pulse" />
+                          ) : (
+                            <Monitor className="w-8 h-8 animate-pulse" />
+                          )}
+                        </div>
+                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 animate-ping" />
+                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400" />
+                      </div>
+
+                      <div className="space-y-1 max-w-sm">
+                        <h3 className="text-sm font-bold text-white">
+                          {recordSource === 'camera'
+                            ? 'Webcam & Microphone Đang Chờ Kích Hoạt'
+                            : 'Chưa Chọn Màn Hình Hoặc Cửa Sổ Chia Sẻ'}
+                        </h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          {recordSource === 'camera'
+                            ? 'Kích hoạt camera máy tính để bắt đầu phát sóng trực tiếp hoặc thu lại bản tin/bài giảng.'
+                            : 'Chọn toàn màn hình, cửa sổ ứng dụng hoặc tab trình duyệt để ghi lại nội dung phát sóng.'}
+                        </p>
+                      </div>
+
+                      <Button
+                        onClick={() => startStreamPreview(recordSource as 'camera' | 'screen')}
+                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs gap-2 shadow-xl shadow-purple-500/25"
+                      >
+                        {recordSource === 'camera' ? (
+                          <>
+                            <Camera className="w-4 h-4" />
+                            <span>KÍCH HOẠT WEBCAM & MIC</span>
+                          </>
+                        ) : (
+                          <>
+                            <Monitor className="w-4 h-4" />
+                            <span>CHỌN MÀN HÌNH CHIA SẺ</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )
                 ) : (
-                  /* File Drag & Drop Upload Zone */
-                  <div className="p-8 rounded-2xl bg-[#05080e] border-2 border-dashed border-[#1e2d44] text-center space-y-4">
-                    <FileVideo className="w-12 h-12 text-purple-400 mx-auto" />
-                    <div>
-                      <p className="text-sm font-bold text-white">
-                        Kéo thả hoặc chọn file video từ máy tính
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Hỗ trợ định dạng MP4, WebM, MOV. Tối đa 500 MB.
-                      </p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleFileUploadChange}
-                      className="hidden"
-                      id="video-file-input"
-                    />
-                    <label
-                      htmlFor="video-file-input"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 text-xs font-bold cursor-pointer transition-all"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Chọn Tệp Video</span>
-                    </label>
-                  </div>
-                )}
-
-                {/* Recorded Video Playback Review */}
-                {recordedPreviewUrl && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      Xem Lại Đoạn Ghi Hình Trước Khi Xuất Bản:
-                    </label>
-                    <div className="aspect-video rounded-xl bg-black overflow-hidden border border-[#1e2d44]">
+                  /* File Upload Mode */
+                  recordedPreviewUrl ? (
+                    <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-purple-500/40 flex items-center justify-center">
                       <video
                         src={recordedPreviewUrl}
                         controls
                         className="w-full h-full object-contain"
                       />
+                      <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/60 backdrop-blur-md">
+                        <FileVideo className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="font-mono text-xs font-bold text-white">
+                          TỆP ĐÃ NẠP: {uploadedFileMeta?.sizeMb ?? '0'} MB ({formatTime(recordingSeconds)})
+                        </span>
+                      </div>
+                      <div className="absolute top-3 right-3">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={handleFileUploadChange}
+                          className="hidden"
+                          id="video-file-reselect"
+                        />
+                        <label
+                          htmlFor="video-file-reselect"
+                          className="px-3 py-1.5 rounded-xl border border-slate-700 bg-black/80 hover:bg-black text-slate-300 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all shadow-lg"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Đổi tệp khác</span>
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* File Drag & Drop Upload Zone */
+                    <div className="p-8 rounded-2xl bg-[#05080e] border-2 border-dashed border-[#1e2d44] text-center space-y-4">
+                      <FileVideo className="w-12 h-12 text-purple-400 mx-auto" />
+                      <div>
+                        <p className="text-sm font-bold text-white">
+                          Kéo thả hoặc chọn file video từ máy tính
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Hỗ trợ định dạng MP4, WebM, MOV. Tối đa 500 MB. Tự động nhận diện thời lượng.
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleFileUploadChange}
+                        className="hidden"
+                        id="video-file-input"
+                      />
+                      <label
+                        htmlFor="video-file-input"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 text-xs font-bold cursor-pointer transition-all"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Chọn Tệp Video</span>
+                      </label>
+                    </div>
+                  )
                 )}
               </Card>
             </div>
@@ -974,6 +1246,19 @@ export default function WebLiveStudioPage() {
                 </h3>
 
                 <div className="space-y-3">
+                  {/* Clip Status Telemetry */}
+                  <div className="p-2.5 rounded-xl bg-[#05080e] border border-[#1b2b42] flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Trạng thái clip:</span>
+                    {recordedFile ? (
+                      <span className="font-mono text-green-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Đã sẵn sàng ({formatTime(recordingSeconds)})
+                      </span>
+                    ) : (
+                      <span className="font-mono text-slate-600">Chưa có clip ghi hình</span>
+                    )}
+                  </div>
+
                   <div>
                     <label className="text-[11px] font-semibold text-slate-400 block mb-1">
                       Tiêu đề chương trình: *
@@ -1005,12 +1290,7 @@ export default function WebLiveStudioPage() {
                       Chế độ phát sóng:
                     </label>
                     <div className="grid grid-cols-1 gap-2">
-                      {/* ── IMMEDIATE — HIGHEST RISK ─────────────────────────
-                          Maps to backend visibility=IMMEDIATE. Toggles the
-                          channel into LIVE NOW and replaces whatever is
-                          currently broadcasting. Red-tinted on selection
-                          to signal the stakes; also requires an extra
-                          confirm dialog before upload. */}
+                      {/* ── IMMEDIATE — HIGHEST RISK ── */}
                       <button
                         type="button"
                         onClick={() => setVisibility('IMMEDIATE')}
@@ -1037,11 +1317,7 @@ export default function WebLiveStudioPage() {
                         </div>
                       </button>
 
-                      {/* ── SCHEDULED — DEFAULT (VOD) ───────────────────────
-                          Maps to backend visibility=SCHEDULED. Saves the
-                          clip to the channel's VOD library so viewers can
-                          re-watch on demand. Does NOT push the channel
-                          into LIVE. */}
+                      {/* ── SCHEDULED — DEFAULT (VOD) ── */}
                       <button
                         type="button"
                         onClick={() => setVisibility('SCHEDULED')}
@@ -1070,13 +1346,7 @@ export default function WebLiveStudioPage() {
                         </div>
                       </button>
 
-                      {/* ── PRIVATE — DRAFT (STAFF/ADMIN ONLY) ──────────────
-                          Maps to backend visibility=PRIVATE. Persists the
-                          recording with isPublished=false and pinned to
-                          epoch, so it's hidden from every public surface
-                          (search, channels, EPG, watchlist). Only Staff
-                          and Admin can see it. Use for: test takes, clips
-                          awaiting review, half-finished uploads. */}
+                      {/* ── PRIVATE — DRAFT ── */}
                       <button
                         type="button"
                         onClick={() => setVisibility('PRIVATE')}
@@ -1104,9 +1374,6 @@ export default function WebLiveStudioPage() {
                       </button>
                     </div>
 
-                    {/* Inline warning when IMMEDIATE is armed — surfaces
-                        the risk of broadcasting unmoderated footage so
-                        the user must explicitly keep it selected. */}
                     {visibility === 'IMMEDIATE' && (
                       <div className="mt-2 p-2.5 rounded-xl bg-red-950/40 border border-red-500/40 flex items-start gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
                         <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -1148,7 +1415,7 @@ export default function WebLiveStudioPage() {
                       uploadRecordMutation.isPending ||
                       !recordedFile
                     }
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20 gap-2"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20 gap-2 disabled:opacity-50"
                   >
                     {uploadFileMutation.isPending ||
                     uploadRecordMutation.isPending ? (
@@ -1186,7 +1453,7 @@ export default function WebLiveStudioPage() {
                     <p className="text-[11px] text-slate-400 mt-0.5 max-w-lg">
                       Chọn nhanh một nguồn video từ kho nguồn công khai (Mux, Cloudinary, Internet Archive, ...) và thêm vào kênh{' '}
                       <strong className="text-amber-300">{selectedChannel?.name ?? '—'}</strong>.
-                      Các nguồn này đã được kiểm định trước bởi hệ thống và không cần kiểm tra thủ công.
+                      Các nguồn này đã được kiểm định trước bởi hệ thống và sẵn sàng phát sóng ngay.
                     </p>
                   </div>
                 </div>
@@ -1220,16 +1487,46 @@ export default function WebLiveStudioPage() {
                 </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="mt-4 relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={catalogSearch}
-                  onChange={(e) => setCatalogSearch(e.target.value)}
-                  placeholder="Tìm kiếm nguồn video (VD: HLS, Mux, Cloudinary, 4K...)..."
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
+              {/* Search & Filter Toolbar */}
+              <div className="mt-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    placeholder="Tìm kiếm nguồn video (VD: HLS, Mux, Cloudinary, 4K...)..."
+                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {['ALL', 'HLS', 'MP4', 'DASH', 'WEBM'].map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => setCatalogFormatFilter(fmt)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                        catalogFormatFilter === fmt
+                          ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                          : 'bg-[#0e1726] text-slate-400 hover:text-white border border-[#1b2b42]'
+                      }`}
+                    >
+                      {fmt === 'ALL' ? 'Tất cả' : fmt}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setCatalogVerifiedOnly(!catalogVerifiedOnly)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1 transition-all ${
+                      catalogVerifiedOnly
+                        ? 'bg-green-950 text-green-300 border border-green-500 shadow-sm'
+                        : 'bg-[#0e1726] text-slate-400 hover:text-white border border-[#1b2b42]'
+                    }`}
+                  >
+                    <BadgeCheck className="w-3.5 h-3.5" />
+                    <span>Verified Only</span>
+                  </button>
+                </div>
               </div>
             </Card>
 
@@ -1248,163 +1545,199 @@ export default function WebLiveStudioPage() {
                   Không tìm thấy nguồn video nào.
                 </p>
                 <p className="text-xs text-slate-500">
-                  Thử từ khóa tìm kiếm khác.
+                  Thử từ khóa tìm kiếm hoặc bộ lọc khác.
                 </p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {catalogData.items.map((entry: StudioCatalogStream) => {
-                  const alreadyAdded = addedCatalogIds.has(entry.id);
-                  return (
-                    <Card
-                      key={entry.id}
-                      className={`glass-card overflow-hidden border transition-all duration-200 ${
-                        alreadyAdded
-                          ? 'border-green-500/40 bg-green-950/20'
-                          : 'border-[#1e2d44] bg-[#0c1421]/60 hover:border-amber-500/40 hover:bg-[#0c1421]/80'
-                      }`}
-                    >
-                      {/* Thumbnail */}
-                      <div className="relative aspect-video bg-slate-900 overflow-hidden">
-                        {entry.thumbnailUrl ? (
-                          <img
-                            src={entry.thumbnailUrl}
-                            alt={entry.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600">
-                            <Video className="w-8 h-8" />
-                          </div>
-                        )}
-                        {/* Format Badge */}
-                        <div className="absolute top-2 left-2 flex gap-1">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-black/80 text-white border border-white/20">
-                            {entry.format}
-                          </span>
-                          {entry.resolution && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-950/90 text-blue-300 border border-blue-700">
-                              {entry.resolution}
-                            </span>
-                          )}
-                        </div>
-                        {/* Verified Badge */}
-                        {entry.verified && (
-                          <div className="absolute top-2 right-2">
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-green-950/90 text-green-300 border border-green-700 flex items-center gap-0.5">
-                              <BadgeCheck className="w-2.5 h-2.5" />
-                              Verified
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="p-3 space-y-2">
-                        <h3 className="text-xs font-bold text-white leading-tight line-clamp-2">
-                          {entry.title}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">
-                          {entry.description}
-                        </p>
-
-                        {/* Meta row */}
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#0e1726] text-slate-300 border border-[#1b2b42]">
-                              {entry.source}
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#0e1726] text-slate-500 border border-[#1b2b42]">
-                              {Math.round(entry.durationSec / 60)}m
-                            </span>
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
-                                entry.license === 'Creative Commons' ||
-                                entry.license === 'Public Domain'
-                                  ? 'bg-blue-950/80 text-blue-300 border-blue-700'
-                                  : 'bg-slate-800 text-slate-400 border-slate-700'
-                              }`}
-                            >
-                              {entry.license}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Tags */}
-                        {entry.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {entry.tags.slice(0, 3).map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#05080e] text-slate-500 border border-[#1b2b42]"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Action */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            addFromCatalogMutation.isPending ||
-                            alreadyAdded ||
-                            !selectedChannel
-                          }
-                          onClick={async () => {
-                            if (!selectedChannel) return;
-                            try {
-                              await addFromCatalogMutation.mutateAsync({
-                                channelId: selectedChannel.slug,
-                                catalogId: entry.id,
-                              });
-                              setAddedCatalogIds((prev) => new Set([...prev, entry.id]));
-                            } catch (err: any) {
-                              alert(
-                                err.response?.data?.message ||
-                                  'Không thể thêm nguồn video vào kênh.',
-                              );
-                            }
-                          }}
-                          className={`w-full gap-1.5 mt-1 text-[11px] font-bold ${
-                            alreadyAdded
-                              ? 'border-green-500/50 text-green-300 bg-green-950/40 hover:bg-green-950/40 cursor-default'
-                              : 'border-amber-600/50 text-amber-300 bg-amber-950/30 hover:bg-amber-900/40'
-                          }`}
-                        >
-                          {addFromCatalogMutation.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : alreadyAdded ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              Đã thêm vào kênh
-                            </>
+                {catalogData.items
+                  .filter((entry: StudioCatalogStream) => {
+                    if (catalogFormatFilter !== 'ALL' && entry.format !== catalogFormatFilter) {
+                      return false;
+                    }
+                    if (catalogVerifiedOnly && !entry.verified) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((entry: StudioCatalogStream) => {
+                    const alreadyAdded = addedCatalogIds.has(entry.id);
+                    return (
+                      <Card
+                        key={entry.id}
+                        className={`glass-card overflow-hidden border transition-all duration-200 ${
+                          alreadyAdded
+                            ? 'border-green-500/40 bg-green-950/20'
+                            : 'border-[#1e2d44] bg-[#0c1421]/60 hover:border-amber-500/40 hover:bg-[#0c1421]/80'
+                        }`}
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative aspect-video bg-slate-900 overflow-hidden">
+                          {entry.thumbnailUrl ? (
+                            <img
+                              src={entry.thumbnailUrl}
+                              alt={entry.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
                           ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              Thêm vào kênh {selectedChannel?.name ?? '—'}
-                            </>
+                            <div className="w-full h-full flex items-center justify-center text-slate-600">
+                              <Video className="w-8 h-8" />
+                            </div>
                           )}
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })}
+
+                          {/* Format Badge */}
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-black/80 text-white border border-white/20">
+                              {entry.format}
+                            </span>
+                            {entry.resolution && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-950/90 text-blue-300 border border-blue-700">
+                                {entry.resolution}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Preview Stream Button Top-Right */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewingVideo({
+                                  title: entry.title,
+                                  url: entry.url,
+                                  source: `${entry.source} · ${entry.format}`,
+                                  duration: entry.durationSec,
+                                })
+                              }
+                              className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-black/80 hover:bg-amber-950 text-amber-300 hover:text-white border border-amber-600/40 flex items-center gap-1 transition-all backdrop-blur-sm"
+                              title="Xem thử luồng video này"
+                            >
+                              <PlayCircle className="w-3 h-3 text-amber-400" />
+                              <span>Xem thử</span>
+                            </button>
+                            {entry.verified && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-green-950/90 text-green-300 border border-green-700 flex items-center gap-0.5">
+                                <BadgeCheck className="w-2.5 h-2.5" />
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="p-3 space-y-2">
+                          <h3 className="text-xs font-bold text-white leading-tight line-clamp-2">
+                            {entry.title}
+                          </h3>
+                          <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">
+                            {entry.description}
+                          </p>
+
+                          {/* Meta row */}
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#0e1726] text-slate-300 border border-[#1b2b42]">
+                                {entry.source}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#0e1726] text-slate-500 border border-[#1b2b42]">
+                                {Math.round(entry.durationSec / 60)}m
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                                  entry.license === 'Creative Commons' ||
+                                  entry.license === 'Public Domain'
+                                    ? 'bg-blue-950/80 text-blue-300 border-blue-700'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                                }`}
+                              >
+                                {entry.license}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Tags */}
+                          {entry.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {entry.tags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#05080e] text-slate-500 border border-[#1b2b42]"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Action */}
+                          {alreadyAdded ? (
+                            <div className="space-y-1 mt-1">
+                              <div className="w-full py-1.5 px-2 rounded-lg text-[11px] font-bold border border-green-500/50 text-green-300 bg-green-950/40 flex items-center justify-center gap-1.5">
+                                <Check className="w-3.5 h-3.5" />
+                                Đã thêm vào kênh
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  refetchRecordings();
+                                  setActiveTab('curated');
+                                }}
+                                className="w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/50 text-cyan-200 text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                              >
+                                <Radio className="w-3 h-3 text-cyan-400" />
+                                <span>Phát sóng ngay ở Mode 1 &rarr;</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={
+                                addFromCatalogMutation.isPending ||
+                                !selectedChannel
+                              }
+                              onClick={async () => {
+                                if (!selectedChannel) return;
+                                try {
+                                  await addFromCatalogMutation.mutateAsync({
+                                    channelId: selectedChannel.slug,
+                                    catalogId: entry.id,
+                                  });
+                                  setAddedCatalogIds((prev) => new Set([...prev, entry.id]));
+                                  toast.success(`Đã thêm "${entry.title}" vào kênh ${selectedChannel.name}`);
+                                  refetchRecordings();
+                                } catch (err: any) {
+                                  toast.error(
+                                    err.response?.data?.message ||
+                                      'Không thể thêm nguồn video vào kênh.',
+                                  );
+                                }
+                              }}
+                              className="w-full gap-1.5 mt-1 text-[11px] font-bold border-amber-600/50 text-amber-300 bg-amber-950/30 hover:bg-amber-900/40"
+                            >
+                              {addFromCatalogMutation.isPending ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="w-3.5 h-3.5" />
+                                  Thêm vào kênh {selectedChannel?.name ?? '—'}
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* ── LIVE NOW confirm dialog ────────────────────────────────────
-          Reached only when the user clicks "Tải lên & phát sóng" with
-          visibility=IMMEDIATE. Forces an extra intentional click so we
-          never broadcast unmoderated footage by accident. */}
+      {/* ── LIVE NOW confirm dialog ──────────────────────────────────── */}
       {showLiveConfirm && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -1482,6 +1815,70 @@ export default function WebLiveStudioPage() {
                     XÁC NHẬN PHÁT LIVE
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Global Video Preview Modal (Mode 1 & Mode 3) ─────────────── */}
+      {previewingVideo && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-150"
+          onClick={() => setPreviewingVideo(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-3xl rounded-2xl border border-cyan-500/40 bg-[#090f19] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-[#1b2b42] bg-[#0c1424]">
+              <div className="flex items-center gap-2 min-w-0 pr-3">
+                <Film className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                <h3 className="text-sm font-bold text-white truncate">
+                  {previewingVideo.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewingVideo(null)}
+                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                title="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Video Player */}
+            <div className="relative aspect-video bg-black">
+              <video
+                src={previewingVideo.url}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-[#080d16] border-t border-[#1b2b42] flex items-center justify-between text-xs text-slate-400">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  {previewingVideo.source || 'Nội dung Studio'}
+                </span>
+                {previewingVideo.duration && previewingVideo.duration > 0 && (
+                  <span className="font-mono text-slate-300">
+                    Thời lượng: {formatTime(previewingVideo.duration)}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewingVideo(null)}
+                className="px-3 py-1 rounded-lg bg-[#152339] hover:bg-[#1a2c47] text-white text-xs font-bold transition-all"
+              >
+                Đóng
               </button>
             </div>
           </div>
