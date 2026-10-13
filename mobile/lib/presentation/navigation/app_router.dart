@@ -28,6 +28,9 @@ import '../../presentation/screens/admin/admin_audit_logs_screen.dart';
 import '../../presentation/screens/notifications/notifications_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/main_screen.dart';
+import '../../presentation/screens/live_tv/live_now_screen.dart';
+import '../../presentation/screens/live_tv/live_watch_screen.dart';
+import '../../data/models/program_model.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -131,6 +134,22 @@ class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           return RecordingDetailScreen(recordingId: id);
+        },
+      ),
+      // Live Stream Hub - All current live events
+      GoRoute(
+        path: '/live',
+        builder: (context, state) => const LiveNowScreen(),
+      ),
+      // Dedicated Live Stream Player & Social Hub
+      GoRoute(
+        path: '/live/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final initial = state.extra is LiveEventModel
+              ? state.extra as LiveEventModel
+              : null;
+          return LiveWatchScreen(eventId: id, initial: initial);
         },
       ),
       // Shell route with bottom navigation

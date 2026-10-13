@@ -11,6 +11,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../logic/channels/channels_bloc.dart';
 import '../../../logic/programs/programs_bloc.dart';
 import '../../../logic/recordings/recordings_bloc.dart';
+import '../../../logic/auth/auth_bloc.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/recording_model.dart';
@@ -137,6 +138,55 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 actions: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => context.push('/live'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E0A10),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFFFF2A55).withValues(alpha: 0.6),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF2A55).withValues(alpha: 0.25),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, _) => Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF2A55).withValues(alpha: _pulseAnimation.value),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Color(0xFFFF2A55),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'monospace',
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   IconButton(
                     icon: const Icon(
                       Icons.search_rounded,
@@ -256,6 +306,30 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
 
+              // ── LIVE STUDIO QUICK-ACCESS BANNER (Staff/Admin only)
+              // ─────────────────────────────────────────────────────
+              // A persistent, animated entry point that surfaces the
+              // Live Studio control surface right on the Home tab for
+              // operators. Hidden for VIEWER role.
+              SliverToBoxAdapter(
+                child: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, authState) {
+                    final isStaffOrAdmin = authState is Authenticated &&
+                        authState.user.isStaffOrAdmin;
+                    if (!isStaffOrAdmin) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: _LiveStudioQuickAccessBanner(
+                        onTap: () => context.push('/studio/live'),
+                        pulse: _pulseAnimation,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
               // ── HERO: LIVE NOW SECTION ─────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -264,7 +338,39 @@ class _HomeScreenState extends State<HomeScreen>
                     icon: Icons.radio_button_checked,
                     iconColor: const Color(0xFFEF4444),
                     title: 'ĐANG PHÁT TRỰC TIẾP',
-                    trailing: _LiveCountBadge(),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LiveCountBadge(onTap: () => context.push('/live')),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => context.push('/live'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Tất cả',
+                                style: TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: Color(0xFF00E5FF),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -594,7 +700,7 @@ class _HomeScreenState extends State<HomeScreen>
                 channelLogo: p.channel,
                 viewerCount: p.viewerCount,
               ),
-              onTap: () => context.push('/program/${p.id}'),
+              onTap: () => context.push('/live/${p.id}', extra: p),
             ),
           );
         },
@@ -769,6 +875,10 @@ class _LoadingRail extends StatelessWidget {
 }
 
 class _LiveCountBadge extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const _LiveCountBadge({this.onTap});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProgramsBloc, ProgramsState>(
@@ -777,31 +887,38 @@ class _LiveCountBadge extends StatelessWidget {
             ? state.programs.length
             : 0;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFF450A0A),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF991B1B)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircleAvatar(
-                radius: 3,
-                backgroundColor: Color(0xFFEF4444),
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF450A0A),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF991B1B)),
               ),
-              const SizedBox(width: 5),
-              Text(
-                '$count TRỰC TIẾP',
-                style: const TextStyle(
-                  color: Color(0xFFF87171),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'monospace',
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 3,
+                    backgroundColor: Color(0xFFEF4444),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '$count TRỰC TIẾP',
+                    style: const TextStyle(
+                      color: Color(0xFFF87171),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -1092,6 +1209,233 @@ class _RecordingRailCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Live Studio quick-access banner (Staff/Admin only)
+// ============================================================
+//
+// Persistent entry point on the Home tab that drops the user
+// straight into the Live Studio control surface. Includes a
+// pulsing red "LIVE" indicator to visually associate it with
+// broadcast operations, plus three capability chips so the
+// operator knows what they can do once inside (Curated, Self-
+// Record, Catalog).
+
+class _LiveStudioQuickAccessBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  final Animation<double> pulse;
+
+  const _LiveStudioQuickAccessBanner({
+    required this.onTap,
+    required this.pulse,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1A0A12), Color(0xFF0B1320)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFFF2A55).withValues(alpha: 0.45),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                // Pulsing live dot + icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF2A55).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFF2A55).withValues(alpha: 0.6),
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: pulse,
+                        builder: (_, __) => Opacity(
+                          opacity: pulse.value,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF2A55)
+                                  .withValues(alpha: 0.25),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.podcasts_rounded,
+                        color: Color(0xFFFF2A55),
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Title + chips
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          AnimatedBuilder(
+                            animation: pulse,
+                            builder: (_, __) => Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF2A55)
+                                    .withValues(alpha: pulse.value),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'STAFF CONTROL',
+                            style: TextStyle(
+                              color: Color(0xFFFF2A55),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'monospace',
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B1320),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF00E5FF)
+                                    .withValues(alpha: 0.5),
+                                width: 0.6,
+                              ),
+                            ),
+                            child: const Text(
+                              'LIVE STUDIO',
+                              style: TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'monospace',
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Phát sóng trực tiếp & tự ghi hình',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Capability chips
+                      const Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          _CapabilityChip(
+                            label: 'Curated',
+                            color: Color(0xFF00E5FF),
+                          ),
+                          _CapabilityChip(
+                            label: 'Self-Record',
+                            color: Color(0xFFF59E0B),
+                          ),
+                          _CapabilityChip(
+                            label: 'Catalog',
+                            color: Color(0xFF22C55E),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Color(0xFFFF2A55),
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CapabilityChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _CapabilityChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: color.withValues(alpha: 0.45),
+          width: 0.6,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          fontFamily: 'monospace',
+          letterSpacing: 0.4,
         ),
       ),
     );

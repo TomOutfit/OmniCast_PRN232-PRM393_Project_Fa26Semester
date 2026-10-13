@@ -80,7 +80,10 @@ Future<void> initDependencies() async {
   });
 
   getIt.registerLazySingleton<ChannelsRepository>(
-    () => ChannelsRepository(dioClient: getIt<DioClient>()),
+    () => ChannelsRepository(
+      dioClient: getIt<DioClient>(),
+      db: getIt<DatabaseHelper>(),
+    ),
   );
 
   // Live Studio repository (Staff/Admin control surface for

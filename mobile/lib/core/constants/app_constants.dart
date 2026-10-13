@@ -190,6 +190,35 @@ class AppEndpoints {
   static String studioStopLive(String eventId) =>
       '/v1/programs/studio/live-events/$eventId/stop';
 
+  // ============================================================
+  // Studio Catalog (Mode 3 — Danh Mục Nguồn Video Công Khai)
+  //   * List verified public-domain / royalty-free video
+  //     sources that the Studio can add to a channel.
+  //   * "Add to channel" — persists a catalog entry as a
+  //     Recording row scoped to the chosen channel.
+  // ============================================================
+  static const String studioCatalogStreams =
+      '/v1/programs/studio/catalog/streams';
+  static String studioCatalogStreamsWithQuery({
+    String? channel,
+    bool? verified,
+    String? search,
+  }) {
+    final qs = <String, String>{};
+    if (channel != null && channel.isNotEmpty) qs['channel'] = channel;
+    if (verified != null) qs['verified'] = verified ? 'true' : 'false';
+    if (search != null && search.isNotEmpty) qs['search'] = search;
+    final raw = qs.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return raw.isEmpty
+        ? studioCatalogStreams
+        : '$studioCatalogStreams?$raw';
+  }
+
+  static const String studioAddFromCatalog =
+      '/v1/programs/studio/recordings/library/from-catalog';
+
   // Active live events on a channel. Backed by the existing
   // `/live-events/live-now` endpoint (declared at line 77). We
   // expose the same `liveNow` name as a const so callers can use
