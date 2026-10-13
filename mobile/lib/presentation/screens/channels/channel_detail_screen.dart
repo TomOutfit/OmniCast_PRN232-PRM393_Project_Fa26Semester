@@ -16,6 +16,7 @@ import '../../widgets/live_pulse_widget.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/omni_player.dart';
 import '../../../core/services/share_helper.dart';
+import '../../../logic/auth/auth_bloc.dart';
 
 class ChannelDetailScreen extends StatefulWidget {
   final String? channelId;
@@ -499,29 +500,38 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () {
-                  // Direct live watch action
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đang khởi tạo luồng phát HEVC 2160p60...'),
-                      backgroundColor: Color(0xFF090F1A),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  if (_channel?.isLive == true) {
+                    context.push('/live');
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Kênh đang phát luồng mặc định HEVC 2160p60'),
+                        backgroundColor: Color(0xFF090F1A),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.play_arrow_rounded,
-                        color: Color(0xFF070B12),
+                        _channel?.isLive == true
+                            ? Icons.radio_button_checked
+                            : Icons.play_arrow_rounded,
+                        color: _channel?.isLive == true
+                            ? const Color(0xFFFF2A55)
+                            : const Color(0xFF070B12),
                         size: 24,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Xem Trực Tiếp (HEVC 2160p60)',
-                        style: TextStyle(
+                        _channel?.isLive == true
+                            ? 'XEM LUỒNG TRỰC TIẾP (LIVE NOW)'
+                            : 'Xem Trực Tiếp (HEVC 2160p60)',
+                        style: const TextStyle(
                           color: Color(0xFF070B12),
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
@@ -533,6 +543,40 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                 ),
               ),
             ),
+          ),
+
+          // Live Studio Shortcut for Staff/Admin
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, authState) {
+              final isStaffOrAdmin = authState is Authenticated &&
+                  authState.user.isStaffOrAdmin;
+              if (!isStaffOrAdmin) return const SizedBox.shrink();
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFFF2A55), width: 1.2),
+                    foregroundColor: const Color(0xFFFF2A55),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => context.push('/studio/live?channel=${_channel?.slug}'),
+                  icon: const Icon(Icons.podcasts_rounded, size: 20),
+                  label: const Text(
+                    'ĐIỀU KHIỂN PHÁT SÓNG (LIVE STUDIO)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'monospace',
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           // Action Buttons: Follow & Share
