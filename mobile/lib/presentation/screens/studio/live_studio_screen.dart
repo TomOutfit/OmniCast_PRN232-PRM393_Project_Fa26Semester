@@ -41,6 +41,7 @@ import '../../../data/models/studio_catalog_model.dart';
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/repositories/live_studio_repository.dart';
 import '../../widgets/channel_logo.dart';
+import 'mobile_studio_recorder_screen.dart';
 
 class LiveStudioScreen extends StatefulWidget {
   /// Optional initial channel slug (when navigated from a channel page).
@@ -307,15 +308,29 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   Future<void> _captureFromCamera() async {
     try {
-      final file = await _picker.pickVideo(
-        source: ImageSource.camera,
-        maxDuration: const Duration(minutes: 30),
-        preferredCameraDevice: CameraDevice.rear,
+      final XFile? file = await Navigator.of(context).push<XFile?>(
+        MaterialPageRoute(
+          builder: (_) => MobileStudioRecorderScreen(
+            channel: _selected,
+            initialTopic:
+                _selfTitleCtrl.text.isNotEmpty ? _selfTitleCtrl.text : null,
+          ),
+        ),
       );
       if (file == null) return;
       _onPickedFile(file, fromCamera: true);
     } catch (e) {
-      _toast('Không thể mở camera: $e', accent: _danger);
+      // Graceful fallback to default camera picker
+      try {
+        final file = await _picker.pickVideo(
+          source: ImageSource.camera,
+          maxDuration: const Duration(minutes: 30),
+        );
+        if (file == null) return;
+        _onPickedFile(file, fromCamera: true);
+      } catch (err) {
+        _toast('Không thể mở camera studio: $err', accent: _danger);
+      }
     }
   }
 
@@ -1076,14 +1091,72 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Studio Broadcast Banner
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF0F172A),
+                  _danger.withValues(alpha: 0.15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _danger.withValues(alpha: 0.4),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _danger.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.videocam, color: _danger, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'STUDIO GHI HÌNH CHUYÊN NGHIỆP',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          fontFamily: 'Outfit',
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Viewfinder HUD • VU Meter âm thanh • Máy nhắc chữ • Khung an toàn',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Capture buttons
           Row(
             children: [
               Expanded(
                 child: _captureActionButton(
                   icon: Icons.videocam,
-                  label: 'QUAY NGAY',
-                  subtitle: 'Dùng camera điện thoại',
+                  label: 'VÀO STUDIO QUAY',
+                  subtitle: 'Giao diện trường quay Pro',
                   accent: _danger,
                   onTap: _captureFromCamera,
                 ),
@@ -1093,7 +1166,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                 child: _captureActionButton(
                   icon: Icons.photo_library,
                   label: 'TỪ THƯ VIỆN',
-                  subtitle: 'Chọn video có sẵn',
+                  subtitle: 'Chọn clip có sẵn',
                   accent: _accent,
                   onTap: _pickFromGallery,
                 ),
