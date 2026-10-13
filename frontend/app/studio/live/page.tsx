@@ -48,6 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CompactUserMenu } from '@/components/layout/compact-user-menu';
+import { WebStudioViewfinder } from '@/components/studio/web-studio-viewfinder';
 import { useAuth } from '@/lib/auth-context';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveEvents } from '@/lib/hooks/usePrograms';
@@ -1052,81 +1053,27 @@ export default function WebLiveStudioPage() {
                       </div>
                     </div>
                   ) : hasActiveStream ? (
-                    /* Active Camera / Screen Stream Surface */
-                    <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-purple-500/40 flex items-center justify-center">
-                      <video
-                        ref={videoPreviewRef}
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-
-                      {/* Timer & Status Overlay */}
-                      <div className="absolute top-3 left-3 flex items-center gap-2">
-                        {isRecording ? (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-950/90 border border-red-500/60 backdrop-blur-md">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                            <span className="font-mono text-xs font-black text-white">
-                              REC {formatTime(recordingSeconds)}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/60 backdrop-blur-md">
-                            <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
-                            <span className="font-mono text-[11px] font-bold text-purple-200 uppercase">
-                              LIVE: {recordSource === 'camera' ? 'Webcam HD' : 'Chia sẻ màn hình'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Audio Meter & Mic Toggle Top-Right */}
-                      <div className="absolute top-3 right-3 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={toggleAudio}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md transition-all ${
-                            audioEnabled
-                              ? 'bg-slate-900/80 border-slate-700 text-slate-200 hover:text-white'
-                              : 'bg-red-950/90 border-red-500/60 text-red-300'
-                          }`}
-                          title={audioEnabled ? 'Tắt microphone' : 'Bật microphone'}
-                        >
-                          {audioEnabled ? (
-                            <>
-                              <Mic className="w-3.5 h-3.5 text-green-400" />
-                              <span className="hidden sm:inline">Mic Bật</span>
-                            </>
-                          ) : (
-                            <>
-                              <MicOff className="w-3.5 h-3.5 text-red-400" />
-                              <span className="hidden sm:inline">Mic Tắt</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Action Controls Overlay Bottom */}
-                      <div className="absolute bottom-4 flex items-center gap-3">
-                        {!isRecording ? (
-                          <Button
-                            onClick={startRecording}
-                            className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs gap-2 shadow-xl shadow-red-600/30"
-                          >
-                            <Video className="w-4 h-4" />
-                            <span>Bắt đầu Ghi Hình</span>
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={stopRecording}
-                            className="px-6 py-2.5 rounded-xl bg-slate-900/95 hover:bg-slate-800 text-white font-bold text-xs gap-2 border border-red-500 shadow-xl"
-                          >
-                            <Square className="w-4 h-4 text-red-400 fill-current" />
-                            <span>Dừng Ghi Hình & Xem Lại</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    <WebStudioViewfinder
+                      videoRef={videoPreviewRef}
+                      mediaStream={mediaStreamRef.current}
+                      recordSource={recordSource}
+                      isRecording={isRecording}
+                      recordingSeconds={recordingSeconds}
+                      audioEnabled={audioEnabled}
+                      toggleAudio={toggleAudio}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      channelName={selectedChannel?.name || 'OMNICAST 1 HD'}
+                      channelLogoUrl={selectedChannel?.logoUrl}
+                      topic={selfTitle || 'BẢN TIN PHÁT THANH TRUYỀN HÌNH TRỰC TIẾP'}
+                      onRetake={() => {
+                        setRecordedPreviewUrl(null);
+                        setRecordedBlob(null);
+                        setRecordedFile(null);
+                        setRecordingSeconds(0);
+                        startStreamPreview(recordSource);
+                      }}
+                    />
                   ) : (
                     /* Cyber Standby State (No signal yet - solves the black screen!) */
                     <div className="relative aspect-video rounded-2xl bg-gradient-to-b from-[#090f1a] to-[#04070d] border border-[#1e2d44] flex flex-col items-center justify-center p-6 text-center space-y-4">
