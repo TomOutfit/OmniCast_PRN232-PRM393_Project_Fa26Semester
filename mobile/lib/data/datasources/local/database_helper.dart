@@ -1,5 +1,5 @@
-// OmniCast - SQLite Database Helper
-// Stores: watchlist items, EPG cache, pending offline ops
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -7,6 +7,30 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../models/watchlist_item_model.dart';
+
+class CacheStats {
+  final int channelsCount;
+  final int programsCount;
+  final int epgDaysCount;
+  final int watchlistCount;
+  final int dbSizeBytes;
+
+  const CacheStats({
+    required this.channelsCount,
+    required this.programsCount,
+    required this.epgDaysCount,
+    required this.watchlistCount,
+    required this.dbSizeBytes,
+  });
+
+  String get formattedSize {
+    if (dbSizeBytes < 1024) return '$dbSizeBytes B';
+    if (dbSizeBytes < 1024 * 1024) {
+      return '${(dbSizeBytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(dbSizeBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+}
 
 /// One queued mutation that hasn't been replayed to the server yet.
 enum PendingOpKind { add, remove }
@@ -387,11 +411,13 @@ class DatabaseHelper {
     final batch = db.batch();
 
     for (final channel in channels) {
+      final id = channel['id']?.toString();
+      if (id == null) continue;
       batch.insert(
         'cached_channels',
         {
-          'id': channel['id'],
-          'data': channel.toString(),
+          'id': id,
+          'data': jsonEncode(channel),
           'cachedAt': DateTime.now().toIso8601String(),
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
@@ -401,7 +427,7 @@ class DatabaseHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<List<Map<String, dynamic>>> getCachedChannels() async {
+  Future<List<Map<String, dynamic>>> getCachedChannels({bool allowExpired = false}) async {
     final db = await database;
     final cutoff = DateTime.now()
         .subtract(AppConstants.longCacheExpiry)
@@ -409,13 +435,125 @@ class DatabaseHelper {
 
     final result = await db.query(
       'cached_channels',
-      where: 'cachedAt > ?',
-      whereArgs: [cutoff],
+      where: allowExpired ? null : 'cachedAt > ?',
+      whereArgs: allowExpired ? null : [cutoff],
     );
 
-    return result.map((e) {
-      return {'id': e['id'], 'data': e['data']};
-    }).toList();
+    final list = <Map<String, dynamic>>[];
+    for (final e in result) {
+      try {
+        final raw = e['data'] as String;
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          list.add(decoded);
+        }
+      } catch (_) {}
+    }
+    return list;
+  }
+
+  Future<void> cachePrograms(List<Map<String, dynamic>> programs) async {
+    final db = await database;
+    final batch = db.batch();
+
+    for (final prog in programs) {
+      final id = prog['id']?.toString();
+      if (id == null) continue;
+      batch.insert(
+        'cached_programs',
+        {
+          'id': id,
+          'data': jsonEncode(prog),
+          'cachedAt': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<Map<String, dynamic>>> getCachedPrograms({bool allowExpired = false}) async {
+    final db = await database;
+    final cutoff = DateTime.now()
+        .subtract(AppConstants.cacheExpiry)
+        .toIso8601String();
+
+    final result = await db.query(
+      'cached_programs',
+      where: allowExpired ? null : 'cachedAt > ?',
+      whereArgs: allowExpired ? null : [cutoff],
+    );
+
+    final list = <Map<String, dynamic>>[];
+    for (final e in result) {
+      try {
+        final raw = e['data'] as String;
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          list.add(decoded);
+        }
+      } catch (_) {}
+    }
+    return list;
+  }
+
+  Future<CacheStats> getCacheStats() async {
+    final db = await database;
+    int channels = 0;
+    int programs = 0;
+    int epgDays = 0;
+    int watchlist = 0;
+    int sizeBytes = 0;
+
+    try {
+      final rCh = await db.rawQuery('SELECT COUNT(*) as c FROM cached_channels');
+      channels = (rCh.first['c'] as int?) ?? 0;
+    } catch (_) {}
+
+    try {
+      final rPr = await db.rawQuery('SELECT COUNT(*) as c FROM cached_programs');
+      programs = (rPr.first['c'] as int?) ?? 0;
+    } catch (_) {}
+
+    try {
+      final rEpg = await db.rawQuery('SELECT COUNT(*) as c FROM epg_cache');
+      epgDays = (rEpg.first['c'] as int?) ?? 0;
+    } catch (_) {}
+
+    try {
+      final rWl = await db.rawQuery('SELECT COUNT(*) as c FROM watchlist');
+      watchlist = (rWl.first['c'] as int?) ?? 0;
+    } catch (_) {}
+
+    try {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final path = join(documentsDirectory.path, AppConstants.databaseName);
+      final file = File(path);
+      if (await file.exists()) {
+        sizeBytes = await file.length();
+      }
+    } catch (_) {}
+
+    return CacheStats(
+      channelsCount: channels,
+      programsCount: programs,
+      epgDaysCount: epgDays,
+      watchlistCount: watchlist,
+      dbSizeBytes: sizeBytes,
+    );
+  }
+
+  /// Safe cache cleanup: removes temporary channels, programs, and EPG caches
+  /// while completely preserving user's watchlist items and pending ops.
+  Future<void> clearCacheOnly() async {
+    final db = await database;
+    await db.delete('cached_channels');
+    await db.delete('cached_programs');
+    await db.delete('epg_cache');
+    try {
+      await db.execute('VACUUM');
+    } catch (_) {}
   }
 
   Future<void> clearExpiredCache() async {

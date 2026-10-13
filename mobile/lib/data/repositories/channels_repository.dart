@@ -2,12 +2,18 @@
 
 import '../../core/network/dio_client.dart';
 import '../../core/constants/app_constants.dart';
+import '../datasources/local/database_helper.dart';
 import '../models/channel_model.dart';
 
 class ChannelsRepository {
   final DioClient _dioClient;
+  final DatabaseHelper? _db;
 
-  ChannelsRepository({required DioClient dioClient}) : _dioClient = dioClient;
+  ChannelsRepository({
+    required DioClient dioClient,
+    DatabaseHelper? db,
+  })  : _dioClient = dioClient,
+        _db = db;
 
   Future<ChannelsPage> getChannels({
     String? category,
@@ -29,29 +35,60 @@ class ChannelsRepository {
     if (isFeatured != null) queryParams['isFeatured'] = isFeatured;
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
-    final response = await _dioClient.get(
-      AppEndpoints.channels,
-      queryParameters: queryParams,
-    );
+    try {
+      final response = await _dioClient.get(
+        AppEndpoints.channels,
+        queryParameters: queryParams,
+      );
 
-    final raw = response.data;
-    final list = (raw is Map && raw['data'] is List)
-        ? raw['data'] as List
-        : (raw is List ? raw : <dynamic>[]);
+      final raw = response.data;
+      final list = (raw is Map && raw['data'] is List)
+          ? raw['data'] as List
+          : (raw is List ? raw : <dynamic>[]);
 
-    final parsed = list
-        .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+      final parsed = list
+          .map((e) => ChannelModel.fromJson(e as Map<String, dynamic>))
+          .toList();
 
-    int totalCount = parsed.length;
-    if (raw is Map && raw['meta'] is Map && raw['meta']['total'] is num) {
-      totalCount = (raw['meta']['total'] as num).toInt();
+      int totalCount = parsed.length;
+      if (raw is Map && raw['meta'] is Map && raw['meta']['total'] is num) {
+        totalCount = (raw['meta']['total'] as num).toInt();
+      }
+
+      // Cache raw channel items if full list (no filters)
+      if (category == null && search == null && _db != null) {
+        _db!.cacheChannels(list.whereType<Map<String, dynamic>>().toList());
+      }
+
+      return ChannelsPage(
+        items: parsed,
+        total: totalCount,
+      );
+    } catch (e) {
+      // Offline fallback: serve from local SQLite database cache
+      if (_db != null) {
+        final cached = await _db!.getCachedChannels(allowExpired: true);
+        if (cached.isNotEmpty) {
+          var items = cached.map(ChannelModel.fromJson).toList();
+          if (category != null && category != 'ALL') {
+            items = items.where((c) => c.category == category).toList();
+          }
+          if (search != null && search.isNotEmpty) {
+            final q = search.toLowerCase();
+            items = items
+                .where((c) =>
+                    c.name.toLowerCase().contains(q) ||
+                    c.slug.toLowerCase().contains(q))
+                .toList();
+          }
+          return ChannelsPage(
+            items: items,
+            total: items.length,
+          );
+        }
+      }
+      rethrow;
     }
-
-    return ChannelsPage(
-      items: parsed,
-      total: totalCount,
-    );
   }
 
   Future<ChannelModel> getChannelById(String channelId) async {

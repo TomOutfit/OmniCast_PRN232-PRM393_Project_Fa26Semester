@@ -12,6 +12,7 @@ import '../../../core/i18n/app_locale.dart';
 import '../../../core/i18n/strings.dart';
 import '../../../core/utils/token_storage_helper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/datasources/local/database_helper.dart';
 import '../../../data/repositories/newsletter_repository.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../logic/newsletter/newsletter_bloc.dart';
@@ -31,6 +32,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _live = true;
   bool _dataSaver = false;
   bool _hydrated = false;
+  CacheStats? _cacheStats;
+  bool _clearingCache = false;
 
   @override
   void initState() {
@@ -41,14 +44,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _hydrate() async {
     final prefs = await _storage.getNotificationPrefs();
     final saver = await _storage.getDataSaver();
+    CacheStats? stats;
+    try {
+      stats = await getIt<DatabaseHelper>().getCacheStats();
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _push = prefs.push;
       _email = prefs.email;
       _live = prefs.live;
       _dataSaver = saver;
+      _cacheStats = stats;
       _hydrated = true;
     });
+  }
+
+  Future<void> _confirmClearCache() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0B132B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x3300E5FF), width: 1),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.cleaning_services_rounded, color: Color(0xFF00E5FF), size: 22),
+            SizedBox(width: 10),
+            Text(
+              'Xóa bộ nhớ đệm?',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Outfit',
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Dữ liệu kênh, lịch phát sóng tạm thời và bộ nhớ hình ảnh sẽ được dọn dẹp. Danh sách theo dõi và cài đặt tài khoản của bạn sẽ được giữ nguyên.',
+          style: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Hủy', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Dọn dẹp', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _clearingCache = true);
+    HapticFeedback.mediumImpact();
+    try {
+      await getIt<DatabaseHelper>().clearCacheOnly();
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      final newStats = await getIt<DatabaseHelper>().getCacheStats();
+      if (!mounted) return;
+      setState(() {
+        _cacheStats = newStats;
+        _clearingCache = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF091424),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF00E5FF), width: 0.8),
+          ),
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Color(0xFF00E5FF), size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Đã dọn dẹp bộ nhớ đệm thành công',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _clearingCache = false);
+    }
   }
 
   Future<void> _savePrefs() async {
@@ -325,6 +427,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
 
+                const SizedBox(height: 20),
+
+                // ── Cache & Offline Storage Section ───────────────────
+                const _SectionTitle(
+                  icon: Icons.storage_rounded,
+                  title: 'BỘ NHỚ ĐỆM & DỮ LIỆU OFFLINE',
+                ),
+                _CyberCard(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dung lượng đệm cục bộ',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Kênh, lịch EPG & ảnh đệm để phát siêu tốc',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0x1A00E5FF),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0x4D00E5FF), width: 0.8),
+                          ),
+                          child: Text(
+                            _cacheStats?.formattedSize ?? '0 B',
+                            style: const TextStyle(
+                              color: Color(0xFF00E5FF),
+                              fontFamily: 'JetBrainsMono',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _CacheMetricBadge(
+                            icon: Icons.tv_rounded,
+                            label: 'Kênh đã lưu',
+                            value: '${_cacheStats?.channelsCount ?? 0}',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _CacheMetricBadge(
+                            icon: Icons.schedule_rounded,
+                            label: 'Chương trình EPG',
+                            value: '${_cacheStats?.programsCount ?? 0}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Divider(color: Color(0x1A00E5FF), height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 16),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Bảo vệ: Danh sách yêu thích được giữ nguyên',
+                                  style: TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _clearingCache ? null : _confirmClearCache,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: const Color(0x1AFF0055),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0x4DFF0055), width: 0.8),
+                            ),
+                            child: _clearingCache
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF0055)),
+                                  )
+                                : const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.delete_outline_rounded, color: Color(0xFFFF0055), size: 14),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Dọn dẹp',
+                                        style: TextStyle(
+                                          color: Color(0xFFFF0055),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 28),
 
                 // ── Account Security Section ─────────────────────────
@@ -419,6 +653,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 32),
               ],
             ),
+    );
+  }
+}
+
+class _CacheMetricBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _CacheMetricBadge({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF091424),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF00E5FF)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

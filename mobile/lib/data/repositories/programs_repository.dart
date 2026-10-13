@@ -32,14 +32,28 @@ class ProgramsRepository {
 
   /// Returns the currently-airing live events across all channels.
   Future<List<LiveEventModel>> getLiveNow() async {
-    final response = await _dioClient.get(AppEndpoints.liveNow);
-    final raw = response.data;
-    final list = (raw is Map && raw['data'] is List)
-        ? raw['data'] as List
-        : (raw is List ? raw : <dynamic>[]);
-    return list
-        .map((e) => LiveEventModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _dioClient.get(AppEndpoints.liveNow);
+      final raw = response.data;
+      final list = (raw is Map && raw['data'] is List)
+          ? raw['data'] as List
+          : (raw is List ? raw : <dynamic>[]);
+      final parsed = list
+          .map((e) => LiveEventModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (_db != null && list.isNotEmpty) {
+        _db!.cachePrograms(list.whereType<Map<String, dynamic>>().toList());
+      }
+      return parsed;
+    } catch (e) {
+      if (_db != null) {
+        final cached = await _db!.getCachedPrograms(allowExpired: true);
+        if (cached.isNotEmpty) {
+          return cached.map(LiveEventModel.fromJson).toList();
+        }
+      }
+      rethrow;
+    }
   }
 
   /// Returns a paginated page of live events, optionally filtered by
