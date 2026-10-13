@@ -3,7 +3,7 @@
 // ============================================================
 //
 // HTTP client for the Studio control surface (Staff/Admin only).
-// Two flows are supported:
+// Three flows are supported:
 //
 //   1. Curated Live: pick existing recordings (royalty-free /
 //      self-uploaded only) and broadcast them as LIVE NOW on a
@@ -14,6 +14,13 @@
 //   2. Self-Record: upload a freshly-recorded clip (mobile camera
 //      capture) and either save it as a Recording or push it LIVE
 //      immediately.
+//
+//   3. Catalog (Danh mục nguồn công khai): browse a curated list
+//      of pre-vetted public-domain / royalty-free video sources
+//      (Mux, Cloudinary, Internet Archive, Blender Open Movie,
+//      Pexels) and add one of them to a channel as a Recording.
+//      The result is immediately selectable in the "Chọn nội dung"
+//      picker so the operator can stream it on the very next click.
 //
 // The repository does **not** attempt to play the result — the
 // studio's only job is to "go live" or "stop live". The viewer-side
@@ -30,6 +37,7 @@ import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/constants/app_constants.dart';
 import '../models/recording_model.dart';
+import '../models/studio_catalog_model.dart';
 
 class LiveStudioRepository {
   final DioClient _dioClient;
@@ -188,6 +196,60 @@ class LiveStudioRepository {
         ? raw['data'] as Map<String, dynamic>
         : (raw as Map<String, dynamic>);
     return body['url'] as String;
+  }
+
+  // ============================================================
+  // 5. Catalog (Mode 3 — Danh mục nguồn video công khai)
+  // ============================================================
+
+  /// Fetch the public catalog of pre-vetted video sources. Each
+  /// entry can be one-click-added to a channel via [addFromCatalog].
+  Future<StudioCatalogPage> listCatalogStreams({
+    String? channel,
+    bool? verifiedOnly,
+    String? search,
+  }) async {
+    final res = await _dioClient.get(
+      AppEndpoints.studioCatalogStreamsWithQuery(
+        channel: channel,
+        verified: verifiedOnly,
+        search: search,
+      ),
+    );
+    final raw = res.data;
+    final body = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : (raw as Map<String, dynamic>);
+    return StudioCatalogPage.fromJson(body);
+  }
+
+  /// Add a single catalog entry to a channel. Persists the entry as
+  /// a `Recording` row scoped to the chosen channel. The result is
+  /// immediately selectable in the "Chọn nội dung" picker so the
+  /// operator can stream it on the very next "PHÁT SÓNG" click.
+  Future<AddFromCatalogResult> addFromCatalog({
+    required String channelId,
+    required String catalogId,
+    String? title,
+    String? description,
+    bool? isPublished,
+  }) async {
+    final res = await _dioClient.post(
+      AppEndpoints.studioAddFromCatalog,
+      data: {
+        'channelId': channelId,
+        'catalogId': catalogId,
+        if (title != null && title.isNotEmpty) 'title': title,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (isPublished != null) 'isPublished': isPublished,
+      },
+    );
+    final raw = res.data;
+    final body = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : (raw as Map<String, dynamic>);
+    return AddFromCatalogResult.fromJson(body);
   }
 }
 

@@ -37,6 +37,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/recording_model.dart';
+import '../../../data/models/studio_catalog_model.dart';
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/repositories/live_studio_repository.dart';
 import '../../widgets/channel_logo.dart';
@@ -58,10 +59,12 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   late final LiveStudioRepository _repo = getIt<LiveStudioRepository>();
   late final ChannelsRepository _channelsRepo = getIt<ChannelsRepository>();
-  late final TabController _tabController = TabController(length: 2, vsync: this);
+  late final TabController _tabController = TabController(length: 3, vsync: this);
 
   final TextEditingController _searchCtrl = TextEditingController();
+  final TextEditingController _catalogSearchCtrl = TextEditingController();
   Timer? _searchDebounce;
+  Timer? _catalogSearchDebounce;
 
   // Channel selector
   List<ChannelModel> _channels = [];
@@ -73,6 +76,14 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   bool _loadingRecordings = false;
   String? _recordingsError;
   final Set<String> _selectedRecordingIds = <String>{};
+
+  // Catalog (Mode 3) state
+  List<StudioCatalogStreamModel> _catalogStreams = [];
+  StudioCatalogSummary? _catalogSummary;
+  bool _loadingCatalog = false;
+  String? _catalogError;
+  final Set<String> _addedCatalogIds = <String>{};
+  bool _onlyVerified = true;
 
   // Self-record state
   final ImagePicker _picker = ImagePicker();
@@ -99,9 +110,11 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   void dispose() {
     _tabController.dispose();
     _searchCtrl.dispose();
+    _catalogSearchCtrl.dispose();
     _selfTitleCtrl.dispose();
     _selfDescCtrl.dispose();
     _searchDebounce?.cancel();
+    _catalogSearchDebounce?.cancel();
     super.dispose();
   }
 
@@ -147,9 +160,11 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     _pickedFileDurationSec = null;
     _uploadProgress = 0;
     _uploadError = null;
+    _addedCatalogIds.clear();
     if (_selected != null) {
       _loadRecordings();
       _loadActiveLive();
+      _loadCatalog();
     }
   }
 
@@ -355,11 +370,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       _toast('Vui lòng nhập tiêu đề.');
       return;
     }
-    final duration = _pickedFileDurationSec;
-    if (duration == null || duration <= 0) {
-      _toast('Không xác định được thời lượng video.');
-      return;
-    }
+    final duration = (_pickedFileDurationSec != null && _pickedFileDurationSec! > 0)
+        ? _pickedFileDurationSec!
+        : 60;
 
     setState(() {
       _uploading = true;
@@ -404,6 +417,60 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       _toast(_uploadError!, accent: _danger);
     } finally {
       if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  // ============================================================
+  // Catalog (Mode 3) actions
+  // ============================================================
+
+  Future<void> _loadCatalog({String? search}) async {
+    if (_selected == null) return;
+    setState(() {
+      _loadingCatalog = true;
+      _catalogError = null;
+    });
+    try {
+      final page = await _repo.listCatalogStreams(
+        channel: _selected!.slug,
+        verifiedOnly: _onlyVerified,
+        search: search,
+      );
+      if (mounted) {
+        setState(() {
+          _catalogStreams = page.items;
+          _catalogSummary = page.summary;
+          _loadingCatalog = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _catalogError = e.toString();
+          _loadingCatalog = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _addFromCatalog(StudioCatalogStreamModel entry) async {
+    if (_selected == null) return;
+    try {
+      final res = await _repo.addFromCatalog(
+        channelId: _selected!.slug,
+        catalogId: entry.id,
+      );
+      if (!mounted) return;
+      setState(() => _addedCatalogIds.add(entry.id));
+      _toast(
+        res.message.isNotEmpty
+            ? res.message
+            : 'Đã thêm "${entry.title}" vào kênh ${_selected!.name}.',
+        accent: _accent,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _toast(_friendlyError(e), accent: _danger);
     }
   }
 
@@ -521,6 +588,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
               children: [
                 _buildCuratedTab(),
                 _buildSelfRecordTab(),
+                _buildCatalogTab(),
               ],
             ),
           ),
@@ -716,6 +784,8 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       ),
       child: TabBar(
         controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
         indicator: BoxDecoration(
           color: _accent.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
@@ -727,10 +797,17 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
           fontWeight: FontWeight.w800,
           fontFamily: 'Outfit',
           letterSpacing: 0.5,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Outfit',
+          fontSize: 12,
         ),
         tabs: const [
-          Tab(text: 'CHỌN NỘI DUNG', iconMargin: EdgeInsets.zero, height: 56),
+          Tab(text: 'CHỌN NỘI DUNG'),
           Tab(text: 'TỰ GHI HÌNH'),
+          Tab(text: 'DANH MỤC NGUỒN'),
         ],
       ),
     );
@@ -1145,6 +1222,219 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     );
   }
 
+  // ─── Tab 3: Catalog (Danh Mục Nguồn Video Công Khai) ──────────
+  Widget _buildCatalogTab() {
+    return Column(
+      children: [
+        // Search + verified toggle row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _catalogSearchCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  onChanged: (s) {
+                    _catalogSearchDebounce?.cancel();
+                    _catalogSearchDebounce = Timer(
+                      const Duration(milliseconds: 400),
+                      () => _loadCatalog(
+                        search: s.trim().isEmpty ? null : s.trim(),
+                      ),
+                    );
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Tìm nguồn (HLS, Mux, Cloudinary, 4K...)',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 13,
+                    ),
+                    prefixIcon: const Icon(Icons.search,
+                        color: _accent, size: 20),
+                    filled: true,
+                    fillColor: const Color(0xFF0B1320),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _VerifiedToggle(
+                value: _onlyVerified,
+                onChanged: (v) {
+                  setState(() => _onlyVerified = v);
+                  _loadCatalog();
+                },
+              ),
+            ],
+          ),
+        ),
+        // Summary pills
+        if (_catalogSummary != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Row(
+              children: [
+                _catalogSummaryPill(
+                  icon: Icons.collections_bookmark_rounded,
+                  label: '${_catalogSummary!.total} NGUỒN',
+                  color: const Color(0xFFF59E0B),
+                ),
+                const SizedBox(width: 6),
+                _catalogSummaryPill(
+                  icon: Icons.verified_rounded,
+                  label: '${_catalogSummary!.verified} VERIFIED',
+                  color: const Color(0xFF22C55E),
+                ),
+                const SizedBox(width: 6),
+                for (final entry in _catalogSummary!.byFormat.entries)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: _catalogSummaryPill(
+                      icon: Icons.movie_creation_outlined,
+                      label: '${entry.key} ×${entry.value}',
+                      color: _accent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        // Body
+        Expanded(
+          child: _buildCatalogBody(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCatalogBody() {
+    if (_loadingCatalog) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(child: CircularProgressIndicator(color: _accent)),
+      );
+    }
+    if (_catalogError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                color: _danger, size: 40),
+            const SizedBox(height: 8),
+            Text(
+              'Lỗi tải danh mục: $_catalogError',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _danger, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadCatalog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_catalogStreams.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.collections_bookmark_outlined,
+                  color: Color(0xFF475569), size: 48),
+              SizedBox(height: 12),
+              Text(
+                'Không có nguồn nào khớp với kênh hiện tại.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Hãy chọn kênh khác hoặc tắt bộ lọc VERIFIED.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.78,
+      ),
+      itemCount: _catalogStreams.length,
+      itemBuilder: (context, i) {
+        final entry = _catalogStreams[i];
+        return _CatalogCard(
+          entry: entry,
+          added: _addedCatalogIds.contains(entry.id),
+          onAdd: () => _addFromCatalog(entry),
+        );
+      },
+    );
+  }
+
+  Widget _catalogSummaryPill({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withValues(alpha: 0.45),
+          width: 0.7,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'JetBrainsMono',
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _captureActionButton({
     required IconData icon,
     required String label,
@@ -1434,3 +1724,315 @@ class _AntiPiracyNote extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// Catalog tab helpers
+// ============================================================
+
+/// Compact verified-only toggle (pill style with green glow when on).
+class _VerifiedToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _VerifiedToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: value
+              ? const Color(0xFF22C55E).withValues(alpha: 0.18)
+              : const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: value
+                ? const Color(0xFF22C55E)
+                : const Color(0x1F00E5FF).withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              value ? Icons.verified_rounded : Icons.verified_outlined,
+              size: 18,
+              color: value ? const Color(0xFF22C55E) : const Color(0xFF94A3B8),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'VERIFIED',
+              style: TextStyle(
+                color: value ? const Color(0xFF22C55E) : const Color(0xFF94A3B8),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'JetBrainsMono',
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Grid card for a single catalog stream entry.
+/// Shows thumbnail (or placeholder), title, format pill, duration,
+/// verified badge and an ADD button.
+class _CatalogCard extends StatelessWidget {
+  final StudioCatalogStreamModel entry;
+  final bool added;
+  final VoidCallback onAdd;
+
+  const _CatalogCard({
+    required this.entry,
+    required this.added,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: entry.verified
+              ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+              : const Color(0x1F00E5FF).withValues(alpha: 0.6),
+          width: 0.8,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Thumbnail
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _CatalogThumb(entry: entry),
+                // Format chip top-left
+                Positioned(
+                  left: 6,
+                  top: 6,
+                  child: _formatChip(entry.format),
+                ),
+                // Verified badge top-right
+                if (entry.verified)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified,
+                              size: 10, color: Colors.black),
+                          SizedBox(width: 2),
+                          Text(
+                            'CC',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'JetBrainsMono',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                // Duration chip bottom-right
+                Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      entry.formattedDuration,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'JetBrainsMono',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Body
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    entry.source,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 9,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 26,
+                    child: ElevatedButton(
+                      onPressed: added ? null : onAdd,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            added ? const Color(0xFF1E293B) : _accentCyan,
+                        foregroundColor:
+                            added ? const Color(0xFF64748B) : Colors.black,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            added ? Icons.check_circle : Icons.add_circle,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            added ? 'ĐÃ THÊM' : 'THÊM VÀO',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'JetBrainsMono',
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _formatChip(String format) {
+    final color = switch (format.toUpperCase()) {
+      'HLS' => const Color(0xFFFF6B35),
+      'MP4' => const Color(0xFF00E5FF),
+      'DASH' => const Color(0xFFA855F7),
+      'WEBM' => const Color(0xFF22C55E),
+      _ => const Color(0xFF94A3B8),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 0.6),
+      ),
+      child: Text(
+        format.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'JetBrainsMono',
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Thumbnail loader with three fallback levels:
+///   1. Network image (cached_network_image)
+///   2. Colored placeholder with format icon
+///   3. Empty dark placeholder
+class _CatalogThumb extends StatelessWidget {
+  final StudioCatalogStreamModel entry;
+  const _CatalogThumb({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = entry.thumbnailUrl;
+    if (url.isEmpty) return _placeholder();
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => _placeholder(),
+      errorWidget: (_, __, ___) => _placeholder(),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0B1320),
+            const Color(0xFF1E293B).withValues(alpha: 0.6),
+          ],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        switch (entry.format.toUpperCase()) {
+          'HLS' => Icons.live_tv,
+          'MP4' => Icons.movie,
+          'DASH' => Icons.video_settings,
+          'WEBM' => Icons.theaters,
+          _ => Icons.play_circle_outline,
+        },
+        size: 28,
+        color: const Color(0xFF475569),
+      ),
+    );
+  }
+}
+
+/// Inline accent cyan (kept separate so private helper widgets
+/// above can compile without importing the State class).
+const Color _accentCyan = Color(0xFF00E5FF);

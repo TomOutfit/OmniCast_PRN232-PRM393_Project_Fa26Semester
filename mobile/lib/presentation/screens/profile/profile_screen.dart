@@ -251,6 +251,22 @@ class ProfileScreen extends StatelessWidget {
                           const Divider(color: Color(0xFF162338), height: 1),
                         ],
 
+                        // Staff/Admin Live Studio (Role 1 & 3) — go
+                        // live / stop live / self-record / browse
+                        // public catalog in one place.
+                        if (user.isStaff || user.isAdmin) ...[
+                          _buildModernMenuItem(
+                            icon: Icons.podcasts_rounded,
+                            iconColor: const Color(0xFFFF2A55),
+                            title: 'Live Studio',
+                            subtitle:
+                                'Phát sóng trực tiếp • Tự ghi hình • Danh mục nguồn',
+                            highlight: true,
+                            onTap: () => context.push('/studio/live'),
+                          ),
+                          const Divider(color: Color(0xFF162338), height: 1),
+                        ],
+
                         _buildModernMenuItem(
                           icon: Icons.notifications_active_outlined,
                           iconColor: const Color(0xFF00E5FF),
