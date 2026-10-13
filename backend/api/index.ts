@@ -16,6 +16,9 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { setupSwagger } from '../src/common/swagger/swagger.config';
 
+import * as path from 'path';
+import * as fs from 'fs';
+
 // Global BigInt JSON serialization support
 if (typeof (BigInt.prototype as any).toJSON !== 'function') {
   (BigInt.prototype as any).toJSON = function () {
@@ -26,6 +29,34 @@ if (typeof (BigInt.prototype as any).toJSON !== 'function') {
 
 const server: Express = express();
 let isInitialized = false;
+
+// Serve self-recorded uploads in serverless / local
+const isServerless =
+  Boolean(process.env.VERCEL) ||
+  Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+  Boolean(process.env.LAMBDA_TASK_ROOT) ||
+  (typeof process.cwd === 'function' && process.cwd().startsWith('/var/task'));
+
+const uploadRoot = path.resolve(
+  process.env.UPLOAD_ROOT && !process.env.UPLOAD_ROOT.startsWith('/var/task')
+    ? process.env.UPLOAD_ROOT
+    : isServerless
+    ? path.join('/tmp', 'uploads')
+    : path.join(process.cwd(), 'uploads'),
+);
+
+try {
+  fs.mkdirSync(uploadRoot, { recursive: true });
+} catch (_) {}
+
+server.use(
+  '/uploads',
+  express.static(uploadRoot, {
+    acceptRanges: true,
+    maxAge: '24h',
+    fallthrough: false,
+  }),
+);
 
 // Rewrite any /api/* missing /v1 to /api/v1/* automatically
 server.use((req, res, next) => {

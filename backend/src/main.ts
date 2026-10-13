@@ -117,12 +117,22 @@ async function bootstrap() {
   const expressStatic = require('express');
   const pathModule = require('path');
   const fsModule = require('fs');
+  const isServerless =
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+    Boolean(process.env.LAMBDA_TASK_ROOT) ||
+    (typeof process.cwd === 'function' && process.cwd().startsWith('/var/task'));
+
   const uploadRoot = pathModule.resolve(
-    process.env.UPLOAD_ROOT ?? pathModule.join(process.cwd(), 'uploads'),
+    process.env.UPLOAD_ROOT && !process.env.UPLOAD_ROOT.startsWith('/var/task')
+      ? process.env.UPLOAD_ROOT
+      : isServerless
+      ? pathModule.join('/tmp', 'uploads')
+      : pathModule.join(process.cwd(), 'uploads'),
   );
   try {
     fsModule.mkdirSync(uploadRoot, { recursive: true });
-  } catch (_) {/* read-only FS — request handlers will surface a 500 */}
+  } catch (_) {/* read-only FS */}
   app.use(
     '/uploads',
     expressStatic.static(uploadRoot, {
