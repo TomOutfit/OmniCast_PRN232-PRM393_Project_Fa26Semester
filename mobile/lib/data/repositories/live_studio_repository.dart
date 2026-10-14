@@ -297,7 +297,7 @@ class LiveStudioRepository {
       options: Options(
         // Cloudinary expects multipart, dio will set the boundary.
         headers: {'Content-Type': 'multipart/form-data'},
-      },
+      ),
       onSendProgress: (sent, total) {
         if (onProgress != null && total > 0) onProgress(sent, total);
       },
