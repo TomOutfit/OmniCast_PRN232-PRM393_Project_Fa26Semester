@@ -32,6 +32,7 @@ import { STATUS_META } from '@/lib/constants/statuses';
 import { LIMITS } from '@/lib/constants/limits';
 import { canRunAiCurator } from '@/lib/guards/permissions';
 import { parseApiError } from '@/lib/errors/api-error';
+import { logWarn, logError } from '@/lib/utils/safe-log';
 import type { AiCuratorReport, LiveEvent } from '@/types';
 
 type CuratorStatus = LiveEvent['status'] | 'NEEDS_REVIEW';
@@ -110,7 +111,7 @@ export default function CuratorStudioPage() {
     const parsed = aiCuratorRequestSchema.safeParse(payload);
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
-      console.warn('[ai-curator] validation failed', firstIssue);
+      logWarn('[ai-curator] validation failed', firstIssue);
       return;
     }
 
@@ -126,7 +127,7 @@ export default function CuratorStudioPage() {
       setReportById((prev) => ({ ...prev, [row.id]: report }));
     } catch (rawError) {
       const api = parseApiError(rawError);
-      console.error('[ai-curator] analyze failed', api);
+      logError('[ai-curator] analyze failed', api);
     }
   };
 

@@ -8,6 +8,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/utils/safe-log';
 
 interface Props {
   children: ReactNode;
@@ -30,8 +31,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log to console (could be replaced with telemetry service)
-    console.error('[ErrorBoundary]', error, errorInfo);
+    // Route through `logError` so a leaked `Authorization` header
+    // inside the error object (axios errors drag the request
+    // config along) is scrubbed before the browser console /
+    // future telemetry sees it.
+    logError('[ErrorBoundary]', error, errorInfo);
   }
 
   reset = () => {

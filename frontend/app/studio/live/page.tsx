@@ -63,6 +63,7 @@ import {
 } from '@/lib/hooks/useLiveStudio';
 import type { Channel } from '@/types';
 import type { StudioCatalogStream } from '@/lib/api/live-studio';
+import { logError } from '@/lib/utils/safe-log';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog';
 type RecordSource = 'camera' | 'screen' | 'upload';
@@ -519,7 +520,11 @@ export default function WebLiveStudioPage() {
       refetchLiveEvents();
       refetchRecordings();
     } catch (err: any) {
-      console.error('[OmniCast Studio Live Error]:', err);
+      // `err` is typically an AxiosError whose `config.headers`
+      // carries the live `Authorization: Bearer <jwt>` header.
+      // Route through `logError` so that token never lands in
+      // the browser console / Sentry.
+      logError('[OmniCast Studio Live Error]:', err);
       if (err.response?.status === 413 || err.message?.includes('413')) {
         toast.error(
           'Dung lượng video vượt quá giới hạn 4.5MB của Vercel Serverless. Vui lòng chọn clip ngắn hơn hoặc dùng tab "Phát từ nội dung có sẵn".',
