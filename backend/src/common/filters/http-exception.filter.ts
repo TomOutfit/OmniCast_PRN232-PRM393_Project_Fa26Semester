@@ -1,6 +1,12 @@
 // ============================================================
 // OmniCast - HTTP Exception Filter
 // ============================================================
+//
+// Wraps every exception that escapes a controller, normalises the
+// shape, and emits a safe JSON error envelope. The 5xx branch
+// redaction-passes the stack trace through `LoggerService.redactSecrets`
+// so a misconfigured `throw new Error(\`bad cloud: ${apiKey}\`)` can't
+// end up in a log sink with the secret attached.
 
 import {
   ExceptionFilter,
@@ -11,6 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { LoggerService } from '../utils/logger.service';
 
 interface ErrorResponse {
   success: boolean;
@@ -150,11 +157,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (status >= 500) {
       this.logger.error(
         `[${request.method}] ${request.url} - ${status} (${error})`,
-        exception instanceof Error ? exception.stack : String(exception),
+        exception instanceof Error
+          ? LoggerService.redactSecrets(exception.stack ?? exception.message)
+          : LoggerService.redactSecrets(String(exception)),
       );
     } else {
       this.logger.warn(
-        `[${request.method}] ${request.url} - ${status} (${error}): ${Array.isArray(message) ? message.join('; ') : message}`,
+        `[${request.method}] ${request.url} - ${status} (${error}): ${
+          Array.isArray(message) ? message.join('; ') : message
+        }`,
       );
     }
 
