@@ -90,6 +90,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedFile;
   int? _pickedFileDurationSec;
+  int? _pickedFileSizeBytes; // populated when the file is picked
   double _uploadProgress = 0;
   bool _uploading = false;
   String? _uploadError;
@@ -159,6 +160,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     _activeLive = null;
     _pickedFile = null;
     _pickedFileDurationSec = null;
+    _pickedFileSizeBytes = null;
     _uploadProgress = 0;
     _uploadError = null;
     _addedCatalogIds.clear();
@@ -348,10 +350,21 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     setState(() {
       _pickedFile = file;
       _pickedFileDurationSec = null;
+      _pickedFileSizeBytes = null;
       _uploadProgress = 0;
       _uploadError = null;
     });
     _probeDuration(file);
+    _probeFileSize(file);
+  }
+
+  Future<void> _probeFileSize(XFile file) async {
+    try {
+      final size = await File(file.path).length();
+      if (mounted) setState(() => _pickedFileSizeBytes = size);
+    } catch (_) {
+      // No-op — UI will just hide the size hint.
+    }
   }
 
   Future<void> _probeDuration(XFile file) async {
@@ -395,32 +408,85 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       _uploadError = null;
     });
 
+    final pickedFile = File(_pickedFile!.path);
+    final fileSize = await pickedFile.length();
+    // Vercel rejects request bodies > 4.5 MB on Hobby. The legacy
+    // `uploadSelfRecordFile` proxies through the API, so it would
+    // fail for larger clips. The Cloudinary direct-upload path
+    // bypasses Vercel entirely (mobile POSTs straight to
+    // Cloudinary's CDN with a server-signed payload).
+    //
+    // We pick the path by file size with a 4 MB threshold so
+    // small clips still use the fast in-process flow.
+    const vercelBodyLimit = 4 * 1024 * 1024;
+    final useCloudinary = fileSize > vercelBodyLimit;
+
     try {
-      final url = await _repo.uploadSelfRecordFile(
-        file: File(_pickedFile!.path),
-        title: title,
-        onProgress: (sent, total) {
-          if (mounted) {
-            setState(() => _uploadProgress = sent / total);
-          }
-        },
-      );
-      final result = await _repo.uploadSelfRecord(
-        channelId: _selected!.slug,
-        title: title,
-        description:
-            _selfDescCtrl.text.trim().isEmpty ? null : _selfDescCtrl.text.trim(),
-        videoUrl: url,
-        duration: duration,
-        tags: const ['self-recorded', 'studio'],
-        visibility: _selfVisibility,
-      );
-      if (!mounted) return;
-      _toast(result.message, accent: _accent);
+      if (useCloudinary) {
+        // ─── Cloudinary direct upload (bypasses Vercel) ──────
+        final result = await _repo.addToLibraryFromCloudinaryUpload(
+          file: pickedFile,
+          channelId: _selected!.slug,
+          channelSlug: _selected!.slug,
+          title: title,
+          description: _selfDescCtrl.text.trim().isEmpty
+              ? null
+              : _selfDescCtrl.text.trim(),
+          tags: const ['self-recorded', 'studio', 'cloudinary'],
+          onUploadProgress: (p) {
+            if (mounted) setState(() => _uploadProgress = p);
+          },
+        );
+        // Optionally push LIVE immediately on the channel.
+        if (_selfVisibility == SelfRecordVisibility.immediate) {
+          await _repo.uploadSelfRecord(
+            channelId: _selected!.slug,
+            title: title,
+            description: _selfDescCtrl.text.trim().isEmpty
+                ? null
+                : _selfDescCtrl.text.trim(),
+            videoUrl: result.cloudinary.url,
+            duration: duration,
+            tags: const ['self-recorded', 'studio', 'cloudinary'],
+            visibility: _selfVisibility,
+          );
+        }
+        if (!mounted) return;
+        _toast(
+          'Đã upload video lên Cloudinary (${(fileSize / 1024 / 1024).toStringAsFixed(1)} MB).',
+          accent: _accent,
+        );
+      } else {
+        // ─── Legacy path (small files, in-process upload) ────
+        final url = await _repo.uploadSelfRecordFile(
+          file: pickedFile,
+          title: title,
+          onProgress: (sent, total) {
+            if (mounted) {
+              setState(() => _uploadProgress = sent / total);
+            }
+          },
+        );
+        final result = await _repo.uploadSelfRecord(
+          channelId: _selected!.slug,
+          title: title,
+          description: _selfDescCtrl.text.trim().isEmpty
+              ? null
+              : _selfDescCtrl.text.trim(),
+          videoUrl: url,
+          duration: duration,
+          tags: const ['self-recorded', 'studio'],
+          visibility: _selfVisibility,
+        );
+        if (!mounted) return;
+        _toast(result.message, accent: _accent);
+      }
       // Reset form
+      if (!mounted) return;
       setState(() {
         _pickedFile = null;
         _pickedFileDurationSec = null;
+        _pickedFileSizeBytes = null;
         _uploadProgress = 0;
         _selfTitleCtrl.clear();
         _selfDescCtrl.clear();
@@ -1625,6 +1691,12 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   Widget _buildUploadProgress() {
     final pct = (_uploadProgress * 100).clamp(0, 100).toInt();
+    // Decide which path will be used so the user sees the right hint.
+    // Mirrors the threshold in `_uploadAndBroadcast`.
+    const vercelBodyLimit = 4 * 1024 * 1024;
+    final willUseCloudinary =
+        (_pickedFileSizeBytes ?? 0) > vercelBodyLimit;
+    final sizeMb = (_pickedFileSizeBytes ?? 0) / 1024 / 1024;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1636,9 +1708,13 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
               child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
             ),
             const SizedBox(width: 10),
-            Text(
-              'Đang upload… $pct%',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+            Expanded(
+              child: Text(
+                'Đang upload lên ${willUseCloudinary ? 'Cloudinary CDN' : 'server'}… $pct%'
+                '${sizeMb > 0 ? '  •  ${sizeMb.toStringAsFixed(1)} MB' : ''}',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
