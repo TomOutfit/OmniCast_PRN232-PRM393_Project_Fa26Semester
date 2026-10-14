@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ChannelsModule } from './channels/channels.module';
 import { ProgramsModule } from './programs/programs.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { SearchModule } from './search/search.module';
 import { AiCuratorModule } from './ai-curator/ai-curator.module';
 import { AuditLoggerModule } from './audit-logger/audit-logger.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     ChannelsModule,
     ProgramsModule,
+    CloudinaryModule,
     SearchModule,
     AiCuratorModule,
     AuditLoggerModule,
