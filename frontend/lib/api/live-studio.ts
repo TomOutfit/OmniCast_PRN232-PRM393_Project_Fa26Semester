@@ -157,8 +157,9 @@ export async function uploadSelfRecordFile(
     '/programs/studio/recordings/upload/file',
     formData,
     {
+      timeout: 0, // Disable 15s timeout for large media uploads
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Let Axios/browser automatically supply boundary
       },
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total && onProgress) {

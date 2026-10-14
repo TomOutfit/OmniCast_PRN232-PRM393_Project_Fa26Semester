@@ -377,6 +377,17 @@ export default function WebLiveStudioPage() {
       });
       setRecordedFile(file);
       setHasActiveStream(false);
+
+      const isLocalhost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname.includes('localhost') ||
+          window.location.hostname.includes('127.0.0.1'));
+      if (!isLocalhost && blob.size > 4.2 * 1024 * 1024) {
+        toast.warning(
+          `Clip vừa ghi có dung lượng ${(blob.size / (1024 * 1024)).toFixed(1)} MB (vượt 4.5 MB của Vercel). Để test trên bản Deploy Vercel, hãy quay clip ngắn dưới 5 giây.`,
+          { duration: 7000 },
+        );
+      }
     };
 
     recorder.start(1000);
@@ -414,15 +425,27 @@ export default function WebLiveStudioPage() {
     tempVideo.onloadedmetadata = () => {
       const detectedDuration = Math.max(1, Math.round(tempVideo.duration));
       setRecordingSeconds(detectedDuration);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       setUploadedFileMeta({
         duration: detectedDuration,
         width: tempVideo.videoWidth,
         height: tempVideo.videoHeight,
-        sizeMb: (file.size / (1024 * 1024)).toFixed(1),
+        sizeMb,
       });
       toast.success(
-        `Đã nạp file video (${detectedDuration}s, ${(file.size / (1024 * 1024)).toFixed(1)} MB)`,
+        `Đã nạp file video (${detectedDuration}s, ${sizeMb} MB)`,
       );
+
+      const isLocalhost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname.includes('localhost') ||
+          window.location.hostname.includes('127.0.0.1'));
+      if (!isLocalhost && file.size > 4.2 * 1024 * 1024) {
+        toast.warning(
+          `File video (${sizeMb} MB) vượt quá giới hạn 4.5 MB của Vercel Serverless. Vui lòng chọn file nhẹ hơn hoặc dùng tab "Phát từ nội dung có sẵn".`,
+          { duration: 7000 },
+        );
+      }
     };
     tempVideo.src = url;
   };
@@ -435,6 +458,18 @@ export default function WebLiveStudioPage() {
     }
     if (!selfTitle.trim()) {
       toast.warning('Vui lòng nhập tiêu đề cho chương trình phát sóng.');
+      return;
+    }
+
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1'));
+    if (!isLocalhost && recordedFile.size > 4.2 * 1024 * 1024) {
+      toast.error(
+        `File video (${(recordedFile.size / (1024 * 1024)).toFixed(1)} MB) vượt giới hạn 4.5 MB của Vercel Serverless. Vui lòng quay clip ngắn dưới 5 giây hoặc dùng tab "Phát từ nội dung có sẵn".`,
+        { duration: 8000 },
+      );
       return;
     }
 
@@ -464,7 +499,7 @@ export default function WebLiveStudioPage() {
         channelId: selectedChannel.slug,
         title: selfTitle,
         description: selfDesc || undefined,
-        videoUrl: uploadRes.url,
+        videoUrl: (uploadRes as any)?.url || (uploadRes as any)?.data?.url || uploadRes.url,
         duration: durationSec,
         visibility,
         tags: ['web-studio', 'self-record'],
@@ -484,9 +519,20 @@ export default function WebLiveStudioPage() {
       refetchLiveEvents();
       refetchRecordings();
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || 'Có lỗi xảy ra khi tải lên phát sóng.',
-      );
+      console.error('[OmniCast Studio Live Error]:', err);
+      if (err.response?.status === 413 || err.message?.includes('413')) {
+        toast.error(
+          'Dung lượng video vượt quá giới hạn 4.5MB của Vercel Serverless. Vui lòng chọn clip ngắn hơn hoặc dùng tab "Phát từ nội dung có sẵn".',
+          { duration: 8000 },
+        );
+      } else {
+        const apiMsg = Array.isArray(err.response?.data?.message)
+          ? err.response.data.message.join(', ')
+          : err.response?.data?.message ||
+            err.message ||
+            'Có lỗi xảy ra khi tải lên phát sóng.';
+        toast.error(apiMsg);
+      }
       setUploadProgress(0);
     }
   };
@@ -1333,6 +1379,17 @@ export default function WebLiveStudioPage() {
                         </p>
                       </div>
                     )}
+                  </div>
+
+                  {/* Cloud Environment Notice */}
+                  <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/25 space-y-1">
+                    <div className="flex items-center gap-1.5 text-purple-300 font-mono text-[10px] font-bold uppercase">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Lưu ý phát sóng Cloud Vercel</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Môi trường Serverless giới hạn tải lên tối đa <strong>4.5 MB</strong> (~3-5 giây). Để phát sóng các chương trình dài (30p – 2h), hãy chuyển sang tab <strong>&ldquo;Phát từ nội dung có sẵn&rdquo;</strong> hoặc <strong>&ldquo;Catalog nguồn mở&rdquo;</strong>.
+                    </p>
                   </div>
 
                   {/* Upload Progress Bar */}
