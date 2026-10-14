@@ -2,14 +2,13 @@
 // Handles scheduled notifications for program reminders (15 min before air)
 
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
-import 'package:flutter/material.dart';
 
 import '../../data/models/watchlist_item_model.dart';
 import '../../data/datasources/local/database_helper.dart';
+import '../utils/safe_log.dart';
 
 // ============================================================
 // Notification Action IDs (3 quick actions per reminder)
@@ -163,7 +162,7 @@ class NotificationService {
 
     // Don't schedule if time has passed
     if (scheduledTime.isBefore(DateTime.now())) {
-      debugPrint('Cannot schedule reminder: time has passed');
+      safePrint('[omnicast:notification]', 'Cannot schedule reminder: time has passed');
       return;
     }
 
@@ -235,7 +234,7 @@ class NotificationService {
       payload: 'program:${item.programId}',
     );
 
-    debugPrint('Scheduled reminder for ${item.programTitle} at $scheduledTime');
+    safePrint('[omnicast:notification]', 'Scheduled reminder for ${item.programTitle} at $scheduledTime');
   }
 
   // Cancel a specific reminder
@@ -344,9 +343,9 @@ class NotificationService {
         }
       }
 
-      debugPrint('Scheduled ${items.length} reminders');
+      safePrint('[omnicast:notification]', 'Scheduled ${items.length} reminders');
     } catch (e) {
-      debugPrint('Error scheduling reminders: $e');
+      safePrint('[omnicast:notification]', 'Error scheduling reminders: $e', e);
     }
   }
 
@@ -374,7 +373,7 @@ class NotificationService {
       ),
       payload: 'program:${item.programId}',
     );
-    debugPrint('Snoozed reminder for ${item.programTitle} -> $next');
+    safePrint('[omnicast:notification]', 'Snoozed reminder for ${item.programTitle} -> $next');
   }
 
   // Show immediate notification (for testing)

@@ -12,6 +12,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../constants/app_constants.dart';
+import '../utils/safe_log.dart';
 
 /// Callback signature used by the Dio layer to ask the auth layer to
 /// rotate the access/refresh token pair. Returns the new access token
@@ -41,11 +42,17 @@ class DioClient {
 
     _dio.interceptors.addAll([
       _AuthInterceptor(_secureStorage),
+      // SECURITY NOTE: `requestBody: true` / `responseBody: true`
+      // would normally leak the login password, refresh token,
+      // and any `Authorization: Bearer …` header to the device
+      // log on every API call. The `logPrint` bridge below
+      // routes every line through `safePrint` so the redactor
+      // scrubs tokens before they hit the console.
       LogInterceptor(
         requestBody: true,
         responseBody: true,
         error: true,
-        logPrint: (o) => print('DIO: $o'),
+        logPrint: (o) => safePrint('[omnicast:dio]', o.toString()),
       ),
       _RefreshOn401Interceptor(
         secureStorage: _secureStorage,
