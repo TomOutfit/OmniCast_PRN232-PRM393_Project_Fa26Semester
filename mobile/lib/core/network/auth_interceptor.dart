@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../constants/app_constants.dart';
+import '../utils/safe_log.dart';
 
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage _secureStorage;
@@ -71,7 +72,7 @@ class AuthInterceptor extends Interceptor {
       if (refreshToken != null) {
         // Call token refresh endpoint
         // This would typically be handled by the AuthRepository
-        debugPrint('Attempting to refresh token...');
+        safePrint('[omnicast:auth]', 'Attempting to refresh token...');
         
         // If refresh succeeds, retry the original request
         // For now, just trigger the unauthorized callback
@@ -81,7 +82,10 @@ class AuthInterceptor extends Interceptor {
         onUnauthorized?.call();
       }
     } catch (e) {
-      debugPrint('Token refresh failed: $e');
+      // `e` is the refresh failure. Route through safePrint so a
+      // leaked `Authorization` header inside a DioException's
+      // request config can't end up in `flutter logs`.
+      safePrint('[omnicast:auth]', 'Token refresh failed: $e', e);
       onUnauthorized?.call();
     }
 
@@ -111,7 +115,7 @@ class RetryInterceptor extends Interceptor {
         // Increment retry count
         err.requestOptions.extra['retryCount'] = retryCount + 1;
 
-        debugPrint('Retrying request (${retryCount + 1}/$maxRetries)...');
+        safePrint('[omnicast:auth]', 'Retrying request (${retryCount + 1}/$maxRetries)...');
 
         // Wait before retry
         await Future.delayed(retryDelay * (retryCount + 1));
@@ -141,40 +145,52 @@ class RetryInterceptor extends Interceptor {
   }
 }
 
-// Log interceptor for debugging
+// Log interceptor for debugging.
+//
+// SECURITY WARNING: this interceptor prints the FULL request
+// headers (including `Authorization: Bearer <jwt>`) and the
+// request/response body. It is *not* wired into `DioClient`
+// by default. If you ever add it, also guard it behind
+// `kDebugMode` AND route every `debugPrint` through
+// `safePrint` (which calls `redactSecrets` on every string).
 class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    debugPrint('🌐 REQUEST[${options.method}] => PATH: ${options.path}');
+    safePrint('[omnicast:dio]', 'REQUEST[${options.method}] => PATH: ${options.path}');
     if (options.data != null) {
-      debugPrint('📤 Request Data: ${options.data}');
+      safePrint('[omnicast:dio]', 'Request Data: ${options.data}');
     }
     if (options.headers.isNotEmpty) {
-      debugPrint('📋 Headers: ${options.headers}');
+      // Even with redaction, prefer to skip in release builds.
+      if (kDebugMode) {
+        safePrint('[omnicast:dio]', 'Headers: ${options.headers}');
+      }
     }
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint(
-      '✅ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
+    safePrint(
+      '[omnicast:dio]',
+      'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
     );
     if (response.data != null) {
-      debugPrint('📥 Response Data: ${response.data}');
+      safePrint('[omnicast:dio]', 'Response Data: ${response.data}');
     }
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    debugPrint(
-      '❌ ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
+    safePrint(
+      '[omnicast:dio]',
+      'ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
     );
-    debugPrint('💥 Error Message: ${err.message}');
-    debugPrint('💥 Error Type: ${err.type}');
+    safePrint('[omnicast:dio]', 'Error Message: ${err.message}');
+    safePrint('[omnicast:dio]', 'Error Type: ${err.type}');
     if (err.response != null) {
-      debugPrint('💥 Response Data: ${err.response?.data}');
+      safePrint('[omnicast:dio]', 'Response Data: ${err.response?.data}');
     }
     handler.next(err);
   }
@@ -209,7 +225,7 @@ class CacheInterceptor extends Interceptor {
       final cachedResponse = _cache[key];
 
       if (cachedResponse != null) {
-        debugPrint('📦 Returning cached response for: $key');
+        safePrint('[omnicast:dio]', 'Returning cached response for: $key');
         handler.resolve(cachedResponse);
         return;
       }

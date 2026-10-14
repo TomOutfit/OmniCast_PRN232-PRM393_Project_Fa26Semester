@@ -1,7 +1,7 @@
 // OmniCast - Connectivity Service
+import 'safe_log.dart';
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -42,7 +42,7 @@ class ConnectivityService {
       final results = await _connectivity.checkConnectivity();
       _handleConnectivityChange(results);
     } catch (e) {
-      debugPrint('Connectivity check error: $e');
+      safePrint('[omnicast:connectivity]', 'Connectivity check error: $e', e);
       _connectivityController.add(false);
     }
   }
