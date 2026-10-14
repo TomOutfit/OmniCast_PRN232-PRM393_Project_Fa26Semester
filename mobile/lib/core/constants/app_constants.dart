@@ -191,6 +191,20 @@ class AppEndpoints {
       '/v1/programs/studio/live-events/$eventId/stop';
 
   // ============================================================
+  // Cloudinary Direct Upload (bypass Vercel 4.5 MB body limit)
+  //   * sign      — POST → returns signed payload for the mobile
+  //                 app to PUT/POST the file straight to
+  //                 Cloudinary's `auto/upload` endpoint.
+  //   * server    — Multipart fallback for very small files
+  //                 (capped at 4.5 MB by Vercel).
+  // After Cloudinary replies with `secure_url`, mobile calls
+  // `addToLibrary` (`studioRecordingsUpload` is for the metadata
+  // step, not the file bytes).
+  // ============================================================
+  static const String cloudinarySign = '/v1/uploads/cloudinary/sign';
+  static const String cloudinaryServer = '/v1/uploads/cloudinary/server';
+
+  // ============================================================
   // Studio Catalog (Mode 3 — Danh Mục Nguồn Video Công Khai)
   //   * List verified public-domain / royalty-free video
   //     sources that the Studio can add to a channel.
@@ -218,6 +232,8 @@ class AppEndpoints {
 
   static const String studioAddFromCatalog =
       '/v1/programs/studio/recordings/library/from-catalog';
+  static const String studioAddToLibrary =
+      '/v1/programs/studio/recordings/library';
 
   // Active live events on a channel. Backed by the existing
   // `/live-events/live-now` endpoint (declared at line 77). We

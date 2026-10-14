@@ -199,6 +199,179 @@ class LiveStudioRepository {
   }
 
   // ============================================================
+  // 4b. Cloudinary direct upload (bypass Vercel 4.5 MB body limit)
+  // ============================================================
+  //
+  // Why this flow exists:
+  //   The existing `uploadSelfRecordFile` posts the file to the
+  //   backend, which writes it to local storage. On Vercel this
+  //   breaks in two ways:
+  //     1. The 4.5 MB body-size cap rejects large clips.
+  //     2. The serverless filesystem is ephemeral — even if the
+  //        upload succeeds, the URL handed back stops resolving
+  //        once the function instance is recycled.
+  //
+  //   Cloudinary fixes both. The mobile app asks the backend to
+  //   sign a payload, then POSTs the file directly to Cloudinary
+  //   (the file never goes through Vercel). Cloudinary returns a
+  //   permanent `secure_url` we persist in the Recording row.
+  //
+  // The combined helper `addToLibraryFromCloudinaryUpload` runs
+  // all three steps (sign → upload → addToLibrary) in sequence
+  // and is what the Studio UI should call.
+  //
+  // Free-tier cap: 100 MB per file, 25 GB total storage.
+
+  /// Returns the signed payload the mobile app needs to upload
+  /// the file directly to Cloudinary.
+  Future<CloudinarySignedPayload> signCloudinaryUpload({
+    required String channelSlug,
+    required String title,
+    List<String>? tags,
+    int? maxBytes,
+  }) async {
+    final res = await _dioClient.post(
+      AppEndpoints.cloudinarySign,
+      data: {
+        'channelSlug': channelSlug,
+        'title': title,
+        if (tags != null) 'tags': tags,
+        if (maxBytes != null) 'maxBytes': maxBytes,
+      },
+    );
+    final raw = res.data;
+    final body = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : (raw as Map<String, dynamic>);
+    return CloudinarySignedPayload.fromJson(body);
+  }
+
+  /// Upload the file to Cloudinary using a previously-signed
+  /// payload. Returns Cloudinary's response envelope (which
+  /// contains the public `secure_url`).
+  ///
+  /// We use a fresh Dio instance here because:
+  ///   • the auth interceptor must not attach our `Authorization`
+  ///     header (Cloudinary would reject it as an unknown field),
+  ///   • Cloudinary's `uploadUrl` is on a different host so the
+  ///     BaseOptions.baseUrl from the app's API client would
+  ///     prefix the path.
+  Future<CloudinaryUploadResult> uploadFileToCloudinary({
+    required File file,
+    required CloudinarySignedPayload signed,
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+
+    // Use the file's MediaType if Dio can detect it; otherwise
+    // Cloudinary infers from the filename.
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        file.path,
+        filename: fileName,
+      ),
+      'api_key': signed.apiKey,
+      'timestamp': signed.timestamp,
+      'signature': signed.signature,
+      'folder': signed.folder,
+      'public_id': signed.publicId,
+      'allowed_formats': signed.allowedFormats.join(','),
+      if (signed.context.isNotEmpty) 'context': signed.context,
+      if (signed.tags.isNotEmpty) 'tags': signed.tags.join(','),
+    });
+
+    // Dedicated Dio so the auth interceptor / baseUrl don't
+    // touch Cloudinary's payload.
+    final cloudinaryDio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 60),
+      sendTimeout: const Duration(minutes: 5),
+      receiveTimeout: const Duration(minutes: 5),
+      headers: {
+        'Accept': 'application/json',
+      },
+    ));
+
+    final res = await cloudinaryDio.post<Map<String, dynamic>>(
+      signed.uploadUrl,
+      data: form,
+      options: Options(
+        // Cloudinary expects multipart, dio will set the boundary.
+        headers: {'Content-Type': 'multipart/form-data'},
+      },
+      onSendProgress: (sent, total) {
+        if (onProgress != null && total > 0) onProgress(sent, total);
+      },
+    );
+
+    return CloudinaryUploadResult.fromJson(res.data ?? const {});
+  }
+
+  /// All-in-one helper: sign → upload to Cloudinary → register
+  /// the resulting URL in the Studio library. This is the single
+  /// entry point the Studio UI should call from "TỰ GHI HÌNH".
+  ///
+  /// `onUploadProgress` is the upload-to-Cloudinary progress
+  /// (0..1). The metadata step (sign + addToLibrary) is fast and
+  /// doesn't surface its own progress bar.
+  Future<CloudinaryAddToLibraryResult> addToLibraryFromCloudinaryUpload({
+    required File file,
+    required String channelId,
+    required String channelSlug,
+    required String title,
+    String? description,
+    List<String>? tags,
+    int? maxBytes,
+    void Function(double progress)? onUploadProgress,
+  }) async {
+    // 1. Get a signed payload from the backend.
+    final signed = await signCloudinaryUpload(
+      channelSlug: channelSlug,
+      title: title,
+      tags: tags,
+      maxBytes: maxBytes,
+    );
+
+    // 2. Upload the file directly to Cloudinary.
+    final cloudinary = await uploadFileToCloudinary(
+      file: file,
+      signed: signed,
+      onProgress: (sent, total) {
+        if (onUploadProgress != null && total > 0) {
+          onUploadProgress(sent / total);
+        }
+      },
+    );
+
+    // 3. Register the resulting URL in the Studio library.
+    final library = await addToLibrary(
+      channelId: channelId,
+      title: title,
+      videoUrl: cloudinary.url,
+      duration: (cloudinary.durationSec ?? 0).round().clamp(1, 86400),
+      description: description,
+      thumbnailUrl: cloudinary.thumbnailUrl,
+      // Force classification as self-hosted. The auto-inference
+      // would map any cloudinary.com URL to CLOUDINARY_DEMO +
+      // DEMO_PRODUCTION_OK, which is fine but not as accurate
+      // as flagging it as the operator's own upload.
+      platform: 'CUSTOM_MP4',
+      sourceTypeOverride: 'UPLOADED_LOCAL',
+      licenseOverride: 'BUNNY_SELF_HOSTED',
+      sourceAttribution: 'Video uploaded by Studio operator',
+      extraTags: [
+        'cloudinary',
+        'cloudinary-public-id:${cloudinary.publicId}',
+        ...?tags,
+      ],
+    );
+
+    return CloudinaryAddToLibraryResult(
+      cloudinary: cloudinary,
+      library: library,
+    );
+  }
+
+  // ============================================================
   // 5. Catalog (Mode 3 — Danh mục nguồn video công khai)
   // ============================================================
 
@@ -250,6 +423,59 @@ class LiveStudioRepository {
         ? raw['data'] as Map<String, dynamic>
         : (raw as Map<String, dynamic>);
     return AddFromCatalogResult.fromJson(body);
+  }
+
+  // ============================================================
+  // 5b. Add to library (raw URL)
+  // ============================================================
+  //
+  // The Studio "Danh mục nguồn" tab also lets the operator paste
+  // a direct MP4/HLS URL (e.g. a Cloudinary `secure_url` returned
+  // by the upload flow above) and persist it as a Recording row
+  // on a chosen channel. The endpoint HEAD-probes the URL before
+  // saving so dead links are rejected.
+  //
+  // This is the lowest-friction path for "I have a URL, just
+  // broadcast it" workflows. Anti-piracy guard still rejects
+  // YouTube/Twitch/Vimeo/Facebook/TikTok/Dailymotion sources.
+
+  Future<RecordingModel> addToLibrary({
+    required String channelId,
+    required String title,
+    required String videoUrl,
+    required int duration,
+    String? description,
+    String? thumbnailUrl,
+    String? platform,
+    String? sourceTypeOverride,
+    String? licenseOverride,
+    String? sourceAttribution,
+    List<String>? extraTags,
+  }) async {
+    final res = await _dioClient.post(
+      AppEndpoints.studioAddToLibrary,
+      data: {
+        'channelId': channelId,
+        'title': title,
+        'videoUrl': videoUrl,
+        'duration': duration,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
+          'thumbnailUrl': thumbnailUrl,
+        if (platform != null) 'platform': platform,
+        if (sourceTypeOverride != null) 'sourceTypeOverride': sourceTypeOverride,
+        if (licenseOverride != null) 'licenseOverride': licenseOverride,
+        if (sourceAttribution != null) 'sourceAttribution': sourceAttribution,
+        if (extraTags != null && extraTags.isNotEmpty) 'tags': extraTags,
+      },
+    );
+    final raw = res.data;
+    final body = (raw is Map && raw['data'] is Map)
+        ? raw['data'] as Map<String, dynamic>
+        : (raw as Map<String, dynamic>);
+    final rec = (body['recording'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return RecordingModel.fromJson(rec);
   }
 }
 
@@ -352,4 +578,122 @@ class SelfRecordResult {
       message: json['message']?.toString() ?? '',
     );
   }
+}
+
+// ============================================================
+// Cloudinary signed-payload & upload result DTOs
+// ============================================================
+//
+// `CloudinarySignedPayload` mirrors the backend `CloudinaryService
+// .signDirectUpload()` return value. The mobile client uses it to
+// build a multipart POST body for `https://api.cloudinary.com/
+// v1_1/<cloud>/<resource_type>/upload`.
+//
+// `CloudinaryUploadResult` mirrors the JSON envelope Cloudinary
+// returns. The fields we actually use are `secure_url` (the public
+// CDN URL) and `public_id` (so the operator can find / delete
+// the asset in the Cloudinary Media Library).
+
+class CloudinarySignedPayload {
+  final String cloudName;
+  final String apiKey;
+  final int timestamp;
+  final String signature;
+  final String folder;
+  final String publicId;
+  final String resourceType;
+  final List<String> tags;
+  final List<String> allowedFormats;
+  final int maxFileSize;
+  final String context;
+  final String uploadUrl;
+
+  CloudinarySignedPayload({
+    required this.cloudName,
+    required this.apiKey,
+    required this.timestamp,
+    required this.signature,
+    required this.folder,
+    required this.publicId,
+    required this.resourceType,
+    required this.tags,
+    required this.allowedFormats,
+    required this.maxFileSize,
+    required this.context,
+    required this.uploadUrl,
+  });
+
+  factory CloudinarySignedPayload.fromJson(Map<String, dynamic> json) {
+    return CloudinarySignedPayload(
+      cloudName: json['cloudName']?.toString() ?? '',
+      apiKey: json['apiKey']?.toString() ?? '',
+      timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
+      signature: json['signature']?.toString() ?? '',
+      folder: json['folder']?.toString() ?? '',
+      publicId: json['publicId']?.toString() ?? '',
+      resourceType: json['resourceType']?.toString() ?? 'video',
+      tags: ((json['tags'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      allowedFormats: ((json['allowedFormats'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      maxFileSize: (json['maxFileSize'] as num?)?.toInt() ?? 0,
+      context: json['context']?.toString() ?? '',
+      uploadUrl: json['uploadUrl']?.toString() ?? '',
+    );
+  }
+}
+
+class CloudinaryUploadResult {
+  final String url;
+  final String publicId;
+  final int bytes;
+  final String resourceType;
+  final String format;
+  final double? durationSec;
+  final String? thumbnailUrl;
+  final int? width;
+  final int? height;
+
+  CloudinaryUploadResult({
+    required this.url,
+    required this.publicId,
+    required this.bytes,
+    required this.resourceType,
+    required this.format,
+    this.durationSec,
+    this.thumbnailUrl,
+    this.width,
+    this.height,
+  });
+
+  factory CloudinaryUploadResult.fromJson(Map<String, dynamic> json) {
+    return CloudinaryUploadResult(
+      url: json['secure_url']?.toString() ??
+          json['url']?.toString() ??
+          '',
+      publicId: json['public_id']?.toString() ?? '',
+      bytes: (json['bytes'] as num?)?.toInt() ?? 0,
+      resourceType: json['resource_type']?.toString() ?? 'video',
+      format: json['format']?.toString() ?? '',
+      durationSec: (json['duration'] as num?)?.toDouble(),
+      thumbnailUrl: json['thumbnailUrl']?.toString(),
+      width: (json['width'] as num?)?.toInt(),
+      height: (json['height'] as num?)?.toInt(),
+    );
+  }
+}
+
+/// Combined result of `addToLibraryFromCloudinaryUpload`:
+///   • `cloudinary` — Cloudinary's response envelope
+///   • `library` — the Recording row persisted in the Studio library
+class CloudinaryAddToLibraryResult {
+  final CloudinaryUploadResult cloudinary;
+  final RecordingModel library;
+
+  CloudinaryAddToLibraryResult({
+    required this.cloudinary,
+    required this.library,
+  });
 }
