@@ -18,12 +18,13 @@ import {
   type Locale,
 } from './config';
 
-const DICTIONARIES: Record<Locale, Record<string, string>> = {
-  vi: vi as Record<string, string>,
-  en: en as Record<string, string>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DICTIONARIES: Record<Locale, Record<string, any>> = {
+  vi: vi,
+  en: en,
 };
 
-type Dictionary = Record<string, string>;
+type Dictionary = Record<string, any>;
 
 interface I18nContextValue {
   locale: Locale;
@@ -73,13 +74,28 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const t = useCallback(
     (key: string, fallback?: string) => {
       const dict = DICTIONARIES[locale] ?? DICTIONARIES[DEFAULT_LOCALE];
-      const value = dict[key];
-      if (value !== undefined) return value;
-      // Try fallback locale
-      const fallbackDict = DICTIONARIES[DEFAULT_LOCALE];
-      if (fallbackDict && fallbackDict[key] !== undefined) {
-        return fallbackDict[key];
+      // Support dot-notation for nested sections (e.g. 'curator.pageTitle').
+      const segments = key.split('.');
+      let value: unknown = dict;
+      for (const seg of segments) {
+        if (value == null || typeof value !== 'object') {
+          value = undefined;
+          break;
+        }
+        value = (value as Record<string, unknown>)[seg];
       }
+      if (value !== undefined) return value as string;
+      // Try DEFAULT_LOCALE as fallback
+      const fallbackDict = DICTIONARIES[DEFAULT_LOCALE];
+      let fb: unknown = fallbackDict;
+      for (const seg of segments) {
+        if (fb == null || typeof fb !== 'object') {
+          fb = undefined;
+          break;
+        }
+        fb = (fb as Record<string, unknown>)[seg];
+      }
+      if (fb !== undefined) return fb as string;
       return fallback ?? key;
     },
     [locale],
