@@ -156,7 +156,10 @@ export default function WebLiveStudioPage() {
     refetch: refetchRecordings,
   } = useBroadcastableRecordings(selectedChannel?.slug, searchQuery);
 
-  const curatedRecordings = recordingsData?.items ?? [];
+  const curatedRecordings = useMemo(
+    () => recordingsData?.items ?? [],
+    [recordingsData?.items],
+  );
 
   const selectedRecordings = useMemo(() => {
     return curatedRecordings.filter((r) => selectedRecordingIds.includes(r.id));

@@ -18,13 +18,12 @@ import {
   type Locale,
 } from './config';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DICTIONARIES: Record<Locale, Record<string, any>> = {
+const DICTIONARIES: Record<Locale, Record<string, unknown>> = {
   vi: vi,
   en: en,
 };
 
-type Dictionary = Record<string, any>;
+type Dictionary = Record<string, unknown>;
 
 interface I18nContextValue {
   locale: Locale;
