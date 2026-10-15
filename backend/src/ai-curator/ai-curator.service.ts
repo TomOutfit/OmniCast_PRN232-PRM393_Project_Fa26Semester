@@ -175,7 +175,7 @@ export class AiCuratorService {
       userId,
       action: 'AI_CURATION_PREVIEW',
       entityType: 'AiCuratorReport',
-      entityId: null,
+      entityId: undefined,
       newValues: { ...report, draftTitle: draft.title },
     });
 
@@ -320,8 +320,11 @@ export class AiCuratorService {
       aiModelVersion: this.hasRealModel
         ? 'gpt-4o-omnicast-v3'
         : 'heuristic-fallback-v1',
-      processingTimeMs: 0,
-      tokenUsed: editorial.tokenUsed ?? compliance.tokenUsed ?? sentiment.tokenUsed,
+      processingTimeMs: Date.now() - startTime,
+      tokenUsed:
+        ('tokenUsed' in editorial ? editorial.tokenUsed : undefined) ??
+        ('tokenUsed' in compliance ? compliance.tokenUsed : undefined) ??
+        ('tokenUsed' in sentiment ? sentiment.tokenUsed : undefined),
       agentTimings: {
         sentimentMs,
         complianceMs,
@@ -329,7 +332,6 @@ export class AiCuratorService {
       },
     };
 
-    report.processingTimeMs = Date.now() - startTime;
     return report;
   }
 
