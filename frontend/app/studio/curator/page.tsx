@@ -1,5 +1,28 @@
 'use client';
 
+// ============================================================
+// OmniCast - AI Curator Studio (Staff / Admin)
+// ============================================================
+//
+// Three flows are wired to the backend `ai-curator` controller:
+//
+//   1. PREVIEW     — POST /ai-curator/analyze        (no DB write)
+//   2. CURATE      — POST /ai-curator/curate         (persists a report)
+//   3. APPLY       — POST /ai-curator/apply/:id      (pushes fields back)
+//
+// Plus history (GET /ai-curator/history/:id) so the curator can
+// audit previous model runs without rerunning the pipeline.
+//
+// On entry the curator sees the upcoming SCHEDULED programs. Clicking
+// a row loads its detail in the right panel. From there the curator
+// can:
+//   • Run "Phân tích" (preview / cached-curate)
+//   • "Lưu báo cáo" to persist the latest analysis (forces a new
+//     pipeline run by setting `forceRefresh: true`)
+//   • "Áp dụng" to push selected suggestions back to the program
+//   • Toggle history to view previous reports
+// ============================================================
+
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -7,23 +30,27 @@ import {
   FileText,
   Clock,
   Calendar,
-  AlertTriangle,
-  RefreshCw,
-  Lightbulb,
-  Target,
-  Shield,
-  TrendingUp,
   Loader2,
   Lock,
   Radio,
+  CheckCircle2,
+  RefreshCw,
+  Lightbulb,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CompactUserMenu } from '@/components/layout/compact-user-menu';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useLiveEvents, useLiveEventById } from '@/lib/hooks/usePrograms';
-import { useAnalyzeContent } from '@/lib/hooks/useAiCurator';
+import {
+  useAnalyzeContent,
+  useCurateProgram,
+  useApplyCuration,
+  useCurationHistory,
+} from '@/lib/hooks/useAiCurator';
 import {
   aiCuratorRequestSchema,
   type AiCuratorRequestInput,
@@ -33,7 +60,15 @@ import { LIMITS } from '@/lib/constants/limits';
 import { canRunAiCurator } from '@/lib/guards/permissions';
 import { parseApiError } from '@/lib/errors/api-error';
 import { logWarn, logError } from '@/lib/utils/safe-log';
+import { toReportShape } from '@/lib/utils/curator-helpers';
 import type { AiCuratorReport, LiveEvent } from '@/types';
+import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/i18n-provider';
+
+import { ReportDetail } from '@/components/curator/report-detail';
+import { CurateActions } from '@/components/curator/curate-actions';
+import { ApplyCurationPanel } from '@/components/curator/apply-curation-panel';
+import { HistorySection } from '@/components/curator/history-section';
 
 type CuratorStatus = LiveEvent['status'] | 'NEEDS_REVIEW';
 
@@ -49,7 +84,6 @@ interface CuratorRow {
 }
 
 function deriveStatus(row: LiveEvent): CuratorStatus {
-  // Map backend status to the curator's local status vocabulary.
   if (row.status === 'SCHEDULED') return 'SCHEDULED';
   if (row.status === 'LIVE') return 'LIVE';
   if (row.status === 'ENDED') return 'ENDED';
@@ -61,6 +95,7 @@ function deriveStatus(row: LiveEvent): CuratorStatus {
 export default function CuratorStudioPage() {
   const { user } = useAuth();
   const canCurate = canRunAiCurator(user);
+  const { t } = useI18n();
 
   // Live events awaiting curation (status SCHEDULED + has not been AI-reviewed)
   const { data, isFetching, refetch } = useLiveEvents(
@@ -73,8 +108,31 @@ export default function CuratorStudioPage() {
     enabled: !!selectedId && canCurate,
   });
 
+  /**
+   * `reportById` is keyed by `programId` and stores the report the UI
+   * currently shows for that program (preview OR persisted). We
+   * persist reports server-side via `useCurateProgram`, then memoise
+   * the latest result locally so the panel updates instantly.
+   */
   const [reportById, setReportById] = useState<Record<string, AiCuratorReport>>(
     {},
+  );
+
+  /** Track which reports are persisted (vs transient previews). */
+  const [persistedById, setPersistedById] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  /**
+   * Track which program is currently being analyzed (preview mode).
+   * Replaces the previous fragile discriminator that compared
+   * `analyzeMutation.variables?.title === program.title` — two
+   * programs can share a title, and preview requests only carry
+   * `title`, not `programId`. Using the programId from the row
+   * itself makes the per-row "analyzing" indicator reliable.
+   */
+  const [analyzingProgramId, setAnalyzingProgramId] = useState<string | null>(
+    null,
   );
 
   const rows: CuratorRow[] = useMemo(() => {
@@ -97,11 +155,20 @@ export default function CuratorStudioPage() {
     [rows, selectedId],
   );
 
-  // Track in-flight analyze requests so we can disable buttons per-row
+  // ─── Hooks ──────────────────────────────────────────────────────
   const analyzeMutation = useAnalyzeContent();
+  const curateMutation = useCurateProgram();
+  const applyMutation = useApplyCuration();
+  const historyQuery = useCurationHistory(selectedId ?? undefined, {
+    enabled: !!selectedId && canCurate,
+  });
 
+  // ─── Handlers ───────────────────────────────────────────────────
+  /**
+   * Mode 2 — preview / ad-hoc analysis. The server does NOT persist.
+   * Use case: a curator wants a quick read before committing.
+   */
   const handleAnalyze = async (row: CuratorRow) => {
-    // Validate before sending so we get a friendly inline error first.
     const payload: AiCuratorRequestInput = {
       title: row.title,
       description: row.description || undefined,
@@ -112,9 +179,11 @@ export default function CuratorStudioPage() {
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
       logWarn('[ai-curator] validation failed', firstIssue);
+      toast.warning(firstIssue?.message ?? 'Vui lòng kiểm tra dữ liệu đầu vào');
       return;
     }
 
+    setAnalyzingProgramId(row.id);
     try {
       const report = await analyzeMutation.mutateAsync({
         title: parsed.data.title,
@@ -125,14 +194,88 @@ export default function CuratorStudioPage() {
         language: parsed.data.language,
       });
       setReportById((prev) => ({ ...prev, [row.id]: report }));
+      // A preview is NOT persisted — make sure the "Đã lưu" pill
+      // doesn't lie.
+      setPersistedById((prev) => ({ ...prev, [row.id]: false }));
+      toast.success('Phân tích preview hoàn tất', {
+        description: `Khung giờ đề xuất: ${report.suggestedTimeSlot}`,
+      });
     } catch (rawError) {
       const api = parseApiError(rawError);
-      logError('[ai-curator] analyze failed', api);
+      logError('[ai-curator] preview failed', api);
+      toast.error('Phân tích preview thất bại', { description: api.message });
+    } finally {
+      setAnalyzingProgramId(null);
     }
   };
 
-  // Refresh when the underlying live-events query refetches
-  // (placeholder for future auto-refresh hook)
+  /**
+   * Mode 1 — curate an EXISTING program. The server persists a report
+   * (cached or fresh depending on `forceRefresh`). We update the
+   * local cache so the panel reflects the new row.
+   */
+  const handleCurate = async (row: CuratorRow, forceRefresh = true) => {
+    try {
+      const result = await curateMutation.mutateAsync({
+        programId: row.id,
+        forceRefresh,
+      });
+      setReportById((prev) => ({ ...prev, [row.id]: toReportShape(result) }));
+      setPersistedById((prev) => ({ ...prev, [row.id]: true }));
+      toast.success(
+        forceRefresh
+          ? 'Đã chạy lại pipeline AI'
+          : result.cached
+              ? 'Đã tải báo cáo đã lưu'
+              : 'Đã lưu báo cáo AI mới',
+        {
+          description: forceRefresh
+            ? `Model: ${result.aiModelVersion} · ${result.processingTimeMs}ms`
+            : `Cập nhật: ${formatDistanceToNow(new Date(result.createdAt), {
+                addSuffix: true,
+                locale: vi,
+              })}`,
+        },
+      );
+    } catch (rawError) {
+      const api = parseApiError(rawError);
+      logError('[ai-curator] curate failed', api);
+      toast.error('Lưu báo cáo thất bại', { description: api.message });
+    }
+  };
+
+  /**
+   * Mode 3 — apply curated suggestions back to the program.
+   * The user picks which fields to push (description, scheduledAt).
+   * The server then invalidates `programs.list` and `programs.detail`
+   * via the React Query cache so the list view re-fetches.
+   */
+  const handleApply = async (
+    row: CuratorRow,
+    fields: { description?: string; scheduledAt?: string },
+  ) => {
+    try {
+      const res = await applyMutation.mutateAsync({
+        programId: row.id,
+        payload: {
+          description: fields.description,
+          scheduledAt: fields.scheduledAt,
+          markApplied: true,
+        },
+      });
+      toast.success('Đã áp dụng đề xuất AI', {
+        description: `Cập nhật: ${res.appliedFields.join(', ')}`,
+      });
+      // The selected program changed server-side — refresh the row
+      // we render in the left list so its `scheduledAt` /
+      // `description` reflect the new state.
+      refetch();
+    } catch (rawError) {
+      const api = parseApiError(rawError);
+      logError('[ai-curator] apply failed', api);
+      toast.error('Áp dụng thất bại', { description: api.message });
+    }
+  };
 
   if (!canCurate) {
     return (
@@ -140,11 +283,10 @@ export default function CuratorStudioPage() {
         <Card className="p-10 glass-card text-center max-w-md">
           <Lock className="w-12 h-12 mx-auto mb-4 text-dark-500" />
           <h1 className="text-xl font-bold text-white mb-2">
-            Không có quyền truy cập
+            {t('curator.accessDenied')}
           </h1>
           <p className="text-dark-400 text-sm">
-            Bạn cần vai trò <strong>STAFF</strong> trở lên để vào AI Curator
-            Studio. Vui lòng liên hệ quản trị viên nếu bạn cần quyền này.
+            {t('curator.staffRequired')}
           </p>
         </Card>
       </div>
@@ -163,14 +305,14 @@ export default function CuratorStudioPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
-                  AI Curator Studio
+                  {t('curator.pageTitle')}
                 </h1>
                 <p className="text-dark-400">
-                  Đánh giá và phê duyệt nội dung với AI
+                  {t('curator.pageSubtitle')}
                 </p>
               </div>
             </div>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42] mr-2">
                 <button className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-purple-300 bg-purple-950/60 border border-purple-500/30 shadow-sm">
                   <Bot className="w-4 h-4 text-purple-400" />
@@ -189,7 +331,7 @@ export default function CuratorStudioPage() {
                 <p className="text-2xl font-bold text-white">
                   {rows.filter((r) => !r.aiReport).length}
                 </p>
-                <p className="text-sm text-dark-400">Chờ phân tích</p>
+                <p className="text-sm text-dark-400">{t('curator.pendingCount')}</p>
               </div>
               <Button
                 className="gap-2"
@@ -197,7 +339,7 @@ export default function CuratorStudioPage() {
                 disabled={isFetching}
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`}
+                  className={cn('w-4 h-4', isFetching && 'animate-spin')}
                 />
                 Làm mới
               </Button>
@@ -210,8 +352,11 @@ export default function CuratorStudioPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Program List */}
           <Card className="glass-card">
-            <div className="p-4 border-b border-dark-700">
-              <h2 className="font-bold text-white">Danh sách chương trình</h2>
+            <div className="p-4 border-b border-dark-700 flex items-center justify-between">
+              <h2 className="font-bold text-white">{t('curator.programList')}</h2>
+              <span className="text-xs text-dark-500 font-mono">
+                {rows.length} chương trình
+              </span>
             </div>
             <div className="divide-y divide-dark-700 max-h-[600px] overflow-y-auto">
               {isFetching && rows.length === 0 ? (
@@ -230,11 +375,12 @@ export default function CuratorStudioPage() {
                   <div
                     key={program.id}
                     onClick={() => setSelectedId(program.id)}
-                    className={`p-4 cursor-pointer transition-colors ${
+                    className={cn(
+                      'p-4 cursor-pointer transition-colors',
                       selectedId === program.id
                         ? 'bg-primary-500/10 border-l-2 border-primary-500'
-                        : 'hover:bg-dark-800/50'
-                    }`}
+                        : 'hover:bg-dark-800/50',
+                    )}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -258,18 +404,23 @@ export default function CuratorStudioPage() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            STATUS_META[program.status as keyof typeof STATUS_META]?.tone.bg ??
-                              'bg-dark-700'
-                          } ${
-                            STATUS_META[program.status as keyof typeof STATUS_META]?.tone.text ??
-                              'text-dark-300'
-                          }`}
+                          className={cn(
+                            'px-2 py-1 rounded text-xs font-medium',
+                            STATUS_META[program.status as keyof typeof STATUS_META]
+                              ?.tone.bg ?? 'bg-dark-700',
+                            STATUS_META[program.status as keyof typeof STATUS_META]
+                              ?.tone.text ?? 'text-dark-300',
+                          )}
                         >
-                          {STATUS_META[program.status as keyof typeof STATUS_META]?.label ??
-                            program.status}
+                          {STATUS_META[program.status as keyof typeof STATUS_META]
+                            ?.label ?? program.status}
                         </span>
-                        {!program.aiReport && (
+                        {program.aiReport ? (
+                          <div className="flex items-center gap-1 text-[10px] text-purple-300 bg-purple-950/40 border border-purple-500/30 rounded px-1.5 py-0.5">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Đã có AI
+                          </div>
+                        ) : (
                           <Button
                             size="sm"
                             variant="outline"
@@ -279,7 +430,7 @@ export default function CuratorStudioPage() {
                             }}
                             disabled={
                               analyzeMutation.isPending &&
-                              analyzeMutation.variables?.title === program.title
+                              analyzingProgramId === program.id
                             }
                             className="gap-1"
                           >
@@ -297,11 +448,21 @@ export default function CuratorStudioPage() {
 
           {/* AI Report Panel */}
           <Card className="glass-card">
-            <div className="p-4 border-b border-dark-700">
+            <div className="p-4 border-b border-dark-700 flex items-center justify-between">
               <h2 className="font-bold text-white flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-accent-gold" />
-                AI Analysis Report
+                {t('curator.aiReport')}
               </h2>
+              {selectedRow?.aiReport && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedId(null)}
+                  className="text-xs"
+                >
+                  Đóng
+                </Button>
+              )}
             </div>
             <div className="p-6">
               {selectedRow ? (
@@ -332,165 +493,43 @@ export default function CuratorStudioPage() {
                       </p>
                     </div>
                   ) : selectedRow.aiReport ? (
-                    <div className="space-y-4">
-                      {/* Broadcast Suitability */}
-                      <div className="p-4 rounded-lg bg-dark-900/50 border border-dark-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm text-dark-400">
-                            Khả năng phát sóng
-                          </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-bold ${
-                              selectedRow.aiReport.broadcastSuitability ===
-                              'PRIME_TIME'
-                                ? 'bg-accent-gold/20 text-accent-gold'
-                                : selectedRow.aiReport.broadcastSuitability ===
-                                    'STANDARD'
-                                  ? 'bg-primary-500/20 text-primary-400'
-                                  : 'bg-red-500/20 text-red-400'
-                            }`}
-                          >
-                            {selectedRow.aiReport.broadcastSuitability ===
-                            'PRIME_TIME'
-                              ? '★ Giờ vàng'
-                              : selectedRow.aiReport.broadcastSuitability ===
-                                  'STANDARD'
-                                ? '◆ Phát thường'
-                                : '⚠ Hạn chế'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-white">
-                          <Target className="w-4 h-4 inline mr-2 text-primary-400" />
-                          Khung giờ đề xuất:{' '}
-                          {selectedRow.aiReport.suggestedTimeSlot}
-                        </p>
-                        {selectedRow.aiReport.complianceAssessment
-                          ?.recommendedBroadcastWindow && (
-                          <p className="text-xs text-dark-400 mt-2">
-                            Khung phát sóng khuyến nghị:{' '}
-                            {
-                              selectedRow.aiReport.complianceAssessment
-                                .recommendedBroadcastWindow
-                            }
-                          </p>
-                        )}
-                      </div>
+                    <>
+                      <ReportDetail report={selectedRow.aiReport} />
 
-                      {/* Sentiment Analysis */}
-                      <div className="p-4 rounded-lg bg-dark-900/50 border border-dark-700">
-                        <h4 className="text-sm font-medium text-dark-400 mb-3 flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" />
-                          Phân tích tình cảm
-                        </h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="text-center p-2 rounded bg-dark-800">
-                            <p
-                              className={`text-sm font-medium ${
-                                selectedRow.aiReport.sentimentAnalysis
-                                  .overallSentiment === 'positive'
-                                  ? 'text-green-400'
-                                  : selectedRow.aiReport.sentimentAnalysis
-                                      .overallSentiment === 'neutral'
-                                    ? 'text-yellow-400'
-                                    : 'text-red-400'
-                              }`}
-                            >
-                              {selectedRow.aiReport.sentimentAnalysis
-                                .overallSentiment === 'positive'
-                                ? 'Tích cực'
-                                : selectedRow.aiReport.sentimentAnalysis
-                                    .overallSentiment === 'neutral'
-                                  ? 'Trung lập'
-                                  : 'Tiêu cực'}
-                            </p>
-                            <p className="text-xs text-dark-500">Cảm xúc</p>
-                          </div>
-                          <div className="text-center p-2 rounded bg-dark-800">
-                            <p className="text-sm font-medium text-white capitalize">
-                              {
-                                selectedRow.aiReport.sentimentAnalysis
-                                  .hypeLevel
-                              }
-                            </p>
-                            <p className="text-xs text-dark-500">
-                              Mức độ hype
-                            </p>
-                          </div>
-                          <div className="text-center p-2 rounded bg-dark-800">
-                            <p className="text-sm font-medium text-white">
-                              {
-                                selectedRow.aiReport.sentimentAnalysis
-                                  .audienceEngagement
-                              }
-                              %
-                            </p>
-                            <p className="text-xs text-dark-500">Tương tác</p>
-                          </div>
-                        </div>
-                      </div>
+                      <ApplyCurationPanel
+                        row={{
+                          id: selectedRow.id,
+                          title: selectedRow.title,
+                          description: selectedRow.description,
+                          scheduledAt: selectedRow.scheduledAt,
+                          status: selectedRow.status,
+                          aiReport: selectedRow.aiReport,
+                        }}
+                        onApply={(fields) => handleApply(selectedRow, fields)}
+                        loading={applyMutation.isPending}
+                      />
 
-                      {/* Compliance */}
-                      <div className="p-4 rounded-lg bg-dark-900/50 border border-dark-700">
-                        <h4 className="text-sm font-medium text-dark-400 mb-3 flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
-                          Đánh giá tuân thủ
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`px-2 py-1 rounded text-sm ${
-                              selectedRow.aiReport.complianceAssessment
-                                .isAgeRestricted
-                                ? 'bg-red-500/20 text-red-400'
-                                : 'bg-green-500/20 text-green-400'
-                            }`}
-                          >
-                            {
-                              selectedRow.aiReport.complianceAssessment
-                                .ageRating
-                            }
-                          </span>
-                          {selectedRow.aiReport.complianceAssessment.flaggedContent?.map(
-                            (flag, i) => (
-                              <span
-                                key={i}
-                                className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-sm"
-                              >
-                                {flag}
-                              </span>
-                            ),
-                          )}
-                        </div>
-                      </div>
+                      <CurateActions
+                        row={{ id: selectedRow.id }}
+                        onPreview={() => handleAnalyze(selectedRow)}
+                        onCurate={() => handleCurate(selectedRow, true)}
+                        analyzing={
+                          analyzeMutation.isPending &&
+                          analyzingProgramId === selectedRow.id
+                        }
+                        curating={curateMutation.isPending}
+                        isPersisted={!!persistedById[selectedRow.id]}
+                      />
 
-                      {/* Risk Warning */}
-                      {selectedRow.aiReport.riskWarnings && (
-                        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-red-400">
-                                Cảnh báo
-                              </p>
-                              <p className="text-sm text-dark-300">
-                                {selectedRow.aiReport.riskWarnings}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Model footer */}
-                      <p className="text-xs text-dark-500">
-                        Model:{' '}
-                        {selectedRow.aiReport.aiModelVersion ?? 'unknown'} ·
-                        Xử lý:{' '}
-                        {selectedRow.aiReport.processingTimeMs ?? 0}ms
-                      </p>
-                    </div>
+                      <HistorySection
+                        history={historyQuery.data}
+                        isLoading={historyQuery.isFetching}
+                      />
+                    </>
                   ) : (
                     <div className="text-center py-12">
                       {analyzeMutation.isPending &&
-                      analyzeMutation.variables?.title === selectedRow.title ? (
+                      analyzingProgramId === selectedRow.id ? (
                         <div className="space-y-4">
                           <Loader2 className="w-12 h-12 mx-auto text-primary-400 animate-spin" />
                           <p className="text-dark-400">AI đang phân tích...</p>
@@ -499,18 +538,17 @@ export default function CuratorStudioPage() {
                         <>
                           <Bot className="w-12 h-12 mx-auto text-dark-600 mb-4" />
                           <p className="text-dark-400 mb-4">
-                            Chưa có báo cáo AI cho chương trình này
+                            {t('curator.noReport')}
                           </p>
                           <Button
                             onClick={() => handleAnalyze(selectedRow)}
                             className="gap-2"
                           >
                             <Bot className="w-4 h-4" />
-                            Phân tích với AI
+                            {t('curator.analyzeWithAI')}
                           </Button>
                           <p className="text-xs text-dark-500 mt-3">
-                            Tiêu đề: {LIMITS.AI_TITLE_MIN}–
-                            {LIMITS.AI_TITLE_MAX} ký tự
+                            {`Tiêu đề: ${LIMITS.AI_TITLE_MIN}–${LIMITS.AI_TITLE_MAX} ký tự`}
                           </p>
                         </>
                       )}
