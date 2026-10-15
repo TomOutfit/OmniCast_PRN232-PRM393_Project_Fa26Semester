@@ -16,6 +16,7 @@ import '../../data/repositories/watchlist_repository.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../data/repositories/notifications_repository.dart';
 import '../../data/repositories/newsletter_repository.dart';
+import '../../data/repositories/ai_curator_repository.dart';
 import '../../data/datasources/local/database_helper.dart';
 import '../../logic/auth/auth_bloc.dart';
 import '../../logic/channels/channels_bloc.dart';
@@ -123,6 +124,12 @@ Future<void> initDependencies() async {
   // Newsletter — public endpoint, no JWT needed
   getIt.registerLazySingleton<NewsletterRepository>(
     () => NewsletterRepository(dioClient: getIt<DioClient>()),
+  );
+
+  // AI Curator — Staff/Admin control surface for the 3-agent
+  // content analysis pipeline. Mirrors `AiCuratorController`.
+  getIt.registerLazySingleton<AiCuratorRepository>(
+    () => AiCuratorRepository(dioClient: getIt<DioClient>()),
   );
 
   // BLoCs

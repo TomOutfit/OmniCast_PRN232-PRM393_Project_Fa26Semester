@@ -183,6 +183,254 @@ class AppStrings {
     'reviews.submit': {'vi': 'Gửi đánh giá', 'en': 'Submit review'},
     'reviews.writePlaceholder':
         {'vi': 'Chia sẻ trải nghiệm của bạn...', 'en': 'Share your experience...'},
+
+    // AI Curator Studio (Staff/Admin)
+    'curator.pageTitle': {'vi': 'AI Curator Studio', 'en': 'AI Curator Studio'},
+    'curator.pageSubtitle': {
+      'vi': '3-AGENT CONTENT ANALYSIS // STAFF ONLY',
+      'en': '3-AGENT CONTENT ANALYSIS // STAFF ONLY',
+    },
+    'curator.accessDeniedAppBar': {'vi': 'AI Curator', 'en': 'AI Curator'},
+
+    // Tabs
+    'curator.analyzeTab': {'vi': 'Phân tích mới', 'en': 'New analysis'},
+    'curator.applyTab': {'vi': 'Áp dụng đề xuất', 'en': 'Apply suggestions'},
+
+    // Preview header
+    'curator.newAnalysisHeader': {
+      'vi': 'Phân tích nội dung với AI',
+      'en': 'AI content analysis',
+    },
+    'curator.threeAgentHint': {
+      'vi': '3-Agent pipeline: Sentiment · Compliance · Editorial',
+      'en': '3-Agent pipeline: Sentiment · Compliance · Editorial',
+    },
+
+    // Form fields
+    'curator.titleFieldLabel': {
+      'vi': 'Tiêu đề chương trình',
+      'en': 'Program title',
+    },
+    'curator.titleHint': {
+      'vi': 'VD: Chung kết World Cup 2026',
+      'en': 'e.g. World Cup 2026 Final',
+    },
+    'curator.descriptionFieldLabel': {
+      'vi': 'Mô tả (tùy chọn)',
+      'en': 'Description (optional)',
+    },
+    'curator.descriptionHint': {
+      'vi': 'Mô tả chi tiết về nội dung...',
+      'en': 'Detailed description of the content...',
+    },
+    'curator.channelFieldLabel': {
+      'vi': 'Tên kênh (tùy chọn)',
+      'en': 'Channel name (optional)',
+    },
+    'curator.channelHint': {'vi': 'VD: VTV3 HD', 'en': 'e.g. Sports HD'},
+
+    // Buttons
+    'curator.runAnalysisButton': {
+      'vi': 'CHẠY PHÂN TÍCH VỚI AI',
+      'en': 'RUN AI ANALYSIS',
+    },
+    'curator.analyzingButton': {
+      'vi': 'ĐANG PHÂN TÍCH...',
+      'en': 'ANALYZING...',
+    },
+    'curator.applySuggestionButton': {
+      'vi': 'ÁP DỤNG ĐỀ XUẤT',
+      'en': 'APPLY SUGGESTION',
+    },
+    'curator.applySuggestionToProgram': {
+      'vi': 'ÁP DỤNG ĐỀ XUẤT LÊN CHƯƠNG TRÌNH',
+      'en': 'APPLY SUGGESTION TO PROGRAM',
+    },
+    'curator.applyingButton': {
+      'vi': 'ĐANG ÁP DỤNG...',
+      'en': 'APPLYING...',
+    },
+
+    // Errors
+    'curator.errorTitleRequired': {
+      'vi': 'Tiêu đề là bắt buộc.',
+      'en': 'Title is required.',
+    },
+    'curator.errorUnknown': {
+      'vi': 'Lỗi không xác định: {error}',
+      'en': 'Unknown error: {error}',
+    },
+    'curator.errorApply': {
+      'vi': 'Lỗi khi áp dụng: {error}',
+      'en': 'Error applying: {error}',
+    },
+    'curator.errorLoadHistory': {
+      'vi': 'Không tải được lịch sử: {error}',
+      'en': 'Could not load history: {error}',
+    },
+
+    // Apply tab
+    'curator.runAnalysisFirst': {
+      'vi':
+          'Chạy "Phân tích mới" trước để có kết quả AI, sau đó quay lại tab này để áp dụng.',
+      'en':
+          'Run "New analysis" first to get AI results, then return to this tab to apply.',
+    },
+    'curator.emptyApply': {
+      'vi': 'Không có chương trình nào để áp dụng',
+      'en': 'No programs to apply to',
+    },
+    'curator.emptyApplyHint': {
+      'vi':
+          'Chạy "Phân tích mới" trước để có kết quả AI, sau đó chọn chương trình tại đây.',
+      'en':
+          'Run "New analysis" first to get AI results, then pick a program here.',
+    },
+    'curator.selectProgram': {
+      'vi': 'CHỌN CHƯƠNG TRÌNH',
+      'en': 'SELECT PROGRAM',
+    },
+    'curator.selectProgramHint': {
+      'vi': 'Chọn chương trình...',
+      'en': 'Select program...',
+    },
+    'curator.applySuccess': {
+      'vi': 'Đã áp dụng đề xuất lên "{title}"',
+      'en': 'Applied suggestion to "{title}"',
+    },
+    'curator.applyWithSuggestion': {
+      'vi':
+          'Áp dụng "{slot}" + mô tả AI lên "{title}"?',
+      'en':
+          'Apply "{slot}" + AI description to "{title}"?',
+    },
+
+    // Result summary
+    'curator.aiResultLabel': {'vi': 'Kết quả AI', 'en': 'AI Result'},
+    'curator.analysisOverview': {
+      'vi': 'TỔNG QUAN PHÂN TÍCH',
+      'en': 'ANALYSIS OVERVIEW',
+    },
+    'curator.timeSlot': {'vi': 'Khung giờ', 'en': 'Time slot'},
+    'curator.engagement': {'vi': 'Tương tác', 'en': 'Engagement'},
+    'curator.broadcastWindow': {'vi': 'Khung phát', 'en': 'Broadcast window'},
+    'curator.ageLimit': {'vi': 'Giới hạn độ tuổi', 'en': 'Age limit'},
+    'curator.recommendedSlot': {
+      'vi': 'Khung giờ đề xuất: {slot}',
+      'en': 'Recommended slot: {slot}',
+    },
+    'curator.slotWithValue': {
+      'vi': 'Khung giờ: {slot}',
+      'en': 'Time slot: {slot}',
+    },
+    'curator.audienceWithValue': {
+      'vi': 'Đối tượng: {audience}',
+      'en': 'Audience: {audience}',
+    },
+
+    // Suitability card
+    'curator.broadcastSuitability': {
+      'vi': 'KHẢ NĂNG PHÁT SÓNG',
+      'en': 'BROADCAST SUITABILITY',
+    },
+
+    // Sentiment card
+    'curator.sentimentAnalysis': {
+      'vi': 'PHÂN TÍCH TÌNH CẢM',
+      'en': 'SENTIMENT ANALYSIS',
+    },
+    'curator.emotion': {'vi': 'Cảm xúc', 'en': 'Emotion'},
+    'curator.hypeLevel': {'vi': 'Mức hype', 'en': 'Hype level'},
+
+    // Compliance card
+    'curator.complianceAssessment': {
+      'vi': 'ĐÁNH GIÁ TUÂN THỦ',
+      'en': 'COMPLIANCE ASSESSMENT',
+    },
+    'curator.broadcastLabel': {
+      'vi': 'Phát: {window}',
+      'en': 'Broadcast: {window}',
+    },
+
+    // Risk warning
+    'curator.warning': {'vi': 'CẢNH BÁO', 'en': 'WARNING'},
+
+    // History
+    'curator.historyReports': {
+      'vi': 'LỊCH SỬ BÁO CÁO',
+      'en': 'REPORT HISTORY',
+    },
+    'curator.emptyHistory': {
+      'vi': 'Chưa có báo cáo nào cho chương trình này.',
+      'en': 'No reports for this program yet.',
+    },
+    'curator.historyMeta': {
+      'vi': '{model} · {ms}ms · {tokens} tokens',
+      'en': '{model} · {ms}ms · {tokens} tokens',
+    },
+
+    // Access denied
+    'curator.accessDeniedTitle': {
+      'vi': 'TRUY CẬP BỊ TỪ CHỐI',
+      'en': 'ACCESS DENIED',
+    },
+    'curator.accessDeniedMessage': {
+      'vi':
+          'Tính năng AI Curator phân tích nội dung chỉ dành riêng cho tài khoản Quản trị & Điều hành phát sóng.',
+      'en':
+          'AI Curator content analysis is restricted to Admin & Broadcast operations accounts.',
+    },
+
+    // Info dialog
+    'curator.infoTitle': {'vi': 'AI Curator Studio', 'en': 'AI Curator Studio'},
+    'curator.infoContent': {
+      'vi':
+          'AI Curator sử dụng 3-agent pipeline để phân tích nội dung:\n\n'
+          '1. Sentiment Agent — đánh giá tình cảm & hype\n'
+          '2. Compliance Agent — kiểm tra giới hạn độ tuổi\n'
+          '3. Editorial Agent — đề xuất khung giờ & đối tượng\n\n'
+          'Dùng cho Staff/Admin để phê duyệt và tối ưu lịch phát sóng.',
+      'en':
+          'AI Curator uses a 3-agent pipeline to analyze content:\n\n'
+          '1. Sentiment Agent — assesses sentiment & hype\n'
+          '2. Compliance Agent — checks age restrictions\n'
+          '3. Editorial Agent — recommends time slots & audience\n\n'
+          'Used by Staff/Admin to approve and optimize broadcast schedules.',
+    },
+    'curator.close': {'vi': 'Đóng', 'en': 'Close'},
+
+    // Suitability enum mapping
+    'curator.suitability.primeTime': {
+      'vi': '★ Giờ vàng',
+      'en': '★ Prime time',
+    },
+    'curator.suitability.restricted': {
+      'vi': '⚠ Hạn chế',
+      'en': '⚠ Restricted',
+    },
+    'curator.suitability.standard': {
+      'vi': '◆ Phát thường',
+      'en': '◆ Standard',
+    },
+
+    // Sentiment enum mapping
+    'curator.sentiment.positive': {
+      'vi': 'Tích cực',
+      'en': 'Positive',
+    },
+    'curator.sentiment.negative': {
+      'vi': 'Tiêu cực',
+      'en': 'Negative',
+    },
+    'curator.sentiment.neutral': {
+      'vi': 'Trung lập',
+      'en': 'Neutral',
+    },
+
+    // Broadcast window enum mapping
+    'curator.window.day': {'vi': 'Ban ngày', 'en': 'Daytime'},
+    'curator.window.evening': {'vi': 'Buổi tối', 'en': 'Evening'},
+    'curator.window.lateNight': {'vi': 'Đêm khuya', 'en': 'Late night'},
   };
 
   static String t(String key, AppLocale locale) {
