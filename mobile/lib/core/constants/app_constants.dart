@@ -85,8 +85,18 @@ class AppEndpoints {
   static const String search = '/v1/search';
   static const String searchSuggestions = '/v1/search/suggestions';
 
-  // AI Curator
-  static const String curate = '/v1/ai-curator/curate';
+  // AI Curator (Staff/Admin)
+  // The backend exposes 4 routes under /v1/ai-curator/. We don't
+  // use `curate` (the old name on this list was a placeholder) —
+  // the canonical routes are below.
+  static const String aiCuratorCurate = '/v1/ai-curator/curate';
+  static const String aiCuratorAnalyzePreview = '/v1/ai-curator/analyze';
+  static String aiCuratorAnalyze(String programId) =>
+      '/v1/ai-curator/analyze/$programId';
+  static String aiCuratorApply(String programId) =>
+      '/v1/ai-curator/apply/$programId';
+  static String aiCuratorHistory(String programId) =>
+      '/v1/ai-curator/history/$programId';
 
   // Audit Logs
   static const String auditLogs = '/v1/audit-logs';

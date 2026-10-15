@@ -1,13 +1,32 @@
-// OmniCast - AI Curator Screen (Staff Only)
-// Cyber-Dark Broadcast System styling with AI Neural Telemetry.
+// OmniCast - AI Curator Screen (Staff/Admin)
+// ============================================================
+//
+// Mobile equivalent of the web `StudioCuratorPage`. Calls the backend
+// `AiCuratorController` for all three modes plus history.
+//
+// Modes wired up:
+//   1. PREVIEW  — Mode 2: ad-hoc analysis with manual field entry.
+//                  Nothing is persisted server-side.
+//   2. CURATE   — Mode 1: existing program, persist report.
+//                  Not exposed directly on mobile (staff should
+//                  use the web UI for bulk curation).
+//   3. APPLY    — Mode 3: push suggestions to the program.
+//
+// RBAC: the router already guards this route — only STAFF (1) or
+// ADMIN (3) can reach this screen.
+// ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../logic/auth/auth_bloc.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/i18n/app_locale.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/repositories/ai_curator_repository.dart';
+import '../../../data/repositories/programs_repository.dart';
+import '../../../logic/auth/auth_bloc.dart';
 
 class AICuratorScreen extends StatefulWidget {
   const AICuratorScreen({super.key});
@@ -16,24 +35,227 @@ class AICuratorScreen extends StatefulWidget {
   State<AICuratorScreen> createState() => _AICuratorScreenState();
 }
 
-class _AICuratorScreenState extends State<AICuratorScreen> {
-  bool _isLoading = false;
-  Map<String, dynamic>? _analysisResult;
-  String? _error;
+class _AICuratorScreenState extends State<AICuratorScreen>
+    with SingleTickerProviderStateMixin {
+  late final AiCuratorRepository _curatorRepo;
+  late final ProgramsRepository _programsRepo;
 
-  // Filters
-  String? _selectedTimeRange = '24 giờ qua';
-  final List<String> _timeRanges = [
-    '24 giờ qua',
-    '7 ngày qua',
-    '30 ngày qua',
-  ];
+  // ── State ─────────────────────────────────────────────────
+  bool _isLoading = false;
+  String? _error;
+  AiCuratorReport? _result;
+
+  // Draft form state
+  final _titleController = TextEditingController();
+  final _descController = TextEditingController();
+  final _channelController = TextEditingController();
+
+  // Programs list (for apply-curation flow)
+  List<_ScheduledProgram> _programs = [];
+  _ScheduledProgram? _selectedProgram;
+
+  // History
+  List<AiCuratorReport> _history = [];
+  bool _historyOpen = false;
+
+  // Apply state
+  bool _applying = false;
+  String? _applySuccess;
+
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _curatorRepo = getIt<AiCuratorRepository>();
+    _programsRepo = getIt<ProgramsRepository>();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadPrograms();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    _channelController.dispose();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadPrograms() async {
+    try {
+      // Fetch SCHEDULED programs for the "apply" flow. We use
+      // `getPrograms` (paginated) so the curator can pick from a
+      // realistic EPG window rather than only currently-airing items.
+      final page = await _programsRepo.getPrograms(
+        status: 'SCHEDULED',
+        page: 1,
+        limit: 50,
+      );
+      if (mounted) {
+        setState(() {
+          _programs = page.items
+              .map((e) => _ScheduledProgram(
+                    id: e.id,
+                    title: e.title,
+                    description: e.description ?? '',
+                    scheduledAt: e.scheduledAt,
+                    channelName: e.channel?.name ?? '',
+                    status: e.status,
+                  ))
+              .toList(growable: false);
+        });
+      }
+    } catch (_) {
+      // Non-fatal — programs are only needed for the "apply" flow.
+    }
+  }
+
+  Future<void> _runAnalysis() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _error = appT(context, 'curator.errorTitleRequired'));
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _result = null;
+      _applySuccess = null;
+    });
+
+    try {
+      final report = await _curatorRepo.analyze(
+        title: title,
+        description: _descController.text.trim().isEmpty
+            ? null
+            : _descController.text.trim(),
+        channelName: _channelController.text.trim().isEmpty
+            ? null
+            : _channelController.text.trim(),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _result = report;
+        _isLoading = false;
+      });
+    } on AiCuratorException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = _tr(
+          context,
+          'curator.errorUnknown',
+          {'error': e.toString()},
+        );
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadHistory(String programId) async {
+    setState(() => _historyOpen = true);
+    try {
+      final hist = await _curatorRepo.history(programId);
+      if (!mounted) return;
+      setState(() => _history = hist);
+    } on AiCuratorException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _tr(
+              context,
+              'curator.errorLoadHistory',
+              {'error': e.message},
+            ),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _applyToProgram() async {
+    if (_selectedProgram == null || _result == null) return;
+
+    HapticFeedback.lightImpact();
+    setState(() {
+      _applying = true;
+      _applySuccess = null;
+    });
+
+    try {
+      // Parse suggested start time from "21:00 - 23:00" into ISO timestamp.
+      final parsedSlot = _parseSuggestedTime(
+        _result!.suggestedTimeSlot,
+        _selectedProgram!.scheduledAt,
+      );
+
+      await _curatorRepo.apply(
+        programId: _selectedProgram!.id,
+        scheduledAt: parsedSlot,
+        description: _result!.targetAudienceVibe,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _applySuccess = _tr(
+          context,
+          'curator.applySuccess',
+          {'title': _selectedProgram!.title},
+        );
+        _applying = false;
+      });
+    } on AiCuratorException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _applying = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = _tr(
+          context,
+          'curator.errorApply',
+          {'error': e.toString()},
+        );
+        _applying = false;
+      });
+    }
+  }
+
+  /// Parse "21:00 - 23:00" → ISO timestamp on the same day as `fallback`.
+  String? _parseSuggestedTime(String slot, DateTime fallback) {
+    final match = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(slot);
+    if (match == null) return null;
+    final hh = int.tryParse(match[1] ?? '');
+    final mm = int.tryParse(match[2] ?? '');
+    if (hh == null || mm == null) return null;
+
+    return DateTime(
+      fallback.year,
+      fallback.month,
+      fallback.day,
+      hh,
+      mm,
+    ).toIso8601String();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Check if user is staff
     final authState = context.read<AuthBloc>().state;
-    if (authState is! Authenticated || !_isStaff(authState.user.role)) {
+    if (authState is! Authenticated ||
+        (authState.user.role != 'STAFF' && authState.user.role != 'ADMIN')) {
       return _buildAccessDenied();
     }
 
@@ -42,11 +264,11 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.bg,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'AI Curator Studio',
+              appT(context, 'curator.pageTitle'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -55,7 +277,7 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
               ),
             ),
             Text(
-              'NEURAL ANALYTICS // BROADCAST AI',
+              appT(context, 'curator.pageSubtitle'),
               style: TextStyle(
                 color: Color(0xFF00E5FF),
                 fontSize: 9,
@@ -67,9 +289,6 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
           ],
         ),
         actions: [
-          // Live Studio shortcut — opens the new Curated Live +
-          // Self-Record control surface. Distinct from the AI
-          // Curator analytics surface (which only inspects data).
           IconButton(
             tooltip: 'Live Studio',
             icon: const Icon(Icons.podcasts_rounded, color: Color(0xFFFF2A55)),
@@ -80,162 +299,263 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             onPressed: () => _showInfoDialog(context),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: const Color(0xFF00E5FF),
+          labelColor: const Color(0xFF00E5FF),
+          unselectedLabelColor: AppColors.textFaint,
+          tabs: [
+            Tab(text: appT(context, 'curator.analyzeTab')),
+            Tab(text: appT(context, 'curator.applyTab')),
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _buildHeader(),
-            const SizedBox(height: 20),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildPreviewTab(),
+          _buildApplyTab(),
+        ],
+      ),
+    );
+  }
 
-            // Live Studio shortcut card — Staff can drop straight into
-            // the Curated Live / Self-Record control surface without
-            // going through Admin Hub.
-            _buildLiveStudioShortcut(),
-            const SizedBox(height: 20),
+  Widget _buildPreviewTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 20),
 
-            // Filters
-            _buildFilters(),
-            const SizedBox(height: 20),
+          // Title field
+          _buildTextField(
+            controller: _titleController,
+            label: appT(context, 'curator.titleFieldLabel'),
+            hint: appT(context, 'curator.titleHint'),
+            maxLength: 200,
+          ),
+          const SizedBox(height: 12),
 
-            // Analyze Button
-            _buildAnalyzeButton(),
-            const SizedBox(height: 24),
+          // Description field
+          _buildTextField(
+            controller: _descController,
+            label: appT(context, 'curator.descriptionFieldLabel'),
+            hint: appT(context, 'curator.descriptionHint'),
+            maxLines: 3,
+            maxLength: 5000,
+          ),
+          const SizedBox(height: 12),
 
-            // Results
-            if (_error != null) _buildError(),
-            if (_analysisResult != null) _buildResults(),
+          // Channel name field
+          _buildTextField(
+            controller: _channelController,
+            label: appT(context, 'curator.channelFieldLabel'),
+            hint: appT(context, 'curator.channelHint'),
+          ),
+          const SizedBox(height: 16),
+
+          // Analyze button
+          _buildAnalyzeButton(),
+          const SizedBox(height: 16),
+
+          // Error
+          if (_error != null) ...[
+            _buildError(),
+            const SizedBox(height: 16),
+          ],
+
+          // Result
+          if (_result != null) ...[
+            _buildResults(),
             const SizedBox(height: 36),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildLiveStudioShortcut() {
-    return GestureDetector(
-      onTap: () => context.push('/studio/live'),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0x33FF2A55), Color(0x1100E5FF)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFFF2A55).withValues(alpha: 0.4),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.podcasts_rounded,
-                color: Color(0xFFFF2A55),
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Live Studio',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Outfit',
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Chọn nội dung phát lên màn hình hoặc tự ghi hình Livestream',
-                    style: TextStyle(
-                      color: Color(0xFFCBD5E1),
-                      fontSize: 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Color(0xFFFF2A55),
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAccessDenied() {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: const Text('AI Curator'),
-        backgroundColor: AppColors.bg,
-      ),
-      body: Center(
+  Widget _buildApplyTab() {
+    if (_programs.isEmpty) {
+      return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.4),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.lock_clock_rounded,
-                  size: 56,
-                  color: AppColors.error,
-                ),
+              Icon(
+                Icons.schedule_rounded,
+                size: 56,
+                color: AppColors.textMuted,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'TRUY CẬP BỊ TỪ CHỐI',
+              const SizedBox(height: 16),
+              Text(
+                appT(context, 'curator.emptyApply'),
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Outfit',
-                  color: Colors.white,
-                  letterSpacing: 0.5,
+                  color: AppColors.textFaint,
+                  fontSize: 14,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Tính năng AI Curator phân tích nội dung chỉ dành riêng cho tài khoản Quản trị & Điều hành phát sóng.',
+              const SizedBox(height: 12),
+              Text(
+                appT(context, 'curator.emptyApplyHint'),
                 style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 13,
-                  height: 1.5,
+                  color: AppColors.textMuted,
+                  fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Result summary (from preview tab)
+          if (_result != null) ...[
+            _buildResultSummary(_result!),
+            const SizedBox(height: 20),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B1320),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0x1F00E5FF)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      appT(context, 'curator.runAnalysisFirst'),
+                      style: TextStyle(
+                        color: AppColors.textFaint,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Program selector
+          Text(
+            appT(context, 'curator.selectProgram'),
+            style: TextStyle(
+              fontSize: 11,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF00E5FF),
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1320),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+            ),
+            child: DropdownButton<_ScheduledProgram>(
+              value: _selectedProgram,
+              hint: Text(
+                appT(context, 'curator.selectProgramHint'),
+                style: TextStyle(color: AppColors.textFaint),
+              ),
+              isExpanded: true,
+              underline: const SizedBox(),
+              dropdownColor: const Color(0xFF0B1320),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5FF)),
+              items: _programs.map((p) {
+                return DropdownMenuItem(
+                  value: p,
+                  child: Text(
+                    p.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                setState(() {
+                  _selectedProgram = val;
+                  _applySuccess = null;
+                });
+                if (val != null) {
+                  _loadHistory(val.id);
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Apply button
+          if (_selectedProgram != null && _result != null)
+            _buildApplyButton(),
+          const SizedBox(height: 12),
+
+          // Success message
+          if (_applySuccess != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _applySuccess!,
+                      style: const TextStyle(
+                        color: AppColors.success,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // History
+          if (_historyOpen) _buildHistorySection(),
+        ],
       ),
     );
   }
+
+  // ── UI Builders ─────────────────────────────────────────────
 
   Widget _buildHeader() {
     return Container(
@@ -243,10 +563,7 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF0B1320),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0x3300E5FF),
-          width: 0.8,
-        ),
+        border: Border.all(color: const Color(0x3300E5FF), width: 0.8),
       ),
       child: Row(
         children: [
@@ -271,23 +588,23 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mô hình đề xuất luồng AI',
-                  style: TextStyle(
+                  appT(context, 'curator.newAnalysisHeader'),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'Outfit',
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Phân tích lưu lượng xem thời gian thực & tối ưu khung giờ vàng',
-                  style: TextStyle(
+                  appT(context, 'curator.threeAgentHint'),
+                  style: const TextStyle(
                     color: Color(0xFF94A3B8),
                     fontSize: 11,
                     height: 1.4,
@@ -301,52 +618,61 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    String? hint,
+    int maxLines = 1,
+    int? maxLength,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'KHUNG THỜI GIAN PHÂN TÍCH',
+        Text(
+          label.toUpperCase(),
           style: TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.w700,
             fontFamily: 'JetBrainsMono',
-            color: Color(0xFF00E5FF),
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF00E5FF),
             letterSpacing: 1.1,
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+            filled: true,
+            fillColor: const Color(0xFF0B1320),
+            counterStyle: TextStyle(color: AppColors.textMuted, fontSize: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0x1F00E5FF),
+                width: 0.8,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF00E5FF),
+                width: 1.5,
+              ),
+            ),
           ),
-          child: DropdownButton<String>(
-            value: _selectedTimeRange,
-            hint: const Text('Chọn khoảng thời gian', style: TextStyle(color: Color(0xFF94A3B8))),
-            isExpanded: true,
-            underline: const SizedBox(),
-            dropdownColor: const Color(0xFF0B1320),
-            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5FF)),
-            items: _timeRanges.map((range) {
-              return DropdownMenuItem(
-                value: range,
-                child: Text(
-                  range,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() => _selectedTimeRange = value);
-            },
-          ),
+          onChanged: (_) {
+            // Clear error on change
+            if (_error != null) setState(() => _error = null);
+          },
         ),
       ],
     );
@@ -387,7 +713,9 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
               const Icon(Icons.psychology_rounded, color: Colors.black, size: 20),
             const SizedBox(width: 8),
             Text(
-              _isLoading ? 'ĐANG PHÂN TÍCH...' : 'CHẠY PHÂN TÍCH VỚI AI',
+              _isLoading
+                  ? appT(context, 'curator.analyzingButton')
+                  : appT(context, 'curator.runAnalysisButton'),
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 13,
@@ -420,51 +748,169 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
               style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.close, color: AppColors.error, size: 16),
+            onPressed: () => setState(() => _error = null),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildResults() {
+    final r = _result!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'KẾT QUẢ ĐỀ XUẤT',
-          style: TextStyle(
-            fontSize: 12,
-            fontFamily: 'JetBrainsMono',
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF00E5FF),
-            letterSpacing: 1.1,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Summary Card
-        _buildSummaryCard(),
+        // Summary card
+        _buildSummaryCard(r),
         const SizedBox(height: 16),
 
-        // Top Performers
-        _buildTopPerformers(),
+        // Suitability + recommended time
+        _buildSuitabilityCard(r),
         const SizedBox(height: 16),
 
-        // Recommendations
-        _buildRecommendations(),
+        // Sentiment
+        _buildSentimentCard(r),
         const SizedBox(height: 16),
 
-        // Trend Analysis
-        _buildTrendAnalysis(),
+        // Compliance
+        _buildComplianceCard(r),
+        const SizedBox(height: 16),
+
+        // Risk warning
+        if (r.riskWarnings.isNotEmpty) ...[
+          _buildRiskWarning(r),
+          const SizedBox(height: 16),
+        ],
+
+        // Apply shortcut
+        if (_selectedProgram != null) _buildApplySection(r),
       ],
     );
   }
 
-  Widget _buildSummaryCard() {
-    final totalViews = _analysisResult?['totalViews'] ?? 0;
-    final avgWatchTime = _analysisResult?['avgWatchTime'] ?? 0;
-    final peakHour = _analysisResult?['peakHour'] ?? 'N/A';
-    final topCategory = _analysisResult?['topCategory'] ?? 'N/A';
+  Widget _buildResultSummary(AiCuratorReport r) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0x3300E5FF),
+            const Color(0x1100E5FF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF2A55).withValues(alpha: 0.4),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Color(0xFFFF2A55),
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appT(context, 'curator.aiResultLabel'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${r.aiModelVersion} · ${r.processingTimeMs}ms',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontFamily: 'JetBrainsMono',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: r.isPrimeTime
+                      ? AppColors.warning.withValues(alpha: 0.2)
+                      : r.isRestricted
+                          ? AppColors.error.withValues(alpha: 0.2)
+                          : AppColors.success.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: r.isPrimeTime
+                        ? AppColors.warning.withValues(alpha: 0.5)
+                        : r.isRestricted
+                            ? AppColors.error.withValues(alpha: 0.5)
+                            : AppColors.success.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Text(
+                  _suitabilityLabel(context, r.broadcastSuitability),
+                  style: TextStyle(
+                    color: r.isPrimeTime
+                        ? AppColors.warning
+                        : r.isRestricted
+                            ? AppColors.error
+                            : AppColors.success,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _tr(
+              context,
+              'curator.recommendedSlot',
+              {'slot': r.suggestedTimeSlot},
+            ),
+            style: TextStyle(
+              color: AppColors.textFaint,
+              fontSize: 12,
+            ),
+          ),
+          if (r.targetAudienceVibe.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              r.targetAudienceVibe,
+              style: const TextStyle(
+                color: Color(0xFF00E5FF),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
+  Widget _buildSummaryCard(AiCuratorReport r) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -475,9 +921,9 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'TỔNG QUAN LƯU LƯỢNG',
-            style: TextStyle(
+          Text(
+            appT(context, 'curator.analysisOverview'),
+            style: const TextStyle(
               fontSize: 11,
               fontFamily: 'JetBrainsMono',
               fontWeight: FontWeight.w700,
@@ -490,16 +936,16 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             children: [
               Expanded(
                 child: _StatItem(
-                  icon: Icons.visibility_rounded,
-                  label: 'Tổng lượt xem',
-                  value: _formatNumber(totalViews),
+                  icon: Icons.schedule_rounded,
+                  label: appT(context, 'curator.timeSlot'),
+                  value: r.suggestedTimeSlot,
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  icon: Icons.timer_outlined,
-                  label: 'Thời gian TB',
-                  value: '$avgWatchTime phút',
+                  icon: Icons.people_rounded,
+                  label: appT(context, 'curator.engagement'),
+                  value: '${r.sentiment.audienceEngagement}%',
                 ),
               ),
             ],
@@ -509,16 +955,19 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             children: [
               Expanded(
                 child: _StatItem(
-                  icon: Icons.schedule_rounded,
-                  label: 'Giờ cao điểm',
-                  value: peakHour,
+                  icon: Icons.category_rounded,
+                  label: appT(context, 'curator.broadcastWindow'),
+                  value: _broadcastWindowLabel(
+                    context,
+                    r.compliance.recommendedBroadcastWindow,
+                  ),
                 ),
               ),
               Expanded(
                 child: _StatItem(
-                  icon: Icons.category_outlined,
-                  label: 'Chuyên mục hot',
-                  value: topCategory,
+                  icon: Icons.shield_rounded,
+                  label: appT(context, 'curator.ageLimit'),
+                  value: r.compliance.ageRating,
                 ),
               ),
             ],
@@ -528,10 +977,7 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
     );
   }
 
-  Widget _buildTopPerformers() {
-    final topChannels = _analysisResult?['topChannels'] as List? ?? [];
-    final topPrograms = _analysisResult?['topPrograms'] as List? ?? [];
-
+  Widget _buildSuitabilityCard(AiCuratorReport r) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -542,9 +988,9 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'HIỆU SUẤT CAO NHẤT',
-            style: TextStyle(
+          Text(
+            appT(context, 'curator.broadcastSuitability'),
+            style: const TextStyle(
               fontSize: 11,
               fontFamily: 'JetBrainsMono',
               fontWeight: FontWeight.w700,
@@ -553,101 +999,107 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          if (topChannels.isNotEmpty) ...[
-            const Text(
-              'Kênh thu hút người xem',
-              style: TextStyle(
-                fontSize: 11,
-                color: Color(0xFF94A3B8),
-                fontFamily: 'JetBrainsMono',
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: r.isPrimeTime
+                      ? AppColors.warning.withValues(alpha: 0.15)
+                      : r.isRestricted
+                          ? AppColors.error.withValues(alpha: 0.15)
+                          : const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  r.isPrimeTime
+                      ? Icons.star_rounded
+                      : r.isRestricted
+                          ? Icons.warning_rounded
+                          : Icons.tv_rounded,
+                  color: r.isPrimeTime
+                      ? AppColors.warning
+                      : r.isRestricted
+                          ? AppColors.error
+                          : const Color(0xFF00E5FF),
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            ...topChannels.take(3).map((channel) => _TopItem(
-                  title: channel['name'] ?? '',
-                  subtitle: '${_formatNumber(channel['views'] ?? 0)} lượt xem',
-                  icon: Icons.tv_rounded,
-                )),
-          ],
-          if (topPrograms.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _suitabilityLabel(context, r.broadcastSuitability),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _tr(
+                        context,
+                        'curator.slotWithValue',
+                        {'slot': r.suggestedTimeSlot},
+                      ),
+                      style: TextStyle(
+                        color: AppColors.textFaint,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (r.targetAudienceVibe.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text(
-              'Chương trình nổi bật',
-              style: TextStyle(
-                fontSize: 11,
-                color: Color(0xFF94A3B8),
-                fontFamily: 'JetBrainsMono',
-              ),
-            ),
+            const Divider(color: Color(0x1A00E5FF)),
             const SizedBox(height: 8),
-            ...topPrograms.take(3).map((program) => _TopItem(
-                  title: program['title'] ?? '',
-                  subtitle: '${_formatNumber(program['views'] ?? 0)} lượt xem',
-                  icon: Icons.play_circle_fill_rounded,
-                )),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_rounded,
+                  color: Color(0xFF00E5FF),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _tr(
+                      context,
+                      'curator.audienceWithValue',
+                      {'audience': r.targetAudienceVibe},
+                    ),
+                    style: TextStyle(
+                      color: AppColors.textFaint,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildRecommendations() {
-    final recommendations = _analysisResult?['recommendations'] as List? ?? [];
-    if (recommendations.isEmpty) return const SizedBox();
+  Widget _buildSentimentCard(AiCuratorReport r) {
+    final sentimentColor = r.sentiment.overallSentiment == 'positive'
+        ? AppColors.success
+        : r.sentiment.overallSentiment == 'negative'
+            ? AppColors.error
+            : AppColors.warning;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'ĐỀ XUẤT TỐI ƯU HÓA TỪ AI',
-          style: TextStyle(
-            fontSize: 11,
-            fontFamily: 'JetBrainsMono',
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF00E5FF),
-            letterSpacing: 1.1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ...recommendations.map<Widget>((rec) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0B1320),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0x3300E5FF),
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.lightbulb_rounded,
-                    color: Color(0xFF00E5FF),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      rec['text'] ?? '',
-                      style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 12,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )),
-      ],
-    );
-  }
-
-  Widget _buildTrendAnalysis() {
-    final trends = _analysisResult?['trends'] as Map<String, dynamic>? ?? {};
+    final sentimentIcon = r.sentiment.overallSentiment == 'positive'
+        ? Icons.thumb_up_rounded
+        : r.sentiment.overallSentiment == 'negative'
+            ? Icons.thumb_down_rounded
+            : Icons.thumbs_up_down_rounded;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -659,9 +1111,9 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'CHỈ SỐ XU HƯỚNG',
-            style: TextStyle(
+          Text(
+            appT(context, 'curator.sentimentAnalysis'),
+            style: const TextStyle(
               fontSize: 11,
               fontFamily: 'JetBrainsMono',
               fontWeight: FontWeight.w700,
@@ -669,98 +1121,548 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
               letterSpacing: 0.8,
             ),
           ),
-          const SizedBox(height: 8),
-          _TrendItem(
-            label: 'Tăng trưởng người xem',
-            trend: trends['viewerGrowth'] ?? 0,
-          ),
-          const Divider(color: Color(0x1A00E5FF), height: 16),
-          _TrendItem(
-            label: 'Mức độ tương tác',
-            trend: trends['engagementChange'] ?? 0,
-          ),
-          const Divider(color: Color(0x1A00E5FF), height: 16),
-          _TrendItem(
-            label: 'Tỷ lệ giữ chân người xem',
-            trend: trends['retentionChange'] ?? 0,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _SentimentStat(
+                  icon: sentimentIcon,
+                  label: appT(context, 'curator.emotion'),
+                  value: _sentimentLabel(
+                    context,
+                    r.sentiment.overallSentiment,
+                  ),
+                  color: sentimentColor,
+                ),
+              ),
+              Expanded(
+                child: _SentimentStat(
+                  icon: Icons.local_fire_department_rounded,
+                  label: appT(context, 'curator.hypeLevel'),
+                  value: r.sentiment.hypeLevel.toUpperCase(),
+                  color: AppColors.warning,
+                ),
+              ),
+              Expanded(
+                child: _SentimentStat(
+                  icon: Icons.bar_chart_rounded,
+                  label: appT(context, 'curator.engagement'),
+                  value: '${r.sentiment.audienceEngagement}%',
+                  color: const Color(0xFF00E5FF),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _runAnalysis() async {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _analysisResult = null;
-    });
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-
-      final result = {
-        'totalViews': 1250000,
-        'avgWatchTime': 28,
-        'peakHour': '20:00 - 22:00',
-        'topCategory': 'Thể thao 4K',
-        'topChannels': [
-          {'name': 'VTV3 HD', 'views': 250000},
-          {'name': 'VTV6 Live', 'views': 180000},
-          {'name': 'HTV7 4K', 'views': 150000},
+  Widget _buildComplianceCard(AiCuratorReport r) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appT(context, 'curator.complianceAssessment'),
+            style: const TextStyle(
+              fontSize: 11,
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF00E5FF),
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: r.compliance.isAgeRestricted
+                      ? AppColors.error.withValues(alpha: 0.2)
+                      : AppColors.success.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: r.compliance.isAgeRestricted
+                        ? AppColors.error.withValues(alpha: 0.5)
+                        : AppColors.success.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      r.compliance.isAgeRestricted
+                          ? Icons.shield_rounded
+                          : Icons.verified_rounded,
+                      color: r.compliance.isAgeRestricted
+                          ? AppColors.error
+                          : AppColors.success,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      r.compliance.ageRating,
+                      style: TextStyle(
+                        color: r.compliance.isAgeRestricted
+                            ? AppColors.error
+                            : AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'JetBrainsMono',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _tr(
+                    context,
+                    'curator.broadcastLabel',
+                    {
+                      'window': _broadcastWindowLabel(
+                        context,
+                        r.compliance.recommendedBroadcastWindow,
+                      ),
+                    },
+                  ),
+                  style: TextStyle(
+                    color: AppColors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (r.compliance.flaggedContent.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: r.compliance.flaggedContent.map((flag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    flag,
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 11,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
-        'topPrograms': [
-          {'title': 'Bóng đá Trực Tiếp V-League', 'views': 320000},
-          {'title': 'The Voice Vietnam 2026', 'views': 180000},
-          {'title': 'Thời sự Toàn cảnh 19:00', 'views': 150000},
-        ],
-        'recommendations': [
-          {
-            'text':
-                'Nên tăng lịch phát sóng thể thao 4K vào cuối tuần để tối đa hóa lượng xem cao điểm.'
-          },
-          {
-            'text':
-                'Khung giờ vàng (20:00-22:00) đạt hiệu suất cao nhất khi ghép đôi với talkshow tương tác.'
-          },
-          {
-            'text':
-                'Kích hoạt tính năng thông báo phát lại cho các trận đấu thể thao đạt hơn 100K lượt xem.'
-          },
-        ],
-        'trends': {
-          'viewerGrowth': 15.5,
-          'engagementChange': 8.2,
-          'retentionChange': -1.4,
-        },
-      };
+      ),
+    );
+  }
 
-      if (!mounted) return;
-      setState(() {
-        _analysisResult = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Không thể phân tích: ${e.toString()}';
-        _isLoading = false;
-      });
+  Widget _buildRiskWarning(AiCuratorReport r) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appT(context, 'curator.warning'),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'JetBrainsMono',
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  r.riskWarnings,
+                  style: TextStyle(
+                    color: AppColors.textFaint,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApplySection(AiCuratorReport r) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0x33FF2A55),
+            const Color(0x1100E5FF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF2A55).withValues(alpha: 0.4),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_fix_high_rounded,
+                color: Color(0xFFFF2A55),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                appT(context, 'curator.applySuggestionButton'),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFFF2A55),
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _tr(
+              context,
+              'curator.applyWithSuggestion',
+              {
+                'slot': r.suggestedTimeSlot,
+                'title': _selectedProgram?.title ?? '',
+              },
+            ),
+            style: TextStyle(
+              color: AppColors.textFaint,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _applying ? null : _applyToProgram,
+            child: Container(
+              width: double.infinity,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF2A55), Color(0xFF0072FF)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: _applying
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        appT(context, 'curator.applySuggestionButton'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Outfit',
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApplyButton() {
+    return GestureDetector(
+      onTap: _applying ? null : _applyToProgram,
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF2A55), Color(0xFF0072FF)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_applying)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            else
+              const Icon(Icons.auto_fix_high_rounded,
+                  color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              _applying
+                  ? appT(context, 'curator.applyingButton')
+                  : appT(context, 'curator.applySuggestionToProgram'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Outfit',
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistorySection() {
+    if (_history.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          appT(context, 'curator.emptyHistory'),
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appT(context, 'curator.historyReports'),
+          style: const TextStyle(
+            fontSize: 11,
+            fontFamily: 'JetBrainsMono',
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF00E5FF),
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...(_history.take(10).map((h) => _buildHistoryItem(h))),
+      ],
+    );
+  }
+
+  Widget _buildHistoryItem(AiCuratorReport h) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.6),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: h.isPrimeTime
+                  ? AppColors.warning
+                  : h.isRestricted
+                      ? AppColors.error
+                      : const Color(0xFF00E5FF),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_suitabilityLabel(context, h.broadcastSuitability)} · ${h.suggestedTimeSlot}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${h.aiModelVersion} · ${h.processingTimeMs}ms · ${h.tokenUsed ?? 0} tokens',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+                if (h.createdAt != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(h.createdAt!),
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  // ── i18n helpers ─────────────────────────────────────────────
+
+  /// Translate a key and substitute `{placeholder}` tokens.
+  String _tr(BuildContext context, String key, [Map<String, String>? vars]) {
+    var s = appT(context, key);
+    if (vars != null) {
+      vars.forEach((k, v) => s = s.replaceAll('{$k}', v));
+    }
+    return s;
+  }
+
+  String _suitabilityLabel(BuildContext context, String code) {
+    switch (code) {
+      case 'PRIME_TIME':
+        return appT(context, 'curator.suitability.primeTime');
+      case 'RESTRICTED':
+        return appT(context, 'curator.suitability.restricted');
+      default:
+        return appT(context, 'curator.suitability.standard');
     }
   }
 
-  bool _isStaff(String role) {
-    return role == 'STAFF' || role == 'ADMIN';
+  String _sentimentLabel(BuildContext context, String code) {
+    switch (code) {
+      case 'positive':
+        return appT(context, 'curator.sentiment.positive');
+      case 'negative':
+        return appT(context, 'curator.sentiment.negative');
+      default:
+        return appT(context, 'curator.sentiment.neutral');
+    }
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(1)}M';
-    } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}K';
+  String _broadcastWindowLabel(BuildContext context, String code) {
+    switch (code) {
+      case 'DAY':
+        return appT(context, 'curator.window.day');
+      case 'LATE_NIGHT':
+        return appT(context, 'curator.window.lateNight');
+      default:
+        return appT(context, 'curator.window.evening');
     }
-    return number.toString();
+  }
+
+  Widget _buildAccessDenied() {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        title: Text(appT(context, 'curator.accessDeniedAppBar')),
+        backgroundColor: AppColors.bg,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.lock_clock_rounded,
+                  size: 56,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                appT(context, 'curator.accessDeniedTitle'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Outfit',
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                appT(context, 'curator.accessDeniedMessage'),
+                style: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showInfoDialog(BuildContext context) {
@@ -772,17 +1674,17 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0x3300E5FF), width: 0.8),
         ),
-        title: const Text(
-          'AI Curator Studio',
-          style: TextStyle(
+        title: Text(
+          appT(context, 'curator.infoTitle'),
+          style: const TextStyle(
             color: Colors.white,
             fontFamily: 'Outfit',
             fontWeight: FontWeight.w700,
           ),
         ),
-        content: const Text(
-          'AI Curator là công cụ phân tích dữ liệu người xem, xu hướng chuyên mục và đề xuất tối ưu hóa luồng phát sóng 4K HEVC theo thời gian thực.\n\nTính năng này chỉ dành riêng cho tài khoản Quản trị & Điều hành OmniCast.',
-          style: TextStyle(
+        content: Text(
+          appT(context, 'curator.infoContent'),
+          style: const TextStyle(
             color: Color(0xFF94A3B8),
             fontSize: 13,
             height: 1.5,
@@ -791,12 +1693,35 @@ class _AICuratorScreenState extends State<AICuratorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(color: Color(0xFF00E5FF))),
+            child: Text(
+              appT(context, 'curator.close'),
+              style: const TextStyle(color: Color(0xFF00E5FF)),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+
+class _ScheduledProgram {
+  final String id;
+  final String title;
+  final String description;
+  final DateTime scheduledAt;
+  final String channelName;
+  final String status;
+
+  _ScheduledProgram({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.scheduledAt,
+    required this.channelName,
+    required this.status,
+  });
 }
 
 class _StatItem extends StatelessWidget {
@@ -842,105 +1767,43 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-class _TopItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
+class _SentimentStat extends StatelessWidget {
   final IconData icon;
-
-  const _TopItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0x1F00E5FF), width: 0.6),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF00E5FF), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 10,
-                    fontFamily: 'JetBrainsMono',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrendItem extends StatelessWidget {
   final String label;
-  final double trend;
+  final String value;
+  final Color color;
 
-  const _TrendItem({
+  const _SentimentStat({
+    required this.icon,
     required this.label,
-    required this.trend,
+    required this.value,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = trend >= 0;
-    final color = isPositive ? const Color(0xFF00E5FF) : const Color(0xFFFF2A55);
-    final icon = isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFCBD5E1),
-                fontSize: 12,
-              ),
-            ),
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'JetBrainsMono',
           ),
-          Row(
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 4),
-              Text(
-                '${isPositive ? '+' : ''}${trend.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                  fontFamily: 'JetBrainsMono',
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 10,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
