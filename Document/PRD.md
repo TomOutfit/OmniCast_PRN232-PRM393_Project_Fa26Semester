@@ -3,7 +3,7 @@
 
 **Tên Dự Án (Project Name):** OmniCast Enterprise Media & Broadcast Intelligence Network  
 **Mã Dự Án (Project Code):** OMNI  
-**Phiên Bản Tài Liệu (Document Version):** 4.0 (Modern Cloud Architecture Edition)  
+**Phiên Bản Tài Liệu (Document Version):** 4.1 (gRPC Microservices & Mobile VIP Edition)  
 **Môn Học Áp Dụng (Target Courses):** PRN232 (Modern Web API Core & Web Application) & PRM393 (Mobile App Development with Flutter)  
 **Khung Công Nghệ (Target Frameworks):**  
 - 💻 **Backend Web API:** NestJS 11+ (TypeScript) — Modular Architecture, Prisma ORM, `@nestjs/swagger`  
@@ -258,4 +258,4 @@ Các endpoint thủ công (yêu cầu JWT + role `ADMIN`):
 - **Flutter Mobile:** Build `app-release.apk` (≤ 25MB), cài đặt trực tiếp trên thiết bị Android thật.
 
 ---
-*Tài liệu PRD v4.0 chuẩn hóa toàn diện mô hình NestJS 11 + Next.js 15 + Flutter 3.x + Vercel & Supabase Cloud cho nhóm 3 thành viên trong 8-10 tuần với 2 đợt Review.*
+*Tài liệu PRD v4.1 bổ sung: standalone gRPC `audit-logger` microservice (Deploy qua Render/Railway), Google Play VIP subscription trên Flutter, FCM push notifications với deep-link, Supabase Realtime cho comments/reactions, server-rendered `/help` & `/docs` portal, password reset flow chuẩn OWASP, và 3 migrations mới (008-010).*
