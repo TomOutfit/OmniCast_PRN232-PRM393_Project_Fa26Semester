@@ -271,11 +271,71 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  .scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /* 3D Spatial Transforms & Utilities */
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .perspective-800 {
+    perspective: 800px;
+  }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .perspective-1200 {
+    perspective: 1200px;
+  }
+  .perspective-1600 {
+    perspective: 1600px;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .translate-z-6 {
+    transform: translateZ(6px);
+  }
+  .translate-z-12 {
+    transform: translateZ(12px);
+  }
+  .translate-z-20 {
+    transform: translateZ(20px);
+  }
+  .translate-z-30 {
+    transform: translateZ(30px);
+  }
+  .translate-z-40 {
+    transform: translateZ(40px);
+  }
+
+  /* Holographic 3D Glass Surface */
+  .glass-3d-panel {
+    background: linear-gradient(135deg, rgba(14, 22, 38, 0.72) 0%, rgba(7, 11, 20, 0.88) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 242, 254, 0.16);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7), 0 0 20px -5px rgba(0, 242, 254, 0.08);
+  }
+
+  .glass-3d-panel:hover {
+    border-color: rgba(0, 242, 254, 0.38);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 242, 254, 0.18);
+  }
+
+  /* 3D Float Animation */
+  @keyframes float3D {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(0.5deg);
+    }
+  }
+
+  .animate-float-3d {
+    animation: float3D 6s ease-in-out infinite;
   }
 }

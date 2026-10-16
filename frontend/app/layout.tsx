@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
 import { AppLayoutShell } from '@/components/layout/app-layout-shell';
+import { Global3DBackground } from '@/components/three/Global3DBackground';
+import { CursorFollowerDOM } from '@/components/three/primitives/CursorFollower3D';
 import './globals.css';
 
 const inter = Inter({
@@ -89,7 +91,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-screen flex flex-col bg-surface text-on-surface antialiased">
+      <body className="min-h-screen flex flex-col bg-surface text-on-surface antialiased relative">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-cyan-500 focus:text-black focus:font-extrabold focus:rounded-xl focus:shadow-2xl focus:outline-none"
@@ -97,6 +99,8 @@ export default function RootLayout({
           Bỏ qua tới nội dung
         </a>
         <Providers>
+          <Global3DBackground />
+          <CursorFollowerDOM />
           <AppLayoutShell>{children}</AppLayoutShell>
         </Providers>
         <Toaster
