@@ -20,6 +20,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Page3DHero } from '@/components/three/Page3DHero';
+import { ChannelCardTilt } from '@/components/three';
+import type { WatchlistItem3D } from '@/components/three/scenes/WatchlistScene3D';
 
 interface Program {
   id: string;
@@ -104,9 +107,30 @@ export default function WatchlistPage() {
 
   const items = data ? data[activeTab] || [] : [];
 
+  // 3D watchlist items from current tab
+  const watchlist3D: WatchlistItem3D[] = items.slice(0, 6).map((it) => ({
+    id: it.id,
+    title: it.program?.title || 'Chương trình',
+    channel: it.program?.channel?.name || 'OmniCast',
+    scheduledAt: it.program?.scheduledAt
+      ? new Date(it.program.scheduledAt).toLocaleString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+        })
+      : undefined,
+    status: activeTab,
+  }));
+
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 py-6 px-4 lg:px-6">
-      <div className="max-w-[1680px] mx-auto space-y-6">
+    <div className="min-h-screen bg-[#070b12]/50 backdrop-blur-[1px] text-slate-100 pb-6 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D Watchlist Card Stack Hero */}
+      {isAuthenticated && items.length > 0 && (
+        <Page3DHero variant="watchlist" watchlistItems={watchlist3D} height={400} />
+      )}
+
+      <div className="px-4 lg:px-6 space-y-6">
         
         {/* ── Page Header ───────────────────────────────────────────── */}
         <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4">
@@ -198,46 +222,45 @@ export default function WatchlistPage() {
               const channel = program?.channel;
               const targetProgramId = item.programId || program?.id;
               return (
-                <div
-                  key={item.id}
-                  className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-4 shadow-xl transition-all flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-[10px] font-bold text-cyan-400 uppercase truncate">
-                        {channel?.name || 'OmniCast Network'}
-                      </span>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Xóa khỏi danh sách"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                <ChannelCardTilt key={item.id} intensity={12} className="h-full">
+                  <div className="group rounded-2xl bg-[#0b1320]/90 hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/60 p-4 shadow-xl transition-all flex flex-col justify-between h-full backdrop-blur-md">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase truncate">
+                          {channel?.name || 'OmniCast Network'}
+                        </span>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Xóa khỏi danh sách"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                        {program?.title || 'Chương trình phát sóng'}
+                      </h3>
+
+                      {program?.scheduledAt && (
+                        <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>{formatDateTime(program.scheduledAt)}</span>
+                        </div>
+                      )}
                     </div>
 
-                    <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
-                      {program?.title || 'Chương trình phát sóng'}
-                    </h3>
-
-                    {program?.scheduledAt && (
-                      <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                        <Clock className="w-3 h-3 text-slate-500" />
-                        <span>{formatDateTime(program.scheduledAt)}</span>
-                      </div>
-                    )}
+                    <div className="mt-4 pt-3 border-t border-white/5">
+                      <Link
+                        href={targetProgramId ? `/programs/${targetProgramId}` : `/channels/${channel?.slug || 'sport-1'}`}
+                        className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)] transition-transform hover:scale-102"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        Xem Ngay
+                      </Link>
+                    </div>
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/5">
-                    <Link
-                      href={targetProgramId ? `/programs/${targetProgramId}` : `/channels/${channel?.slug || 'sport-1'}`}
-                      className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)] transition-transform hover:scale-102"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      Xem Ngay
-                    </Link>
-                  </div>
-                </div>
+                </ChannelCardTilt>
               );
             })}
           </div>
