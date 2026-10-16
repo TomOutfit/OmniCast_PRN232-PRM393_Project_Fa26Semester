@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface Program {
@@ -165,7 +166,7 @@ export default function WatchlistPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-56 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
+              <Skeleton key={i} className="h-56 rounded-2xl bg-[#0b1320] border border-[#16253c]" />
             ))}
           </div>
         ) : !isAuthenticated ? (

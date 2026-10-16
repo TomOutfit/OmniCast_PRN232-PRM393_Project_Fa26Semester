@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ChannelLogo } from '@/components/ui/channel-logo';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useRecordings } from '@/lib/hooks/usePrograms';
 import type { Recording, LiveCategory } from '@/types';
 import { cn } from '@/lib/utils';
@@ -145,7 +146,7 @@ export default function RecordingsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-64 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
+              <Skeleton key={i} className="h-64 rounded-2xl bg-[#0b1320] border border-[#16253c]" />
             ))}
           </div>
         ) : recordings.length === 0 ? (
