@@ -455,3 +455,42 @@ timeline
 
 ---
 *T√†i li·ªáu Work Breakdown Structure n√†y l√† b·∫£n ph√¢n c√¥ng k·ªπ thu·∫≠t ch√≠nh th·ª©c c·ªßa d·ª± √°n OmniCast cho nh√≥m 4 th√†nh vi√™n (Person 1, 2, 3: PRN232 + PRM393; Person 4: Chuy√™n tr√°ch PRN232, ƒë√£ qua PRM393) theo l·ªô tr√¨nh chu·∫©n 2 ƒê·ª£t Review (Review 1 Tu·∫ßn 5-6: Thi·∫øt k·∫ø & MVP, b·∫Øt ƒë·∫ßu code t·ª´ Tu·∫ßn 1-4 | Review 2 Tu·∫ßn 8: S·∫£n ph·∫©m ho√†n ch·ªânh), √°p d·ª•ng ki·∫øn tr√∫c NestJS + Next.js + Flutter + Vercel/Supabase.*
+
+---
+
+## ? Ho‡n th‡nh 14 Gap ó Round 4 (Oct 2026)
+
+Ph?n b? sung du?i d‚y ghi nh?n 14 gap cu?i c˘ng d„ du?c dÛng theo k? ho?ch ho‡n_th‡nh_omnicast_ó_14_gap_cÚn_l?i.
+
+### Backend (4 gaps)
+
+- ? **B1 ó gRPC Audit Logger microservice**: tri?n khai standalone NestJS gRPC service t?i ackend/microservices/audit-logger/. Proto file: protos/audit_logger.proto. H? tr? Write (idempotent qua entry.id) + Stream (server-streaming). Dockerfile distroless + docker-compose.yml + render.yaml d? deploy lÍn Render/Railway. AuditLoggerService ? main backend t? d?ng forward qua gRPC khi cÛ AUDIT_LOGGER_GRPC_URL (fail-open).
+- ? **B2 ó Migration 007 AI Curator telemetry**: thÍm lastAppliedAt trÍn LiveEvent + cached/cachedAt trÍn AiCuratorReport. Migration idempotent t?i prisma/migrations/007_ai_curator_telemetry.sql.
+- ? **B3 ó WINDOW_DAYS audit cache-hit-rate**: thÍm constant v‡o AiCuratorStatsService d? computeCacheHitRate() d?c tr?c ti?p c?t cached.
+- ? **B4 ó CORS consistency**: parser FRONTEND_URL d˘ng chung pattern pi/index.ts & main.ts, fail-closed trong production.
+
+### Frontend (5 gaps)
+
+- ? **F1 ó /forgot-password**: trang form 2 bu?c (email ? token + new password) + reset-password API endpoints ? backend (rate-limited).
+- ? **F2 ó /help + /docs**: 2 trang server-rendered d?c t? Document/HELP.md, FAQ.md v‡ c·c t‡i li?u k? thu?t. Anchor TOC + dark cinematic styling.
+- ? **F3 ó <Skeleton> primitive**: thay th? t?t c? inline nimate-pulse b?ng <Skeleton variant='block'|'text'|'circle' /> xuyÍn su?t 6 pages.
+- ? **F4 ó Query Builder**: lib/query-builder.ts (~190 LOC) cho uildSearchQuery/parseSearchQuery/ppendQueryParam/emoveQueryParam/withQuery. Update lib/api/search.ts & lib/api/programs.ts d? d˘ng. 17 unit tests passing.
+- ? **F2 ó T‡i li?u index**: xem /docs.
+
+### Mobile (4 gaps)
+
+- ? **M1 ó Premium billing**: BillingService (Google Play via purchases_flutter) + backend BillingService verify receipt + User.premiumUntil + migration  10_premium_until.sql. Stub mode dev-friendly.
+- ? **M2 ó FCM Push**: FcmService (firebase_messaging) + NotificationsPushService (firebase-admin) + DeviceToken table + migration  09_device_tokens.sql.
+- ? **M3 ó Onboarding**: 3-page swipe screen luu flag trong TokenStorageHelper.isOnboardingComplete(). Router t? redirect l?n d?u.
+- ? **M4 ó Supabase Realtime**: SupabaseRealtimeService l?ng nghe INSERT/UPDATE/DELETE cho Comment + Reaction. Polling fallback n?u khÙng cÛ SUPABASE_URL.
+
+### Cross-cutting
+
+- ? 3 migrations m?i ( 08,  09,  10) ó t?ng c?ng 10 migrations.
+- ? Test totals: backend 7/7 pass, frontend 153/153 pass, 17 query-builder tests pass.
+- ? 
+px tsc --noEmit clean trÍn c? 3 codebase.
+
+---
+
+*T‡i li?u n‡y l‡ b?n ph‚n cÙng chÌnh th?c cho nhÛm 4 th‡nh viÍn...*
