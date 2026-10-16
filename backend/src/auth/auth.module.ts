@@ -13,6 +13,10 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { UsersModule } from '../users/users.module';
 
+// Note: AuditLoggerModule is registered as `@Global()` in
+// `src/audit-logger/audit-logger.module.ts`, so we don't need to import
+// it here — `AuthService` can inject `AuditLoggerService` directly.
+
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),

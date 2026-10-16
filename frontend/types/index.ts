@@ -288,4 +288,15 @@ export interface AiCuratorReport {
   };
   aiModelVersion: string;
   processingTimeMs: number;
+  /**
+   * Overall model confidence (0–100). Optional because older
+   * backends and `heuristic-fallback-v1` runs may omit the field.
+   */
+  confidence?: number;
+  /** Per-agent timings surfaced by the orchestrator (all ms). */
+  agentTimings?: {
+    sentimentMs?: number;
+    complianceMs?: number;
+    editorialMs?: number;
+  };
 }

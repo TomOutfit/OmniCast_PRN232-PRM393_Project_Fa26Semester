@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../widgets/brand_logo.dart';
+import '../../core/utils/token_storage_helper.dart';
 import '../../logic/auth/auth_bloc.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -48,14 +49,32 @@ class _SplashScreenState extends State<SplashScreen>
 
     Future.delayed(const Duration(milliseconds: 2200), () {
       if (mounted) {
-        final authState = context.read<AuthBloc>().state;
-        if (authState is Authenticated) {
-          context.go('/home');
-        } else {
-          context.go('/login');
-        }
+        _routeAfterSplash();
       }
     });
+  }
+
+  /// Decide where to send the user once the splash animation finishes.
+  ///
+  /// Flow:
+  ///   1. If onboarding has not been completed → push `/onboarding`.
+  ///      (The onboarding screen calls `setOnboardingComplete()` so
+  ///      subsequent launches skip it.)
+  ///   2. Otherwise, branch on auth state — already signed in → home,
+  ///      otherwise → login.
+  Future<void> _routeAfterSplash() async {
+    final onboardingDone = await TokenStorageHelper().isOnboardingComplete();
+    if (!onboardingDone) {
+      context.go('/onboarding');
+      return;
+    }
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is Authenticated) {
+      context.go('/home');
+    } else {
+      context.go('/login');
+    }
   }
 
   @override

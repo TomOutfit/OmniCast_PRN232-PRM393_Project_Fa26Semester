@@ -1,0 +1,22 @@
+# ============================================================
+// Render.com deployment manifest for the Audit Logger microservice.
+# ============================================================
+
+services:
+  - type: web
+    name: omnicast-audit-logger
+    runtime: docker
+    rootDir: backend/microservices/audit-logger
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: AUDIT_LOGGER_GRPC_URL
+        value: "0.0.0.0:50051"
+      - key: AUDIT_LOGGER_HTTP_PORT
+        value: "3100"
+      - key: NODE_ENV
+        value: "production"

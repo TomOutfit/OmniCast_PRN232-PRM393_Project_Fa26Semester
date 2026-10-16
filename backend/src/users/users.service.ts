@@ -8,13 +8,17 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogger?: AuditLoggerService,
+  ) {}
 
   private isUuid(value?: string): boolean {
     return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -201,7 +205,20 @@ export class UsersService {
     };
     const normalizedRole = roleMapping[role] ?? String(role).toUpperCase();
     if (normalizedRole === 'ADMIN') {
-      throw new BadRequestException('Security Policy: Cannot promote another user to Admin from API');
+      // Security: API never promotes to ADMIN. Audit every blocked
+      // attempt so SOC dashboards see suspicious elevation attempts.
+      if (this.auditLogger) {
+        await this.auditLogger.log({
+          userId: id,
+          action: 'ADMIN_PROMOTION_BLOCKED',
+          entityType: 'User',
+          entityId: id,
+          newValues: { requestedRole: role },
+        });
+      }
+      throw new BadRequestException(
+        'Security Policy: Cannot promote another user to Admin from API',
+      );
     }
     if (!['STAFF', 'VIEWER', 'GUEST'].includes(normalizedRole)) {
       throw new BadRequestException('Invalid target role. Allowed: STAFF (1), VIEWER (2), GUEST (0)');

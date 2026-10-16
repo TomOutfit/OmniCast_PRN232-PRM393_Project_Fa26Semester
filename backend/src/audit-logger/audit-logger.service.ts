@@ -1,8 +1,26 @@
 // ============================================================
-// OmniCast - Audit Logger Service
+// OmniCast - Audit Logger Service (facade)
+// ============================================================
+//
+// Two paths, transparently chosen at runtime:
+//   1. **In-process Prisma** (default). Every `log()` call hits
+//      Postgres directly — synchronous, zero-network, single-row
+//      write. This is the canonical path.
+//   2. **gRPC outbox** (opt-in). When `AUDIT_LOGGER_GRPC_URL` env
+//      is set and non-empty, the service opens a fire-and-forget
+//      gRPC stream to the standalone `audit-logger` microservice.
+//      The in-process Prisma write is still issued as the source of
+//      truth — gRPC is purely additive (idempotency is enforced by
+//      the microservice using the client-generated `entry.id`).
+//
+// The HTTP API behaviour is identical either way; observability
+// consumers (Admin dashboard "Live Stream" tab) call into the
+// gRPC microservice directly via SSE proxy at
+// `/api/v1/audit-logs/stream`.
 // ============================================================
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 
@@ -17,14 +35,91 @@ export interface AuditLogData {
   userAgent?: string;
 }
 
+interface GrpcForwardPayload {
+  entry: {
+    id: string;
+    user_id?: string;
+    user_email?: string;
+    action: string;
+    entity_type?: string;
+    entity_id?: string;
+    old_values_json?: string;
+    new_values_json?: string;
+    ip_address?: string;
+    user_agent?: string;
+  };
+}
+
 @Injectable()
-export class AuditLoggerService {
-  constructor(private readonly prisma: PrismaService) {}
+export class AuditLoggerService implements OnModuleInit {
+  private readonly logger = new Logger(AuditLoggerService.name);
+  private grpcClient: any | null = null;
+  private readonly grpcUrl: string | null;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    this.grpcUrl =
+      this.configService.get<string>('AUDIT_LOGGER_GRPC_URL')?.trim() ||
+      null;
+  }
+
+  async onModuleInit() {
+    if (!this.grpcUrl) {
+      this.logger.log(
+        'AuditLoggerService: using in-process Prisma only (no gRPC outbox)',
+      );
+      return;
+    }
+
+    // Lazy-import so the package isn't a hard dep in single-process
+    // deployments. If anything fails (missing dep, bad URL) we log
+    // a warning and fall back to in-process only — never crash.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const grpc = await import('@grpc/grpc-js').catch(() => null);
+      const protoLoader = await import('@grpc/proto-loader').catch(
+        () => null,
+      );
+      if (!grpc || !protoLoader) {
+        this.logger.warn(
+          `gRPC outbox requested but @grpc/grpc-js / @grpc/proto-loader not installed; using in-process only`,
+        );
+        return;
+      }
+      const path = await import('node:path');
+      const PROTO_PATH = path.join(
+        process.cwd(),
+        'protos',
+        'audit_logger.proto',
+      );
+      const packageDef = (protoLoader as any).loadSync(PROTO_PATH, {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        defaults: true,
+        oneofs: true,
+      });
+      const proto = (grpc as any).loadPackageDefinition(packageDef);
+      const AuditLogger = proto.omnicast.audit.v1.AuditLogger;
+      this.grpcClient = new AuditLogger(
+        this.grpcUrl,
+        (grpc as any).credentials.createInsecure(),
+      );
+      this.logger.log(`AuditLoggerService: gRPC outbox enabled → ${this.grpcUrl}`);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to initialise gRPC outbox; falling back to in-process only: ${err}`,
+      );
+      this.grpcClient = null;
+    }
+  }
 
   async log(data: AuditLogData & { request?: Request }) {
     const { request, ...logData } = data;
 
-    return this.prisma.auditLog.create({
+    const record = await this.prisma.auditLog.create({
       data: {
         userId: logData.userId,
         userEmail: await this.getUserEmail(logData.userId),
@@ -36,6 +131,55 @@ export class AuditLoggerService {
         ipAddress: request?.ip || logData.ipAddress,
         userAgent: request?.headers['user-agent'] || logData.userAgent,
       },
+    });
+
+    // Fire-and-forget gRPC outbox (best-effort — Prisma write is
+    // already durable; the microservice is just an extra fan-out
+    // hook for live dashboards).
+    if (this.grpcClient) {
+      this.forwardToGrpc(record, logData, request).catch((err) =>
+        this.logger.warn(`gRPC outbox failed: ${err}`),
+      );
+    }
+
+    return record;
+  }
+
+  /**
+   * Best-effort write through the gRPC microservice. Errors are
+   * logged but never re-thrown — the audit trail is always in
+   * Postgres regardless.
+   */
+  private async forwardToGrpc(
+    record: any,
+    logData: AuditLogData,
+    request?: Request,
+  ): Promise<void> {
+    if (!this.grpcClient) return;
+    const payload: GrpcForwardPayload = {
+      entry: {
+        id: record.id,
+        user_id: logData.userId,
+        user_email: record.userEmail ?? undefined,
+        action: logData.action,
+        entity_type: logData.entityType,
+        entity_id: logData.entityId,
+        old_values_json: logData.oldValues
+          ? JSON.stringify(logData.oldValues)
+          : undefined,
+        new_values_json: logData.newValues
+          ? JSON.stringify(logData.newValues)
+          : undefined,
+        ip_address: request?.ip || logData.ipAddress,
+        user_agent: request?.headers['user-agent'] || logData.userAgent,
+      },
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      this.grpcClient.Write(payload, (err: any) => {
+        if (err) return reject(err);
+        resolve();
+      });
     });
   }
 
@@ -88,6 +232,47 @@ export class AuditLoggerService {
   async findByEntity(entityType: string, entityId: string) {
     return this.prisma.auditLog.findMany({
       where: { entityType, entityId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Sibling of `findByEntity`, but filters ONLY by `entityType` (no
+   * `entityId`). Useful for listing every audit event for a logical
+   * table — e.g. "show me all `AiCuratorReport` activity in the last
+   * 24 hours".
+   *
+   * Supported options:
+   *   - `skip` / `take`: standard Prisma pagination
+   *   - `action`: filter by action name (e.g. `AI_CURATION_COMPLETE`)
+   *   - `userId`: filter by the user who caused the event
+   *   - `from` / `to`: date range against `createdAt`
+   */
+  async findByEntityType(
+    entityType: string,
+    options: {
+      skip?: number;
+      take?: number;
+      action?: string;
+      userId?: string;
+      from?: Date;
+      to?: Date;
+    } = {},
+  ) {
+    const where: any = { entityType };
+
+    if (options.action) where.action = options.action;
+    if (options.userId) where.userId = options.userId;
+    if (options.from || options.to) {
+      where.createdAt = {};
+      if (options.from) where.createdAt.gte = options.from;
+      if (options.to) where.createdAt.lte = options.to;
+    }
+
+    return this.prisma.auditLog.findMany({
+      where,
+      skip: options.skip,
+      take: options.take,
       orderBy: { createdAt: 'desc' },
     });
   }

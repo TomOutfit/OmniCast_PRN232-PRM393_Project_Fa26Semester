@@ -23,7 +23,7 @@
 //   • Toggle history to view previous reports
 // ============================================================
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Bot,
@@ -36,9 +36,15 @@ import {
   CheckCircle2,
   RefreshCw,
   Lightbulb,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { CompactUserMenu } from '@/components/layout/compact-user-menu';
 import { format, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -55,12 +61,21 @@ import {
   aiCuratorRequestSchema,
   type AiCuratorRequestInput,
 } from '@/lib/validators/ai-curator';
-import { STATUS_META } from '@/lib/constants/statuses';
+import { STATUS_META, STATUS_LIST } from '@/lib/constants/statuses';
 import { LIMITS } from '@/lib/constants/limits';
 import { canRunAiCurator } from '@/lib/guards/permissions';
 import { parseApiError } from '@/lib/errors/api-error';
 import { logWarn, logError } from '@/lib/utils/safe-log';
-import { toReportShape } from '@/lib/utils/curator-helpers';
+import {
+  toReportShape,
+} from '@/lib/utils/curator-helpers';
+import {
+  filterCuratorRows,
+  paginateRows,
+  totalPages,
+  type CuratorRowShape,
+  type CuratorStatusFilter,
+} from '@/lib/utils/curator-filters';
 import type { AiCuratorReport, LiveEvent } from '@/types';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/i18n-provider';
@@ -72,16 +87,10 @@ import { HistorySection } from '@/components/curator/history-section';
 
 type CuratorStatus = LiveEvent['status'] | 'NEEDS_REVIEW';
 
-interface CuratorRow {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  channelName: string;
-  scheduledAt: string;
-  status: CuratorStatus;
-  aiReport?: AiCuratorReport;
-}
+interface CuratorRow extends CuratorRowShape {}
+
+const PAGE_SIZE = 25;
+const DEFAULT_LIVE_EVENTS_LIMIT = 100;
 
 function deriveStatus(row: LiveEvent): CuratorStatus {
   if (row.status === 'SCHEDULED') return 'SCHEDULED';
@@ -99,7 +108,7 @@ export default function CuratorStudioPage() {
 
   // Live events awaiting curation (status SCHEDULED + has not been AI-reviewed)
   const { data, isFetching, refetch } = useLiveEvents(
-    { status: 'SCHEDULED', limit: 50 },
+    { status: 'SCHEDULED', limit: DEFAULT_LIVE_EVENTS_LIMIT },
     { enabled: canCurate },
   );
 
@@ -135,6 +144,11 @@ export default function CuratorStudioPage() {
     null,
   );
 
+  // ─── Search / filter / pagination state ─────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<CuratorStatusFilter>('all');
+  const [page, setPage] = useState(1);
+
   const rows: CuratorRow[] = useMemo(() => {
     return (data?.data ?? []).map((e) => ({
       id: e.id,
@@ -149,6 +163,28 @@ export default function CuratorStudioPage() {
       aiReport: reportById[e.id],
     }));
   }, [data?.data, reportById]);
+
+  const filteredRows = useMemo(
+    () => filterCuratorRows(rows, searchQuery, statusFilter),
+    [rows, searchQuery, statusFilter],
+  );
+
+  // Reset to page 1 whenever the search query changes — typing
+  // shouldn't strand the curator on an empty page 4.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  // Reset to page 1 when a status filter removes all rows.
+  useEffect(() => {
+    if (filteredRows.length === 0) setPage(1);
+  }, [filteredRows.length]);
+
+  const totalFilteredPages = totalPages(filteredRows, PAGE_SIZE);
+  const paginatedRows = useMemo(
+    () => paginateRows(filteredRows, page, PAGE_SIZE),
+    [filteredRows, page],
+  );
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.id === selectedId) ?? null,
@@ -277,6 +313,26 @@ export default function CuratorStudioPage() {
     }
   };
 
+  /**
+   * Keyboard shortcut — ⌘/Ctrl + Enter triggers a fresh analysis
+   * on the currently selected row. Bound at the document level so
+   * curators don't need to focus a specific button first.
+   */
+  useEffect(() => {
+    if (!selectedRow) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        event.preventDefault();
+        handleAnalyze(selectedRow);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // handleAnalyze depends on mutations / row — including
+    // selectedRow.id is enough to keep the closure fresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRow?.id]);
+
   if (!canCurate) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -292,6 +348,10 @@ export default function CuratorStudioPage() {
       </div>
     );
   }
+
+  const aiReportCount = rows.filter((r) => r.aiReport).length;
+  const hasAnyData = rows.length > 0;
+  const hasNoMatches = hasAnyData && filteredRows.length === 0;
 
   return (
     <div className="min-h-[80vh]">
@@ -325,6 +385,13 @@ export default function CuratorStudioPage() {
                   <Radio className="w-4 h-4 text-cyan-400" />
                   <span>Live Studio</span>
                 </Link>
+                <Link
+                  href="/studio/curator/dashboard"
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                >
+                  <BarChart3 className="w-4 h-4 text-emerald-400" />
+                  <span>Thống kê</span>
+                </Link>
               </div>
               <CompactUserMenu variant="purple" />
               <div className="text-right">
@@ -352,26 +419,61 @@ export default function CuratorStudioPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Program List */}
           <Card className="glass-card">
-            <div className="p-4 border-b border-dark-700 flex items-center justify-between">
-              <h2 className="font-bold text-white">{t('curator.programList')}</h2>
-              <span className="text-xs text-dark-500 font-mono">
-                {rows.length} chương trình
-              </span>
+            <div className="p-4 border-b border-dark-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-white">{t('curator.programList')}</h2>
+                <span className="text-xs text-dark-500 font-mono">
+                  {rows.length} chương trình · {aiReportCount} đã có AI
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="search"
+                  size="sm"
+                  placeholder="Tìm theo tiêu đề, mô tả hoặc kênh…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                  aria-label="Tìm chương trình"
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as CuratorStatusFilter)
+                  }
+                  className="h-8 rounded-lg border border-dark-600 bg-dark-800 px-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Lọc theo trạng thái"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  {STATUS_LIST.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="divide-y divide-dark-700 max-h-[600px] overflow-y-auto">
               {isFetching && rows.length === 0 ? (
                 <div className="p-10 flex justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-primary-400" />
                 </div>
-              ) : rows.length === 0 ? (
+              ) : !hasAnyData ? (
                 <div className="p-10 text-center">
                   <FileText className="w-10 h-10 mx-auto text-dark-600 mb-3" />
                   <p className="text-dark-400 text-sm">
                     Không có chương trình nào đang chờ phân tích.
                   </p>
                 </div>
+              ) : hasNoMatches ? (
+                <div className="p-10 text-center">
+                  <FileText className="w-10 h-10 mx-auto text-dark-600 mb-3" />
+                  <p className="text-dark-400 text-sm">
+                    Không tìm thấy chương trình phù hợp
+                  </p>
+                </div>
               ) : (
-                rows.map((program) => (
+                paginatedRows.map((program) => (
                   <div
                     key={program.id}
                     onClick={() => setSelectedId(program.id)}
@@ -421,22 +523,27 @@ export default function CuratorStudioPage() {
                             Đã có AI
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAnalyze(program);
-                            }}
-                            disabled={
-                              analyzeMutation.isPending &&
-                              analyzingProgramId === program.id
-                            }
-                            className="gap-1"
-                          >
-                            <Bot className="w-3 h-3" />
-                            Phân tích
-                          </Button>
+                          <div className="flex flex-col items-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAnalyze(program);
+                              }}
+                              disabled={
+                                analyzeMutation.isPending &&
+                                analyzingProgramId === program.id
+                              }
+                              className="gap-1"
+                            >
+                              <Bot className="w-3 h-3" />
+                              Phân tích
+                            </Button>
+                            <span className="text-[10px] text-dark-500">
+                              ⌘/Ctrl + Enter
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -444,6 +551,93 @@ export default function CuratorStudioPage() {
                 ))
               )}
             </div>
+            {/* Pagination controls */}
+            {hasAnyData && !hasNoMatches && totalFilteredPages > 1 && (
+              <div className="p-3 border-t border-dark-700 flex items-center justify-between text-xs text-dark-400">
+                <span>
+                  Trang {page}/{totalFilteredPages} ·{' '}
+                  {filteredRows.length} chương trình
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
+                    aria-label="Trang đầu"
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    aria-label="Trang trước"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  {Array.from({ length: totalFilteredPages }, (_, i) => i + 1)
+                    .filter((p) => {
+                      if (totalFilteredPages <= 5) return true;
+                      // For >5 pages show first, last, current ±1
+                      return (
+                        p === 1 ||
+                        p === totalFilteredPages ||
+                        Math.abs(p - page) <= 1
+                      );
+                    })
+                    .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                        acc.push('ellipsis');
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, idx) =>
+                      p === 'ellipsis' ? (
+                        <span
+                          key={`e-${idx}`}
+                          className="px-2 text-dark-500"
+                          aria-hidden
+                        >
+                          …
+                        </span>
+                      ) : (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={p === page ? 'default' : 'ghost'}
+                          onClick={() => setPage(p)}
+                          className="min-w-8"
+                        >
+                          {p}
+                        </Button>
+                      ),
+                    )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setPage((p) => Math.min(totalFilteredPages, p + 1))
+                    }
+                    disabled={page === totalFilteredPages}
+                    aria-label="Trang sau"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPage(totalFilteredPages)}
+                    disabled={page === totalFilteredPages}
+                    aria-label="Trang cuối"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* AI Report Panel */}
@@ -519,6 +713,7 @@ export default function CuratorStudioPage() {
                         }
                         curating={curateMutation.isPending}
                         isPersisted={!!persistedById[selectedRow.id]}
+                        confidence={selectedRow.aiReport.confidence}
                       />
 
                       <HistorySection
@@ -549,6 +744,9 @@ export default function CuratorStudioPage() {
                           </Button>
                           <p className="text-xs text-dark-500 mt-3">
                             {`Tiêu đề: ${LIMITS.AI_TITLE_MIN}–${LIMITS.AI_TITLE_MAX} ký tự`}
+                          </p>
+                          <p className="text-xs text-dark-500 mt-1">
+                            Phím tắt: <kbd className="px-1 py-0.5 bg-dark-700 rounded text-[10px]">⌘/Ctrl + Enter</kbd>
                           </p>
                         </>
                       )}

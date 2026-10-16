@@ -3,6 +3,7 @@
 // ============================================================
 
 import { apiClient } from '../api';
+import { withQuery } from '@/lib/query-builder';
 import type {
   LiveEvent,
   PaginatedResponse,
@@ -68,27 +69,27 @@ export async function fetchEpgDay(
   params: EpgDayParams,
 ): Promise<EpgDayResponse> {
   // The backend DTO expects `channelIds` as a **single comma-separated
-  // string** (e.g. `?channelIds=a,b,c`), validated by `@IsString()`. If
-  // we hand axios an array it serialises to repeated params
-  // (`?channelIds=a&channelIds=b`), which NestJS exposes as a `string[]`
-  // — the validator rejects it with 400 "channelIds must be a string"
-  // and the EPG query silently fails. Pre-join here so the request
-  // matches the documented contract.
-  const { data } = await apiClient.get('/programs/epg/day', {
-    params: {
-      date: params.date,
-      ...(params.channelIds && params.channelIds.length > 0
-        ? { channelIds: params.channelIds.join(',') }
-        : {}),
-    },
+  // string** (e.g. `?channelIds=a,b,c`), validated by `@IsString()`. The
+  // builder would otherwise emit `?channelIds=a&channelIds=b` (the
+  // multi-value shape) and NestJS rejects it with 400 "channelIds must
+  // be a string". Pre-join here so the request matches the contract.
+  const path = withQuery(`/programs/epg/day`, {
+    date: params.date,
+    ...(params.channelIds && params.channelIds.length > 0
+      ? { channelIds: params.channelIds.join(',') }
+      : {}),
   });
+  const { data } = await apiClient.get(path);
   return data.data ?? data;
 }
 
 export async function fetchLiveEvents(
   params: LiveEventsListParams = {},
 ): Promise<PaginatedResponse<LiveEvent>> {
-  const { data } = await apiClient.get('/programs/live-events', { params });
+  const path = withQuery(`/programs/live-events`, {
+    ...params,
+  });
+  const { data } = await apiClient.get(path);
   return data;
 }
 
@@ -105,7 +106,10 @@ export async function fetchLiveEventById(id: string): Promise<LiveEvent> {
 export async function fetchRecordings(
   params: RecordingsListParams = {},
 ): Promise<PaginatedResponse<Recording>> {
-  const { data } = await apiClient.get('/programs/recordings', { params });
+  const path = withQuery(`/programs/recordings`, {
+    ...params,
+  });
+  const { data } = await apiClient.get(path);
   return data;
 }
 

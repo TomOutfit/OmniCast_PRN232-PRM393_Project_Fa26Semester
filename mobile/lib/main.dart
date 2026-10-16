@@ -9,6 +9,9 @@ import 'core/di/injection.dart';
 import 'core/i18n/app_locale.dart';
 import 'core/i18n/strings.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/fcm_service.dart';
+import 'core/services/billing_service.dart';
+import 'core/services/supabase_realtime_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/token_storage_helper.dart';
 import 'logic/auth/auth_bloc.dart';
@@ -46,6 +49,12 @@ void main() async {
   // Initialize notification service
   await getIt<NotificationService>().initialize();
   await getIt<NotificationService>().requestPermissions();
+
+  // Initialize optional services (best-effort — they fall back to
+  // no-ops when the platform isn't configured).
+  await SupabaseRealtimeService.instance.initialise();
+  await FcmService.instance.initialise();
+  await BillingService.instance.initialise();
 
   // Hydrate theme + locale from secure storage
   final storage = TokenStorageHelper();

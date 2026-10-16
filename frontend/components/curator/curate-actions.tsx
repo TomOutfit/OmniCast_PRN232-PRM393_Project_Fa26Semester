@@ -10,11 +10,17 @@
 //
 // The "Đã lưu" pill + ID label give the curator confidence that
 // their last action went through.
+//
+// When the latest report's `confidence` score is below 50% the
+// component renders a "Low confidence" badge and gates the save
+// action behind a Vietnamese confirm() dialog so curators can't
+// accidentally persist low-quality outputs.
 // ============================================================
 
 'use client';
 
 import {
+  AlertTriangle,
   CheckCircle2,
   Eye,
   Hash,
@@ -33,7 +39,16 @@ interface CurateActionsProps {
   analyzing: boolean;
   curating: boolean;
   isPersisted: boolean;
+  /**
+   * Model confidence 0–100 from the latest report. Undefined hides
+   * the warning badge entirely (older reports may not include the
+   * field).
+   */
+  confidence?: number;
 }
+
+/** Threshold below which a curator should be warned before saving. */
+const LOW_CONFIDENCE_THRESHOLD = 50;
 
 export function CurateActions({
   row,
@@ -42,7 +57,23 @@ export function CurateActions({
   analyzing,
   curating,
   isPersisted,
+  confidence,
 }: CurateActionsProps) {
+  const showLowConfidenceBadge =
+    typeof confidence === 'number' &&
+    Number.isFinite(confidence) &&
+    confidence < LOW_CONFIDENCE_THRESHOLD;
+
+  const handleCurateClick = () => {
+    if (showLowConfidenceBadge) {
+      const ok = window.confirm(
+        'Báo cáo có độ tin cậy thấp. Bạn vẫn muốn lưu?',
+      );
+      if (!ok) return;
+    }
+    onCurate();
+  };
+
   return (
     <div className="p-4 rounded-lg bg-dark-900/50 border border-purple-500/30">
       <h4 className="text-sm font-medium text-dark-300 mb-3 flex items-center gap-2">
@@ -62,11 +93,11 @@ export function CurateActions({
           ) : (
             <Eye className="w-3 h-3" />
           )}
-        Phân tích lại
+          Phân tích lại
         </Button>
         <Button
           size="sm"
-          onClick={onCurate}
+          onClick={handleCurateClick}
           disabled={curating}
           className="gap-1"
         >
@@ -81,6 +112,16 @@ export function CurateActions({
           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-300 bg-emerald-950/40 border border-emerald-500/30 rounded px-2 py-1">
             <CheckCircle2 className="w-3 h-3" />
             Đã lưu
+          </span>
+        )}
+        {showLowConfidenceBadge && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] text-red-300 bg-red-950/40 border border-red-500/40 rounded px-2 py-1"
+            role="status"
+            aria-label={`Low confidence ${confidence}%`}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            Low confidence ({Math.round(confidence!)}%)
           </span>
         )}
         <span className="text-xs text-dark-500 self-center ml-auto flex items-center gap-1">
