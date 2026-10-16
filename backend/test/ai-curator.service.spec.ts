@@ -98,6 +98,13 @@ class FakePrisma {
       this.reports.push(row);
       return row;
     },
+    update: async (args: any) => {
+      const row = this.reports.find((r) => r.id === args.where.id);
+      if (row) {
+        Object.assign(row, args.data);
+      }
+      return row;
+    },
   };
 }
 

@@ -58,10 +58,10 @@ export class AuditLoggerService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    private readonly configService?: ConfigService,
   ) {
     this.grpcUrl =
-      this.configService.get<string>('AUDIT_LOGGER_GRPC_URL')?.trim() ||
+      this.configService?.get<string>('AUDIT_LOGGER_GRPC_URL')?.trim() ||
       null;
   }
 

@@ -69,7 +69,7 @@ class FakePrisma {
 
 function makeService() {
   const prisma = new FakePrisma();
-  const service = new AuditLoggerService(prisma as any);
+  const service = new AuditLoggerService(prisma as any, { get: () => null } as any);
   return { service, prisma };
 }
 

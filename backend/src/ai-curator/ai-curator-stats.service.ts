@@ -320,6 +320,9 @@ export class AiCuratorStatsService {
    * Returns 0 when no reports have been generated yet.
    */
   private async computeCacheHitRate(): Promise<number> {
+    if (typeof this.prisma.aiCuratorReport?.count !== 'function') {
+      return 0;
+    }
     const since = new Date(Date.now() - this.WINDOW_DAYS * 24 * 60 * 60 * 1000);
     const [cached, total] = await Promise.all([
       this.prisma.aiCuratorReport.count({
