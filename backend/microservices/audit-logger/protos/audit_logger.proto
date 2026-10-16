@@ -1,0 +1,56 @@
+// ============================================================
+// OmniCast - Audit Logger gRPC Microservice Protobuf Definition
+// ============================================================
+//
+// Synced from `backend/protos/audit_logger.proto` via `proto:sync`.
+//
+// The AuditLogger runs as an out-of-process gRPC microservice that writes
+// immutable audit trails to Supabase PostgreSQL. The NestJS HTTP API sends
+// audit events through the in-process AuditLoggerService (which is the
+// primary path) and can additionally forward selected events to the gRPC
+// service for asynchronous, retry-safe ingestion.
+// ============================================================
+
+syntax = "proto3";
+
+package omnicast.audit.v1;
+
+option java_multiple_files = true;
+option java_package = "vn.omnicast.audit.v1";
+
+message AuditEntry {
+  string id = 1;
+  string user_id = 2;
+  string user_email = 3;
+  string action = 4;
+  string entity_type = 5;
+  string entity_id = 6;
+  string old_values_json = 7;
+  string new_values_json = 8;
+  string ip_address = 9;
+  string user_agent = 10;
+  string created_at = 11;
+}
+
+message WriteRequest {
+  AuditEntry entry = 1;
+}
+
+message WriteResponse {
+  string id = 1;
+  bool deduplicated = 2;
+}
+
+message StreamRequest {
+  repeated string entity_types = 1;
+  string user_id = 2;
+}
+
+message StreamResponse {
+  AuditEntry entry = 1;
+}
+
+service AuditLogger {
+  rpc Write(WriteRequest) returns (WriteResponse);
+  rpc Stream(StreamRequest) returns (stream StreamResponse);
+}
