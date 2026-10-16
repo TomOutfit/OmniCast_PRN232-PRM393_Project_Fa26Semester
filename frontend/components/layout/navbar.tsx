@@ -21,11 +21,13 @@ import {
   Wand2,
   HelpCircle,
   BookOpen,
+  Compass,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n/i18n-provider';
+import { useSpatial3D } from '@/lib/three/spatial-context';
 import { cn } from '@/lib/utils';
 import {
   getNavLinksForRole,
@@ -43,6 +45,7 @@ export function Navbar() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout, logoutAll } = useAuth();
   const { locale, setLocale } = useI18n();
+  const { open: openSpatial3D } = useSpatial3D();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   // Two-step confirm: when the user clicks "Đăng xuất" we open a
@@ -258,6 +261,18 @@ export function Navbar() {
 
           {/* Right Compact Actions (Role-Aware) */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* 3D Spatial Universe Launcher */}
+            <button
+              type="button"
+              onClick={openSpatial3D}
+              title="Mở Không Gian Vũ Trụ 3D OmniCast (3D Spatial Universe)"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black bg-gradient-to-r from-cyan-500/20 via-sky-500/15 to-blue-600/20 hover:from-cyan-500/35 hover:to-blue-600/35 border border-cyan-400/40 text-cyan-300 shadow-[0_0_14px_rgba(0,242,254,0.22)] transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
+              <span className="hidden xl:inline">KHÔNG GIAN 3D</span>
+              <span className="xl:hidden">3D</span>
+            </button>
+
             {/* Search bar (inline, ⌘K accessible) */}
             <SearchBar />
 
