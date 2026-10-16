@@ -308,10 +308,10 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
     accentClass: 'text-cyan-400',
     minRole: 'GUEST',
     links: [
-      { label: 'Điều Khoản Dịch Vụ', href: '/' },
-      { label: 'Chính Sách Quyền Riêng Tư', href: '/' },
-      { label: 'Bản Quyền & DMCA', href: '/' },
-      { label: 'Tiêu Chuẩn Phát Sóng', href: '/' },
+      { label: 'Điều Khoản Dịch Vụ', href: '/terms' },
+      { label: 'Chính Sách Quyền Riêng Tư', href: '/privacy' },
+      { label: 'Bản Quyền & DMCA', href: '/dmca' },
+      { label: 'Tiêu Chuẩn Phát Sóng', href: '/standards' },
     ],
   },
 ];
