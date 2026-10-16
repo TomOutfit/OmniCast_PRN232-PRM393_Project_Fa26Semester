@@ -488,3 +488,84 @@ test('runPipelineForInput returns agentTimings with all three keys', async () =>
   assert.ok(report.agentTimings.complianceMs >= 0);
   assert.ok(report.agentTimings.editorialMs >= 0);
 });
+
+// ---------------------------------------------------------------
+// Confidence score (Group A deliverable)
+// ---------------------------------------------------------------
+
+test('curateContent returns confidence in range 0-100', async () => {
+  const { service, prisma } = makeService();
+  seedProgram(prisma, {
+    title: 'Chung kết World Cup 2026',
+    description: 'Trận chung kết giải bóng đá lớn nhất hành tinh',
+    tags: ['thể thao', 'champion'],
+    channel: { id: 'channel-x', name: 'VTV3 HD', category: 'SPORTS' },
+  });
+
+  const out: any = await service.curateContent(
+    { programId: 'program-1' },
+    'user-1',
+  );
+
+  assert.ok(
+    typeof out.confidence === 'number',
+    'confidence must be a number',
+  );
+  assert.ok(
+    out.confidence >= 0 && out.confidence <= 100,
+    `confidence out of range: ${out.confidence}`,
+  );
+  // Heuristic path uses Math.round, so the value must be an integer.
+  assert.equal(Number.isInteger(out.confidence), true);
+});
+
+test('analyzePreview returns confidence in range 0-100', async () => {
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    { title: 'Phim tài liệu về chiến tranh và bạo lực' },
+    'user-1',
+  );
+
+  assert.ok(typeof report.confidence === 'number');
+  assert.ok(report.confidence >= 0 && report.confidence <= 100);
+  assert.equal(Number.isInteger(report.confidence), true);
+});
+
+test('confidence for clean positive sports content is in the upper half', async () => {
+  // The heuristic scoring starts at 50 and bumps positive +15, high
+  // hype +10, no flags +10 → at least 80.
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Chung kết World Cup 2026',
+      description: 'Trận chung kết hay nhất thế giới, đặc sắc và tuyệt vời',
+      channelName: 'VTV3 HD',
+      category: 'SPORTS',
+      tags: ['thể thao', 'champion'],
+    },
+    'user-1',
+  );
+  assert.ok(
+    report.confidence >= 70,
+    `expected high confidence on a clean sports hit, got ${report.confidence}`,
+  );
+});
+
+test('confidence for age-restricted content is in the lower half', async () => {
+  // Heuristic: start at 50, +0 (sentiment likely negative/neutral),
+  // -15 for age restricted, -10 per flag (1) → 25, clamped to 30.
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Phim tài liệu về chiến tranh bạo lực',
+      description: 'Tài liệu về các cuộc chiến tranh thế giới',
+      channelName: 'VTV3',
+      category: 'DOCUMENTARY',
+    },
+    'user-1',
+  );
+  assert.ok(
+    report.confidence <= 50,
+    `expected low confidence on age-restricted doc, got ${report.confidence}`,
+  );
+});

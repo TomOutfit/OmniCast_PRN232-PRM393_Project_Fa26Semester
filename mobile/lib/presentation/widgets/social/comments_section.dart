@@ -1,13 +1,18 @@
 // OmniCast - Comments Section (Mobile)
 //
 // Live interactive comments widget that fetches and posts comments
-// directly to the OmniCast API and Supabase database.
+// directly to the OmniCast API. When `SUPABASE_URL` is configured,
+// it additionally subscribes to realtime INSERT/UPDATE/DELETE events
+// so two clients see each other's messages without polling.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/services/supabase_realtime_service.dart';
 
 class CommentsSection extends StatefulWidget {
   final String targetId;
@@ -28,17 +33,56 @@ class _CommentsSectionState extends State<CommentsSection> {
   final List<_CommentItem> _comments = [];
   bool _isLoading = true;
   bool _isSubmitting = false;
+  StreamSubscription<RealtimeCommentEvent>? _realtimeSub;
 
   @override
   void initState() {
     super.initState();
     _fetchComments();
+    _subscribeRealtimeIfAvailable();
   }
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  /// If Supabase is configured, subscribe to the recording's comment
+  /// channel. Falls back silently to REST-only polling.
+  void _subscribeRealtimeIfAvailable() {
+    if (widget.kind != 'recording') return; // only wired for VOD
+    final svc = SupabaseRealtimeService.instance;
+    if (!svc.isAvailable) return;
+    _realtimeSub = svc.startCommentsChannel(widget.targetId).listen((event) {
+      if (!mounted) return;
+      setState(() {
+        switch (event.type) {
+          case 'INSERT':
+          case 'UPDATE':
+            final c = event.comment;
+            if (c == null) return;
+            final incoming = _CommentItem(
+              id: c.id,
+              content: c.content,
+              userName: c.authorDisplayName ?? 'Người dùng',
+              createdAt: c.createdAt,
+            );
+            final existingIdx = _comments.indexWhere((c) => c.id == incoming.id);
+            if (existingIdx >= 0) {
+              _comments[existingIdx] = incoming;
+            } else {
+              _comments.insert(0, incoming);
+            }
+            break;
+          case 'DELETE':
+            if (event.deletedId == null) break;
+            _comments.removeWhere((c) => c.id == event.deletedId);
+            break;
+        }
+      });
+    });
   }
 
   String get _endpoint {

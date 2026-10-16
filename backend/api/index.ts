@@ -91,10 +91,37 @@ async function bootstrap() {
     prefix: 'v',
   });
 
-  // CORS
+  // CORS — mirror the production allowlist used by `src/main.ts`.
+  // Reads `FRONTEND_URL` (comma-separated) and falls back to `*` ONLY
+  // when running in non-production (e.g. local dev). Production
+  // deployments MUST set FRONTEND_URL to the front-end origin(s).
+  const allowedOrigins = (process.env.FRONTEND_URL ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow curl, server-to-server, mobile native request (no Origin header)
+      if (!origin) return callback(null, true);
+
+      const isProd = process.env.NODE_ENV === 'production';
+
+      // Empty config in dev → permissive; in prod → reject (fail-closed).
+      if (allowedOrigins.length === 0) {
+        return isProd
+          ? callback(new Error('CORS: FRONTEND_URL not configured'), false)
+          : callback(null, true);
+      }
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS: Origin not allowed'), false);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 86400, // 24h preflight cache
   });
 
   // Validation

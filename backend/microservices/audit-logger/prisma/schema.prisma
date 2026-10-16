@@ -1,0 +1,39 @@
+// ============================================================
+// OmniCast - Audit Logger (gRPC microservice) Prisma Schema
+// ============================================================
+//
+// Intentionally minimal: this service only needs to write to the
+// `AuditLog` table. It uses the SAME database as the main NestJS
+// HTTP API (so audit events stay coherent regardless of which path
+// wrote them). We do NOT generate a second client for anything else.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model AuditLog {
+  id         String   @id @db.Uuid
+  userId     String?  @map("userId") @db.Uuid
+  userEmail  String?  @map("userEmail") @db.VarChar(255)
+  action     String   @db.VarChar(100)
+  entityType String?  @map("entityType") @db.VarChar(100)
+  entityId   String?  @map("entityId") @db.Uuid
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?  @map("ipAddress") @db.VarChar(50)
+  userAgent  String?  @map("userAgent") @db.Text
+  createdAt  DateTime @default(now()) @map("createdAt") @db.Timestamp(6)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("AuditLog")
+}

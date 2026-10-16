@@ -77,6 +77,11 @@ class AiCuratorReport {
   final int? tokenUsed;
   final bool? cached;
 
+  /// Backend confidence score for the latest report (0..100). Optional —
+  /// older reports persisted before the field was added will surface
+  /// `null` so the UI can render a fallback.
+  final int? confidence;
+
   // History-only fields
   final String? id;
   final String? programId;
@@ -94,6 +99,7 @@ class AiCuratorReport {
     required this.processingTimeMs,
     this.tokenUsed,
     this.cached,
+    this.confidence,
     this.id,
     this.programId,
     this.createdBy,
@@ -121,6 +127,7 @@ class AiCuratorReport {
       processingTimeMs: (json['processingTimeMs'] as num?)?.toInt() ?? 0,
       tokenUsed: (json['tokenUsed'] as num?)?.toInt(),
       cached: json['cached'] as bool?,
+      confidence: (json['confidence'] as num?)?.toInt(),
       id: json['id'] as String?,
       programId: json['programId'] as String?,
       createdBy: json['createdBy'] as String?,
