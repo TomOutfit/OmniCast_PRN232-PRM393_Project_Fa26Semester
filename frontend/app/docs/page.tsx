@@ -1,202 +1,604 @@
+'use client';
+
 // ============================================================
-// OmniCast · Docs Page (server-rendered)
-// ============================================================
-//
-// Aggregates the engineering docs (`docs/AI-CURATOR.md`,
-// `docs/CLOUDINARY_STUDIO_UPLOAD.md`, `Document/QUICK_START.md`,
-// `Document/Testing_Guide.md`, `Document/CATALOG_V2_1_CHANGELOG.md`,
-// `Document/AUTOMATED_CONTENT_INGESTION.md`) into a single searchable
-// docs portal with sticky section navigation.
+// OmniCast · Developer Documentation & Architecture Portal
 // ============================================================
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as React from 'react';
 import Link from 'next/link';
-import { ChevronLeft, BookOpen, Library } from 'lucide-react';
-import { Markdown, slugify } from '@/components/markdown-viewer';
+import {
+  BookOpen,
+  Terminal,
+  Cpu,
+  Layers,
+  Database,
+  Radio,
+  Shield,
+  Check,
+  Copy,
+  ChevronLeft,
+  Search,
+  ExternalLink,
+  Code2,
+  Server,
+  Zap,
+  TestTube2,
+  FileCode2,
+  Sparkles,
+} from 'lucide-react';
 
-export const dynamic = 'force-static';
-export const revalidate = 3600;
-
-interface DocEntry {
-  slug: string;
-  title: string;
-  description?: string;
-  relPath: string;
-  content: string;
-  toc: { id: string; text: string; level: number }[];
+interface CodeSnippetProps {
+  code: string;
+  language?: string;
+  title?: string;
 }
 
-const DOC_REGISTRY: { slug: string; title: string; description: string; relPath: string }[] =
-  [
-    {
-      slug: 'quick-start',
-      title: 'Quick Start',
-      description: 'Khởi động backend / frontend / mobile trong 5 phút.',
-      relPath: 'Document/QUICK_START.md',
-    },
-    {
-      slug: 'testing',
-      title: 'Testing Guide',
-      description:
-        'Hướng dẫn viết + chạy unit test, e2e test cho cả ba codebase.',
-      relPath: 'Document/Testing_Guide.md',
-    },
-    {
-      slug: 'catalog-v2-1',
-      title: 'Catalog v2.1 Changelog',
-      description: 'Mọi thay đổi của catalog schema từ v1.0 lên v2.1.',
-      relPath: 'Document/CATALOG_V2_1_CHANGELOG.md',
-    },
-    {
-      slug: 'ai-curator',
-      title: 'AI Curator',
-      description:
-        'Cách curator gợi ý lịch phát, sentiment analysis, và live ops.',
-      relPath: 'docs/AI-CURATOR.md',
-    },
-    {
-      slug: 'cloudinary-studio',
-      title: 'Cloudinary Studio Upload',
-      description:
-        'Tích hợp Cloudinary direct-upload cho studio / self-record.',
-      relPath: 'docs/CLOUDINARY_STUDIO_UPLOAD.md',
-    },
-    {
-      slug: 'automated-ingest',
-      title: 'Automated Content Ingestion',
-      description:
-        'Pipeline thu thập catalog từ YouTube, Twitch, TMDB và RSS.',
-      relPath: 'Document/AUTOMATED_CONTENT_INGESTION.md',
-    },
-  ];
+function CodeSnippet({ code, language = 'bash', title }: CodeSnippetProps) {
+  const [copied, setCopied] = React.useState(false);
 
-function loadDoc(rel: string): string {
-  const candidates = [
-    path.join(process.cwd(), '..', rel),
-    path.join(process.cwd(), rel),
-    path.join('/var/task', rel),
-  ];
-  for (const p of candidates) {
-    try {
-      return fs.readFileSync(p, 'utf-8');
-    } catch (_) {
-      /* try next */
-    }
-  }
-  return '_(Tài liệu chưa có sẵn trong build này.)_';
-}
-
-function extractToc(md: string): { id: string; text: string; level: number }[] {
-  const toc: { id: string; text: string; level: number }[] = [];
-  for (const line of md.split('\n')) {
-    const m = line.match(/^(#{1,3})\s+(.+)$/);
-    if (m) {
-      toc.push({
-        id: slugify(m[2].trim()),
-        text: m[2].trim(),
-        level: m[1].length,
-      });
-    }
-  }
-  return toc;
-}
-
-export default function DocsPage() {
-  const docs: DocEntry[] = DOC_REGISTRY.map((entry) => {
-    const content = loadDoc(entry.relPath);
-    return {
-      ...entry,
-      content,
-      toc: extractToc(content),
-    };
-  });
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#050810] via-[#0a0f1c] to-[#050810] text-slate-200">
-      <div className="mx-auto max-w-6xl px-4 py-10 lg:py-14">
-        {/* Top bar */}
-        <div className="mb-8 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-cyan-300 transition"
+    <div className="rounded-xl border border-white/10 bg-slate-950/80 overflow-hidden my-3">
+      {title && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.08] bg-white/[0.02]">
+          <span className="font-mono text-[11px] text-cyan-300 font-semibold">{title}</span>
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-white transition"
           >
-            <ChevronLeft className="h-4 w-4" />
-            Về trang chủ
-          </Link>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 px-3 py-1 border border-violet-500/30">
-            <BookOpen className="h-3.5 w-3.5 text-violet-300" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-violet-300">
-              Documentation Portal
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-emerald-400">Đã chép</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Sao chép</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+      <pre className="p-4 overflow-x-auto text-xs font-mono leading-relaxed text-slate-300">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+const DOC_SECTIONS = [
+  { id: 'quickstart', label: '1. Khởi Động Nhanh (Quick Start)', icon: Terminal },
+  { id: 'architecture', label: '2. Kiến Trúc Hệ Thống (Architecture)', icon: Layers },
+  { id: 'ai-curator', label: '3. Động Cơ AI Curator (Dual-Mode)', icon: Cpu },
+  { id: 'grpc', label: '4. Microservice gRPC Audit Logger', icon: Server },
+  { id: 'cloudinary', label: '5. Live Studio & Cloud Direct-Upload', icon: Radio },
+  { id: 'testing', label: '6. Chiến Lược Kiểm Thử (Testing Guide)', icon: TestTube2 },
+  { id: 'apis', label: '7. Danh Mục API Endpoints RESTful', icon: FileCode2 },
+];
+
+export default function DocsPage() {
+  const [activeTab, setActiveTab] = React.useState('quickstart');
+  const [searchFilter, setSearchFilter] = React.useState('');
+
+  const filteredSections = DOC_SECTIONS.filter((s) =>
+    s.label.toLowerCase().includes(searchFilter.toLowerCase()),
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#050810] via-[#080d1a] to-[#04060c] text-slate-200">
+      {/* ── Top Navigation Bar ───────────────────────────────────── */}
+      <div className="border-b border-white/[0.08] bg-[#070b14]/80 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Về trang chủ</span>
+            </Link>
+            <span className="text-slate-700">/</span>
+            <span className="text-xs font-mono font-medium text-cyan-400">
+              Developer Documentation
             </span>
           </div>
-        </div>
 
-        <header className="mb-10 text-center">
-          <h1 className="bg-gradient-to-r from-violet-200 via-fuchsia-300 to-cyan-300 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl">
-            Tài liệu OmniCast
-          </h1>
-          <p className="mt-3 text-sm text-slate-400 max-w-2xl mx-auto">
-            Tổng hợp các tài liệu kỹ thuật cốt lõi của dự án — từ hướng dẫn
-            nhanh đến chi tiết pipeline ingest, AI curator & testing.
-          </p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/help"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
+            >
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+              <span>Trung tâm trợ giúp (/help)</span>
+            </Link>
+            <Link
+              href="/standards"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
+            >
+              <Radio className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Tiêu chuẩn phát sóng</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
+        {/* ── Hero Banner ─────────────────────────────────────────── */}
+        <header className="rounded-2xl border border-white/[0.08] bg-gradient-to-r from-slate-900/90 via-[#0d1627]/90 to-slate-900/90 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 px-3 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase text-cyan-300">
+                <Code2 className="h-3 w-3" />
+                OmniCast Engineering Portal · PRN232 + PRM393
+              </span>
+              <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-0.5 text-[11px] font-mono text-slate-400">
+                Release v2.4 (Oct 2026)
+              </span>
+              <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-mono text-emerald-400">
+                NestJS 10 + Next.js 14 + Flutter 3
+              </span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3 bg-gradient-to-r from-white via-slate-100 to-cyan-300 bg-clip-text">
+              Tài Liệu Kỹ Thuật & Kiến Trúc Hệ Thống
+            </h1>
+            <p className="text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">
+              Tổng hợp kiến trúc phân tán, đặc tả microservice gRPC, quy chuẩn động cơ AI Curator,
+              pipeline CDN truyền tải video và tài liệu API RESTful dành cho kỹ sư phát triển.
+            </p>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-10 lg:self-start">
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-5 shadow-xl shadow-black/40 backdrop-blur">
-              <div className="mb-3 flex items-center gap-2 text-xs font-bold text-violet-300 uppercase tracking-widest">
-                <Library className="h-3.5 w-3.5" />
-                Sections
+        {/* ── Main Two-Column Layout (Sidebar + Content) ──────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Sidebar Nav */}
+          <aside className="lg:col-span-3 space-y-4 sticky top-20">
+            <div className="rounded-xl border border-white/[0.08] bg-[#070b14]/90 p-3.5 backdrop-blur-md">
+              <div className="relative mb-3">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Lọc tài liệu..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white/[0.03] border border-white/10 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
+                />
               </div>
-              <nav className="space-y-4">
-                {docs.map((d) => (
-                  <div key={d.slug}>
-                    <a
-                      href={`#${d.slug}`}
-                      className="block text-sm font-semibold text-slate-200 hover:text-violet-300"
+
+              <nav className="space-y-1">
+                {filteredSections.map((sec) => {
+                  const Icon = sec.icon;
+                  const isActive = activeTab === sec.id;
+                  return (
+                    <button
+                      key={sec.id}
+                      onClick={() => setActiveTab(sec.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-left transition ${
+                        isActive
+                          ? 'bg-cyan-500/15 text-cyan-300 font-bold border-l-2 border-cyan-400'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+                      }`}
                     >
-                      {d.title}
-                    </a>
-                    <div className="mt-1 space-y-1">
-                      {d.toc
-                        .filter((t) => t.level >= 2)
-                        .map((t, idx) => (
-                          <a
-                            key={`${d.slug}-${idx}`}
-                            href={`#${t.id}`}
-                            className={
-                              t.level === 2
-                                ? 'block pl-3 text-xs text-slate-400 hover:text-violet-300'
-                                : 'block pl-6 text-[11px] text-slate-500 hover:text-violet-300'
-                            }
-                          >
-                            {t.text}
-                          </a>
-                        ))}
-                    </div>
-                  </div>
-                ))}
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{sec.label}</span>
+                    </button>
+                  );
+                })}
               </nav>
+            </div>
+
+            {/* Quick Tech Specs Card */}
+            <div className="rounded-xl border border-white/[0.08] bg-[#070b14]/60 p-4 text-xs space-y-2">
+              <h4 className="font-bold text-slate-300 uppercase tracking-wider font-mono text-[10px]">
+                Công nghệ cốt lõi
+              </h4>
+              <ul className="space-y-1 text-slate-400 text-[11px] font-mono">
+                <li>• Backend: NestJS 10, TypeScript</li>
+                <li>• Frontend: Next.js 14, Tailwind</li>
+                <li>• Mobile: Flutter 3.x, BLoC</li>
+                <li>• Database: Supabase PostgreSQL</li>
+                <li>• Microservice: Standalone gRPC</li>
+                <li>• CDN Media: Bunny Stream & Cloudinary</li>
+              </ul>
             </div>
           </aside>
 
-          <main className="space-y-10">
-            {docs.map((d) => (
-              <article
-                key={d.slug}
-                id={d.slug}
-                className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-6 sm:p-10 shadow-xl shadow-black/40 backdrop-blur scroll-mt-24"
-              >
-                <h2 className="mb-1 text-2xl font-bold text-white">
-                  {d.title}
-                </h2>
-                <p className="mb-6 text-sm text-slate-400">
-                  {d.description}
+          {/* Main Docs Content Panel */}
+          <main className="lg:col-span-9 min-w-0 space-y-8">
+            {/* ── Section 1: Quick Start ─────────────────────────── */}
+            {activeTab === 'quickstart' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-cyan-400">
+                  <Terminal className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    1. Khởi Động Nhanh (Quick Start) Trong 5 Phút
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Dự án OmniCast gồm ba phân hệ độc lập: <code>backend</code> (NestJS API),{' '}
+                  <code>frontend</code> (Next.js Web Client), và <code>mobile</code> (Flutter App).
+                  Dưới đây là các lệnh khởi động đồng thời cả 3 môi trường:
                 </p>
-                <Markdown source={d.content} />
-              </article>
-            ))}
+
+                <div className="space-y-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 font-mono text-xs flex items-center justify-center">
+                      1
+                    </span>
+                    Khởi động Backend NestJS API
+                  </h3>
+                  <CodeSnippet
+                    title="Terminal 1 — Backend (Port 3000 / 3001)"
+                    code={`cd backend
+npm install
+cp .env.example .env
+npx prisma generate
+npm run start:dev`}
+                  />
+
+                  <h3 className="text-base font-bold text-white flex items-center gap-2 pt-2">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 font-mono text-xs flex items-center justify-center">
+                      2
+                    </span>
+                    Khởi động Frontend Next.js Client
+                  </h3>
+                  <CodeSnippet
+                    title="Terminal 2 — Frontend (Port 3001)"
+                    code={`cd frontend
+npm install
+npm run dev`}
+                  />
+
+                  <h3 className="text-base font-bold text-white flex items-center gap-2 pt-2">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 font-mono text-xs flex items-center justify-center">
+                      3
+                    </span>
+                    Khởi động Mobile Flutter App
+                  </h3>
+                  <CodeSnippet
+                    title="Terminal 3 — Mobile (Flutter)"
+                    code={`cd mobile
+flutter pub get
+flutter run`}
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* ── Section 2: Architecture ────────────────────────── */}
+            {activeTab === 'architecture' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-purple-400">
+                  <Layers className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    2. Kiến Trúc Hệ Thống Phân Tán (System Architecture)
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  OmniCast được thiết kế theo mô hình Microservice kết hợp API Gateway chịu tải cao,
+                  phân tách độc lập giữa luồng điều phối nghiệp vụ và luồng truyền tải video streaming
+                  siêu tốc:
+                </p>
+
+                {/* Architecture Visual Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                  <div className="p-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 space-y-2">
+                    <div className="font-bold text-cyan-300 text-sm">CLIENT TIER</div>
+                    <p className="text-slate-400 font-sans">
+                      Next.js 14 Web (Desktop & Mobile Browser) + Flutter Mobile (iOS & Android).
+                    </p>
+                    <div className="text-[10px] text-cyan-400">ABR Video Player · BLoC State</div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-950/20 space-y-2">
+                    <div className="font-bold text-purple-300 text-sm">GATEWAY & CORE</div>
+                    <p className="text-slate-400 font-sans">
+                      NestJS Core API Gateway (RBAC Guards, Auth JWT, EPG Scheduler, AI Curator).
+                    </p>
+                    <div className="text-[10px] text-purple-400">HTTP REST · gRPC Client</div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 space-y-2">
+                    <div className="font-bold text-emerald-300 text-sm">DATA & MEDIA CDN</div>
+                    <p className="text-slate-400 font-sans">
+                      Supabase PostgreSQL, gRPC Audit-Logger, Bunny Stream CDN & Cloudinary Direct.
+                    </p>
+                    <div className="text-[10px] text-emerald-400">SOC2 Certified · HLS 4K</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-white/10 bg-slate-950/80 space-y-2 text-xs text-slate-300">
+                  <h4 className="font-bold text-white text-sm">Cơ chế bảo vệ luồng & Giới hạn tải:</h4>
+                  <ul className="space-y-1 list-disc pl-4 text-slate-400">
+                    <li>
+                      <strong>CORS Hardening:</strong> Kiểm soát nghiêm ngặt tên miền truy cập qua
+                      biến <code>FRONTEND_URL</code>, tự động chặn Origin lạ trong môi trường
+                      Production.
+                    </li>
+                    <li>
+                      <strong>Rate Limiting:</strong> Bảo vệ API đăng nhập và quên mật khẩu bằng
+                      ThrottlerGuard (tối đa 5 yêu cầu/phút trên mỗi IP).
+                    </li>
+                    <li>
+                      <strong>Fail-Open gRPC:</strong> Khi microservice audit logger tạm thời không
+                      khả dụng, hệ thống core backend ghi log fallback cục bộ mà không làm gián đoạn
+                      trải nghiệm khán giả.
+                    </li>
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* ── Section 3: AI Curator ──────────────────────────── */}
+            {activeTab === 'ai-curator' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-cyan-400">
+                  <Cpu className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    3. Động Cơ AI Curator (Dual-Mode Intelligence)
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Động cơ <strong>AI Curator</strong> là giải pháp trí tuệ nhân tạo chuyên biệt được
+                  tích hợp trong OmniCast nhằm giải quyết bài toán kiểm duyệt tự động hàng nghìn giờ
+                  phát sóng:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/40 space-y-2">
+                    <span className="font-mono font-bold text-cyan-300 text-xs">
+                      CHẾ ĐỘ 1 · FAST HEURISTICS
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      Phản hồi cực nhanh trong &lt;40ms. Quét từ khóa vi phạm, kiểm tra mã hash bản
+                      quyền âm thanh, nhận diện logo kênh và đối chiếu metadata EPG.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/40 space-y-2">
+                    <span className="font-mono font-bold text-purple-300 text-xs">
+                      CHẾ ĐỘ 2 · DEEP MULTI-MODEL LLM
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      Phân tích ngữ cảnh sâu, cảm xúc người dẫn chương trình, phân loại độ tuổi P, K,
+                      T13, T16, T18 và tự động xuất bản báo cáo khuyến nghị cho ban biên tập.
+                    </p>
+                  </div>
+                </div>
+
+                <CodeSnippet
+                  title="Prisma Schema · AI Curator Telemetry Table"
+                  language="prisma"
+                  code={`model AiCuratorReport {
+  id              String       @id @default(uuid())
+  liveEventId     String?      @map("live_event_id")
+  confidenceScore Float        @map("confidence_score")
+  riskLevel       String       @map("risk_level") // LOW, MEDIUM, HIGH
+  ratingRecommend String       @map("rating_recommend") // P, K, T13, T16, T18
+  cached          Boolean      @default(false)
+  cachedAt        DateTime?    @map("cached_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+}`}
+                />
+              </section>
+            )}
+
+            {/* ── Section 4: gRPC Microservice ───────────────────── */}
+            {activeTab === 'grpc' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-amber-400">
+                  <Server className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    4. Microservice gRPC Audit Logger
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Nhật ký kiểm toán an ninh được tách biệt thành một standalone microservice độc lập tại{' '}
+                  <code>backend/microservices/audit-logger/</code>, giao tiếp với Core API qua giao
+                  thức nhị phân siêu tốc HTTP/2 gRPC Protocol Buffers:
+                </p>
+
+                <CodeSnippet
+                  title="audit_logger.proto"
+                  language="protobuf"
+                  code={`syntax = "proto3";
+package audit;
+
+service AuditLogger {
+  rpc Write(AuditEntry) returns (WriteResponse);
+  rpc Stream(StreamFilter) returns (stream AuditEntry);
+}
+
+message AuditEntry {
+  string id = 1;
+  string action = 2; // LOGIN, LOGOUT, CREATE_PROGRAM, AI_CURATE
+  string userId = 3;
+  string userRole = 4;
+  string entityId = 5;
+  string timestamp = 6;
+  string metadataJson = 7;
+}`}
+                />
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Microservice được đóng gói bằng <strong>Dockerfile Distroless</strong> siêu nhẹ,
+                  giảm thiểu bề mặt tấn công bảo mật và tối ưu hóa tài nguyên RAM khi chạy trên nền tảng
+                  Render hoặc Docker Compose.
+                </p>
+              </section>
+            )}
+
+            {/* ── Section 5: Cloudinary Direct Upload ─────────────── */}
+            {activeTab === 'cloudinary' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-emerald-400">
+                  <Radio className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    5. Live Studio & Cloud Direct-Upload Architecture
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Vercel Serverless Functions áp dụng giới hạn kích thước gói tin gửi lên (Payload
+                  Limit) tối đa <strong>4.5MB</strong>. Để cho phép Đạo diễn tải lên các bản ghi
+                  Full HD có dung lượng hàng trăm Megabyte, OmniCast áp dụng mô hình{' '}
+                  <strong>Signed Direct-Upload</strong>:
+                </p>
+
+                <div className="p-4 rounded-xl border border-white/10 bg-slate-950/80 space-y-3 text-xs text-slate-300">
+                  <h4 className="font-bold text-cyan-300 text-sm">Quy trình 3 bước tải trực tiếp:</h4>
+                  <ol className="space-y-1.5 list-decimal pl-4 text-slate-400">
+                    <li>
+                      <strong>Bước 1 (Client):</strong> Client gửi yêu cầu cấp chữ ký tạm thời đến{' '}
+                      <code>GET /api/studio/upload-signature</code>.
+                    </li>
+                    <li>
+                      <strong>Bước 2 (Direct Post):</strong> Client tải trực tiếp file video từ trình
+                      duyệt lên máy chủ CDN Cloudinary kèm chữ ký SHA-256 (bỏ qua hoàn toàn máy chủ
+                      Vercel).
+                    </li>
+                    <li>
+                      <strong>Bước 3 (Complete):</strong> Cloudinary trả về mã video public URL; Client
+                      chỉ việc gửi URL siêu nhẹ này về backend để lưu vào bản ghi Cloud VOD.
+                    </li>
+                  </ol>
+                </div>
+              </section>
+            )}
+
+            {/* ── Section 6: Testing Strategy ────────────────────── */}
+            {activeTab === 'testing' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-rose-400">
+                  <TestTube2 className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    6. Chiến Lược Kiểm Thử Toàn Diện (Testing Strategy)
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  OmniCast duy trì hệ thống kiểm thử tự động đa tầng với tỷ lệ bao phủ cao xuyên suốt
+                  ba tầng ứng dụng:
+                </p>
+
+                <div className="space-y-3">
+                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/40">
+                    <h4 className="font-bold text-white text-xs mb-1">
+                      Frontend Tests (159+ Unit & Smoke Tests)
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Sử dụng Vitest kiểm tra logic Query Builder, bộ lọc AI Curator, mã hóa token và
+                      giao diện các trang pháp lý.
+                    </p>
+                    <CodeSnippet code="cd frontend && npm test" />
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/40">
+                    <h4 className="font-bold text-white text-xs mb-1">
+                      Backend Tests (Unit & E2E Suites)
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Kiểm thử gRPC Audit-Logger client, dịch vụ thẩm định biên lai Google Play
+                      Billing, thuật toán chống xung đột lịch EPG.
+                    </p>
+                    <CodeSnippet code="cd backend && npm test" />
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-slate-700 bg-slate-800/40">
+                    <h4 className="font-bold text-white text-xs mb-1">
+                      Mobile Tests (Widget & BLoC Verification)
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Kiểm tra màn hình Onboarding vuốt 3 trang, repository AI Curator và quản lý
+                      trạng thái tìm kiếm Debounce 300ms.
+                    </p>
+                    <CodeSnippet code="cd mobile && flutter test" />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ── Section 7: RESTful APIs ────────────────────────── */}
+            {activeTab === 'apis' && (
+              <section className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-2.5 text-cyan-400">
+                  <FileCode2 className="h-6 w-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    7. Danh Mục API Endpoints RESTful
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Bảng tổng hợp các endpoint API chính được cung cấp bởi OmniCast NestJS Core Gateway:
+                </p>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-800/40">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="border-b border-slate-700 bg-slate-800/80 font-mono uppercase text-slate-400 text-[11px]">
+                      <tr>
+                        <th className="px-4 py-3">Phương thức</th>
+                        <th className="px-4 py-3">Đường dẫn Endpoint</th>
+                        <th className="px-4 py-3">Quyền tối thiểu</th>
+                        <th className="px-4 py-3">Chức năng</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50 font-mono text-[11px]">
+                      <tr>
+                        <td className="px-4 py-2.5 text-cyan-400 font-bold">POST</td>
+                        <td className="px-4 py-2.5 text-white">/api/auth/login</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">GUEST</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Đăng nhập và cấp cặp mã JWT + Refresh Token
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2.5 text-cyan-400 font-bold">POST</td>
+                        <td className="px-4 py-2.5 text-white">/api/auth/forgot-password</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">GUEST</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Tạo mã reset token gửi qua email
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2.5 text-emerald-400 font-bold">GET</td>
+                        <td className="px-4 py-2.5 text-white">/api/channels</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">GUEST</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Lấy danh sách 25 kênh sóng truyền hình
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2.5 text-emerald-400 font-bold">GET</td>
+                        <td className="px-4 py-2.5 text-white">/api/programs/epg</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">GUEST</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Lấy lịch phát sóng EPG 24 giờ theo ngày
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2.5 text-purple-400 font-bold">POST</td>
+                        <td className="px-4 py-2.5 text-white">/api/ai-curator/analyze</td>
+                        <td className="px-4 py-2.5 text-purple-300 font-sans">STAFF</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Gửi video kiểm duyệt tự động với AI
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2.5 text-amber-400 font-bold">POST</td>
+                        <td className="px-4 py-2.5 text-white">/api/billing/verify-receipt</td>
+                        <td className="px-4 py-2.5 text-cyan-300 font-sans">VIEWER</td>
+                        <td className="px-4 py-2.5 text-slate-400 font-sans">
+                          Xác thực biên lai thanh toán Google Play
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
           </main>
         </div>
       </div>
