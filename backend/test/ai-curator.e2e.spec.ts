@@ -73,6 +73,8 @@ interface StoredReport {
   processingTimeMs: number;
   createdBy: string | null;
   createdAt: Date;
+  cached?: boolean;
+  cachedAt?: Date | null;
 }
 
 class FakePrisma {
@@ -142,6 +144,25 @@ class FakePrisma {
       };
       this.reports.push(row);
       return row;
+    },
+    update: async (args: any) => {
+      const row = this.reports.find((r) => r.id === args.where.id);
+      if (row) {
+        Object.assign(row, args.data);
+      }
+      return row;
+    },
+    count: async (args: any) => {
+      const where = args?.where ?? {};
+      return this.reports.filter((r) => {
+        if (where.createdAt?.gte && r.createdAt < where.createdAt.gte) {
+          return false;
+        }
+        if (where.cached === true && !r.cached) {
+          return false;
+        }
+        return true;
+      }).length;
     },
   };
 }

@@ -62,6 +62,18 @@ class FakePrisma {
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
       );
     },
+    count: async (args: any) => {
+      const where = args?.where ?? {};
+      return this.reports.filter((r) => {
+        if (where.createdAt?.gte && r.createdAt < where.createdAt.gte) {
+          return false;
+        }
+        if (where.cached === true && !(r as any).cached) {
+          return false;
+        }
+        return true;
+      }).length;
+    },
   };
 
   liveEvent = {

@@ -145,17 +145,19 @@ export class AiCuratorService {
         // cache hit rate. Done in a fire-and-forget `update` so a
         // Prisma error here never breaks the cache-hit return path.
         const cachedAt = new Date();
-        void this.prisma.aiCuratorReport
-          .update({
-            where: { id: existingReport.id },
-            data: { cached: true, cachedAt },
-          })
-          .catch((err) => {
-            console.error(
-              '[AiCuratorService] failed to stamp cached flag on existing report:',
-              err,
-            );
-          });
+        if (typeof this.prisma.aiCuratorReport?.update === 'function') {
+          void this.prisma.aiCuratorReport
+            .update({
+              where: { id: existingReport.id },
+              data: { cached: true, cachedAt },
+            })
+            .catch((err) => {
+              console.error(
+                '[AiCuratorService] failed to stamp cached flag on existing report:',
+                err,
+              );
+            });
+        }
         return {
           ...existingReport,
           cached: true,

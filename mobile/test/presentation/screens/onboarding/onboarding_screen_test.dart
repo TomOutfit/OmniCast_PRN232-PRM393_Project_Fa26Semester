@@ -3,12 +3,16 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:omnicast_mobile/presentation/screens/onboarding/onboarding_screen.dart';
+import 'package:omnicast/presentation/screens/onboarding/onboarding_screen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  FlutterSecureStorage.setMockInitialValues({});
+
   testWidgets('Onboarding screen renders all 3 pages + skip button',
       (tester) async {
     final router = GoRouter(

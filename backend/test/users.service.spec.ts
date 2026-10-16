@@ -7,22 +7,28 @@
 // blocked attempt so SOC dashboards surface these signals.
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import 'reflect-metadata';
+import { test, describe, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../src/users/users.service';
 
 class FakePrisma {
   public user = {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-    findMany: vi.fn(),
-    count: vi.fn(),
-    create: vi.fn(),
+    findUnique: async () => null,
+    update: async (args: any) => ({ id: args.where.id, role: args.data.role }),
+    findMany: async () => [],
+    count: async () => 0,
+    create: async (args: any) => ({ id: 'new', ...args.data }),
   };
 }
 
 class FakeAudit {
-  public log = vi.fn(async (_entry: any) => _entry);
+  public calls: any[] = [];
+  public log = async (entry: any) => {
+    this.calls.push(entry);
+    return entry;
+  };
 }
 
 describe('UsersService.updateRole — admin elevation guard', () => {
@@ -38,35 +44,43 @@ describe('UsersService.updateRole — admin elevation guard', () => {
     svc = new UsersService(prisma as any, audit as any);
   });
 
-  it('throws BadRequest + audits when promoting to ADMIN via enum', async () => {
-    await expect(svc.updateRole(validUuid, 'ADMIN')).rejects.toThrow(
-      BadRequestException,
+  test('throws BadRequest + audits when promoting to ADMIN via enum', async () => {
+    await assert.rejects(
+      async () => {
+        await svc.updateRole(validUuid, 'ADMIN');
+      },
+      (err: any) => err instanceof BadRequestException,
     );
-    expect(audit.log).toHaveBeenCalledOnce();
-    const call = audit.log.mock.calls[0][0];
-    expect(call.action).toBe('ADMIN_PROMOTION_BLOCKED');
+    assert.equal(audit.calls.length, 1);
+    assert.equal(audit.calls[0].action, 'ADMIN_PROMOTION_BLOCKED');
   });
 
-  it('throws BadRequest when promoting via numeric code "3"', async () => {
-    await expect(svc.updateRole(validUuid, '3')).rejects.toThrow(
-      BadRequestException,
+  test('throws BadRequest when promoting via numeric code "3"', async () => {
+    await assert.rejects(
+      async () => {
+        await svc.updateRole(validUuid, '3');
+      },
+      (err: any) => err instanceof BadRequestException,
     );
-    expect(audit.log).toHaveBeenCalledOnce();
+    assert.equal(audit.calls.length, 1);
   });
 
-  it('updates role to STAFF successfully (allowed)', async () => {
-    prisma.user.update.mockResolvedValueOnce({
+  test('updates role to STAFF successfully (allowed)', async () => {
+    prisma.user.update = async () => ({
       id: validUuid,
       role: 'STAFF',
-    });
+    }) as any;
     const result = await svc.updateRole(validUuid, 'STAFF');
-    expect(result.role).toBe('STAFF');
-    expect(audit.log).not.toHaveBeenCalled();
+    assert.equal(result.role, 'STAFF');
+    assert.equal(audit.calls.length, 0);
   });
 
-  it('rejects non-uuid ids with NotFoundException', async () => {
-    await expect(svc.updateRole('not-a-uuid', 'STAFF')).rejects.toThrow(
-      NotFoundException,
+  test('rejects non-uuid ids with NotFoundException', async () => {
+    await assert.rejects(
+      async () => {
+        await svc.updateRole('not-a-uuid', 'STAFF');
+      },
+      (err: any) => err instanceof NotFoundException,
     );
   });
 });
