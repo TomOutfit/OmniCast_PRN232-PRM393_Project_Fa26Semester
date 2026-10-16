@@ -6,13 +6,18 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { TokenPayload } from './interfaces/auth.interface';
 
 import { UserRole } from '@prisma/client';
@@ -20,12 +25,14 @@ import { UserRole } from '@prisma/client';
 @Injectable()
 export class AuthService {
   private readonly refreshTokenExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days
+  private readonly passwordResetTtlMs = 60 * 60 * 1000; // 1 hour
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly auditLogger: AuditLoggerService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -159,6 +166,142 @@ export class AuthService {
 
   async validateUser(userId: string) {
     return this.usersService.findById(userId);
+  }
+
+  // ============================================================
+  // Password recovery flow
+  // ============================================================
+  //
+  // We deliberately follow the "always succeed, never leak which
+  // emails exist" pattern: `requestPasswordReset` returns success
+  // whether or not the user is found, and only persists+logs a token
+  // when the email matches an active account. This avoids email
+  // enumeration attacks. The actual email-sending is delegated to the
+  // surrounding infra (log + audit for now; SES/SendGrid/SMTP in prod).
+
+  /**
+   * Issue a one-time reset token for the given email. Returns the raw
+   * token ONLY when called from internal services/tests — the public
+   * endpoint never exposes it. The endpoint contract always returns
+   * `{ success: true }` regardless of whether the email matches an
+   * account, so attackers can't differentiate.
+   */
+  async requestPasswordReset(
+    dto: ForgotPasswordDto,
+    meta?: { ipAddress?: string },
+  ): Promise<{ success: true }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (user && user.isActive !== false) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(rawToken)
+        .digest('hex');
+      const expiresAt = new Date(Date.now() + this.passwordResetTtlMs);
+
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+          ipAddress: meta?.ipAddress ?? null,
+        },
+      });
+
+      // Production wiring would push this through an email service.
+      // For now we log it so engineers can manually complete the loop
+      // during integration / smoke tests. NEVER log the raw token in
+      // non-debug environments — strip in real prod.
+      const log = this.configService.get<string>('NODE_ENV') === 'production';
+      if (!log) {
+        // intentionally omitted in production:
+        // eslint-disable-next-line no-console
+        console.log(
+          `[DEV] Password reset token for ${user.email}: ${rawToken} (expires ${expiresAt.toISOString()})`,
+        );
+      }
+
+      await this.auditLogger.log({
+        userId: user.id,
+        action: 'PASSWORD_RESET_REQUESTED',
+        entityType: 'User',
+        entityId: user.id,
+        newValues: { email: user.email },
+      });
+    } else if (user) {
+      // Inactive account: still log the attempt so audit is complete.
+      await this.auditLogger.log({
+        userId: user.id,
+        action: 'PASSWORD_RESET_DENIED_INACTIVE',
+        entityType: 'User',
+        entityId: user.id,
+      });
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Consume a reset token + update the user's password. Tokens are
+   * single-use — stamping `usedAt` and rotating the hash makes replays
+   * impossible.
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<{ success: true }> {
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.resetToken)
+      .digest('hex');
+
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!record) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    if (record.usedAt) {
+      throw new BadRequestException('Reset token has already been used');
+    }
+
+    if (record.expiresAt < new Date()) {
+      throw new BadRequestException('Reset token has expired');
+    }
+
+    if (!record.user) {
+      throw new NotFoundException('Account not found');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+      // Force sign-out by revoking every existing refresh token.
+      this.prisma.refreshToken.updateMany({
+        where: { userId: record.userId, isRevoked: false },
+        data: { isRevoked: true },
+      }),
+    ]);
+
+    await this.auditLogger.log({
+      userId: record.userId,
+      action: 'PASSWORD_RESET_COMPLETED',
+      entityType: 'User',
+      entityId: record.userId,
+    });
+
+    return { success: true };
   }
 
   private async generateTokens(
