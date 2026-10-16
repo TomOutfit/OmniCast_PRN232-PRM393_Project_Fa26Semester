@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { ChannelLogo } from '@/components/ui/channel-logo';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useSearch } from '@/lib/hooks/useSearch';
 import type { LiveCategory } from '@/types';
 import { searchTypeSchema, searchSortSchema } from '@/lib/validators/search';
@@ -110,8 +111,8 @@ export default function SearchPage() {
         {/* ── Search Results ────────────────────────────────────────── */}
         {isLoading ? (
           <div className="space-y-4">
-            <div className="h-40 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
-            <div className="h-40 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
+            <Skeleton className="h-40 rounded-2xl bg-[#0b1320] border border-[#16253c]" />
+            <Skeleton className="h-40 rounded-2xl bg-[#0b1320] border border-[#16253c]" />
           </div>
         ) : !isQueryValid ? (
           <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
