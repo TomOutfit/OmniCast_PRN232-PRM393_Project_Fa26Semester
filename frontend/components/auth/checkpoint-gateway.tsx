@@ -150,11 +150,11 @@ export function CheckpointGateway({
             <span>© 2026 OmniCast Network. Bản quyền phát sóng trực tuyến.</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <Link href="/" className="hover:text-slate-200 transition-colors">Điều khoản dịch vụ</Link>
+            <Link href="/terms" className="hover:text-slate-200 transition-colors">Điều khoản dịch vụ</Link>
             <span>•</span>
-            <Link href="/" className="hover:text-slate-200 transition-colors">Chính sách bảo mật</Link>
+            <Link href="/privacy" className="hover:text-slate-200 transition-colors">Chính sách bảo mật</Link>
             <span>•</span>
-            <Link href="/" className="hover:text-slate-200 transition-colors">Trợ giúp & Hỗ trợ</Link>
+            <Link href="/help" className="hover:text-slate-200 transition-colors">Trợ giúp & Hỗ trợ</Link>
           </div>
         </div>
       </footer>
