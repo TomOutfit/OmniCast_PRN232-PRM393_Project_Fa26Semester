@@ -21,6 +21,7 @@ import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveNow, useLiveEvents, useRecordings } from '@/lib/hooks/usePrograms';
 import { getCategoryThumbnail } from '@/components/epg/epg-channels-data';
+import { ChannelCardTilt } from '@/components/three';
 import type { Channel } from '@/types';
 
 interface HeroSpotlightItem {
@@ -192,7 +193,7 @@ export function OmniCastHomeExperience() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060910] text-slate-100 flex flex-col space-y-8 md:space-y-10 pb-20">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col space-y-8 md:space-y-10 pb-20">
       
       {/* ── 1. VTVGo-Style 3D Angled Hero Carousel ────────────────────── */}
       <section className="relative w-full overflow-hidden pt-3 md:pt-5">
@@ -494,59 +495,58 @@ export function OmniCastHomeExperience() {
             ))
           ) : (
             showcasePosters.map((item) => (
-              <div
-                key={item.id}
-                className="group relative rounded-2xl overflow-hidden bg-[#0a111d] border border-[#162338] hover:border-cyan-500/50 hover:shadow-[0_0_25px_rgba(0,242,254,0.25)] transition-all duration-300 flex flex-col"
-              >
-                <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
-                  <Image
-                    src={item.poster}
-                    alt={item.title}
-                    fill
-                    unoptimized
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+              <ChannelCardTilt key={item.id} intensity={14} className="h-full">
+                <div className="group relative h-full rounded-2xl overflow-hidden bg-[#0a111d]/90 border border-[#162338] hover:border-cyan-500/60 hover:shadow-[0_0_25px_rgba(0,242,254,0.3)] transition-all duration-300 flex flex-col backdrop-blur-md">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
+                    <Image
+                      src={item.poster}
+                      alt={item.title}
+                      fill
+                      unoptimized
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
 
-                  <div className="absolute top-2 left-2 z-10">
-                    <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
-                      {item.quality}
-                    </span>
+                    <div className="absolute top-2 left-2 z-10">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
+                        {item.quality}
+                      </span>
+                    </div>
+
+                    <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
+                      <Star className="w-2.5 h-2.5 fill-amber-400" />
+                      {item.rating}
+                    </div>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
+                      <Link
+                        href={item.href}
+                        className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.5)] transition-transform group-hover:scale-105 cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        XEM NGAY
+                      </Link>
+                      <div className="text-[10px] text-center text-slate-300 font-medium">
+                        {item.audio} • {item.channel}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                    <Star className="w-2.5 h-2.5 fill-amber-400" />
-                    {item.rating}
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
-                    <Link
-                      href={item.href}
-                      className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.5)] transition-transform group-hover:scale-105 cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      XEM NGAY
-                    </Link>
-                    <div className="text-[10px] text-center text-slate-300 font-medium">
-                      {item.audio} • {item.channel}
+                  <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
+                    <div>
+                      <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                        {item.category}
+                      </span>
+                      <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-[#131f32]">
+                      <span>{item.year}</span>
+                      <span className="text-slate-400 font-bold">{item.channel}</span>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
-                  <div>
-                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
-                      {item.category}
-                    </span>
-                    <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
-                      {item.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-[#131f32]">
-                    <span>{item.year}</span>
-                    <span className="text-slate-400 font-bold">{item.channel}</span>
-                  </div>
-                </div>
-              </div>
+              </ChannelCardTilt>
             ))
           )}
         </div>

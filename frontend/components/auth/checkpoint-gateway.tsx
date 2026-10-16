@@ -10,6 +10,8 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Canvas3D } from '@/components/three/Canvas3D';
+import { AuthScene3D } from '@/components/three/scenes/AuthScene3D';
 
 interface CheckpointGatewayProps {
   children: React.ReactNode;
@@ -31,17 +33,34 @@ export function CheckpointGateway({
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-[#070b14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* ── 1. Subtle Ambient Background (Clean Cinematic Atmosphere) ── */}
+      {/* ── 1. 3D Auth Background (replaces flat gradient) ──────────── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        className="pointer-events-none fixed inset-0 z-0"
       >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-cyan-600/10 via-blue-600/05 to-transparent blur-[120px]" />
-        <div className="absolute -bottom-24 right-1/4 w-[500px] h-[300px] bg-blue-600/05 blur-[120px]" />
+        <Canvas3D
+          cameraPosition={[0, 0, 5]}
+          fov={55}
+          postprocessing
+          className="w-full h-full"
+        >
+          <AuthScene3D
+            brand="OMNICAST"
+            tagline={isLogin ? 'Sign in to continue' : 'Create your account'}
+          />
+        </Canvas3D>
+        {/* Subtle dimmer so the auth card stays readable. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 50% at 50% 50%, rgba(7,11,20,0.4) 0%, rgba(7,11,20,0.75) 70%, rgba(7,11,20,0.95) 100%)',
+          }}
+        />
       </div>
 
       {/* ── 2. Header: Clean & Modern Brand Bar ────────────────────────── */}
-      <header className="relative z-20 w-full border-b border-white/[0.08] bg-[#070b14]/90 backdrop-blur-md px-4 py-3 sm:px-6 lg:px-8">
+      <header className="relative z-20 w-full border-b border-white/[0.08] bg-[#070b14]/80 backdrop-blur-md px-4 py-3 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Brand Identity */}
           <Link
