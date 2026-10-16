@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { Page3DHero } from '@/components/three';
 import {
   BookOpen,
   Terminal,
@@ -91,7 +92,15 @@ export default function DocsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#050810] via-[#080d1a] to-[#04060c] text-slate-200">
+    <div className="min-h-screen bg-[#050810]/60 backdrop-blur-[1px] text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* ── 3D Cyber Monolith Hero ────────────────────────────────── */}
+      <Page3DHero
+        variant="cyber"
+        headline="OMNICAST DEV HUB"
+        subline="Kiến trúc Microservices & Động cơ AI Intelligence"
+        height={320}
+      />
+
       {/* ── Top Navigation Bar ───────────────────────────────────── */}
       <div className="border-b border-white/[0.08] bg-[#070b14]/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">

@@ -25,6 +25,9 @@ import { useLiveNow } from '@/lib/hooks/usePrograms';
 import type { Channel, LiveCategory } from '@/types';
 import { cn } from '@/lib/utils';
 import { isChannelPremium } from '@/lib/constants/channel-tiers';
+import { Page3DHero } from '@/components/three/Page3DHero';
+import { ChannelCardTilt } from '@/components/three';
+import type { ChannelOrbData } from '@/components/three/scenes/ChannelsScene3D';
 
 const CATEGORY_LABELS: Record<string, string> = {
   SPORTS: 'Thể thao',
@@ -86,6 +89,18 @@ export default function ChannelsPage() {
     return map;
   }, [liveEvents]);
 
+  // 3D channel orbs for the hero sphere
+  const channelOrbs = useMemo<ChannelOrbData[]>(
+    () =>
+      channels.slice(0, 25).map((c) => ({
+        id: c.id,
+        name: c.name,
+        category: c.category,
+        isLive: true,
+      })),
+    [channels]
+  );
+
   const categories = [
     { key: 'ALL', label: 'Tất Cả (25 Kênh)' },
     { key: 'SPORTS', label: 'Thể Thao' },
@@ -109,7 +124,19 @@ export default function ChannelsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 py-6 px-4 lg:px-6">
+    <div className="min-h-screen bg-[#070b12]/50 backdrop-blur-[1px] text-slate-100 pb-6 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* ── 3D Channel Sphere Hero ─────────────────────────────── */}
+      <Page3DHero
+        variant="channels"
+        channelOrbs={channelOrbs}
+        height={460}
+        onSelect={(id) => {
+          const ch = channels.find((c) => c.id === id);
+          if (ch) setQuickViewChannel(ch);
+        }}
+      />
+
+      <div className="px-4 lg:px-6 space-y-6">
       <div className="max-w-[1680px] mx-auto space-y-6">
         
         {/* ── Page Header ───────────────────────────────────────────── */}
@@ -219,9 +246,10 @@ export default function ChannelsPage() {
               const liveEvent = liveChannelMap.get(channel.id);
               const isPremium = isChannelPremium(channel.slug);
               return (
-                <div
+                <ChannelCardTilt
                   key={channel.id}
                   className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-5 shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
+                  intensity={10}
                 >
                   {/* Top Ambient Glow on Hover */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/15 transition-all pointer-events-none" />
@@ -305,7 +333,7 @@ export default function ChannelsPage() {
                       <Info className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
+                </ChannelCardTilt>
               );
             })}
           </div>
@@ -319,6 +347,7 @@ export default function ChannelsPage() {
           />
         )}
 
+      </div>
       </div>
     </div>
   );
