@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { ChannelQuickView } from '@/components/channels/channel-quick-view';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useChannels, useChannelCategories } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
 import type { Channel, LiveCategory } from '@/types';
@@ -203,7 +204,7 @@ export default function ChannelsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-64 rounded-2xl bg-[#0b1320] border border-[#16253c] animate-pulse" />
+              <Skeleton key={i} className="h-64 rounded-2xl bg-[#0b1320] border border-[#16253c]" />
             ))}
           </div>
         ) : channels.length === 0 ? (
