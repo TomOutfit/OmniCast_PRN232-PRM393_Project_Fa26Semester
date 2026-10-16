@@ -40,6 +40,25 @@ export interface AiCuratorReport {
   };
   aiModelVersion: string;
   processingTimeMs: number;
+  /**
+   * Self-reported confidence in the curator's verdict (0-100).
+   *
+   * Computed at runtime and returned to clients. We deliberately do
+   * NOT persist this in the `AiCuratorReport` table today — the
+   * Prisma schema has no `confidence` column and downstream consumers
+   * only consume it as part of the API response. If a future
+   * dashboard needs to slice by confidence band, add a `confidence`
+   * column via a Prisma migration and propagate it in
+   * `curateContent()` → `aiCuratorReport.create({ data })`.
+   *
+   * Derivation:
+   *   - OpenAI path: average of `choices[0].logprobs.content[*].logprob`
+   *     mapped through `100 * exp(avgLogprob)`, clamped to [0, 100].
+   *     Falls back to 80 if the model does not return logprobs.
+   *   - Heuristic path: rule-match score starting at 50, see
+   *     `heuristicConfidence()` for the exact weighting.
+   */
+  confidence: number;
   tokenUsed?: number;
   cached?: boolean;
   /**
@@ -121,9 +140,26 @@ export class AiCuratorService {
       });
 
       if (existingReport) {
+        // Stamp `cached` + `cachedAt` on the returned row AND persist
+        // them on the row so the stats service can compute a real
+        // cache hit rate. Done in a fire-and-forget `update` so a
+        // Prisma error here never breaks the cache-hit return path.
+        const cachedAt = new Date();
+        void this.prisma.aiCuratorReport
+          .update({
+            where: { id: existingReport.id },
+            data: { cached: true, cachedAt },
+          })
+          .catch((err) => {
+            console.error(
+              '[AiCuratorService] failed to stamp cached flag on existing report:',
+              err,
+            );
+          });
         return {
           ...existingReport,
           cached: true,
+          cachedAt,
         };
       }
     }
@@ -154,7 +190,10 @@ export class AiCuratorService {
       newValues: { ...report, programId },
     });
 
-    return { ...stored, cached: false };
+    // `confidence` is computed at runtime only and intentionally not
+    // persisted to the DB (no `confidence` column on `AiCuratorReport`),
+    // so we merge it back into the response here.
+    return { ...stored, confidence: report.confidence, cached: false };
   }
 
   /**
@@ -321,6 +360,11 @@ export class AiCuratorService {
         ? 'gpt-4o-omnicast-v3'
         : 'heuristic-fallback-v1',
       processingTimeMs: Date.now() - startTime,
+      confidence:
+        ('confidence' in editorial ? editorial.confidence : undefined) ??
+        ('confidence' in compliance ? compliance.confidence : undefined) ??
+        ('confidence' in sentiment ? sentiment.confidence : undefined) ??
+        80,
       tokenUsed:
         ('tokenUsed' in editorial ? editorial.tokenUsed : undefined) ??
         ('tokenUsed' in compliance ? compliance.tokenUsed : undefined) ??
@@ -331,6 +375,9 @@ export class AiCuratorService {
         editorialMs,
       },
     };
+
+    // Confidence is an integer 0-100; clamp defensively before returning.
+    report.confidence = Math.max(0, Math.min(100, Math.round(report.confidence)));
 
     return report;
   }
@@ -366,6 +413,9 @@ export class AiCuratorService {
       const content = response.choices[0]?.message?.content;
       if (content) {
         const parsed = JSON.parse(content);
+        const confidence = this.computeConfidenceFromLogprobs(
+          response.choices[0],
+        );
         return {
           sentimentAnalysis: {
             overallSentiment: (parsed.overallSentiment || 'neutral') as
@@ -380,6 +430,7 @@ export class AiCuratorService {
               this.clampEngagement(Number(parsed.audienceEngagement)) ?? 50,
           },
           tokenUsed: response.usage?.total_tokens ?? 0,
+          confidence,
         };
       }
     } catch (error) {
@@ -420,6 +471,9 @@ export class AiCuratorService {
       const content = response.choices[0]?.message?.content;
       if (content) {
         const parsed = JSON.parse(content);
+        const confidence = this.computeConfidenceFromLogprobs(
+          response.choices[0],
+        );
         return {
           complianceAssessment: {
             isAgeRestricted: Boolean(parsed.isAgeRestricted),
@@ -438,6 +492,7 @@ export class AiCuratorService {
                 | 'LATE_NIGHT',
           },
           tokenUsed: response.usage?.total_tokens ?? 0,
+          confidence,
         };
       }
     } catch (error) {
@@ -482,6 +537,9 @@ export class AiCuratorService {
       const content = response.choices[0]?.message?.content;
       if (content) {
         const parsed = JSON.parse(content);
+        const confidence = this.computeConfidenceFromLogprobs(
+          response.choices[0],
+        );
         return {
           broadcastSuitability: (parsed.broadcastSuitability || 'STANDARD') as
             | 'PRIME_TIME'
@@ -492,6 +550,7 @@ export class AiCuratorService {
             parsed.targetAudienceVibe || 'General audience',
           riskWarnings: parsed.riskWarnings || 'Suitable for all ages',
           tokenUsed: response.usage?.total_tokens ?? 0,
+          confidence,
         };
       }
     } catch (error) {
@@ -524,12 +583,20 @@ export class AiCuratorService {
           ? 'medium'
           : 'medium';
 
+    const flags = this.heuristicFlagText(text);
+
     return {
       sentimentAnalysis: {
         overallSentiment: overall,
         hypeLevel: hype as 'low' | 'medium' | 'high',
         audienceEngagement: this.estimateEngagement(program),
       },
+      confidence: this.heuristicConfidence({
+        sentiment: overall,
+        hypeLevel: hype,
+        flaggedContent: flags,
+        isAgeRestricted: false,
+      }),
     };
   }
 
@@ -562,6 +629,12 @@ export class AiCuratorService {
         flaggedContent: flags,
         recommendedBroadcastWindow: recommendedWindow,
       },
+      confidence: this.heuristicConfidence({
+        flaggedContent: flags,
+        isAgeRestricted,
+        hypeLevel: 'medium',
+        sentiment: 'neutral',
+      }),
     };
   }
 
@@ -581,6 +654,9 @@ export class AiCuratorService {
           ? '19:00 - 19:30'
           : '20:00 - 22:00';
 
+    const flags: string[] =
+      compliance.complianceAssessment?.flaggedContent ?? [];
+
     return {
       broadcastSuitability: (isRestricted
         ? 'RESTRICTED'
@@ -596,6 +672,12 @@ export class AiCuratorService {
       riskWarnings: isRestricted
         ? 'Nội dung có yếu tố nhạy cảm, cần giám sát của phụ huynh'
         : 'Phù hợp mọi đối tượng',
+      confidence: this.heuristicConfidence({
+        sentiment: sentiment.sentimentAnalysis?.overallSentiment ?? 'neutral',
+        hypeLevel: sentiment.sentimentAnalysis?.hypeLevel ?? 'medium',
+        flaggedContent: flags,
+        isAgeRestricted: !!isRestricted,
+      }),
     };
   }
 
@@ -613,6 +695,81 @@ export class AiCuratorService {
 
   private clampEngagement(value: number): number | null {
     if (!Number.isFinite(value)) return null;
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  /**
+   * Re-extracts the flags that a heuristic pass would surface, used by
+   * `fallbackSentiment` to estimate how "clean" the program is.
+   */
+  private heuristicFlagText(text: string): string[] {
+    const flags: string[] = [];
+    if (/(bạo lực|kill|violence|chết|war)/i.test(text)) flags.push('violence');
+    if (/(ngôn ngữ|khiêu dâm|18\+|explicit)/i.test(text))
+      flags.push('explicit-language');
+    return flags;
+  }
+
+  /**
+   * Confidence score (0-100) derived from the heuristic pipeline.
+   *
+   * Weighting (start at 50):
+   *   +15 if sentiment is positive
+   *   +10 if hype level is "high"
+   *   +10 if compliance has zero flags
+   *   -15 if the program is flagged age-restricted
+   *   -10 per compliance flag, capped at -30
+   *
+   * Clamped to [30, 95].
+   */
+  private heuristicConfidence(input: {
+    sentiment?: 'positive' | 'neutral' | 'negative';
+    hypeLevel?: 'low' | 'medium' | 'high';
+    flaggedContent?: string[];
+    isAgeRestricted?: boolean;
+  }): number {
+    let value = 50;
+    if (input.sentiment === 'positive') value += 15;
+    if (input.hypeLevel === 'high') value += 10;
+    const flags = input.flaggedContent ?? [];
+    if (flags.length === 0) value += 10;
+    if (input.isAgeRestricted) value -= 15;
+    value -= Math.min(30, flags.length * 10);
+    return Math.min(95, Math.max(30, value));
+  }
+
+  /**
+   * Derives a 0-100 score from the OpenAI logprobs of the chosen
+   * completion. If the model did not return logprobs (the default for
+   * the `chat.completions` endpoint), we conservatively assume 80.
+   *
+   * Formula:
+   *   avg_logprob = mean(choices[0].logprobs.content[*].logprob)
+   *   confidence  = round(100 * exp(avg_logprob))   (≈ avg token probability)
+   *
+   * `exp(logprob)` is bounded in [0, 1]; multiplying by 100 then
+   * clamping yields a 0-100 confidence score that matches the spec.
+   */
+  private computeConfidenceFromLogprobs(choice: any): number {
+    const logprobs = choice?.logprobs?.content;
+    if (!Array.isArray(logprobs) || logprobs.length === 0) {
+      return 80;
+    }
+    let sum = 0;
+    let count = 0;
+    for (const entry of logprobs) {
+      if (typeof entry?.logprob === 'number' && Number.isFinite(entry.logprob)) {
+        sum += entry.logprob;
+        count += 1;
+      }
+    }
+    if (count === 0) return 80;
+    const avg = sum / count;
+    return Math.round(100 * Math.exp(avg));
+  }
+
+  private clampConfidence(value: number): number {
+    if (!Number.isFinite(value)) return 80;
     return Math.max(0, Math.min(100, Math.round(value)));
   }
 

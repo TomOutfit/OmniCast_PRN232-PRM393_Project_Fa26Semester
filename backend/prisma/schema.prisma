@@ -22,12 +22,17 @@ model User {
   isActive      Boolean?  @default(true)
   emailVerified Boolean?  @default(false)
   lastLoginAt   DateTime? @db.Timestamp(6)
+  /// VIP subscription expiry. NULL = no entitlement. Owned by the
+  /// billing service after a server-side receipt verification.
+  premiumUntil  DateTime? @db.Timestamp(6)
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @updatedAt @db.Timestamp(6)
 
   // ── Back-relations (see `001_init.sql` FK constraints) ───────────
   ownedChannels     LiveChannel[]    @relation("ChannelOwner")
   refreshTokens     RefreshToken[]
+  passwordResets    PasswordResetToken[] @relation("PasswordResetTokens")
+  deviceTokens      DeviceToken[]        @relation("DeviceTokens")
   follows           Follow[]         @relation("FollowFollower")
   comments          Comment[]        @relation("CommentAuthor")
   commentLikes      CommentLike[]    @relation("CommentLikeUser")
@@ -38,6 +43,7 @@ model User {
 
   @@index([email], map: "idx_user_email")
   @@index([role], map: "idx_user_role")
+  @@index([premiumUntil], map: "idx_user_premium_until")
 }
 
 model RefreshToken {
@@ -52,6 +58,25 @@ model RefreshToken {
 
   @@index([expiresAt], map: "idx_refresh_token_expires")
   @@index([userId], map: "idx_refresh_token_user")
+}
+
+/// One-time, short-lived token used for password recovery flows.
+/// The raw token is sent to the user via email (not persisted); the
+/// SHA-256 hash is stored. On consumption `usedAt` is stamped so the
+/// same token can't be reused.
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique @db.VarChar(255)
+  expiresAt DateTime  @db.Timestamp(6)
+  usedAt    DateTime? @db.Timestamp(6)
+  ipAddress String?   @db.VarChar(50)
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
+
+  user User? @relation("PasswordResetTokens", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_password_reset_user")
+  @@index([expiresAt], map: "idx_password_reset_expires")
 }
 
 model ProductionTag {
@@ -132,6 +157,9 @@ model LiveEvent {
   endedAt          DateTime?         @db.Timestamp(6)
   /// Estimated length in **seconds** (written by ingest pipelines). Internal services normalise this to minutes via `normalizeDurationMinutes`.
   duration         Int?
+  /// Timestamp of the last AI curator `apply` operation against this event.
+  /// Set by `AiCuratorService.applyCuration` to enable "recently curated" dashboards and cooldown windows. Nullable.
+  lastAppliedAt    DateTime?         @db.Timestamp(6)
   viewerCount      Int?              @default(0)
   peakViewers      Int?              @default(0)
   likeCount        Int?              @default(0)
@@ -155,6 +183,7 @@ model LiveEvent {
   @@index([channelId, status], map: "idx_live_event_channel_status")
   @@index([status, scheduledAt], map: "idx_live_event_status_scheduled")
   @@index([status, startedAt], map: "idx_live_event_status_started")
+  @@index([lastAppliedAt], map: "idx_live_event_last_applied_at")
 }
 
 model Recording {
@@ -413,12 +442,19 @@ model AiCuratorReport {
   aiModelVersion       String    @db.VarChar(100)
   tokenUsed            Int?
   processingTimeMs     Int       @default(0)
+  /// Whether this report was served from the per-program cache (no fresh pipeline run).
+  /// Mirrors the in-memory `cached` flag returned by `AiCuratorService.curateContent`.
+  /// Populated retroactively by the runtime; used by `AiCuratorStatsService.computeCacheHitRate`.
+  cached               Boolean?  @default(false)
+  /// When `cached = true` was stamped (i.e. when this row was last read from cache).
+  cachedAt             DateTime? @db.Timestamp(6)
   createdBy            String?
   createdAt            DateTime  @default(now())
   program              LiveEvent @relation(fields: [programId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([programId, createdAt])
   @@index([programId, createdAt])
+  @@index([cached], map: "idx_ai_curator_report_cached")
 }
 
 enum UserRole {
@@ -556,6 +592,28 @@ enum WatchSource {
   RECOMMENDATION
   DIRECT_LINK
   SOCIAL_SHARE
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+model DeviceToken {
+  id         String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String         @db.Uuid
+  token      String         @unique @db.VarChar(500)
+  platform   DevicePlatform @default(ANDROID)
+  appVersion String?        @db.VarChar(50)
+  deviceName String?        @db.VarChar(120)
+  createdAt  DateTime?      @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime?      @default(now()) @db.Timestamp(6)
+
+  user User? @relation("DeviceTokens", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_device_token_user")
+  @@index([updatedAt], map: "idx_device_token_updated")
 }
 
 model NewsletterSubscriber {
