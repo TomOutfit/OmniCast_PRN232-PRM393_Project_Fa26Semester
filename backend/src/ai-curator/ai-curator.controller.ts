@@ -8,6 +8,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -20,10 +21,12 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { AiCuratorService } from './ai-curator.service';
+import { AiCuratorStatsService, StatsPeriod } from './ai-curator-stats.service';
 import {
   AnalyzeContentPreviewDto,
   ApplyCurationDto,
   CurateContentDto,
+  StatsQueryDto,
 } from './dto/ai-curator.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -37,7 +40,10 @@ import { Throttle } from '@nestjs/throttler';
 @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing JWT access token' })
 @ApiResponse({ status: 403, description: 'Forbidden - requires STAFF or ADMIN role' })
 export class AiCuratorController {
-  constructor(private readonly aiCuratorService: AiCuratorService) {}
+  constructor(
+    private readonly aiCuratorService: AiCuratorService,
+    private readonly statsService: AiCuratorStatsService,
+  ) {}
 
   /**
    * Mode 1 — Curate an EXISTING program. Looks the program up in DB,
@@ -143,5 +149,22 @@ export class AiCuratorController {
   @ApiResponse({ status: 404, description: 'Program not found' })
   async getCurationHistory(@Param('programId') programId: string) {
     return this.aiCuratorService.getCurationHistory(programId);
+  }
+
+  /**
+   * Aggregated dashboard stats over a recent time window.
+   * No throttling — the dashboard polls this every few seconds.
+   */
+  @Get('stats')
+  @Roles('STAFF', 'ADMIN')
+  @ApiOperation({
+    summary:
+      'Get aggregate dashboard stats for the AI curator pipeline (Staff/Admin only)',
+  })
+  @ApiResponse({ status: 200, description: 'Stats summary returned successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid `period` value' })
+  async getStats(@Query() query: StatsQueryDto) {
+    const period: StatsPeriod = query.period ?? 'week';
+    return this.statsService.getStats(period);
   }
 }

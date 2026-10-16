@@ -85,9 +85,15 @@ class AppThemeModeScope extends InheritedNotifier<AppThemeModeProvider> {
 
 /// Convenience helpers — call inside `build()` so the widget rebuilds when
 /// the locale or theme mode changes.
-String appT(BuildContext context, String key) {
+///
+/// Looks up [key] in the active locale's table. When the key is missing
+/// entirely, or the active locale has no entry for it, falls back to:
+///   1. The Vietnamese row in the table (if present).
+///   2. The explicit [fallback] string passed by the caller.
+///   3. The key itself (last resort, makes typos visible).
+String appT(BuildContext context, String key, [String? fallback]) {
   final locale = AppLocaleScope.of(context).locale;
-  return AppStrings.t(key, locale);
+  return AppStrings.t(key, locale, fallback: fallback);
 }
 
 AppLocale appLocaleOf(BuildContext context) =>

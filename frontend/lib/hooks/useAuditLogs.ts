@@ -4,7 +4,10 @@
 
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import {
+  useQuery,
+  type UseQueryOptions,
+} from '@tanstack/react-query';
 import {
   fetchAuditLogs,
   fetchRecentActivity,
@@ -18,10 +21,20 @@ export const auditKeys = {
   recent: (limit: number) => [...auditKeys.all, 'recent', limit] as const,
 };
 
-export function useAuditLogs(params: AuditLogsParams = {}) {
+/** Options accepted by `useAuditLogs` (matches other hooks in the project). */
+type AuditLogsHookOptions = Omit<
+  UseQueryOptions<PaginatedResponse<AuditLogEntry>>,
+  'queryKey' | 'queryFn'
+>;
+
+export function useAuditLogs(
+  params: AuditLogsParams = {},
+  options: AuditLogsHookOptions = {},
+) {
   return useQuery<PaginatedResponse<AuditLogEntry>>({
     queryKey: auditKeys.list(params),
     queryFn: () => fetchAuditLogs(params),
+    ...options,
   });
 }
 

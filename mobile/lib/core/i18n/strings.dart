@@ -195,6 +195,36 @@ class AppStrings {
     // Tabs
     'curator.analyzeTab': {'vi': 'Phân tích mới', 'en': 'New analysis'},
     'curator.applyTab': {'vi': 'Áp dụng đề xuất', 'en': 'Apply suggestions'},
+    'curator.curateExistingTab': {
+      'vi': 'Phân tích có sẵn',
+      'en': 'Curate existing',
+    },
+
+    // Curate-existing
+    'curator.emptyCurateExisting': {
+      'vi': 'Chưa có chương trình nào đang chờ phân tích',
+      'en': 'No programs waiting for analysis',
+    },
+    'curator.emptyCurateExistingHint': {
+      'vi': 'Các chương trình ở trạng thái SCHEDULED sẽ xuất hiện tại đây.',
+      'en': 'Programs in SCHEDULED status will appear here.',
+    },
+    'curator.runAnalysisBtn': {
+      'vi': 'Phân tích AI',
+      'en': 'Run AI',
+    },
+    'curator.curatingProgram': {
+      'vi': 'Đang phân tích "{title}"...',
+      'en': 'Analyzing "{title}"...',
+    },
+    'curator.confidenceLabel': {
+      'vi': 'Độ tin cậy',
+      'en': 'Confidence',
+    },
+    'curator.confidencePercent': {
+      'vi': 'Độ tin cậy: {value}%',
+      'en': 'Confidence: {value}%',
+    },
 
     // Preview header
     'curator.newAnalysisHeader': {
@@ -433,12 +463,13 @@ class AppStrings {
     'curator.window.lateNight': {'vi': 'Đêm khuya', 'en': 'Late night'},
   };
 
-  static String t(String key, AppLocale locale) {
+  static String t(String key, AppLocale locale, {String? fallback}) {
     final row = _table[key];
-    if (row == null) return key;
+    if (row == null) return fallback ?? key;
     final value = row[locale.code];
     if (value != null) return value;
-    final fallback = row['vi'];
+    final vi = row['vi'];
+    if (vi != null) return vi;
     return fallback ?? key;
   }
 }

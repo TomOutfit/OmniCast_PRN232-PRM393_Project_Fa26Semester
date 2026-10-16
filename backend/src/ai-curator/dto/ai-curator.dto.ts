@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsArray,
   IsDateString,
+  IsIn,
   MaxLength,
   MinLength,
   ValidateIf,
@@ -123,6 +124,22 @@ export class ApplyCurationDto {
   @IsBoolean()
   @IsOptional()
   markApplied?: boolean;
+}
+
+/**
+ * Query DTO for `GET /ai-curator/stats`. Accepts an optional period
+ * (defaults to `week` on the controller side). Validation rules keep
+ * the value restricted to the three supported buckets.
+ */
+export class StatsQueryDto {
+  @ApiPropertyOptional({
+    description: 'Time window for stats (default: week)',
+    enum: ['day', 'week', 'month'],
+    default: 'week',
+  })
+  @IsOptional()
+  @IsIn(['day', 'week', 'month'])
+  period?: 'day' | 'week' | 'month';
 }
 
 /**

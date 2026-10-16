@@ -157,6 +157,7 @@ Map<String, dynamic> _fullReportJson() => {
       'processingTimeMs': 1234,
       'tokenUsed': 512,
       'cached': false,
+      'confidence': 85,
       'id': 'rep-001',
       'programId': 'prog-001',
       'createdBy': 'staff-1',
@@ -204,6 +205,7 @@ void main() {
       expect(r.processingTimeMs, 1234);
       expect(r.tokenUsed, 512);
       expect(r.cached, false);
+      expect(r.confidence, 85);
       expect(r.id, 'rep-001');
       expect(r.programId, 'prog-001');
       expect(r.createdBy, 'staff-1');
@@ -233,6 +235,7 @@ void main() {
       expect(r.processingTimeMs, 0);
       expect(r.tokenUsed, isNull);
       expect(r.cached, isNull);
+      expect(r.confidence, isNull);
       expect(r.id, isNull);
       expect(r.programId, isNull);
       expect(r.createdBy, isNull);
@@ -247,6 +250,24 @@ void main() {
       expect(r.compliance.ageRating, 'PG');
       expect(r.compliance.flaggedContent, isEmpty);
       expect(r.compliance.recommendedBroadcastWindow, 'EVENING');
+    });
+
+    test('parses confidence when present and coerces to int', () {
+      // Integer input (typical backend payload).
+      final r1 = AiCuratorReport.fromJson({'confidence': 85});
+      expect(r1.confidence, 85);
+
+      // Double input — common when the backend serialises via JSON
+      // numbers. The model should still coerce to int.
+      final r2 = AiCuratorReport.fromJson({'confidence': 72.6});
+      expect(r2.confidence, 72);
+
+      // Null / missing input → null so the UI can show a fallback.
+      final r3 = AiCuratorReport.fromJson({'confidence': null});
+      expect(r3.confidence, isNull);
+
+      final r4 = AiCuratorReport.fromJson(const {});
+      expect(r4.confidence, isNull);
     });
   });
 
