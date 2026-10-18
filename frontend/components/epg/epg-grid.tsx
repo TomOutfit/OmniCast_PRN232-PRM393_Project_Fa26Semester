@@ -33,6 +33,9 @@ import { cn } from '@/lib/utils';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useEpgDay } from '@/lib/hooks/usePrograms';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { triggerIngestAll, triggerIngestYoutubeRss } from '@/lib/api/ingest';
 import {
   type RealEpgProgram,
   type RealEpgChannel,
@@ -48,6 +51,7 @@ const MINUTE_WIDTH = HOUR_WIDTH / 60; // 4px / minute
 const TOTAL_WIDTH = TOTAL_HOURS * HOUR_WIDTH; // 5760px
 
 export function EPGGrid() {
+  const queryClient = useQueryClient();
   const [selectedDayOffset, setSelectedDayOffset] = useState<number>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [activeChannelId, setActiveChannelId] = useState<string>('');
@@ -55,7 +59,35 @@ export function EPGGrid() {
   const [viewMode, setViewMode] = useState<'timeline' | 'schedule_list'>('timeline');
   const [selectedProgram, setSelectedProgram] = useState<RealEpgProgram | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
+  const [isSyncingIngest, setIsSyncingIngest] = useState<boolean>(false);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleSyncIngest = async () => {
+    setIsSyncingIngest(true);
+    try {
+      const [ytRes, aggRes] = await Promise.allSettled([
+        triggerIngestYoutubeRss(),
+        triggerIngestAll(),
+      ]);
+      const upsertedCount =
+        (ytRes.status === 'fulfilled' ? (ytRes.value.upserted ?? 0) : 0) +
+        (aggRes.status === 'fulfilled' ? (aggRes.value.totalUpserted ?? 0) : 0);
+
+      toast.success('Đồng bộ kho chương trình từ Data API thành công!', {
+        description: `Đã nạp & xếp lịch ${upsertedCount > 0 ? upsertedCount : 'mới'} chương trình lên hệ thống EPG.`,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ['epg'] });
+      await queryClient.invalidateQueries({ queryKey: ['programs'] });
+      await queryClient.invalidateQueries({ queryKey: ['channels'] });
+    } catch (err: any) {
+      toast.error('Đồng bộ Data API thất bại', {
+        description: err?.message || 'Vui lòng kiểm tra quyền quản trị viên.',
+      });
+    } finally {
+      setIsSyncingIngest(false);
+    }
+  };
 
   // Compute wall-clock target date from selected offset
   const selectedDate = useMemo(() => {
@@ -225,6 +257,26 @@ export function EPGGrid() {
             >
               <Layers className="w-3.5 h-3.5" />
               Lịch Theo Kênh
+            </button>
+
+            {/* Sync from Data API onto EPG */}
+            <button
+              onClick={handleSyncIngest}
+              disabled={isSyncingIngest}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer',
+                isSyncingIngest
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                  : 'bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-500/40 text-emerald-300 hover:border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]',
+              )}
+              title="Cập nhật nội dung mới nhất từ các Data API (YouTube RSS, TMDB, Podcasts) lên kho chương trình và EPG"
+            >
+              {isSyncingIngest ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              )}
+              {isSyncingIngest ? 'Đang nạp...' : 'Cập Nhật Data API'}
             </button>
           </div>
         </div>

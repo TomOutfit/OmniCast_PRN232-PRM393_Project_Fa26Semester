@@ -17,6 +17,8 @@ export interface LiveEventsListParams {
   status?: string;
   fromDate?: string;
   toDate?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface RecordingsListParams {
@@ -36,10 +38,12 @@ export interface EpgDayParams {
 export interface EpgProgramItem {
   id: string;
   title: string;
+  description?: string | null;
   startTime: string;
   endTime: string;
   status: string;
   thumbnailUrl: string | null;
+  streamUrl?: string | null;
   durationMinutes: number;
   tags: string[];
   category: string;

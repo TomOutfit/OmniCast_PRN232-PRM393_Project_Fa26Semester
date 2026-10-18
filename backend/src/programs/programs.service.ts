@@ -145,6 +145,8 @@ export class ProgramsService {
     status?: EventStatus;
     fromDate?: Date;
     toDate?: Date;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }) {
     const page = Math.max(1, Number(options?.page) || 1);
     const limit = Math.max(1, Number(options?.limit) || 20);
@@ -153,6 +155,8 @@ export class ProgramsService {
       status,
       fromDate,
       toDate,
+      sortBy = 'scheduledAt',
+      sortOrder = 'asc',
     } = options || {};
 
     const where: any = {};
@@ -170,7 +174,7 @@ export class ProgramsService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { scheduledAt: 'asc' },
+        orderBy: { [sortBy]: sortOrder },
         include: {
           channel: {
             select: { id: true, name: true, slug: true, logoUrl: true },
@@ -335,6 +339,7 @@ export class ProgramsService {
       programs: Array<{
         id: string;
         title: string;
+        description?: string | null;
         startTime: string;
         endTime: string;
         status: EventStatus;
@@ -436,10 +441,12 @@ export class ProgramsService {
       select: {
         id: true,
         title: true,
+        description: true,
         scheduledAt: true,
         duration: true,
         status: true,
         thumbnailUrl: true,
+        streamUrl: true,
         tags: true,
         channelId: true,
         channel: {
@@ -463,7 +470,9 @@ export class ProgramsService {
       Array<{
         id: string;
         title: string;
+        description?: string | null;
         thumbnailUrl: string | null;
+        videoUrl?: string | null;
         duration: number | null;
         tags: string[];
       }>
@@ -479,7 +488,9 @@ export class ProgramsService {
       select: {
         id: true,
         title: true,
+        description: true,
         thumbnailUrl: true,
+        videoUrl: true,
         duration: true,
         tags: true,
         channelId: true,
@@ -503,6 +514,7 @@ export class ProgramsService {
         return {
           id: e.id,
           title: e.title,
+          description: e.description ?? null,
           startTime: start.toISOString(),
           endTime: end.toISOString(),
           // `LiveEvent.status` is `EventStatus?` — default to SCHEDULED
@@ -510,6 +522,7 @@ export class ProgramsService {
           // non-nullable).
           status: e.status ?? 'SCHEDULED',
           thumbnailUrl: e.thumbnailUrl ?? null,
+          streamUrl: e.streamUrl ?? null,
           durationMinutes,
           tags: e.tags ?? [],
           // `e.channel` can theoretically be null even though we filter
@@ -581,7 +594,9 @@ export class ProgramsService {
     recordings: Array<{
       id: string;
       title: string;
+      description?: string | null;
       thumbnailUrl: string | null;
+      videoUrl?: string | null;
       duration: number | null;
       tags: string[];
       category?: any;
@@ -601,6 +616,7 @@ export class ProgramsService {
       recordings: opts.recordings.map((r) => ({
         id: r.id,
         title: r.title,
+        description: r.description ?? null,
         thumbnailUrl: r.thumbnailUrl,
         videoUrl: (r as any).videoUrl ?? null,
         duration: r.duration ?? 0,

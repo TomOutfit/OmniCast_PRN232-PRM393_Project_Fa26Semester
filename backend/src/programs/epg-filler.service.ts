@@ -38,6 +38,7 @@ import { EventStatus, LiveCategory } from '@prisma/client';
 export interface FillerRecording {
   id: string;
   title: string;
+  description?: string | null;
   thumbnailUrl: string | null;
   videoUrl?: string | null;
   /** Total recording duration in seconds (the *whole* recording, before
@@ -57,6 +58,7 @@ export interface FillerChannel {
 export interface FillerRealProgram {
   id: string;
   title: string;
+  description?: string | null;
   startTime: string;
   endTime: string;
   status: EventStatus;
@@ -250,6 +252,7 @@ export class EpScheduleFillerService {
           episodeId: `r:${r.id}:1`,
           originId: r.id,
           title: r.title,
+          description: r.description ?? r.title,
           thumbnailUrl: r.thumbnailUrl,
           videoUrl: r.videoUrl,
           tags: r.tags ?? [],
@@ -268,6 +271,7 @@ export class EpScheduleFillerService {
           episodeId: `r:${r.id}:${i + 1}`,
           originId: r.id,
           title: `${r.title} — Tập ${i + 1}`,
+          description: r.description ? `${r.description} (Tập ${i + 1})` : `${r.title} — Tập ${i + 1}`,
           thumbnailUrl: r.thumbnailUrl,
           videoUrl: r.videoUrl,
           tags: [...(r.tags ?? []), `Tập ${i + 1}`],
@@ -589,6 +593,7 @@ export class EpScheduleFillerService {
       out.push({
         id: `filler-rec-${ep.originId}-ep${ep.episodeNumber}-${slotStartMs}`,
         title: ep.title,
+        description: ep.description ?? ep.title,
         startTime: new Date(slotStartMs).toISOString(),
         endTime: new Date(slotEndMs).toISOString(),
         status: 'SCHEDULED' as EventStatus,
@@ -610,6 +615,7 @@ export class EpScheduleFillerService {
     out.push({
       id: `filler-brand-${channel.id}-${slotStartMs}`,
       title,
+      description: `${channel.name} — Khung chương trình phát sóng định kỳ`,
       startTime: new Date(slotStartMs).toISOString(),
       endTime: new Date(slotEndMs).toISOString(),
       status: 'SCHEDULED' as EventStatus,
@@ -993,6 +999,7 @@ export interface EpisodeEntry {
   /** Stable ID of the source recording. Multiple episodes share this. */
   originId: string;
   title: string;
+  description?: string | null;
   thumbnailUrl: string | null;
   videoUrl?: string | null;
   tags: string[];

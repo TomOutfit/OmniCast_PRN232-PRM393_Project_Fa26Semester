@@ -29,9 +29,9 @@ import { ContentAggregatorService } from './content-aggregator.service';
 @ApiBearerAuth()
 @Controller('programs/ingest')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.STAFF)
 @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing credentials' })
-@ApiResponse({ status: 403, description: 'Forbidden - requires ADMIN role' })
+@ApiResponse({ status: 403, description: 'Forbidden - requires ADMIN or STAFF role' })
 export class IngestController {
   constructor(
     private readonly contentAggregator: ContentAggregatorService,

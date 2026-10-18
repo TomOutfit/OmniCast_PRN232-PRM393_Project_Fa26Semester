@@ -202,7 +202,7 @@ export function mapApiEpgToRealChannels(
         badge: p.isFiller ? (p.fillerKind === 'recording-replay' ? 'REPLAY' : 'FILLER') : undefined,
         quality: undefined,
         audio: undefined,
-        description: p.title,
+        description: p.description || p.title,
         thumbnailUrl: p.thumbnailUrl || getCategoryThumbnail(p.category || catKey, pIdx),
         directorOrHost: undefined,
         rating: undefined,
@@ -211,6 +211,7 @@ export function mapApiEpgToRealChannels(
         channelSlug: slug,
         channelName: ch.channelName,
         sourceRecordingId: p.sourceRecordingId,
+        streamUrl: p.streamUrl,
       };
     });
 

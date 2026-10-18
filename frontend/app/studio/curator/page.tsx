@@ -41,6 +41,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   BarChart3,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -51,6 +53,7 @@ import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useLiveEvents, useLiveEventById } from '@/lib/hooks/usePrograms';
+import { triggerIngestAll, triggerIngestYoutubeRss } from '@/lib/api/ingest';
 import {
   useAnalyzeContent,
   useCurateProgram,
@@ -107,9 +110,9 @@ export default function CuratorStudioPage() {
   const canCurate = canRunAiCurator(user);
   const { t } = useI18n();
 
-  // Live events awaiting curation (status SCHEDULED + has not been AI-reviewed)
+  // Live events awaiting curation — pulls all programs up to the present moment (LIVE, SCHEDULED, ENDED) sorted newest first
   const { data, isFetching, refetch } = useLiveEvents(
-    { status: 'SCHEDULED', limit: DEFAULT_LIVE_EVENTS_LIMIT },
+    { limit: DEFAULT_LIVE_EVENTS_LIMIT, sortOrder: 'desc' },
     { enabled: canCurate },
   );
 
@@ -335,6 +338,26 @@ export default function CuratorStudioPage() {
     }
   };
 
+  const [isSyncingDataApi, setIsSyncingDataApi] = useState(false);
+
+  const handleSyncDataApi = async () => {
+    try {
+      setIsSyncingDataApi(true);
+      toast.info('Đang đồng bộ dữ liệu kho chương trình từ YouTube RSS & External APIs...');
+      const res = await triggerIngestYoutubeRss();
+      toast.success('Đồng bộ Data API thành công!', {
+        description: `Đã nạp ${res.totalUpserted ?? res.upserted ?? res.totalIngested ?? 0} chương trình mới vào kho EPG.`,
+      });
+      await refetch();
+    } catch (err: any) {
+      toast.error('Đồng bộ thất bại', {
+        description: err?.message || 'Không thể kết nối đến pipeline ingest.',
+      });
+    } finally {
+      setIsSyncingDataApi(false);
+    }
+  };
+
   /**
    * Keyboard shortcut — ⌘/Ctrl + Enter triggers a fresh analysis
    * on the currently selected row. Bound at the document level so
@@ -423,6 +446,18 @@ export default function CuratorStudioPage() {
                   </p>
                   <p className="text-xs text-dark-400 mt-1 whitespace-nowrap">{t('curator.pendingCount')}</p>
                 </div>
+                <Button
+                  variant="outline"
+                  className="gap-2 shrink-0 border-purple-500/40 text-purple-300 hover:bg-purple-950/40 hover:text-purple-200"
+                  onClick={handleSyncDataApi}
+                  disabled={isSyncingDataApi}
+                  title="Kéo dữ liệu mới nhất từ YouTube RSS & Data API vào kho EPG"
+                >
+                  <Zap
+                    className={cn('w-4 h-4 text-purple-400', isSyncingDataApi && 'animate-spin')}
+                  />
+                  {isSyncingDataApi ? 'Đang nạp...' : 'Cập nhật Data API'}
+                </Button>
                 <Button
                   className="gap-2 shrink-0"
                   onClick={() => refetch()}
