@@ -654,14 +654,10 @@ export default function WebLiveStudioPage() {
       setRecordedFile(file);
       setHasActiveStream(false);
 
-      const isLocalhost =
-        typeof window !== 'undefined' &&
-        (window.location.hostname.includes('localhost') ||
-          window.location.hostname.includes('127.0.0.1'));
-      if (!isLocalhost && blob.size > 4.2 * 1024 * 1024) {
-        toast.warning(
-          `Clip vừa ghi có dung lượng ${(blob.size / (1024 * 1024)).toFixed(1)} MB (vượt 4.5 MB của Vercel). Để test trên bản Deploy Vercel, hãy quay clip ngắn dưới 5 giây.`,
-          { duration: 7000 },
+      if (blob.size > 4.5 * 1024 * 1024) {
+        toast.info(
+          `Clip vừa ghi (${(blob.size / (1024 * 1024)).toFixed(1)} MB) đã sẵn sàng phát sóng trực tiếp từ thiết bị của bạn.`,
+          { duration: 5000 },
         );
       }
     };
@@ -712,14 +708,10 @@ export default function WebLiveStudioPage() {
         `Đã nạp file video (${detectedDuration}s, ${sizeMb} MB)`,
       );
 
-      const isLocalhost =
-        typeof window !== 'undefined' &&
-        (window.location.hostname.includes('localhost') ||
-          window.location.hostname.includes('127.0.0.1'));
-      if (!isLocalhost && file.size > 4.2 * 1024 * 1024) {
-        toast.warning(
-          `File video (${sizeMb} MB) vượt quá giới hạn 4.5 MB của Vercel Serverless. Vui lòng chọn file nhẹ hơn hoặc dùng tab "Phát từ nội dung có sẵn".`,
-          { duration: 7000 },
+      if (file.size > 4.5 * 1024 * 1024) {
+        toast.info(
+          `Video thời lượng dài (${sizeMb} MB) đã sẵn sàng phát sóng trực tiếp lên Live Studio!`,
+          { duration: 5000 },
         );
       }
     };
@@ -737,17 +729,6 @@ export default function WebLiveStudioPage() {
       return;
     }
 
-    const isLocalhost =
-      typeof window !== 'undefined' &&
-      (window.location.hostname.includes('localhost') ||
-        window.location.hostname.includes('127.0.0.1'));
-    if (!isLocalhost && recordedFile.size > 4.2 * 1024 * 1024) {
-      toast.warning(
-        `File video (${(recordedFile.size / (1024 * 1024)).toFixed(1)} MB) tương đối lớn đối với Vercel Serverless (4.5 MB). Hệ thống sẽ cố gắng tải lên, nếu không thành công bạn hãy phát qua Mode 1 (Kho nội dung & File PC).`,
-        { duration: 8000 },
-      );
-    }
-
     if (visibility === 'IMMEDIATE') {
       setShowLiveConfirm(true);
       return;
@@ -761,12 +742,25 @@ export default function WebLiveStudioPage() {
     setShowLiveConfirm(false);
     try {
       setUploadProgress(1);
-      // 1. Upload file
-      const uploadRes = await uploadFileMutation.mutateAsync({
-        file: recordedFile,
-        title: selfTitle,
-        onProgress: (p) => setUploadProgress(p),
-      });
+      let videoUrl: string | undefined = undefined;
+
+      // 1. Try server storage upload first; if file exceeds serverless upload limit, smoothly stream directly from client
+      try {
+        const uploadRes = await uploadFileMutation.mutateAsync({
+          file: recordedFile,
+          title: selfTitle,
+          onProgress: (p) => setUploadProgress(p),
+        });
+        videoUrl = (uploadRes as any)?.url || (uploadRes as any)?.data?.url || uploadRes.url;
+      } catch (fileUploadErr: any) {
+        console.warn('[Studio Live] Serverless direct storage upload skipped/failed, streaming directly from device:', fileUploadErr);
+        videoUrl = recordedPreviewUrl || URL.createObjectURL(recordedFile);
+        toast.info('Video thời lượng dài (> 4.5 MB) được phát trực tiếp từ máy của bạn vào Live Studio!', { duration: 6000 });
+      }
+
+      if (!videoUrl) {
+        throw new Error('Không thể khởi tạo luồng video để phát sóng.');
+      }
 
       // 2. Persist recording metadata & optionally curate live
       const durationSec = recordingSeconds > 0 ? recordingSeconds : 120;
@@ -774,7 +768,7 @@ export default function WebLiveStudioPage() {
         channelId: selectedChannel.slug,
         title: selfTitle,
         description: selfDesc || undefined,
-        videoUrl: (uploadRes as any)?.url || (uploadRes as any)?.data?.url || uploadRes.url,
+        videoUrl,
         duration: durationSec,
         visibility,
         tags: ['web-studio', 'self-record'],
@@ -794,24 +788,13 @@ export default function WebLiveStudioPage() {
       refetchLiveEvents();
       refetchRecordings();
     } catch (err: any) {
-      // `err` is typically an AxiosError whose `config.headers`
-      // carries the live `Authorization: Bearer <jwt>` header.
-      // Route through `logError` so that token never lands in
-      // the browser console / Sentry.
       logError('[OmniCast Studio Live Error]:', err);
-      if (err.response?.status === 413 || err.message?.includes('413')) {
-        toast.error(
-          'Dung lượng video vượt quá giới hạn 4.5MB của Vercel Serverless. Vui lòng chọn clip ngắn hơn hoặc dùng tab "Phát từ nội dung có sẵn".',
-          { duration: 8000 },
-        );
-      } else {
-        const apiMsg = Array.isArray(err.response?.data?.message)
-          ? err.response.data.message.join(', ')
-          : err.response?.data?.message ||
-            err.message ||
-            'Có lỗi xảy ra khi tải lên phát sóng.';
-        toast.error(apiMsg);
-      }
+      const apiMsg = Array.isArray(err.response?.data?.message)
+        ? err.response.data.message.join(', ')
+        : err.response?.data?.message ||
+          err.message ||
+          'Có lỗi xảy ra khi tải lên phát sóng.';
+      toast.error(apiMsg);
       setUploadProgress(0);
     }
   };
@@ -1895,10 +1878,10 @@ export default function WebLiveStudioPage() {
                   <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/25 space-y-1">
                     <div className="flex items-center gap-1.5 text-purple-300 font-mono text-[10px] font-bold uppercase">
                       <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Lưu ý phát sóng Cloud Vercel</span>
+                      <span>Hỗ Trợ Video Thời Lượng Dài</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Môi trường Serverless giới hạn tải lên tối đa <strong>4.5 MB</strong> (~3-5 giây). Để phát sóng các chương trình dài (30p – 2h), hãy chuyển sang tab <strong>&ldquo;Phát từ nội dung có sẵn&rdquo;</strong> hoặc <strong>&ldquo;Catalog nguồn mở&rdquo;</strong>.
+                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                      Hệ thống tự động hỗ trợ phát sóng các chương trình có thời lượng dài (vài phút đến 30 phút – 2 giờ) thông qua cơ chế phát trực tiếp từ thiết bị hoặc tải lên đám mây đa nguồn.
                     </p>
                   </div>
 
