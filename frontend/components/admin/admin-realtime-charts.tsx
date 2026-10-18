@@ -9,10 +9,12 @@ import {
   Eye,
   BarChart2,
   Tv,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useChannelCategories, useChannels } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
+import { useDbPoolMetrics } from '@/lib/hooks/useDbPool';
 import type { LiveEvent } from '@/types';
 
 interface RealtimeSample {
@@ -49,6 +51,7 @@ export function AdminRealtimeCharts() {
   const { data: categoriesData, isLoading: loadingCategories } = useChannelCategories();
   const { data: channelsData } = useChannels({ limit: 100, isActive: true });
   const { data: liveEventsData } = useLiveNow();
+  const { data: dbPool } = useDbPoolMetrics();
 
   const liveEvents: LiveEvent[] = useMemo(() => {
     if (!liveEventsData) return [];
@@ -255,6 +258,53 @@ export function AdminRealtimeCharts() {
           <div className="w-9 h-9 rounded-lg bg-amber-950/70 border border-amber-500/40 flex items-center justify-center text-amber-400">
             <Tv className="w-4 h-4" />
           </div>
+        </div>
+      </div>
+
+      {/* ── DB POOL MONITOR (Supavisor Transaction Pooler Port 6543) ─────── */}
+      <div className="p-4 rounded-xl bg-[#08101d] border border-blue-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shadow-blue-950/20">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-blue-950/80 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-mono text-slate-200 font-bold uppercase tracking-wider">
+                Database Pool (Supabase)
+              </span>
+              <span className={cn(
+                'px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase',
+                (dbPool?.status === 'HEALTHY' || !dbPool?.status) ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                dbPool?.status === 'WARNING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+                'bg-red-500/20 text-red-300 border border-red-500/40'
+              )}>
+                {dbPool?.status ?? 'HEALTHY'}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Port {dbPool?.poolerPort ?? 6543} · {dbPool?.poolerMode ?? 'TRANSACTION POOLER'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Đang dùng <strong className="text-white font-mono">{dbPool?.totalConnections ?? 10}/{dbPool?.maxConnections ?? 60}</strong> kết nối vật lý ({dbPool?.usagePercent ?? 16.7}% tải) · {dbPool?.idleConnections ?? 8} idle giải phóng tự động.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-36 bg-dark-800 rounded-full h-2.5 overflow-hidden border border-dark-600">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                (dbPool?.usagePercent ?? 16.7) > 75 ? 'bg-red-500' :
+                (dbPool?.usagePercent ?? 16.7) > 40 ? 'bg-amber-500' :
+                'bg-emerald-500'
+              )}
+              style={{ width: `${Math.min(100, Math.max(5, dbPool?.usagePercent ?? 16.7))}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono font-bold text-slate-300 min-w-[45px] text-right">
+            {dbPool?.usagePercent ?? 16.7}%
+          </span>
         </div>
       </div>
 
