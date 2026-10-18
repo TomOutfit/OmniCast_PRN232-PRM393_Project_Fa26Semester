@@ -22,6 +22,12 @@ export interface CuratorRowShape {
   scheduledAt: string;
   status: LiveEvent['status'] | 'NEEDS_REVIEW';
   aiReport?: AiCuratorReport;
+  thumbnailUrl?: string;
+  externalUrl?: string;
+  streamUrl?: string;
+  tags?: string[];
+  duration?: number;
+  language?: string;
 }
 
 /** All statuses plus the synthetic "all" sentinel used by the UI. */
