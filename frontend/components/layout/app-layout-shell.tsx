@@ -39,7 +39,7 @@ export function AppLayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <Spatial3DProvider>
       <SkipLink />
-      <div className="relative z-10">
+      <div className="relative z-40">
         <Navbar />
       </div>
       <main id="main-content" className="flex-1 relative z-10">

@@ -356,24 +356,24 @@ export default function CuratorStudioPage() {
   return (
     <div className="min-h-[80vh]">
       {/* Page Header */}
-      <div className="bg-dark-900 border-b border-dark-800">
+      <div className="relative z-20 bg-dark-900 border-b border-dark-800">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4 min-w-[280px]">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-cyan flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/10">
                 <Bot className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">
+                <h1 className="text-2xl font-bold text-white tracking-tight">
                   {t('curator.pageTitle')}
                 </h1>
-                <p className="text-dark-400">
+                <p className="text-dark-400 text-sm">
                   {t('curator.pageSubtitle')}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42] mr-2">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42]">
                 <button className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-purple-300 bg-purple-950/60 border border-purple-500/30 shadow-sm">
                   <Bot className="w-4 h-4 text-purple-400" />
                   <span>AI Curator</span>
@@ -393,23 +393,25 @@ export default function CuratorStudioPage() {
                   <span>Thống kê</span>
                 </Link>
               </div>
-              <CompactUserMenu variant="purple" />
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">
-                  {rows.filter((r) => !r.aiReport).length}
-                </p>
-                <p className="text-sm text-dark-400">{t('curator.pendingCount')}</p>
+              <div className="flex items-center gap-3 pl-1 sm:pl-2">
+                <CompactUserMenu variant="purple" />
+                <div className="text-right min-w-[70px] px-1">
+                  <p className="text-2xl font-bold text-white leading-none">
+                    {rows.filter((r) => !r.aiReport).length}
+                  </p>
+                  <p className="text-xs text-dark-400 mt-1 whitespace-nowrap">{t('curator.pendingCount')}</p>
+                </div>
+                <Button
+                  className="gap-2 shrink-0"
+                  onClick={() => refetch()}
+                  disabled={isFetching}
+                >
+                  <RefreshCw
+                    className={cn('w-4 h-4', isFetching && 'animate-spin')}
+                  />
+                  Làm mới
+                </Button>
               </div>
-              <Button
-                className="gap-2"
-                onClick={() => refetch()}
-                disabled={isFetching}
-              >
-                <RefreshCw
-                  className={cn('w-4 h-4', isFetching && 'animate-spin')}
-                />
-                Làm mới
-              </Button>
             </div>
           </div>
         </div>
