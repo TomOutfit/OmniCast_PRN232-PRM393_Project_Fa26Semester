@@ -51,17 +51,14 @@ import { ExternalPlatform } from '@prisma/client';
  *
  * Anything else (e.g. javascript:, file://) is still rejected.
  */
-const LOOSE_URL_RE =
-  /^(https?|rtmp|rtsp|mms):\/\/[^\s/?#]+(?:\/[^\s?#]*)?(?:\?[^\s#]*)?(?:#[^\s]*)?$/i;
-
 @ValidatorConstraint({ name: 'isLooseUrl', async: false })
-class IsLooseUrl implements ValidatorConstraintInterface {
+export class IsLooseUrl implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
-    if (typeof value !== 'string' || value.length === 0) return false;
-    return LOOSE_URL_RE.test(value);
+    if (typeof value !== 'string') return false;
+    return value.trim().length > 0;
   }
   defaultMessage(): string {
-    return '$property must be a valid absolute URL (http/https/rtmp/rtsp/mms).';
+    return '$property must be a valid media link or URL address.';
   }
 }
 
@@ -193,13 +190,10 @@ export class AddToLibraryDto {
 
   @ApiProperty({
     description:
-      'Direct URL to the video file. Must be a reachable http(s) ' +
-      'URL pointing at an MP4, HLS playlist (.m3u8), or any ' +
-      'manifest the native player can dial. The backend HEAD-checks ' +
-      'the URL before persisting.',
+      'Direct URL or media link to the video file.',
     example: 'https://cdn.example.com/sport/highlight-vleague-12.mp4',
   })
-  @Validate(IsLooseUrl)
+  @IsString()
   videoUrl: string;
 
   @ApiPropertyOptional({
@@ -208,7 +202,7 @@ export class AddToLibraryDto {
       'banner if omitted.',
   })
   @IsOptional()
-  @Validate(IsLooseUrl)
+  @IsString()
   thumbnailUrl?: string;
 
   @ApiPropertyOptional({
@@ -344,12 +338,10 @@ export class SelfRecordUploadDto {
 
   @ApiProperty({
     description:
-      'URL to the recorded video file. Mobile clients upload to a ' +
-      'pre-signed storage bucket (Supabase / Bunny) and pass the ' +
-      'resulting URL here. The URL is stored as `Recording.videoUrl`.',
+      'URL to the recorded video file (HTTP/HTTPS, Blob URL, CDN, or direct download link). The URL is stored as `Recording.videoUrl`.',
     example: 'https://storage.omnicast.dev/uploads/abc123.mp4',
   })
-  @IsUrl({ require_tld: false })
+  @IsString()
   videoUrl: string;
 
   @ApiPropertyOptional({
@@ -358,7 +350,7 @@ export class SelfRecordUploadDto {
       'omitted.',
   })
   @IsOptional()
-  @Validate(IsLooseUrl)
+  @IsString()
   thumbnailUrl?: string;
 
   @ApiProperty({

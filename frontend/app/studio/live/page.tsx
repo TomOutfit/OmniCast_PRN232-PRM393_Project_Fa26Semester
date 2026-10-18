@@ -328,16 +328,44 @@ export default function WebLiveStudioPage() {
     }
   };
 
+  const normalizeMediaUrl = (raw: string): string => {
+    let url = (raw || '').trim();
+    if (!url) return '';
+
+    // Google Drive share link -> direct download/stream link
+    const gDriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (gDriveMatch && gDriveMatch[1]) {
+      return `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`;
+    }
+    const gDriveIdMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+    if (gDriveIdMatch && gDriveIdMatch[1]) {
+      return `https://drive.google.com/uc?export=download&id=${gDriveIdMatch[1]}`;
+    }
+
+    // Dropbox share link -> direct media stream
+    if (url.includes('dropbox.com')) {
+      if (url.includes('dl=0')) {
+        return url.replace('dl=0', 'raw=1');
+      }
+      if (!url.includes('raw=1') && !url.includes('dl=1')) {
+        return url.includes('?') ? `${url}&raw=1` : `${url}?raw=1`;
+      }
+    }
+
+    return url;
+  };
+
   const handleAddCustomUrl = async () => {
     if (!selectedChannel || !customUrlInput.trim()) return;
     try {
       setIsAddingUrl(true);
+      const cleanUrl = normalizeMediaUrl(customUrlInput);
       const title = customUrlTitle.trim() || `Video liên kết - ${new Date().toLocaleTimeString('vi-VN')}`;
       await uploadRecordMutation.mutateAsync({
         channelId: selectedChannel.slug,
         title,
-        description: 'Video thêm trực tiếp từ đường link URL',
-        videoUrl: customUrlInput.trim(),
+        description: 'Video thêm trực tiếp từ đường link tải xuống / phát trực tuyến',
+        videoUrl: cleanUrl,
         duration: customUrlDuration || 300,
         visibility: 'SCHEDULED',
         tags: ['custom-url', 'direct-stream'],
@@ -1050,12 +1078,12 @@ export default function WebLiveStudioPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="sm:col-span-2 space-y-1">
-                        <label className="text-[10px] text-slate-400 font-semibold">Đường link video (MP4, HLS m3u8, Bunny, Cloudinary, CDN...):</label>
+                        <label className="text-[10px] text-slate-400 font-semibold">Đường link video, link tải về (Google Drive, Dropbox, MP4, HLS m3u8, CDN, Blob...):</label>
                         <input
-                          type="url"
+                          type="text"
                           value={customUrlInput}
                           onChange={(e) => setCustomUrlInput(e.target.value)}
-                          placeholder="https://commondatastorage.googleapis.com/.../video.mp4"
+                          placeholder="Dán link video hoặc link tải về (Drive, Dropbox, direct MP4/m3u8, CDN...)"
                           className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                         />
                       </div>
