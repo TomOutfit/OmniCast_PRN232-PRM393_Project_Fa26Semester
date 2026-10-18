@@ -45,3 +45,16 @@ export async function exportAuditLogs(params: {
   });
   return response.data;
 }
+
+export async function fetchAuditLogsForExport(params: {
+  action?: string;
+  entityType?: string;
+  fromDate?: string;
+  toDate?: string;
+  limit?: number;
+} = {}): Promise<AuditLogEntry[]> {
+  const { data } = await apiClient.get('/audit-logs/export', {
+    params: { ...params, format: 'json' },
+  });
+  return data;
+}
