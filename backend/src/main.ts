@@ -1,13 +1,8 @@
 import 'dotenv/config';
+import { optimizeDatabaseUrl } from './prisma/prisma.service';
 
-// Ensure Supabase connection uses port 6543 (transaction pooler) in serverless environments
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('pooler.supabase.com')) {
-  let url = process.env.DATABASE_URL
-    .replace(':5432/', ':6543/')
-    .replace('?pgbouncer=true', '')
-    .replace('&pgbouncer=true', '');
-  process.env.DATABASE_URL = url + (url.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
-}
+// Ensure Supabase connection uses port 6543 (transaction pooler) with optimal pooling
+optimizeDatabaseUrl();
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
