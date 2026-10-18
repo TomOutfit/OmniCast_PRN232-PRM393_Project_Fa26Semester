@@ -72,29 +72,30 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, fallback?: string) => {
-      const dict = DICTIONARIES[locale] ?? DICTIONARIES[DEFAULT_LOCALE];
-      // Support dot-notation for nested sections (e.g. 'curator.pageTitle').
-      const segments = key.split('.');
-      let value: unknown = dict;
-      for (const seg of segments) {
-        if (value == null || typeof value !== 'object') {
-          value = undefined;
-          break;
+      const lookup = (d?: Record<string, unknown>): string | undefined => {
+        if (!d) return undefined;
+        const segments = key.split('.');
+        let val: unknown = d;
+        for (const seg of segments) {
+          if (val == null || typeof val !== 'object') return undefined;
+          val = (val as Record<string, unknown>)[seg];
         }
-        value = (value as Record<string, unknown>)[seg];
+        return typeof val === 'string' ? val : undefined;
+      };
+
+      const primary = lookup(DICTIONARIES[locale] ?? DICTIONARIES[DEFAULT_LOCALE]);
+      if (primary !== undefined) return primary;
+
+      if (locale !== DEFAULT_LOCALE) {
+        const def = lookup(DICTIONARIES[DEFAULT_LOCALE]);
+        if (def !== undefined) return def;
       }
-      if (value !== undefined) return value as string;
-      // Try DEFAULT_LOCALE as fallback
-      const fallbackDict = DICTIONARIES[DEFAULT_LOCALE];
-      let fb: unknown = fallbackDict;
-      for (const seg of segments) {
-        if (fb == null || typeof fb !== 'object') {
-          fb = undefined;
-          break;
-        }
-        fb = (fb as Record<string, unknown>)[seg];
+
+      if (locale !== 'en' && DEFAULT_LOCALE !== 'en') {
+        const enFallback = lookup(DICTIONARIES['en']);
+        if (enFallback !== undefined) return enFallback;
       }
-      if (fb !== undefined) return fb as string;
+
       return fallback ?? key;
     },
     [locale],

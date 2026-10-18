@@ -199,7 +199,7 @@ export function Navbar() {
       </div>
 
       {/* ── 2. Main Header Bar ─────────────────────────────────────── */}
-      <div className="max-w-[1720px] w-full mx-auto px-3 sm:px-4 lg:px-6">
+      <div className="relative z-20 max-w-[1720px] w-full mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex h-14 md:h-[60px] items-center justify-between gap-2 sm:gap-3">
           {/* Brand Logo & Compact Navigation Links */}
           <div className="flex items-center gap-3 sm:gap-5 xl:gap-7 flex-shrink-0">
@@ -344,7 +344,7 @@ export function Navbar() {
                 aria-label="Đang tải"
               />
             ) : isAuthenticated && user ? (
-              <div className="relative">
+              <div className="relative z-30">
                 <button
                   type="button"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
