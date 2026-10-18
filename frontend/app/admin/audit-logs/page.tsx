@@ -17,13 +17,19 @@ import {
   Download,
   FileSpreadsheet,
   FileJson,
+  FileText,
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAuditLogs } from '@/lib/hooks/useAuditLogs';
-import { exportAuditLogs } from '@/lib/api/audit-logs';
+import { fetchAuditLogsForExport } from '@/lib/api/audit-logs';
+import {
+  exportAuditLogsToExcel,
+  exportAuditLogsToJson,
+  exportAuditLogsToPdf,
+} from '@/lib/utils/audit-export';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -68,26 +74,40 @@ export default function AuditLogsPage() {
   const [isExporting, setIsExporting] = useState(false);
   const itemsPerPage = 15;
 
-  const handleExport = async (format: 'csv' | 'json') => {
+  const handleExport = async (format: 'excel' | 'json' | 'pdf') => {
     try {
       setIsExporting(true);
-      toast.info(`Đang chuẩn bị xuất file ${format.toUpperCase()}...`);
-      const blob = await exportAuditLogs({
-        format,
+      const label = format === 'excel' ? 'Excel (.xlsx)' : format === 'pdf' ? 'PDF' : 'JSON';
+      toast.info(`Đang tạo tệp ${label}...`);
+
+      const exportData = await fetchAuditLogsForExport({
         action: selectedAction !== 'all' ? selectedAction : undefined,
-        limit: 1000,
+        limit: 5000,
       });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `omnicast-audit-logs-${Date.now()}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success(`Đã tải về nhật ký kiểm toán (${format.toUpperCase()}) thành công!`);
+
+      if (!exportData || exportData.length === 0) {
+        toast.warning('Không có bản ghi nào để xuất');
+        return;
+      }
+
+      const meta = {
+        adminEmail: user?.email,
+        totalRecords: exportData.length,
+        selectedAction: selectedAction !== 'all' ? selectedAction : 'Tất cả',
+      };
+
+      if (format === 'excel') {
+        exportAuditLogsToExcel(exportData, meta);
+        toast.success(`Đã xuất ${exportData.length} bản ghi sang file Excel (.xlsx) thành công!`);
+      } else if (format === 'json') {
+        exportAuditLogsToJson(exportData, meta);
+        toast.success(`Đã xuất ${exportData.length} bản ghi sang file JSON thành công!`);
+      } else if (format === 'pdf') {
+        exportAuditLogsToPdf(exportData, meta);
+        toast.success(`Đã xuất báo cáo PDF chuẩn kiểm toán an toàn thành công!`);
+      }
     } catch (err: any) {
-      toast.error('Lỗi khi xuất nhật ký: ' + (err.message || 'Vui lòng thử lại'));
+      toast.error('Lỗi khi xuất tệp: ' + (err.message || 'Vui lòng thử lại'));
     } finally {
       setIsExporting(false);
     }
@@ -127,22 +147,36 @@ export default function AuditLogsPage() {
     );
   });
 
-  // Stats (based on current page only for simplicity, real impl would need separate endpoint)
-  const successCount = logs.filter((l) =>
-    [
-      'USER_LOGIN',
-      'CHANNEL_CREATE',
-      'CREATE_LIVE_EVENT',
-      'UPDATE_LIVE_EVENT',
-      'CREATE_COMMENT',
-    ].includes(l.action),
-  ).length;
-  const warningCount = logs.filter((l) =>
-    ['CONTENT_FLAG', 'USER_DEACTIVATE'].includes(l.action),
-  ).length;
-  const errorCount = logs.filter((l) =>
-    ['USER_LOGIN_FAILED', 'CHANNEL_DELETE', 'DELETE_LIVE_EVENT'].includes(l.action),
-  ).length;
+  // Determine severity status dynamically from action name
+  const getLogStatus = (action: string): 'error' | 'warning' | 'success' => {
+    const upper = (action || '').toUpperCase();
+    if (
+      upper.includes('FAIL') ||
+      upper.includes('ERROR') ||
+      upper.includes('BLOCKED') ||
+      upper.includes('DENIED') ||
+      upper.includes('REJECT')
+    ) {
+      return 'error';
+    }
+    if (
+      upper.includes('WARN') ||
+      upper.includes('FLAG') ||
+      upper.includes('SKIP') ||
+      upper.includes('DELETE') ||
+      upper.includes('DEACTIVATE') ||
+      upper.includes('CANCEL') ||
+      upper.includes('STOP')
+    ) {
+      return 'warning';
+    }
+    return 'success';
+  };
+
+  // Stats dynamically computed from currently loaded logs
+  const successCount = logs.filter((l) => getLogStatus(l.action) === 'success').length;
+  const warningCount = logs.filter((l) => getLogStatus(l.action) === 'warning').length;
+  const errorCount = logs.filter((l) => getLogStatus(l.action) === 'error').length;
 
   if (authLoading || (!user && !authLoading)) {
     return (
@@ -167,27 +201,32 @@ export default function AuditLogsPage() {
               Theo dõi tất cả hoạt động và xuất báo cáo kiểm toán bảo mật (gRPC Audit)
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Xuất Excel */}
             <Button
               variant="outline"
               size="sm"
               disabled={isExporting}
-              onClick={() => handleExport('csv')}
-              className="gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+              onClick={() => handleExport('excel')}
+              className="gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer shadow-sm"
+              title="Xuất bảng tính Excel (.xlsx) chuẩn định dạng"
             >
               {isExporting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <FileSpreadsheet className="w-4 h-4" />
               )}
-              <span>Xuất CSV</span>
+              <span>Xuất Excel</span>
             </Button>
+
+            {/* Xuất JSON */}
             <Button
               variant="outline"
               size="sm"
               disabled={isExporting}
               onClick={() => handleExport('json')}
-              className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
+              className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer shadow-sm"
+              title="Xuất dữ liệu có cấu trúc JSON"
             >
               {isExporting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -196,11 +235,29 @@ export default function AuditLogsPage() {
               )}
               <span>Xuất JSON</span>
             </Button>
+
+            {/* Xuất PDF */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+              onClick={() => handleExport('pdf')}
+              className="gap-2 border-rose-500/40 text-rose-400 hover:bg-rose-500/10 cursor-pointer shadow-sm"
+              title="Xuất báo cáo PDF chuẩn kiểm toán bảo mật"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              <span>Xuất PDF</span>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+              className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer ml-1"
             >
               <LogOut className="w-4 h-4" />
               <span>Đăng xuất</span>
@@ -328,15 +385,7 @@ export default function AuditLogsPage() {
                   <tbody className="divide-y divide-dark-700">
                     {filteredLogs.map((log) => {
                       const Icon = actionIcons[log.action] || Activity;
-                      const status =
-                        log.action === 'USER_LOGIN_FAILED' ||
-                          log.action === 'CHANNEL_DELETE' ||
-                          log.action === 'DELETE_LIVE_EVENT'
-                          ? 'error'
-                          : log.action === 'CONTENT_FLAG' ||
-                            log.action === 'USER_DEACTIVATE'
-                            ? 'warning'
-                            : 'success';
+                      const status = getLogStatus(log.action);
                       const statusColors: Record<string, string> = {
                         success: 'bg-green-500/20 text-green-400',
                         warning: 'bg-yellow-500/20 text-yellow-400',
