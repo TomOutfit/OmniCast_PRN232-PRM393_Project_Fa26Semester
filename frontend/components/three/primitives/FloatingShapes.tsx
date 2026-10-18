@@ -1,5 +1,13 @@
 'use client';
 
+// ============================================================
+// OmniCast - Floating Cyber Prisms & Geo Nodes
+// ------------------------------------------------------------
+// Drifting futuristic polyhedral nodes (crystal icosahedrons,
+// sleek torus rings, and diamond octahedrons) with holographic
+// neon materials and glowing inner cores.
+// ============================================================
+
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -8,7 +16,7 @@ interface FloatingShapesProps {
   count?: number;
   /** Spread radius. */
   radius?: number;
-  /** Optional color palette to mix. */
+  /** Cybernetic color palette. */
   colors?: string[];
   /** When true, shapes self-rotate. */
   spin?: boolean;
@@ -16,15 +24,18 @@ interface FloatingShapesProps {
   speed?: number;
 }
 
-/**
- * FloatingShapes — drifting low-poly geometry layer (icosahedrons, torus,
- * octahedrons) for the background. Used on the home hero, auth pages, and
- * any empty-state that needs a "more than 2D" feel.
- */
+const DEFAULT_CYBER_COLORS = [
+  '#00f2fe', // Cyber Cyan
+  '#a855f7', // Electric Violet
+  '#38bdf8', // Neon Sky
+  '#10b981', // Emerald Core
+  '#818cf8', // Indigo Glow
+];
+
 export function FloatingShapes({
-  count = 12,
-  radius = 4.5,
-  colors = ['#00f2fe', '#9bcbff', '#ff5722', '#4facfe'],
+  count = 10,
+  radius = 5.2,
+  colors = DEFAULT_CYBER_COLORS,
   spin = true,
   speed = 1,
 }: FloatingShapesProps) {
@@ -32,10 +43,10 @@ export function FloatingShapes({
 
   const geometries = useMemo(
     () => [
-      new THREE.IcosahedronGeometry(0.25, 0),
-      new THREE.OctahedronGeometry(0.2, 0),
-      new THREE.TorusGeometry(0.18, 0.05, 8, 16),
-      new THREE.TetrahedronGeometry(0.22, 0),
+      new THREE.IcosahedronGeometry(0.26, 0),
+      new THREE.DodecahedronGeometry(0.24, 0),
+      new THREE.OctahedronGeometry(0.22, 0),
+      new THREE.TorusGeometry(0.22, 0.025, 16, 48),
     ],
     []
   );
@@ -43,34 +54,46 @@ export function FloatingShapes({
   const items = useMemo(
     () =>
       new Array(count).fill(0).map((_, i) => {
-        const r = radius * (0.5 + Math.random() * 0.7);
-        const theta = (i / count) * Math.PI * 2 + Math.random() * 0.4;
-        const phi = (Math.random() - 0.5) * Math.PI * 0.6;
+        const r = radius * (0.6 + Math.random() * 0.6);
+        const theta = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.65;
+        const color = colors[i % colors.length];
         return {
           geometry: geometries[i % geometries.length],
-          color: colors[i % colors.length],
+          color,
           x: r * Math.cos(phi) * Math.cos(theta),
           y: r * Math.sin(phi),
-          z: r * Math.cos(phi) * Math.sin(theta) - 2,
+          z: r * Math.cos(phi) * Math.sin(theta) - 2.5,
           rot: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI] as [
             number,
             number,
             number,
           ],
-          speed: 0.4 + Math.random() * 0.6,
+          rotSpeed: [
+            (0.04 + Math.random() * 0.05) * (Math.random() > 0.5 ? 1 : -1),
+            (0.03 + Math.random() * 0.05) * (Math.random() > 0.5 ? 1 : -1),
+          ],
+          floatOffset: Math.random() * Math.PI * 2,
+          scale: 0.85 + Math.random() * 0.35,
         };
       }),
     [count, radius, colors, geometries]
   );
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.04 * speed;
+    const t = state.clock.getElapsedTime();
+
+    // Subtle overall ambient rotation
+    groupRef.current.rotation.y += delta * 0.025 * speed;
+
     if (spin) {
-      groupRef.current.children.forEach((c, i) => {
-        c.rotation.x += delta * 0.1 * speed;
-        c.rotation.y += delta * 0.07 * speed;
-        c.position.y += Math.sin(performance.now() * 0.001 + i) * 0.0008;
+      groupRef.current.children.forEach((child, i) => {
+        const it = items[i];
+        if (!it) return;
+        child.rotation.x += delta * it.rotSpeed[0] * speed;
+        child.rotation.y += delta * it.rotSpeed[1] * speed;
+        child.position.y = it.y + Math.sin(t * 0.8 + it.floatOffset) * 0.12;
       });
     }
   });
@@ -78,17 +101,39 @@ export function FloatingShapes({
   return (
     <group ref={groupRef}>
       {items.map((it, i) => (
-        <mesh key={i} geometry={it.geometry} position={[it.x, it.y, it.z]} rotation={it.rot}>
-          <meshStandardMaterial
-            color={it.color}
-            metalness={0.6}
-            roughness={0.25}
-            emissive={it.color}
-            emissiveIntensity={0.18}
-            transparent
-            opacity={0.9}
-          />
-        </mesh>
+        <group key={i} position={[it.x, it.y, it.z]} rotation={it.rot} scale={it.scale}>
+          {/* Main Translucent Polyhedron */}
+          <mesh geometry={it.geometry}>
+            <meshPhysicalMaterial
+              color={it.color}
+              emissive={it.color}
+              emissiveIntensity={0.35}
+              roughness={0.15}
+              metalness={0.85}
+              clearcoat={0.9}
+              clearcoatRoughness={0.1}
+              transparent
+              opacity={0.7}
+              wireframe={false}
+            />
+          </mesh>
+
+          {/* Holographic Wireframe Cage Overlay */}
+          <mesh geometry={it.geometry} scale={1.06}>
+            <meshBasicMaterial
+              color={it.color}
+              wireframe
+              transparent
+              opacity={0.25}
+            />
+          </mesh>
+
+          {/* Inner Glowing Micro Core */}
+          <mesh scale={0.25}>
+            <sphereGeometry args={[1, 16, 16]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.65} />
+          </mesh>
+        </group>
       ))}
     </group>
   );
