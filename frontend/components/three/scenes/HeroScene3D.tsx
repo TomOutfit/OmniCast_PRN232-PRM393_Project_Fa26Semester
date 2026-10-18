@@ -77,12 +77,12 @@ export function HeroScene3D({
     <>
       <ambientLight intensity={0.6} color="#9bcbff" />
       <directionalLight position={[4, 4, 4]} intensity={0.8} color="#00f2fe" />
-      <pointLight position={[-4, -2, 3]} intensity={1.2} color="#ff5722" distance={20} />
+      <pointLight position={[-4, -2, 3]} intensity={1.2} color="#a855f7" distance={20} />
       <pointLight position={[0, 5, 2]} intensity={0.6} color="#4facfe" distance={15} />
 
       {/* Background field */}
       <ParticleField count={800} radius={6} size={0.025} color="#00f2fe" />
-      <FloatingShapes count={6} radius={5} colors={['#00f2fe', '#9bcbff', '#4facfe']} />
+      <FloatingShapes count={6} radius={5} colors={['#00f2fe', '#a855f7', '#38bdf8', '#818cf8']} />
 
       {/* Hero text */}
       <group position={[0, 0.4, -2.2]}>

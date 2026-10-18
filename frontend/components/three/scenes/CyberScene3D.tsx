@@ -34,7 +34,7 @@ export function CyberScene3D({
     <>
       <ambientLight intensity={0.6} color="#9bcbff" />
       <directionalLight position={[5, 5, 5]} intensity={1} color={color} />
-      <pointLight position={[-4, -2, 3]} intensity={1.5} color="#ff5722" />
+      <pointLight position={[-4, -2, 3]} intensity={1.5} color="#a855f7" />
 
       <Sparkles count={120} scale={10} size={3} speed={0.5} color={color} />
 
@@ -66,7 +66,7 @@ export function CyberScene3D({
           </mesh>
           <mesh rotation={[-Math.PI / 4, 0, 0]}>
             <torusGeometry args={[2.5, 0.015, 16, 80]} />
-            <meshBasicMaterial color="#ff5722" transparent opacity={0.4} />
+            <meshBasicMaterial color="#a855f7" transparent opacity={0.5} />
           </mesh>
         </group>
 

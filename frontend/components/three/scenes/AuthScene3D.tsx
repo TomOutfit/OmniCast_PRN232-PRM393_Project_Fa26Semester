@@ -32,10 +32,10 @@ export function AuthScene3D({ brand = 'OMNICAST', tagline = 'Sign in to continue
     <>
       <ambientLight intensity={0.5} />
       <pointLight position={[0, 0, 5]} intensity={1.4} color="#00f2fe" distance={12} />
-      <pointLight position={[3, -2, 3]} intensity={0.6} color="#ff5722" distance={8} />
+      <pointLight position={[3, -2, 3]} intensity={0.6} color="#a855f7" distance={8} />
 
       <ParticleField count={600} radius={5.5} color="#00f2fe" size={0.02} orbit />
-      <FloatingShapes count={6} radius={4} colors={['#00f2fe', '#9bcbff', '#4facfe']} />
+      <FloatingShapes count={6} radius={4} colors={['#00f2fe', '#a855f7', '#38bdf8']} />
 
       <group ref={groupRef}>
         <Text
