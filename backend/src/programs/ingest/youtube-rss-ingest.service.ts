@@ -8,6 +8,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import axios, { AxiosInstance } from 'axios';
+import { createHash } from 'crypto';
 import { ContentSource, EventStatus, ExternalPlatform } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLoggerService } from '../../audit-logger/audit-logger.service';
@@ -19,6 +20,9 @@ const MAX_CHANNELS_PER_RUN = 20;
 interface YtRssEntry {
   id: string;            // yt:videoId
   title: string;         // media:title or atom:title
+  description?: string;  // media:description
+  thumbnailUrl?: string; // media:thumbnail
+  views?: number;        // media:statistics
   published: string;     // atom:published (ISO)
   updated: string;
   link?: string;
@@ -47,6 +51,12 @@ export class YoutubeRssIngestService {
         'Accept': 'application/atom+xml, application/xml, text/xml, */*',
       },
     });
+  }
+
+  private deterministicId(channelId: string, extId: string, kind: 'event' | 'rec'): string {
+    const raw = `${channelId}:${extId}:${kind}`;
+    const md5 = createHash('md5').update(raw).digest('hex');
+    return `${md5.slice(0, 8)}-${md5.slice(8, 12)}-4${md5.slice(13, 16)}-a${md5.slice(17, 20)}-${md5.slice(20, 32)}`;
   }
 
   /**
@@ -154,6 +164,11 @@ export class YoutubeRssIngestService {
         continue;
       }
 
+      const streamUrl = `https://www.youtube.com/watch?v=${entry.id}`;
+      const thumbnailUrl = entry.thumbnailUrl || `https://i.ytimg.com/vi/${entry.id}/hqdefault.jpg`;
+      const description = entry.description || null;
+
+      // 1. Upsert LiveEvent
       await this.prisma.liveEvent.upsert({
         where: {
           channelId_externalPlatform_externalId: {
@@ -164,11 +179,19 @@ export class YoutubeRssIngestService {
         },
         update: {
           title: entry.title.slice(0, 255),
+          description: description ? description.slice(0, 3000) : undefined,
+          thumbnailUrl,
+          streamUrl,
+          externalUrl: entry.link || streamUrl,
           scheduledAt: publishedAt,
         },
         create: {
           channelId,
           title: entry.title.slice(0, 255),
+          description: description ? description.slice(0, 3000) : null,
+          thumbnailUrl,
+          streamUrl,
+          externalUrl: entry.link || streamUrl,
           streamSource: ContentSource.EXTERNAL,
           externalPlatform: ExternalPlatform.YOUTUBE,
           externalId: entry.id,
@@ -180,6 +203,53 @@ export class YoutubeRssIngestService {
           autoRecord: true,
         },
       });
+
+      // 2. Upsert into Recording (Program library "kho chương trình" used by EPG Schedule Filler)
+      const recId = this.deterministicId(channelId, entry.id, 'rec');
+      try {
+        await this.prisma.recording.upsert({
+          where: { id: recId },
+          update: {
+            title: entry.title.slice(0, 255),
+            description: description ? description.slice(0, 3000) : undefined,
+            thumbnailUrl,
+            videoUrl: streamUrl,
+            externalUrl: entry.link || streamUrl,
+            tags: ['YouTube', 'RSS', feed.channelTitle].slice(0, 5),
+            isActive: true,
+            isPublished: true,
+          },
+          create: {
+            id: recId,
+            channelId,
+            title: entry.title.slice(0, 255),
+            description: description ? description.slice(0, 3000) : null,
+            thumbnailUrl,
+            videoUrl: streamUrl,
+            externalUrl: entry.link || streamUrl,
+            contentSource: ContentSource.EXTERNAL,
+            externalPlatform: ExternalPlatform.YOUTUBE,
+            externalId: entry.id,
+            duration: 3600,
+            quality: 'FULL_HD_1080P',
+            contentType: 'VIDEO',
+            language: 'vi',
+            viewCount: BigInt(entry.views ?? 0),
+            likeCount: 0,
+            commentCount: 0,
+            shareCount: 0,
+            downloadCount: 0,
+            tags: ['YouTube', 'RSS', feed.channelTitle].slice(0, 5),
+            isPublished: true,
+            isFeatured: false,
+            isActive: true,
+            publishedAt,
+          },
+        });
+      } catch (err: any) {
+        this.logger.debug(`Recording upsert skipped for ${entry.id}: ${err.message}`);
+      }
+
       upserted += 1;
     }
 
@@ -203,12 +273,18 @@ export class YoutubeRssIngestService {
     const entries: YtRssEntry[] = entryBlocks.map((block) => {
       const closeIdx = block.indexOf('</entry>');
       const e = closeIdx >= 0 ? block.slice(0, closeIdx) : block;
+      const descRaw = getFromBlock(e, /<media:description>([\s\S]*?)<\/media:description>/);
+      const thumbUrl = getFromBlock(e, /<media:thumbnail[^>]*url="([^"]+)"/);
+      const viewsStr = getFromBlock(e, /<media:statistics[^>]*views="(\d+)"/);
       return {
         id: getFromBlock(e, /<yt:videoId>([^<]+)<\/yt:videoId>/),
         title: decodeEntities(
           getFromBlock(e, /<media:title>([^<]+)<\/media:title>/) ||
             getFromBlock(e, /<title>([^<]+)<\/title>/),
         ),
+        description: descRaw ? decodeEntities(descRaw).trim() : undefined,
+        thumbnailUrl: thumbUrl || undefined,
+        views: viewsStr ? parseInt(viewsStr, 10) : undefined,
         published: getFromBlock(e, /<published>([^<]+)<\/published>/),
         updated: getFromBlock(e, /<updated>([^<]+)<\/updated>/),
         link: getFromBlock(e, /<link[^>]*rel="alternate"[^>]*href="([^"]+)"/),

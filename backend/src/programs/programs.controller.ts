@@ -66,6 +66,8 @@ export class ProgramsController {
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiResponse({ status: 200, description: '200 OK — Paginated live events list' })
   @ApiResponse({ status: 400, description: '400 Bad Request — Invalid query parameters' })
   async findAllLiveEvents(
@@ -75,6 +77,8 @@ export class ProgramsController {
     @Query('status') status?: string,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.programsService.findAllLiveEvents({
       page: Number(page) || 1,
@@ -83,6 +87,8 @@ export class ProgramsController {
       status: status as any,
       fromDate: fromDate ? new Date(fromDate) : undefined,
       toDate: toDate ? new Date(toDate) : undefined,
+      sortBy,
+      sortOrder,
     });
   }
 

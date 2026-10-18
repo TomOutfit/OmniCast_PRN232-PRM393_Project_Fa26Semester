@@ -149,6 +149,8 @@ vi.mock('lucide-react', () => {
     ChevronsLeft: stub('chevrons-left'),
     ChevronsRight: stub('chevrons-right'),
     BarChart3: stub('bar-chart-3'),
+    Sparkles: stub('sparkles'),
+    Zap: stub('zap'),
   };
 });
 
