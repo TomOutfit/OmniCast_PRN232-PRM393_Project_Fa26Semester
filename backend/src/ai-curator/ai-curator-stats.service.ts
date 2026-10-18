@@ -2,7 +2,7 @@
 // OmniCast - AI Curator Stats Service
 // ============================================================
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type StatsPeriod = 'day' | 'week' | 'month';
@@ -78,6 +78,7 @@ function periodStart(period: StatsPeriod, now: Date = new Date()): Date {
 
 @Injectable()
 export class AiCuratorStatsService {
+  private readonly logger = new Logger(AiCuratorStatsService.name);
   /** Cache-hit-rate window — last N days are considered. */
   private readonly WINDOW_DAYS = 7;
   constructor(private readonly prisma: PrismaService) {}
@@ -323,16 +324,21 @@ export class AiCuratorStatsService {
     if (typeof this.prisma.aiCuratorReport?.count !== 'function') {
       return 0;
     }
-    const since = new Date(Date.now() - this.WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    const [cached, total] = await Promise.all([
-      this.prisma.aiCuratorReport.count({
-        where: { createdAt: { gte: since }, cached: true },
-      }),
-      this.prisma.aiCuratorReport.count({
-        where: { createdAt: { gte: since } },
-      }),
-    ]);
-    return total === 0 ? 0 : cached / total;
+    try {
+      const since = new Date(Date.now() - this.WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const [cached, total] = await Promise.all([
+        this.prisma.aiCuratorReport.count({
+          where: { createdAt: { gte: since }, cached: true },
+        }),
+        this.prisma.aiCuratorReport.count({
+          where: { createdAt: { gte: since } },
+        }),
+      ]);
+      return total === 0 ? 0 : cached / total;
+    } catch (err) {
+      this.logger?.warn(`[AiCuratorStatsService] computeCacheHitRate fallback: ${err}`);
+      return 0;
+    }
   }
 
   /**
