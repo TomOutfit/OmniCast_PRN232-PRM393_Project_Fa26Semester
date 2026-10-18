@@ -41,6 +41,10 @@ import {
   RotateCcw,
   X,
   PlayCircle,
+  FolderUp,
+  HardDrive,
+  Link2,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -68,6 +72,54 @@ import { logError } from '@/lib/utils/safe-log';
 type StudioTab = 'curated' | 'self-record' | 'catalog';
 type RecordSource = 'camera' | 'screen' | 'upload';
 type VisibilityMode = 'IMMEDIATE' | 'SCHEDULED' | 'PRIVATE';
+
+export interface LocalPcFile {
+  id: string;
+  file: File;
+  title: string;
+  blobUrl: string;
+  duration: number;
+  thumbnailUrl?: string;
+  sizeMb: string;
+  isSelected: boolean;
+}
+
+const generateVideoThumbnail = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.onloadeddata = () => {
+      video.currentTime = Math.min(1, (video.duration || 2) / 2);
+    };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(320, video.videoWidth || 320);
+        canvas.height = Math.min(180, video.videoHeight || 180);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const thumbUrl = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(url);
+          resolve(thumbUrl);
+          return;
+        }
+      } catch {
+        // Fallback silently
+      }
+      URL.revokeObjectURL(url);
+      resolve('');
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve('');
+    };
+  });
+};
 
 export default function WebLiveStudioPage() {
   const { user } = useAuth();
@@ -165,9 +217,158 @@ export default function WebLiveStudioPage() {
     return curatedRecordings.filter((r) => selectedRecordingIds.includes(r.id));
   }, [curatedRecordings, selectedRecordingIds]);
 
+  // Local PC files chosen by user from computer
+  const [localPcFiles, setLocalPcFiles] = useState<LocalPcFile[]>([]);
+  const localFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Custom Direct URL Modal state
+  const [showAddUrlModal, setShowAddUrlModal] = useState(false);
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [customUrlTitle, setCustomUrlTitle] = useState('');
+  const [customUrlDuration, setCustomUrlDuration] = useState(300);
+  const [isAddingUrl, setIsAddingUrl] = useState(false);
+
+  const handleLocalFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    toast.info(`Đang nạp ${files.length} file từ máy tính...`);
+
+    const newLocalFiles: LocalPcFile[] = [];
+
+    for (const file of files) {
+      const blobUrl = URL.createObjectURL(file);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const title = file.name.replace(/\.[^/.]+$/, '');
+
+      // Probe duration
+      const duration = await new Promise<number>((resolve) => {
+        const tempV = document.createElement('video');
+        tempV.preload = 'metadata';
+        tempV.onloadedmetadata = () => {
+          resolve(Math.max(1, Math.round(tempV.duration)));
+        };
+        tempV.onerror = () => resolve(180); // 3m fallback
+        tempV.src = blobUrl;
+      });
+
+      // Try thumbnail snapshot
+      let thumbnailUrl: string | undefined = undefined;
+      try {
+        thumbnailUrl = await generateVideoThumbnail(file);
+      } catch {
+        // Fallback silently
+      }
+
+      newLocalFiles.push({
+        id: `local-pc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        file,
+        title,
+        blobUrl,
+        duration,
+        thumbnailUrl,
+        sizeMb,
+        isSelected: true,
+      });
+    }
+
+    setLocalPcFiles((prev) => [...prev, ...newLocalFiles]);
+    toast.success(`Đã thêm ${files.length} file từ máy tính vào kho phát sóng!`);
+    if (localFileInputRef.current) localFileInputRef.current.value = '';
+  };
+
+  const toggleLocalFileSelect = (id: string) => {
+    setLocalPcFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, isSelected: !f.isSelected } : f)),
+    );
+  };
+
+  const removeLocalFile = (id: string) => {
+    setLocalPcFiles((prev) => {
+      const found = prev.find((f) => f.id === id);
+      if (found?.blobUrl) URL.revokeObjectURL(found.blobUrl);
+      return prev.filter((f) => f.id !== id);
+    });
+  };
+
+  const [savingLocalFileId, setSavingLocalFileId] = useState<string | null>(null);
+
+  const handleSaveLocalFileToLibrary = async (local: LocalPcFile) => {
+    if (!selectedChannel) return;
+    try {
+      setSavingLocalFileId(local.id);
+      let videoUrl = local.blobUrl;
+      try {
+        const uploadRes = await uploadFileMutation.mutateAsync({
+          file: local.file,
+          title: local.title,
+        });
+        if (uploadRes?.url) videoUrl = uploadRes.url;
+      } catch (err) {
+        console.warn('[Live Studio] Direct storage upload fallback:', err);
+      }
+
+      await uploadRecordMutation.mutateAsync({
+        channelId: selectedChannel.slug,
+        title: local.title,
+        description: `Video tải lên từ máy tính (${local.sizeMb} MB)`,
+        videoUrl,
+        duration: local.duration,
+        visibility: 'SCHEDULED',
+        tags: ['local-pc', 'custom-upload'],
+      });
+
+      toast.success(`Đã lưu "${local.title}" vào kho nội dung của kênh!`);
+      removeLocalFile(local.id);
+      refetchRecordings();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể lưu file vào kho');
+    } finally {
+      setSavingLocalFileId(null);
+    }
+  };
+
+  const handleAddCustomUrl = async () => {
+    if (!selectedChannel || !customUrlInput.trim()) return;
+    try {
+      setIsAddingUrl(true);
+      const title = customUrlTitle.trim() || `Video liên kết - ${new Date().toLocaleTimeString('vi-VN')}`;
+      await uploadRecordMutation.mutateAsync({
+        channelId: selectedChannel.slug,
+        title,
+        description: 'Video thêm trực tiếp từ đường link URL',
+        videoUrl: customUrlInput.trim(),
+        duration: customUrlDuration || 300,
+        visibility: 'SCHEDULED',
+        tags: ['custom-url', 'direct-stream'],
+      });
+      toast.success('Đã thêm video vào kho của kênh thành công!');
+      setCustomUrlInput('');
+      setCustomUrlTitle('');
+      setShowAddUrlModal(false);
+      refetchRecordings();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể thêm video từ URL');
+    } finally {
+      setIsAddingUrl(false);
+    }
+  };
+
   const totalSelectedDuration = useMemo(() => {
-    return selectedRecordings.reduce((sum, r) => sum + (r.duration || 0), 0);
-  }, [selectedRecordings]);
+    const serverDuration = selectedRecordings.reduce(
+      (sum, r) => sum + (r.duration || 0),
+      0,
+    );
+    const localDuration = localPcFiles
+      .filter((f) => f.isSelected)
+      .reduce((sum, f) => sum + f.duration, 0);
+    return serverDuration + localDuration;
+  }, [selectedRecordings, localPcFiles]);
+
+  const selectedLocalFiles = useMemo(
+    () => localPcFiles.filter((f) => f.isSelected),
+    [localPcFiles],
+  );
 
   const curateLiveMutation = useCurateLive();
   const stopLiveMutation = useStopLive();
@@ -180,28 +381,71 @@ export default function WebLiveStudioPage() {
 
   const handleStartCuratedLive = async () => {
     if (!selectedChannel) return;
-    if (selectedRecordingIds.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 nội dung để phát sóng.');
+
+    if (selectedRecordingIds.length === 0 && selectedLocalFiles.length === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 nội dung từ kho hoặc file trong máy để phát sóng.');
       return;
     }
 
     try {
-      const res = await curateLiveMutation.mutateAsync({
-        channelId: selectedChannel.slug,
-        recordingIds: selectedRecordingIds,
-        title: customTitle.trim() || undefined,
-        description: customDesc.trim() || undefined,
-        allowDevLicense: true,
-      });
-      toast.success(res.message || 'Đã phát sóng trực tiếp thành công!');
-      setSelectedRecordingIds([]);
-      setCustomTitle('');
-      setCustomDesc('');
-      refetchLiveEvents();
-      refetchRecordings();
+      let allRecordingIds = [...selectedRecordingIds];
+
+      // If user selected files from their PC, persist them to the channel library first
+      if (selectedLocalFiles.length > 0) {
+        toast.info('Đang nạp file từ máy tính vào hệ thống phát sóng...');
+
+        for (const local of selectedLocalFiles) {
+          let videoUrl = local.blobUrl;
+
+          // Attempt server file upload
+          try {
+            const uploadRes = await uploadFileMutation.mutateAsync({
+              file: local.file,
+              title: local.title,
+            });
+            if (uploadRes?.url) {
+              videoUrl = uploadRes.url;
+            }
+          } catch (uploadErr) {
+            console.warn('[Live Studio] Direct file upload fallback to stream:', uploadErr);
+          }
+
+          // Register in database library
+          const savedRec = await uploadRecordMutation.mutateAsync({
+            channelId: selectedChannel.slug,
+            title: local.title,
+            description: customDesc || `Nội dung phát từ PC của bạn (${local.sizeMb} MB)`,
+            videoUrl: videoUrl,
+            duration: local.duration,
+            visibility: 'SCHEDULED',
+            tags: ['pc-upload', 'studio-local'],
+          });
+
+          if (savedRec?.recording?.id) {
+            allRecordingIds.push(savedRec.recording.id);
+          }
+        }
+      }
+
+      if (allRecordingIds.length > 0) {
+        const res = await curateLiveMutation.mutateAsync({
+          channelId: selectedChannel.slug,
+          recordingIds: allRecordingIds,
+          title: customTitle.trim() || undefined,
+          description: customDesc.trim() || undefined,
+          allowDevLicense: true,
+        });
+        toast.success(res.message || 'Đã phát sóng trực tiếp thành công!');
+        setSelectedRecordingIds([]);
+        setCustomTitle('');
+        setCustomDesc('');
+        refetchLiveEvents();
+        refetchRecordings();
+      }
     } catch (err: any) {
+      logError('[OmniCast Studio Live Error]:', err);
       toast.error(
-        err.response?.data?.message || 'Có lỗi xảy ra khi bắt đầu phát sóng.',
+        err.response?.data?.message || err.message || 'Có lỗi xảy ra khi bắt đầu phát sóng.',
       );
     }
   };
@@ -470,11 +714,10 @@ export default function WebLiveStudioPage() {
       (window.location.hostname.includes('localhost') ||
         window.location.hostname.includes('127.0.0.1'));
     if (!isLocalhost && recordedFile.size > 4.2 * 1024 * 1024) {
-      toast.error(
-        `File video (${(recordedFile.size / (1024 * 1024)).toFixed(1)} MB) vượt giới hạn 4.5 MB của Vercel Serverless. Vui lòng quay clip ngắn dưới 5 giây hoặc dùng tab "Phát từ nội dung có sẵn".`,
+      toast.warning(
+        `File video (${(recordedFile.size / (1024 * 1024)).toFixed(1)} MB) tương đối lớn đối với Vercel Serverless (4.5 MB). Hệ thống sẽ cố gắng tải lên, nếu không thành công bạn hãy phát qua Mode 1 (Kho nội dung & File PC).`,
         { duration: 8000 },
       );
-      return;
     }
 
     if (visibility === 'IMMEDIATE') {
@@ -744,23 +987,242 @@ export default function WebLiveStudioPage() {
                   <div>
                     <h2 className="text-sm font-bold text-white flex items-center gap-2">
                       <Film className="w-4 h-4 text-cyan-400" />
-                      Kho Nội Dung Royalty-Free Ghi Hình Sẵn
+                      Kho Nội Dung Phát Sóng (Kênh &amp; File PC)
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      Chỉ hiển thị các video tự sản xuất / upload nội bộ (Bộ lọc
-                      Anti-Piracy tự động ẩn nguồn Youtube/Twitch)
+                      Chọn video trong kho kênh hoặc chọn trực tiếp file video/audio từ máy tính (PC) của bạn
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetchRecordings()}
-                    className="border-[#1e2d44] text-slate-300 hover:bg-[#152339]"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                    Làm mới
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      ref={localFileInputRef}
+                      type="file"
+                      accept="video/*,audio/*"
+                      multiple
+                      onChange={handleLocalFilesSelected}
+                      className="hidden"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => localFileInputRef.current?.click()}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.25)]"
+                    >
+                      <FolderUp className="w-3.5 h-3.5" />
+                      Chọn file trong máy (PC)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddUrlModal((prev) => !prev)}
+                      className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/40 font-bold text-xs gap-1.5"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      Thêm qua URL
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => refetchRecordings()}
+                      className="border-[#1e2d44] text-slate-300 hover:bg-[#152339]"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                      Làm mới
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Direct Video URL Modal / Accordion */}
+                {showAddUrlModal && (
+                  <div className="p-3.5 rounded-2xl bg-[#09111c] border border-cyan-500/40 space-y-3 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
+                        <Link2 className="w-4 h-4 text-cyan-400" />
+                        <span>Thêm Video Vào Kho Qua Đường Dẫn Trực Tiếp (Direct URL)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddUrlModal(false)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="text-[10px] text-slate-400 font-semibold">Đường link video (MP4, HLS m3u8, Bunny, Cloudinary, CDN...):</label>
+                        <input
+                          type="url"
+                          value={customUrlInput}
+                          onChange={(e) => setCustomUrlInput(e.target.value)}
+                          placeholder="https://commondatastorage.googleapis.com/.../video.mp4"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-semibold">Thời lượng ước tính (giây):</label>
+                        <input
+                          type="number"
+                          value={customUrlDuration}
+                          onChange={(e) => setCustomUrlDuration(Number(e.target.value) || 120)}
+                          placeholder="300"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                      <input
+                        type="text"
+                        value={customUrlTitle}
+                        onChange={(e) => setCustomUrlTitle(e.target.value)}
+                        placeholder="Tiêu đề video (Ví dụ: Giới thiệu kênh OmniCast HD)..."
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={isAddingUrl || !customUrlInput.trim()}
+                        onClick={handleAddCustomUrl}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5"
+                      >
+                        {isAddingUrl ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        <span>Lưu &amp; Thêm Vào Kho Kênh</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Local PC Files List (if any chosen) */}
+                {localPcFiles.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-[#0e192a] to-[#09101d] border border-cyan-500/40 shadow-md space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-cyan-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                          Nội Dung Đã Chọn Từ Máy Tính (PC) ({localPcFiles.length} file)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => localFileInputRef.current?.click()}
+                        className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Chọn thêm file khác
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 divide-y divide-[#18273c]">
+                      {localPcFiles.map((f) => (
+                        <div
+                          key={f.id}
+                          className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                            f.isSelected
+                              ? 'bg-cyan-950/60 border-cyan-500/50 shadow-sm'
+                              : 'bg-[#09101d] border-[#18273c] opacity-75'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={f.isSelected}
+                              onChange={() => toggleLocalFileSelect(f.id)}
+                              className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                            />
+
+                            <div className="w-16 h-10 rounded-lg bg-black overflow-hidden relative flex-shrink-0 border border-cyan-900/50">
+                              {f.thumbnailUrl ? (
+                                <img
+                                  src={f.thumbnailUrl}
+                                  alt={f.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-cyan-400">
+                                  <FileVideo className="w-4 h-4" />
+                                </div>
+                              )}
+                              <span className="absolute bottom-0.5 right-0.5 px-1 rounded text-[8px] font-mono bg-black/80 text-white font-bold">
+                                {formatTime(f.duration)}
+                              </span>
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <input
+                                type="text"
+                                value={f.title}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setLocalPcFiles((prev) =>
+                                    prev.map((item) =>
+                                      item.id === f.id ? { ...item, title: val } : item,
+                                    ),
+                                  );
+                                }}
+                                className="w-full bg-transparent text-xs font-bold text-white border-b border-transparent hover:border-cyan-500/40 focus:border-cyan-400 focus:outline-none truncate"
+                                title="Click để chỉnh sửa tiêu đề file"
+                              />
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-950 px-1 rounded border border-cyan-800">
+                                  FILE PC ({f.sizeMb} MB)
+                                </span>
+                                <span className="text-[9px] text-slate-400 truncate">
+                                  {f.file.type || 'video'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewingVideo({
+                                  title: f.title,
+                                  url: f.blobUrl,
+                                  source: 'Máy tính cá nhân (PC)',
+                                  duration: f.duration,
+                                })
+                              }
+                              className="p-1.5 rounded-lg bg-[#0c1422] hover:bg-cyan-950 text-slate-400 hover:text-cyan-300 border border-[#1b2b42] transition-colors"
+                              title="Xem thử video"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                            </button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={savingLocalFileId === f.id}
+                              onClick={() => handleSaveLocalFileToLibrary(f)}
+                              className="h-7 px-2 text-[10px] border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60"
+                              title="Lưu video này vào kho thư viện của kênh"
+                            >
+                              {savingLocalFileId === f.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              ) : (
+                                <Upload className="w-3 h-3 mr-1" />
+                              )}
+                              Lưu vào kho
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={() => removeLocalFile(f.id)}
+                              className="p-1.5 rounded-lg bg-[#0c1422] hover:bg-red-950/60 text-slate-400 hover:text-red-300 border border-[#1b2b42] transition-colors"
+                              title="Bỏ file này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Search Bar */}
                 <div className="relative">
@@ -769,7 +1231,7 @@ export default function WebLiveStudioPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm theo tiêu đề video..."
+                    placeholder="Tìm kiếm theo tiêu đề video trong kho kênh..."
                     className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -792,6 +1254,14 @@ export default function WebLiveStudioPage() {
                       Bạn có thể chọn nhanh nguồn từ kho video công khai đã kiểm định (Mode 3) hoặc tự quay/upload clip mới (Mode 2).
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => localFileInputRef.current?.click()}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.25)]"
+                      >
+                        <FolderUp className="w-3.5 h-3.5" />
+                        Chọn file từ máy tính (PC)
+                      </Button>
                       <Button
                         size="sm"
                         onClick={() => setActiveTab('catalog')}
@@ -914,22 +1384,26 @@ export default function WebLiveStudioPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] font-semibold text-slate-400">
-                        Đã chọn ({selectedRecordingIds.length} video):
+                        Đã chọn ({selectedRecordingIds.length + selectedLocalFiles.length} nội dung):
                       </label>
-                      {selectedRecordingIds.length > 0 && (
+                      {(selectedRecordingIds.length > 0 || selectedLocalFiles.length > 0) && (
                         <span className="text-[10px] font-mono font-bold text-cyan-400">
                           Tổng: {formatTime(totalSelectedDuration)}
                         </span>
                       )}
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs font-mono text-cyan-300 min-h-[42px] flex items-center justify-between">
-                      {selectedRecordingIds.length === 0 ? (
+                      {selectedRecordingIds.length === 0 && selectedLocalFiles.length === 0 ? (
                         <span className="text-slate-600">
-                          Chưa chọn video nào từ danh sách bên trái
+                          Chưa chọn nội dung nào từ kho hoặc máy tính
                         </span>
                       ) : (
                         <div className="w-full flex items-center justify-between">
-                          <span>{selectedRecordingIds.length} clip sẵn sàng nối sóng</span>
+                          <span>
+                            {selectedRecordingIds.length > 0 && `${selectedRecordingIds.length} từ kho`}
+                            {selectedRecordingIds.length > 0 && selectedLocalFiles.length > 0 && ' + '}
+                            {selectedLocalFiles.length > 0 && `${selectedLocalFiles.length} file từ PC`} sẵn sàng nối sóng
+                          </span>
                           <span className="text-[10px] text-slate-400 font-sans">
                             ({formatTime(totalSelectedDuration)})
                           </span>
@@ -972,7 +1446,7 @@ export default function WebLiveStudioPage() {
                     </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
                       Chỉ cho phép phát sóng lại nội dung đã lưu trữ nội bộ
-                      trên hệ thống OmniCast. Mọi nguồn nhúng thương mại bị cấm
+                      trên hệ thống OmniCast hoặc tệp tin thuộc quyền sở hữu của bạn. Mọi nguồn nhúng thương mại bị cấm
                       tuyệt đối.
                     </p>
                   </div>
@@ -992,7 +1466,7 @@ export default function WebLiveStudioPage() {
                     onClick={handleStartCuratedLive}
                     disabled={
                       curateLiveMutation.isPending ||
-                      selectedRecordingIds.length === 0
+                      (selectedRecordingIds.length === 0 && selectedLocalFiles.length === 0)
                     }
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 gap-2"
                   >
