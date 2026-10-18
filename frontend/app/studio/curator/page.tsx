@@ -84,6 +84,7 @@ import { ReportDetail } from '@/components/curator/report-detail';
 import { CurateActions } from '@/components/curator/curate-actions';
 import { ApplyCurationPanel } from '@/components/curator/apply-curation-panel';
 import { HistorySection } from '@/components/curator/history-section';
+import { ProgramContentCard } from '@/components/curator/program-content-card';
 
 type CuratorStatus = LiveEvent['status'] | 'NEEDS_REVIEW';
 
@@ -161,6 +162,12 @@ export default function CuratorStudioPage() {
       scheduledAt: e.scheduledAt,
       status: deriveStatus(e),
       aiReport: reportById[e.id],
+      thumbnailUrl: e.thumbnailUrl,
+      externalUrl: e.externalUrl,
+      streamUrl: e.streamUrl,
+      tags: e.tags,
+      duration: e.duration,
+      language: e.language,
     }));
   }, [data?.data, reportById]);
 
@@ -186,10 +193,25 @@ export default function CuratorStudioPage() {
     [filteredRows, page],
   );
 
-  const selectedRow = useMemo(
-    () => rows.find((r) => r.id === selectedId) ?? null,
-    [rows, selectedId],
-  );
+  const selectedEvent = selectedQuery.data ?? null;
+
+  const selectedRow = useMemo(() => {
+    const base = rows.find((r) => r.id === selectedId) ?? null;
+    if (!base) return null;
+    if (selectedEvent && selectedEvent.id === base.id) {
+      return {
+        ...base,
+        description: selectedEvent.description || base.description,
+        thumbnailUrl: selectedEvent.thumbnailUrl || base.thumbnailUrl,
+        externalUrl: selectedEvent.externalUrl || base.externalUrl,
+        streamUrl: selectedEvent.streamUrl || base.streamUrl,
+        tags: selectedEvent.tags?.length ? selectedEvent.tags : base.tags,
+        duration: selectedEvent.duration ?? base.duration,
+        language: selectedEvent.language || base.language,
+      };
+    }
+    return base;
+  }, [rows, selectedId, selectedEvent]);
 
   // ─── Hooks ──────────────────────────────────────────────────────
   const analyzeMutation = useAnalyzeContent();
@@ -663,23 +685,22 @@ export default function CuratorStudioPage() {
             <div className="p-6">
               {selectedRow ? (
                 <div className="space-y-6">
-                  {/* Program Info */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      {selectedRow.title}
-                    </h3>
-                    <p className="text-dark-400 text-sm mb-3">
-                      {selectedRow.description}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="px-2 py-1 rounded bg-dark-700 text-dark-300">
-                        {selectedRow.category}
-                      </span>
-                      <span className="text-dark-400">
-                        {selectedRow.channelName}
-                      </span>
-                    </div>
-                  </div>
+                  {/* Program Info & Content Reader */}
+                  <ProgramContentCard
+                    id={selectedRow.id}
+                    title={selectedRow.title}
+                    description={selectedRow.description}
+                    category={selectedRow.category}
+                    channelName={selectedRow.channelName}
+                    scheduledAt={selectedRow.scheduledAt}
+                    thumbnailUrl={selectedRow.thumbnailUrl}
+                    externalUrl={selectedRow.externalUrl}
+                    streamUrl={selectedRow.streamUrl}
+                    tags={selectedRow.tags}
+                    duration={selectedRow.duration}
+                    language={selectedRow.language}
+                    aiReport={selectedRow.aiReport}
+                  />
 
                   {selectedQuery.isFetching ? (
                     <div className="text-center py-12">
