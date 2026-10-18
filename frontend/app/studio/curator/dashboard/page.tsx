@@ -82,13 +82,20 @@ export default function CuratorDashboardPage() {
         : s.label === 'Phát thường'
         ? 'STANDARD'
         : 'RESTRICTED';
-      return { ...s, value: bs[key as 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED'] ?? 0 };
+      const raw = bs[key as 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED'];
+      const rawCount = typeof raw === 'number'
+        ? raw
+        : (raw && typeof raw === 'object' && 'count' in raw)
+        ? (raw as any).count
+        : 0;
+      const val = Number(rawCount);
+      return { ...s, value: isNaN(val) ? 0 : val };
     });
   }, [stats]);
 
-  const donutTotal = donutSlices.reduce((acc, s) => acc + s.value, 0);
+  const donutTotal = donutSlices.reduce((acc, s) => acc + (typeof s.value === 'number' ? s.value : 0), 0);
   const last7 = stats?.last7Days ?? [];
-  const last7Max = last7.reduce((acc, m) => Math.max(acc, m.count), 0) || 1;
+  const last7Max = last7.reduce((acc, m) => Math.max(acc, Number(m.count) || 0), 0) || 1;
   const topFlagged = stats?.topFlaggedContent ?? [];
 
   // ─── Access guard ────────────────────────────────────────────────
@@ -224,7 +231,7 @@ export default function CuratorDashboardPage() {
               />
               <KpiCard
                 label="Cache hit rate"
-                value={`${Math.round((stats?.cacheHitRate ?? 0) * 100)}%`}
+                value={`${Math.round(((stats?.cacheHitRate ?? stats?.aiModelVersion?.cacheHitRate ?? 0)) * 100)}%`}
                 icon={<Database size={18} />}
                 tone="cyan"
               />
@@ -299,22 +306,29 @@ export default function CuratorDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {topFlagged.slice(0, 5).map((row, i) => (
-                        <tr
-                          key={`${row.label}-${i}`}
-                          className="border-b border-dark-700/70 last:border-b-0"
-                        >
-                          <td className="py-2 pr-4 text-dark-400 font-mono">
-                            {i + 1}
-                          </td>
-                          <td className="py-2 pr-4 text-white">
-                            {row.label}
-                          </td>
-                          <td className="py-2 text-right text-amber-300 font-bold">
-                            {row.count}
-                          </td>
-                        </tr>
-                      ))}
+                      {topFlagged.slice(0, 5).map((row, i) => {
+                        const countVal = typeof row.count === 'number'
+                          ? row.count
+                          : (row.count && typeof row.count === 'object' && 'count' in (row.count as any))
+                          ? (row.count as any).count
+                          : Number(row.count) || 0;
+                        return (
+                          <tr
+                            key={`${row.label}-${i}`}
+                            className="border-b border-dark-700/70 last:border-b-0"
+                          >
+                            <td className="py-2 pr-4 text-dark-400 font-mono">
+                              {i + 1}
+                            </td>
+                            <td className="py-2 pr-4 text-white">
+                              {String(row.label)}
+                            </td>
+                            <td className="py-2 text-right text-amber-300 font-bold">
+                              {countVal}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -467,24 +481,31 @@ function Donut({ slices, total }: { slices: DonutSlice[]; total: number }) {
         </text>
       </svg>
       <ul className="w-full text-xs space-y-1.5">
-        {slices.map((s) => (
-          <li
-            key={s.label}
-            className="flex items-center justify-between text-dark-300"
-          >
-            <span className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-block w-3 h-3 rounded-sm"
-                style={{ background: s.color }}
-              />
-              {s.label}
-            </span>
-            <span className="font-mono">
-              {s.value} ({total ? Math.round((s.value / total) * 100) : 0}%)
-            </span>
-          </li>
-        ))}
+        {slices.map((s) => {
+          const sliceVal = typeof s.value === 'number'
+            ? s.value
+            : (s.value && typeof s.value === 'object' && 'count' in (s.value as any))
+            ? Number((s.value as any).count) || 0
+            : Number(s.value) || 0;
+          return (
+            <li
+              key={s.label}
+              className="flex items-center justify-between text-dark-300"
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block w-3 h-3 rounded-sm"
+                  style={{ background: s.color }}
+                />
+                {s.label}
+              </span>
+              <span className="font-mono">
+                {sliceVal} ({total ? Math.round((sliceVal / total) * 100) : 0}%)
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

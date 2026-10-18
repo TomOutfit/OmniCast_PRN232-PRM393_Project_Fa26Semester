@@ -27,20 +27,32 @@ export interface AiCuratorStats {
   cacheHitRate?: number;
   /** Counts by `broadcastSuitability` (used by the donut chart). */
   broadcastSuitability?: {
-    PRIME_TIME?: number;
-    STANDARD?: number;
-    RESTRICTED?: number;
+    PRIME_TIME?: number | { count: number; percentage: number };
+    STANDARD?: number | { count: number; percentage: number };
+    RESTRICTED?: number | { count: number; percentage: number };
+  };
+  /** Age rating distribution. */
+  ageRating?: Record<string, { count: number; percentage: number }>;
+  /** AI model version stats. */
+  aiModelVersion?: {
+    counts?: Record<string, number>;
+    cacheHitRate?: number;
   };
   /** Last 7 days report counts, oldest first (used by bar chart). */
   last7Days?: Array<{
     date: string; // YYYY-MM-DD
     count: number;
+    avgEngagement?: number;
   }>;
   /** Most-flagged compliance terms in the period. */
   topFlaggedContent?: Array<{
     label: string;
     count: number;
   }>;
+  /** Programs marked applied count. */
+  programsMarkedApplied?: number;
+  /** Total tokens used count. */
+  totalTokensUsed?: number;
   /** Selected period echoed back from the server (sanity check). */
   period?: AiCuratorStatsPeriod;
 }
