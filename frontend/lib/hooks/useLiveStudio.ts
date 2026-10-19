@@ -12,11 +12,14 @@ import {
   stopLive,
   uploadSelfRecordFile,
   uploadSelfRecord,
+  broadcastLocalFile,
   addFromCatalog,
   type CurateLiveInput,
   type StopLiveInput,
   type SelfRecordUploadInput,
   type AddFromCatalogInput,
+  type BroadcastLocalFileInput,
+  type BroadcastLocalFileResult,
 } from '@/lib/api/live-studio';
 
 export const liveStudioKeys = {
@@ -114,6 +117,31 @@ export function useAddFromCatalog() {
       // catalog item appears in the picker immediately.
       queryClient.invalidateQueries({
         queryKey: liveStudioKeys.broadcastable(''),
+      });
+    },
+  });
+}
+
+/**
+ * Broadcast a local PC file (drag-and-drop or file picker) up to
+ * Cloudinary, then register it on the channel library. Surfaces
+ * per-file progress via `onProgress` and supports `AbortSignal`
+ * for cancel mid-flight. On register failure, the helper
+ * best-effort deletes the orphan Cloudinary asset.
+ *
+ * Used by the new `<UploadQueue />` in Mode 1 of the Studio.
+ */
+export function useBroadcastLocalFile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: BroadcastLocalFileInput): Promise<BroadcastLocalFileResult> =>
+      broadcastLocalFile(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'recordings'] });
+      queryClient.invalidateQueries({
+        queryKey: ['live-studio', 'broadcastable'],
       });
     },
   });
