@@ -155,29 +155,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(Unauthenticated());
     try {
       await _authRepository.logout();
-      emit(Unauthenticated());
-    } catch (e) {
-      emit(Unauthenticated());
+    } catch (_) {
+      // Ignore logout errors
     }
   }
 
-  /// Mirror of `_onLogoutRequested` but flips the `revokeAllDevices`
-  /// flag on the repository so the backend hits `/auth/logout-all`
-  /// instead of `/auth/logout`. The local state-machine transitions
-  /// are identical (we still end up `Unauthenticated` either way).
   Future<void> _onLogoutAllDevicesRequested(
     LogoutAllDevicesRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(Unauthenticated());
     try {
       await _authRepository.logout(revokeAllDevices: true);
-      emit(Unauthenticated());
-    } catch (e) {
-      emit(Unauthenticated());
+    } catch (_) {
+      // Ignore logout errors
     }
   }
 
