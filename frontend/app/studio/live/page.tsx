@@ -53,6 +53,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CompactUserMenu } from '@/components/layout/compact-user-menu';
 import { WebStudioViewfinder } from '@/components/studio/web-studio-viewfinder';
+import { ChannelTargetSelector } from '@/components/studio/channel-target-selector';
 import { useAuth } from '@/lib/auth-context';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveEvents } from '@/lib/hooks/usePrograms';
@@ -191,6 +192,16 @@ export default function WebLiveStudioPage() {
       ) ?? null
     );
   }, [selectedChannel, liveEventsData]);
+
+  const liveChannelIds = useMemo(() => {
+    if (!liveEventsData?.data) return [];
+    const ids: string[] = [];
+    liveEventsData.data.forEach((e) => {
+      if (e.channelId) ids.push(e.channelId);
+      if (e.channel?.slug) ids.push(e.channel.slug);
+    });
+    return ids;
+  }, [liveEventsData]);
 
   // ----------------------------------------------------
   // Tab 1: Curated Live State
@@ -518,6 +529,7 @@ export default function WebLiveStudioPage() {
     width?: number;
     height?: number;
     sizeMb?: string;
+    isAudioOnly?: boolean;
   } | null>(null);
 
   const [selfTitle, setSelfTitle] = useState('');
@@ -698,19 +710,30 @@ export default function WebLiveStudioPage() {
       const detectedDuration = Math.max(1, Math.round(tempVideo.duration));
       setRecordingSeconds(detectedDuration);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const isAudioOnly = tempVideo.videoWidth === 0 || !tempVideo.videoWidth;
+
       setUploadedFileMeta({
         duration: detectedDuration,
         width: tempVideo.videoWidth,
         height: tempVideo.videoHeight,
         sizeMb,
+        isAudioOnly,
       });
-      toast.success(
-        `Đã nạp file video (${detectedDuration}s, ${sizeMb} MB)`,
-      );
+
+      if (isAudioOnly) {
+        toast.warning(
+          `⚠️ Tệp "${file.name}" (${sizeMb} MB) chỉ có track âm thanh (không có hình ảnh video). Đang phát ở chế độ Radio / Podcast.`,
+          { duration: 8000 },
+        );
+      } else {
+        toast.success(
+          `Đã nạp file video (${tempVideo.videoWidth}x${tempVideo.videoHeight}, ${detectedDuration}s, ${sizeMb} MB)`,
+        );
+      }
 
       if (file.size > 4.5 * 1024 * 1024) {
         toast.info(
-          `Video thời lượng dài (${sizeMb} MB) đã sẵn sàng phát sóng trực tiếp lên Live Studio!`,
+          `Nội dung (${sizeMb} MB) đã sẵn sàng phát sóng trực tiếp lên Live Studio!`,
           { duration: 5000 },
         );
       }
@@ -860,43 +883,13 @@ export default function WebLiveStudioPage() {
       {/* ── Main Content Container ───────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* 1. Channel Selector */}
-        <div className="glass-card p-4 rounded-2xl border border-[#1e2d44] bg-[#0c1421]/60">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Tv className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
-                Chọn Kênh Phát Sóng Target:
-              </span>
-            </div>
-            {loadingChannels ? (
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-            ) : (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                {channels.map((ch) => {
-                  const selected = selectedChannel?.id === ch.id;
-                  return (
-                    <button
-                      key={ch.id}
-                      onClick={() => setSelectedChannel(ch)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border ${
-                        selected
-                          ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500 shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-                          : 'bg-[#101928] text-slate-400 border-[#1a273c] hover:text-white hover:bg-[#162338]'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          ch.isActive ? 'bg-cyan-400' : 'bg-slate-600'
-                        }`}
-                      />
-                      <span>{ch.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        <ChannelTargetSelector
+          channels={channels}
+          selectedChannel={selectedChannel}
+          onSelectChannel={(ch) => setSelectedChannel(ch)}
+          isLoading={loadingChannels}
+          liveChannelIds={liveChannelIds}
+        />
 
         {/* 2. Active LIVE Status Banner (if currently live) */}
         {activeLiveForChannel && (
@@ -1662,34 +1655,112 @@ export default function WebLiveStudioPage() {
                 ) : (
                   /* File Upload Mode */
                   recordedPreviewUrl ? (
-                    <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-purple-500/40 flex items-center justify-center">
-                      <video
-                        src={recordedPreviewUrl}
-                        controls
-                        className="w-full h-full object-contain"
-                      />
-                      <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/60 backdrop-blur-md">
-                        <FileVideo className="w-3.5 h-3.5 text-purple-400" />
-                        <span className="font-mono text-xs font-bold text-white">
-                          TỆP ĐÃ NẠP: {uploadedFileMeta?.sizeMb ?? '0'} MB ({formatTime(recordingSeconds)})
-                        </span>
+                    <div className="space-y-3">
+                      <div className="relative aspect-video rounded-2xl bg-black overflow-hidden border border-purple-500/40 flex items-center justify-center">
+                        {/* Audio Visualizer Mode if uploaded file has no video stream */}
+                        {uploadedFileMeta?.isAudioOnly ? (
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-950/80 via-[#0a0f1d] to-[#05080e] flex flex-col items-center justify-center p-6 text-center select-none pb-16 z-10">
+                            <div className="relative mb-3">
+                              <span className="w-20 h-20 rounded-full bg-purple-500/10 block animate-ping absolute inset-0 m-auto" />
+                              <div className="w-14 h-14 rounded-2xl bg-purple-950/90 border border-purple-500/50 flex items-center justify-center text-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                                <Radio className="w-7 h-7 animate-pulse text-purple-300" />
+                              </div>
+                            </div>
+
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-1.5">
+                              🎧 Tệp Âm Thanh · Audio Track (Không có video)
+                            </span>
+
+                            <h4 className="text-sm font-bold text-white max-w-md truncate">
+                              {selfTitle || recordedFile?.name}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 mt-1 max-w-md leading-relaxed">
+                              Tệp YouTube bạn tải về chỉ có track âm thanh ({uploadedFileMeta?.sizeMb} MB / {formatTime(recordingSeconds)}).
+                            </p>
+
+                            {/* Sound wave equalizer simulation */}
+                            <div className="flex items-center gap-1.5 mt-3 h-5">
+                              {[30, 70, 45, 85, 60, 95, 50, 80, 65, 90, 40, 75, 55, 85, 35].map((h, i) => (
+                                <div
+                                  key={i}
+                                  className="w-1 bg-purple-400/80 rounded-full animate-pulse"
+                                  style={{
+                                    height: `${h}%`,
+                                    animationDelay: `${i * 90}ms`,
+                                    animationDuration: '1.2s',
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {uploadedFileMeta?.isAudioOnly ? (
+                          /* Audio Player Controls at bottom */
+                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black via-black/80 to-transparent z-20">
+                            <audio
+                              src={recordedPreviewUrl}
+                              controls
+                              className="w-full h-10 accent-purple-500"
+                            />
+                          </div>
+                        ) : (
+                          <video
+                            src={recordedPreviewUrl}
+                            controls
+                            className="w-full h-full object-contain relative z-10"
+                          />
+                        )}
+
+                        <div className="absolute top-3 left-3 z-30 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-950/90 border border-purple-500/60 backdrop-blur-md">
+                          <FileVideo className="w-3.5 h-3.5 text-purple-400" />
+                          <span className="font-mono text-xs font-bold text-white">
+                            TỆP ĐÃ NẠP: {uploadedFileMeta?.sizeMb ?? '0'} MB ({formatTime(recordingSeconds)})
+                          </span>
+                          {uploadedFileMeta?.isAudioOnly && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              AUDIO ONLY
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute top-3 right-3 z-30">
+                          <input
+                            type="file"
+                            accept="video/*,audio/*"
+                            onChange={handleFileUploadChange}
+                            className="hidden"
+                            id="video-file-reselect"
+                          />
+                          <label
+                            htmlFor="video-file-reselect"
+                            className="px-3 py-1.5 rounded-xl border border-slate-700 bg-black/80 hover:bg-black text-slate-300 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all shadow-lg"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Đổi tệp khác</span>
+                          </label>
+                        </div>
                       </div>
-                      <div className="absolute top-3 right-3">
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={handleFileUploadChange}
-                          className="hidden"
-                          id="video-file-reselect"
-                        />
-                        <label
-                          htmlFor="video-file-reselect"
-                          className="px-3 py-1.5 rounded-xl border border-slate-700 bg-black/80 hover:bg-black text-slate-300 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all shadow-lg"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Đổi tệp khác</span>
-                        </label>
-                      </div>
+
+                      {/* YouTube DASH streaming explanation callout if audio-only */}
+                      {uploadedFileMeta?.isAudioOnly && (
+                        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="font-bold text-amber-300">
+                              Lý do video từ YouTube về máy không có hình:
+                            </p>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              YouTube sử dụng cơ chế phát trực tuyến <strong>DASH Streaming</strong> tách riêng biệt 2 luồng: <em>Luồng Video</em> và <em>Luồng Audio</em>. Khi bạn tải bằng các web converter, tệp <strong>{uploadedFileMeta.sizeMb} MB cho {formatTime(recordingSeconds)}</strong> là <strong>Track Âm thanh (Audio 96kbps)</strong> không kèm hình ảnh.
+                            </p>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              💡 <strong>Cách khắc phục:</strong><br />
+                              • <strong>Để có hình ảnh:</strong> Khi tải từ YouTube, hãy chọn mục <strong>"Video MP4 720p/1080p"</strong> (video 24 phút thường có dung lượng từ <strong>150 MB đến 350 MB</strong>).<br />
+                              • <strong>Phát Radio / Podcast:</strong> Bạn vẫn có thể nhấn <strong>"Xuất Bản LiveStream"</strong> ngay, OmniCast sẽ phát luồng âm thanh mượt mà lên kênh của bạn!
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     /* File Drag & Drop Upload Zone */
