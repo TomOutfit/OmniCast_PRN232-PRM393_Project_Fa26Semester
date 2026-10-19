@@ -148,6 +148,29 @@ async function bootstrap() {
 
   logger.log(`🚀 OmniCast API is running on port ${port}`, 'Bootstrap');
   logger.log(`📚 Swagger Docs: /swagger`, 'Bootstrap');
+
+  // Surface which AI Curator pipeline is wired up. This mirrors the
+  // `hasRealModel` flag computed in `AiCuratorService`:
+  //   key empty OR === "dummy-key"  → heuristic-fallback-v1
+  //   any other non-empty string     → gpt-4o-omnicast-v3
+  //
+  // Bumped to include the prompt version (curator-prompt-v4.0.0) so
+  // you can verify in Vercel logs which prompt family is live. See
+  // backend/src/ai-curator/ai-curator.prompts.ts for the full prompt
+  // template and version history.
+  const openaiKey = configService.get<string>('OPENAI_API_KEY');
+  const usingRealModel = !!openaiKey && openaiKey !== 'dummy-key';
+  const modelTag = usingRealModel
+    ? 'gpt-4o-omnicast-v3 (REAL — OpenAI GPT-4o, single consolidated call, Zod-validated, retry-aware)'
+    : 'heuristic-fallback-v1 (no OPENAI_API_KEY — local rules engine)';
+  logger.log(
+    `🤖 AI Curator model: ${modelTag}`,
+    'Bootstrap',
+  );
+  logger.log(
+    `📝 AI Curator prompt: curator-prompt-v4.0.0 (consolidated, JSON schema + few-shot, 7 fallback categories)`,
+    'Bootstrap',
+  );
 }
 
 bootstrap();

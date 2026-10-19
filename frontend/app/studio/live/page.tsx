@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -11,11 +11,9 @@ import {
   Monitor,
   Upload,
   Play,
-  Square,
   StopCircle,
   CheckCircle2,
   AlertCircle,
-  Clock,
   Shield,
   Search,
   Sparkles,
@@ -24,16 +22,11 @@ import {
   Film,
   Tv,
   Loader2,
-  ChevronRight,
-  Eye,
   FileVideo,
   Globe,
   Plus,
   Check,
-  Layers,
   BadgeCheck,
-  ExternalLink,
-  Zap,
   Lock,
   AlertTriangle,
   Mic,
@@ -48,12 +41,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CompactUserMenu } from '@/components/layout/compact-user-menu';
 import { WebStudioViewfinder } from '@/components/studio/web-studio-viewfinder';
 import { ChannelTargetSelector } from '@/components/studio/channel-target-selector';
+import { UploadDropzone } from '@/components/studio/upload-dropzone';
+import { UploadQueue, type UploadQueueEntry } from '@/components/studio/upload-queue';
+import { CloudinaryHealthBanner } from '@/components/studio/cloudinary-health-banner';
 import { useAuth } from '@/lib/auth-context';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveEvents } from '@/lib/hooks/usePrograms';
@@ -63,17 +57,26 @@ import {
   useStopLive,
   useUploadSelfRecordFile,
   useUploadSelfRecord,
+  useBroadcastLocalFile,
   useCatalogStreams,
   useAddFromCatalog,
 } from '@/lib/hooks/useLiveStudio';
 import type { Channel } from '@/types';
 import type { StudioCatalogStream } from '@/lib/api/live-studio';
+import { deleteCloudinaryAsset } from '@/lib/api/cloudinary';
+import { CloudinaryAbortError } from '@/lib/api/cloudinary';
 import { logError } from '@/lib/utils/safe-log';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog';
 type RecordSource = 'camera' | 'screen' | 'upload';
 type VisibilityMode = 'IMMEDIATE' | 'SCHEDULED' | 'PRIVATE';
 
+/**
+ * One row in the upload queue. The legacy code kept a much
+ * thinner shape on `LocalPcFile`; we now extend it with
+ * Cloudinary-aware phase + progress fields so the queue component
+ * can render per-file status without prop-drilling.
+ */
 export interface LocalPcFile {
   id: string;
   file: File;
@@ -83,8 +86,38 @@ export interface LocalPcFile {
   thumbnailUrl?: string;
   sizeMb: string;
   isSelected: boolean;
+  /** True when the probe detected an audio-only track (no video). */
+  isAudioOnly?: boolean;
+  /** Cloudinary phase. Defaults to `pending` until `useBroadcastLocalFile` fires. */
+  phase: UploadQueueEntry['phase'];
+  /** 0..100 progress across all sub-phases. */
+  percent: number;
+  /** Bytes-per-second during the upload phase. */
+  speedBps?: number;
+  /** ETA in seconds during the upload phase. */
+  etaSec?: number;
+  /** Cloudinary public_id after upload (used for orphan cleanup). */
+  publicId?: string;
+  /** Server-side Recording id after register. */
+  recordingId?: string;
+  /** Last error message (only when phase is `failed`). */
+  error?: string;
 }
 
+/**
+ * Generate a thumbnail from a video file by seeking to ~1 s and
+ * drawing the frame to a canvas. Returns an empty string on
+ * failure (the caller falls back to a `FileVideo` icon).
+ *
+ * Hardened vs. the original:
+ *   • Wraps the canvas read in `try / catch` so a tainted-frame
+ *     exception (cross-origin without `crossOrigin="anonymous"`)
+ *     doesn't kill the whole pipeline.
+ *   • Adds a 3 s timeout on the `seeked` event. Some codecs
+ *     silently fail to seek (e.g. damaged MP4, missing moov
+ *     atom). The old code would hang forever.
+ *   • Calls `URL.revokeObjectURL` on every code path.
+ */
 const generateVideoThumbnail = (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const video = document.createElement('video');
@@ -93,32 +126,97 @@ const generateVideoThumbnail = (file: File): Promise<string> => {
     video.playsInline = true;
     const url = URL.createObjectURL(file);
     video.src = url;
+
+    let settled = false;
+    const finish = (dataUrl: string) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(url);
+      resolve(dataUrl);
+    };
+
+    // Timeout fallback — if `seeked` doesn't fire, return empty
+    // string after 3 s so the queue can fall back to a `FileVideo`
+    // icon instead of hanging on a broken file.
+    const timeoutId = window.setTimeout(() => finish(''), 3000);
+
     video.onloadeddata = () => {
-      video.currentTime = Math.min(1, (video.duration || 2) / 2);
+      try {
+        video.currentTime = Math.min(1, (video.duration || 2) / 2);
+      } catch {
+        // Some codecs reject seeks outright; fall through to
+        // drawImage of the very first frame after a tiny delay.
+        setTimeout(() => drawFrame(video, timeoutId, finish), 250);
+      }
     };
     video.onseeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.min(320, video.videoWidth || 320);
-        canvas.height = Math.min(180, video.videoHeight || 180);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const thumbUrl = canvas.toDataURL('image/jpeg', 0.7);
-          URL.revokeObjectURL(url);
-          resolve(thumbUrl);
-          return;
-        }
-      } catch {
-        // Fallback silently
-      }
-      URL.revokeObjectURL(url);
-      resolve('');
+      drawFrame(video, timeoutId, finish);
     };
     video.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve('');
+      window.clearTimeout(timeoutId);
+      finish('');
     };
+  });
+};
+
+/**
+ * Pull a frame out of the video element into a 320×180 jpeg.
+ * On failure (tainted canvas, zero-dim video, …) returns ''.
+ */
+function drawFrame(
+  video: HTMLVideoElement,
+  timeoutId: number,
+  finish: (dataUrl: string) => void,
+) {
+  try {
+    const w = Math.min(320, video.videoWidth || 320);
+    const h = Math.min(180, video.videoHeight || 180);
+    if (!w || !h) {
+      window.clearTimeout(timeoutId);
+      finish('');
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      window.clearTimeout(timeoutId);
+      finish('');
+      return;
+    }
+    ctx.drawImage(video, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    window.clearTimeout(timeoutId);
+    finish(dataUrl);
+  } catch {
+    window.clearTimeout(timeoutId);
+    finish('');
+  }
+}
+
+/**
+ * Probe a media file for duration + audio-only detection. Falls
+ * back to 180 s when the metadata can't be read.
+ */
+const probeMediaFile = (blobUrl: string): Promise<{ duration: number; isAudioOnly: boolean }> => {
+  return new Promise((resolve) => {
+    const tempV = document.createElement('video');
+    tempV.preload = 'metadata';
+    const timeoutId = window.setTimeout(() => {
+      resolve({ duration: 180, isAudioOnly: false });
+    }, 3000);
+    tempV.onloadedmetadata = () => {
+      window.clearTimeout(timeoutId);
+      const duration = Math.max(1, Math.round(tempV.duration || 180));
+      const isAudioOnly = tempV.videoWidth === 0 || !tempV.videoWidth;
+      resolve({ duration, isAudioOnly });
+    };
+    tempV.onerror = () => {
+      window.clearTimeout(timeoutId);
+      resolve({ duration: 180, isAudioOnly: false });
+    };
+    tempV.src = blobUrl;
   });
 };
 
@@ -239,8 +337,15 @@ export default function WebLiveStudioPage() {
   const [customUrlDuration, setCustomUrlDuration] = useState(300);
   const [isAddingUrl, setIsAddingUrl] = useState(false);
 
-  const handleLocalFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleLocalFilesSelected = async (
+    input: File[] | React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    // Support both shapes: `File[]` (from `<UploadDropzone>`) and
+    // `ChangeEvent<HTMLInputElement>` (legacy picker). This lets the
+    // dropzone call `onFiles(files)` directly without an extra adapter.
+    const files: File[] = Array.isArray(input)
+      ? input
+      : Array.from(input.target.files || []);
     if (files.length === 0) return;
 
     toast.info(`Đang nạp ${files.length} file từ máy tính...`);
@@ -252,23 +357,17 @@ export default function WebLiveStudioPage() {
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       const title = file.name.replace(/\.[^/.]+$/, '');
 
-      // Probe duration
-      const duration = await new Promise<number>((resolve) => {
-        const tempV = document.createElement('video');
-        tempV.preload = 'metadata';
-        tempV.onloadedmetadata = () => {
-          resolve(Math.max(1, Math.round(tempV.duration)));
-        };
-        tempV.onerror = () => resolve(180); // 3m fallback
-        tempV.src = blobUrl;
-      });
+      // Probe duration + audio-only detection (with 3 s timeout).
+      const { duration, isAudioOnly } = await probeMediaFile(blobUrl);
 
-      // Try thumbnail snapshot
+      // Skip thumbnail snapshot for audio-only files (no track to draw).
       let thumbnailUrl: string | undefined = undefined;
-      try {
-        thumbnailUrl = await generateVideoThumbnail(file);
-      } catch {
-        // Fallback silently
+      if (!isAudioOnly) {
+        try {
+          thumbnailUrl = await generateVideoThumbnail(file);
+        } catch {
+          // Fallback silently (the queue renders `FileVideo`).
+        }
       }
 
       newLocalFiles.push({
@@ -280,12 +379,14 @@ export default function WebLiveStudioPage() {
         thumbnailUrl,
         sizeMb,
         isSelected: true,
+        isAudioOnly,
+        phase: 'pending',
+        percent: 0,
       });
     }
 
     setLocalPcFiles((prev) => [...prev, ...newLocalFiles]);
     toast.success(`Đã thêm ${files.length} file từ máy tính vào kho phát sóng!`);
-    if (localFileInputRef.current) localFileInputRef.current.value = '';
   };
 
   const toggleLocalFileSelect = (id: string) => {
@@ -302,42 +403,10 @@ export default function WebLiveStudioPage() {
     });
   };
 
-  const [savingLocalFileId, setSavingLocalFileId] = useState<string | null>(null);
-
-  const handleSaveLocalFileToLibrary = async (local: LocalPcFile) => {
-    if (!selectedChannel) return;
-    try {
-      setSavingLocalFileId(local.id);
-      let videoUrl = local.blobUrl;
-      try {
-        const uploadRes = await uploadFileMutation.mutateAsync({
-          file: local.file,
-          title: local.title,
-        });
-        if (uploadRes?.url) videoUrl = uploadRes.url;
-      } catch (err) {
-        console.warn('[Live Studio] Direct storage upload fallback:', err);
-      }
-
-      await uploadRecordMutation.mutateAsync({
-        channelId: selectedChannel.slug,
-        title: local.title,
-        description: `Video tải lên từ máy tính (${local.sizeMb} MB)`,
-        videoUrl,
-        duration: local.duration,
-        visibility: 'SCHEDULED',
-        tags: ['local-pc', 'custom-upload'],
-      });
-
-      toast.success(`Đã lưu "${local.title}" vào kho nội dung của kênh!`);
-      removeLocalFile(local.id);
-      refetchRecordings();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Không thể lưu file vào kho');
-    } finally {
-      setSavingLocalFileId(null);
-    }
-  };
+  // The legacy `handleSaveLocalFileToLibrary` / `savingLocalFileId`
+  // (per-file "Lưu vào kho" button) was removed in favour of the
+  // new batch upload flow that runs at "PHÁT SÓNG" time and uses
+  // `<UploadQueue>` for per-file state.
 
   const normalizeMediaUrl = (raw: string): string => {
     let url = (raw || '').trim();
@@ -393,6 +462,209 @@ export default function WebLiveStudioPage() {
     }
   };
 
+  // ============================================================
+  // Per-file upload control state
+  // ============================================================
+  // The new Cloudinary-aware flow replaces the legacy blob-URL
+  // fallback (which only worked for small files via the local-FS
+  // route). Each local file has its own:
+  //   • AbortController (cancel mid-flight)
+  //   • `phase` (pending → signing → uploading → registering → done | failed | cancelled)
+  //   • `percent` (0..100 across all sub-phases)
+  //   • `speedBps` + `etaSec` (for the progress bar)
+  //   • `publicId` (after Cloudinary upload completes; for delete on failure)
+  //   • `recordingId` (after server-side register completes; final id)
+  //   • `error` (only when phase is `failed`)
+  //
+  // The map of AbortControllers lives in a `useRef` so cancelling a
+  // re-render doesn't lose them. The phase/percent/error fields
+  // are stored on the file object itself (single source of truth).
+
+  const [focusedLocalFileId, setFocusedLocalFileId] = useState<string | null>(
+    null,
+  );
+  const cancelControllersRef = useRef<Map<string, AbortController>>(new Map());
+
+  const broadcastLocalMutation = useBroadcastLocalFile();
+
+  /**
+   * Patch a single file's tracked fields (phase / percent / speed
+   * / eta / publicId / recordingId / error). Used by the cancel,
+   * retry, and start-broadcast flows.
+   */
+  const updateLocalFile = useCallback(
+    (id: string, patch: Partial<LocalPcFile>) => {
+      setLocalPcFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+      );
+    },
+    [],
+  );
+
+  /**
+   * Cancel an in-flight upload for a single file. The AbortController
+   * (created when the upload started) is used to abort the Cloudinary
+   * XHR; we then flip the phase to `cancelled`. If the upload had
+   * already produced a `publicId` (some bytes reached Cloudinary),
+   * we best-effort delete the orphan asset.
+   */
+  const handleCancelUpload = useCallback(
+    async (id: string) => {
+      const entry = localPcFiles.find((f) => f.id === id);
+      if (!entry) return;
+      const ac = cancelControllersRef.current.get(id);
+      if (ac) {
+        ac.abort();
+        cancelControllersRef.current.delete(id);
+      }
+      updateLocalFile(id, { phase: 'cancelled' });
+
+      // Best-effort orphan cleanup if Cloudinary already received bytes.
+      if (entry.publicId) {
+        try {
+          await deleteCloudinaryAsset(entry.publicId, 'video', 'cancelled');
+        } catch {
+          // The asset may not exist if abort happened before bytes
+          // reached Cloudinary. Swallow — the helper is idempotent.
+        }
+      }
+    },
+    [localPcFiles, updateLocalFile],
+  );
+
+  /**
+   * Retry a failed (or cancelled) file. Resets phase to `pending` and
+   * re-runs `broadcastLocalFile` for that one entry. The PHÁT SÓNG
+   * button drives batch uploads; this is the manual per-file fallback.
+   */
+  const handleRetryUpload = useCallback(
+    async (id: string) => {
+      const entry = localPcFiles.find((f) => f.id === id);
+      if (!entry || !selectedChannel) return;
+      await runBroadcastForFile(entry, { allowChannelFallback: false });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [localPcFiles, selectedChannel],
+  );
+
+  /**
+   * Internal runner that signs + uploads + registers a single
+   * local file via Cloudinary. Updates the file's `phase`,
+   * `percent`, `speedBps`, `etaSec`, `publicId`, `recordingId`
+   * and `error` along the way.
+   *
+   * `allowChannelFallback: true` is set when this is part of the
+   * "PHÁT SÓNG" batch — in that case we record the resulting
+   * `recordingId` so the curate-live step can pull it back. For
+   * manual retries (`allowChannelFallback: false`) we just want
+   * the file uploaded; the user will click PHÁT SÓNG again.
+   */
+  const runBroadcastForFile = useCallback(
+    async (
+      local: LocalPcFile,
+      opts: { allowChannelFallback: boolean },
+    ): Promise<string | null> => {
+      const ac = new AbortController();
+      cancelControllersRef.current.set(local.id, ac);
+
+      // Track running speed/ETA for the progress bar.
+      let lastProgressAt = Date.now();
+      let lastLoadedAt = 0;
+
+      updateLocalFile(local.id, {
+        phase: 'signing',
+        percent: 0,
+        error: undefined,
+      });
+
+      try {
+        // The Cloudinary upload path goes through 0% → 80% (sign + upload).
+        // The register step takes 80% → 100%.
+        const SIGN_WEIGHT = 5;
+        const UPLOAD_WEIGHT = 75;
+        const REGISTER_WEIGHT = 20;
+
+        const result = await broadcastLocalMutation.mutateAsync({
+          file: local.file,
+          channelSlug: selectedChannel!.slug,
+          title: local.title,
+          description:
+            customDesc ||
+            `Nội dung phát từ PC của bạn (${local.sizeMb} MB)`,
+          visibility: 'SCHEDULED',
+          duration: local.duration,
+          signal: ac.signal,
+          tags: ['studio-local-upload'],
+          onProgress: (percent, loaded, total) => {
+            const now = Date.now();
+            const elapsedSec = Math.max(0.001, (now - lastProgressAt) / 1000);
+            const speedBps =
+              loaded > lastLoadedAt ? (loaded - lastLoadedAt) / elapsedSec : 0;
+            lastLoadedAt = loaded;
+            lastProgressAt = now;
+            const remaining =
+              speedBps > 0 ? Math.round((total - loaded) / speedBps) : undefined;
+            // Map upload percent (0..100) into the SIGN..SIGN+UPLOAD range.
+            const overall = SIGN_WEIGHT + (percent * UPLOAD_WEIGHT) / 100;
+            updateLocalFile(local.id, {
+              phase: 'uploading',
+              percent: Math.min(SIGN_WEIGHT + UPLOAD_WEIGHT, overall),
+              speedBps,
+              etaSec: remaining,
+            });
+          },
+        });
+
+        // Sign completed, upload succeeded. Stash the publicId for
+        // cancel-cleanup before the register step runs.
+        updateLocalFile(local.id, {
+          phase: 'registering',
+          percent: SIGN_WEIGHT + UPLOAD_WEIGHT,
+          publicId: result.envelope.publicId,
+        });
+
+        const recordingId =
+          result?.recording?.id ??
+          result?.recording?.data?.id ??
+          result?.recording?.recording?.id ??
+          null;
+
+        updateLocalFile(local.id, {
+          phase: 'done',
+          percent: 100,
+          recordingId: recordingId ?? local.recordingId,
+        });
+
+        return recordingId;
+      } catch (err: any) {
+        const isAbort =
+          err?.name === 'CloudinaryAbortError' ||
+          err?.name === 'AbortError' ||
+          ac.signal.aborted;
+        if (isAbort) {
+          updateLocalFile(local.id, {
+            phase: 'cancelled',
+            error: undefined,
+          });
+        } else {
+          const message =
+            err?.response?.data?.message ??
+            err?.message ??
+            'Upload thất bại';
+          updateLocalFile(local.id, {
+            phase: 'failed',
+            error: message,
+          });
+        }
+        return null;
+      } finally {
+        cancelControllersRef.current.delete(local.id);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedChannel, customDesc, updateLocalFile, broadcastLocalMutation],
+  );
+
   const totalSelectedDuration = useMemo(() => {
     const serverDuration = selectedRecordings.reduce(
       (sum, r) => sum + (r.duration || 0),
@@ -426,46 +698,55 @@ export default function WebLiveStudioPage() {
       return;
     }
 
-    try {
-      let allRecordingIds = [...selectedRecordingIds];
+    // Snapshot the selected local files now so a re-render between
+    // the user clicking and the async loop starting doesn't lose
+    // files we should upload.
+    const localsToUpload = [...selectedLocalFiles];
+    const alreadyDone = localsToUpload.filter((f) => f.phase === 'done' && f.recordingId);
+    const needsUpload = localsToUpload.filter(
+      (f) => !(f.phase === 'done' && f.recordingId),
+    );
 
-      // If user selected files from their PC, persist them to the channel library first
-      if (selectedLocalFiles.length > 0) {
-        toast.info('Đang nạp file từ máy tính vào hệ thống phát sóng...');
+    if (needsUpload.length > 0) {
+      toast.info(
+        `Đang tải ${needsUpload.length} file từ máy lên CDN đám mây...`,
+      );
+    }
 
-        for (const local of selectedLocalFiles) {
-          let videoUrl = local.blobUrl;
+    let allRecordingIds = [...selectedRecordingIds];
 
-          // Attempt server file upload
-          try {
-            const uploadRes = await uploadFileMutation.mutateAsync({
-              file: local.file,
-              title: local.title,
-            });
-            if (uploadRes?.url) {
-              videoUrl = uploadRes.url;
-            }
-          } catch (uploadErr) {
-            console.warn('[Live Studio] Direct file upload fallback to stream:', uploadErr);
-          }
-
-          // Register in database library
-          const savedRec = await uploadRecordMutation.mutateAsync({
-            channelId: selectedChannel.slug,
-            title: local.title,
-            description: customDesc || `Nội dung phát từ PC của bạn (${local.sizeMb} MB)`,
-            videoUrl: videoUrl,
-            duration: local.duration,
-            visibility: 'SCHEDULED',
-            tags: ['pc-upload', 'studio-local'],
-          });
-
-          if (savedRec?.recording?.id) {
-            allRecordingIds.push(savedRec.recording.id);
-          }
-        }
+    // For each file that hasn't been uploaded yet, run the
+    // Cloudinary-direct flow (sign + upload + cleanup-on-failure).
+    // Each call updates the row in place via `runBroadcastForFile`.
+    // We collect successful recordingIds and skip failed/cancelled
+    // ones — they show up in the queue as "Lỗi" / "Đã huỷ" with a
+    // retry button.
+    for (const local of needsUpload) {
+      const recordingId = await runBroadcastForFile(local, {
+        allowChannelFallback: true,
+      });
+      if (recordingId) {
+        allRecordingIds.push(recordingId);
       }
+    }
 
+    // Add already-done files too (in case the user previously uploaded
+    // some files and just toggled selection).
+    for (const f of alreadyDone) {
+      if (f.recordingId) allRecordingIds.push(f.recordingId);
+    }
+
+    // If anything failed mid-batch, surface a Vietnamese warning
+    // listing the count but still proceed with what succeeded.
+    const failedCount = needsUpload.length - (allRecordingIds.length - selectedRecordingIds.length);
+    if (failedCount > 0) {
+      toast.warning(
+        `${failedCount} file tải lên không thành công — đã tự động dọn dẹp trên Cloudinary. ` +
+          `Các file còn lại (${allRecordingIds.length}) sẽ được phát sóng.`,
+      );
+    }
+
+    try {
       if (allRecordingIds.length > 0) {
         const res = await curateLiveMutation.mutateAsync({
           channelId: selectedChannel.slug,
@@ -475,11 +756,25 @@ export default function WebLiveStudioPage() {
           allowDevLicense: true,
         });
         toast.success(res.message || 'Đã phát sóng trực tiếp thành công!');
+        // Clean up successful entries from the queue — they now live
+        // in the channel library and the user can pick them up from
+        // the recordings list below.
+        setLocalPcFiles((prev) =>
+          prev.filter(
+            (f) =>
+              !allRecordingIds.includes(f.recordingId ?? '') ||
+              !f.recordingId,
+          ),
+        );
         setSelectedRecordingIds([]);
         setCustomTitle('');
         setCustomDesc('');
         refetchLiveEvents();
         refetchRecordings();
+      } else if (failedCount > 0) {
+        toast.error(
+          'Không có nội dung nào sẵn sàng để phát sóng. Vui lòng thử lại các file bị lỗi.',
+        );
       }
     } catch (err: any) {
       logError('[OmniCast Studio Live Error]:', err);
@@ -547,13 +842,39 @@ export default function WebLiveStudioPage() {
   const uploadRecordMutation = useUploadSelfRecord();
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Stop camera stream on unmount
+  // Stop camera stream on unmount + revoke any outstanding blob URLs
+  // for the local PC queue. We also abort any in-flight Cloudinary
+  // XHRs so the page can be safely unmounted without leaking
+  // network requests (or partial Cloudinary assets).
   useEffect(() => {
     return () => {
       stopMediaTracks();
       if (timerRef.current) clearInterval(timerRef.current);
+      // Abort any in-flight uploads
+      cancelControllersRef.current.forEach((ac) => ac.abort());
+      cancelControllersRef.current.clear();
     };
   }, []);
+
+  // Revoke blob URLs for entries that transition to `done` so we
+  // don't hold the entire file in memory after the recording row
+  // is registered. We deliberately skip `pending` / `uploading` /
+  // `registering` because the preview might still need the URL.
+  useEffect(() => {
+    const toRevoke = localPcFiles.filter((f) => f.phase === 'done' && f.blobUrl);
+    if (toRevoke.length === 0) return;
+    const ids = new Set(toRevoke.map((f) => f.id));
+    setLocalPcFiles((prev) =>
+      prev.map((f) => (ids.has(f.id) ? { ...f, blobUrl: '' } : f)),
+    );
+    for (const f of toRevoke) {
+      try {
+        URL.revokeObjectURL(f.blobUrl);
+      } catch {
+        // ignore — best effort
+      }
+    }
+  }, [localPcFiles]);
 
   const stopMediaTracks = () => {
     if (mediaStreamRef.current) {
@@ -986,6 +1307,8 @@ export default function WebLiveStudioPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Col: Available Broadcastable Content List */}
             <div className="lg:col-span-2 space-y-4">
+              <CloudinaryHealthBanner />
+
               <Card className="glass-card p-5 border border-[#1e2d44] bg-[#0c1421]/60 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1a273b] pb-3">
                   <div>
@@ -994,26 +1317,10 @@ export default function WebLiveStudioPage() {
                       Kho Nội Dung Phát Sóng (Kênh &amp; File PC)
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      Chọn video trong kho kênh hoặc chọn trực tiếp file video/audio từ máy tính (PC) của bạn
+                      Chọn video trong kho kênh hoặc kéo thả trực tiếp file video/audio từ máy tính (PC) của bạn
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <input
-                      ref={localFileInputRef}
-                      type="file"
-                      accept="video/*,audio/*"
-                      multiple
-                      onChange={handleLocalFilesSelected}
-                      className="hidden"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => localFileInputRef.current?.click()}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.25)]"
-                    >
-                      <FolderUp className="w-3.5 h-3.5" />
-                      Chọn file trong máy (PC)
-                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1034,6 +1341,13 @@ export default function WebLiveStudioPage() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Drag-and-drop zone (replaces the old picker button).
+                    The dropzone is hidden once the queue has at least
+                    one entry, leaving room for the queue list. */}
+                {localPcFiles.length === 0 && (
+                  <UploadDropzone onFiles={handleLocalFilesSelected} />
+                )}
 
                 {/* Direct Video URL Modal / Accordion */}
                 {showAddUrlModal && (
@@ -1100,131 +1414,45 @@ export default function WebLiveStudioPage() {
                   </div>
                 )}
 
-                {/* Local PC Files List (if any chosen) */}
+                {/* Local PC Files Queue (if any chosen). Replaces the
+                    legacy list with the new `<UploadQueue />` component
+                    which handles per-file phase tracking + cancel/retry. */}
                 {localPcFiles.length > 0 && (
                   <div className="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-[#0e192a] to-[#09101d] border border-cyan-500/40 shadow-md space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-cyan-400" />
-                        <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                          Nội Dung Đã Chọn Từ Máy Tính (PC) ({localPcFiles.length} file)
-                        </span>
-                      </div>
                       <button
                         type="button"
                         onClick={() => localFileInputRef.current?.click()}
-                        className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                        className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 ml-auto"
+                        title="Mở file picker để thêm file khác"
                       >
                         <Plus className="w-3 h-3" />
-                        Chọn thêm file khác
+                        Thêm file khác
                       </button>
                     </div>
 
-                    <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 divide-y divide-[#18273c]">
-                      {localPcFiles.map((f) => (
-                        <div
-                          key={f.id}
-                          className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
-                            f.isSelected
-                              ? 'bg-cyan-950/60 border-cyan-500/50 shadow-sm'
-                              : 'bg-[#09101d] border-[#18273c] opacity-75'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <input
-                              type="checkbox"
-                              checked={f.isSelected}
-                              onChange={() => toggleLocalFileSelect(f.id)}
-                              className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500 cursor-pointer"
-                            />
-
-                            <div className="w-16 h-10 rounded-lg bg-black overflow-hidden relative flex-shrink-0 border border-cyan-900/50">
-                              {f.thumbnailUrl ? (
-                                <img
-                                  src={f.thumbnailUrl}
-                                  alt={f.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-cyan-400">
-                                  <FileVideo className="w-4 h-4" />
-                                </div>
-                              )}
-                              <span className="absolute bottom-0.5 right-0.5 px-1 rounded text-[8px] font-mono bg-black/80 text-white font-bold">
-                                {formatTime(f.duration)}
-                              </span>
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <input
-                                type="text"
-                                value={f.title}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setLocalPcFiles((prev) =>
-                                    prev.map((item) =>
-                                      item.id === f.id ? { ...item, title: val } : item,
-                                    ),
-                                  );
-                                }}
-                                className="w-full bg-transparent text-xs font-bold text-white border-b border-transparent hover:border-cyan-500/40 focus:border-cyan-400 focus:outline-none truncate"
-                                title="Click để chỉnh sửa tiêu đề file"
-                              />
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-950 px-1 rounded border border-cyan-800">
-                                  FILE PC ({f.sizeMb} MB)
-                                </span>
-                                <span className="text-[9px] text-slate-400 truncate">
-                                  {f.file.type || 'video'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPreviewingVideo({
-                                  title: f.title,
-                                  url: f.blobUrl,
-                                  source: 'Máy tính cá nhân (PC)',
-                                  duration: f.duration,
-                                })
-                              }
-                              className="p-1.5 rounded-lg bg-[#0c1422] hover:bg-cyan-950 text-slate-400 hover:text-cyan-300 border border-[#1b2b42] transition-colors"
-                              title="Xem thử video"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                            </button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={savingLocalFileId === f.id}
-                              onClick={() => handleSaveLocalFileToLibrary(f)}
-                              className="h-7 px-2 text-[10px] border-cyan-500/30 text-cyan-300 hover:bg-cyan-950/60"
-                              title="Lưu video này vào kho thư viện của kênh"
-                            >
-                              {savingLocalFileId === f.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                              ) : (
-                                <Upload className="w-3 h-3 mr-1" />
-                              )}
-                              Lưu vào kho
-                            </Button>
-                            <button
-                              type="button"
-                              onClick={() => removeLocalFile(f.id)}
-                              className="p-1.5 rounded-lg bg-[#0c1422] hover:bg-red-950/60 text-slate-400 hover:text-red-300 border border-[#1b2b42] transition-colors"
-                              title="Bỏ file này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <UploadQueue
+                      entries={localPcFiles}
+                      focusedId={focusedLocalFileId}
+                      onFocus={setFocusedLocalFileId}
+                      onChangeTitle={(id, title) =>
+                        setLocalPcFiles((prev) =>
+                          prev.map((f) => (f.id === id ? { ...f, title } : f)),
+                        )
+                      }
+                      onToggleSelected={(id) => toggleLocalFileSelect(id)}
+                      onPreview={(entry) =>
+                        setPreviewingVideo({
+                          title: entry.title,
+                          url: entry.blobUrl,
+                          source: 'Máy tính cá nhân (PC)',
+                          duration: entry.duration,
+                        })
+                      }
+                      onCancel={handleCancelUpload}
+                      onRetry={handleRetryUpload}
+                      onRemove={(id) => removeLocalFile(id)}
+                    />
                   </div>
                 )}
 
