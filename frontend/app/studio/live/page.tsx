@@ -847,12 +847,13 @@ export default function WebLiveStudioPage() {
   // XHRs so the page can be safely unmounted without leaking
   // network requests (or partial Cloudinary assets).
   useEffect(() => {
+    const cancelControllers = cancelControllersRef.current;
     return () => {
       stopMediaTracks();
       if (timerRef.current) clearInterval(timerRef.current);
       // Abort any in-flight uploads
-      cancelControllersRef.current.forEach((ac) => ac.abort());
-      cancelControllersRef.current.clear();
+      cancelControllers.forEach((ac) => ac.abort());
+      cancelControllers.clear();
     };
   }, []);
 
@@ -1983,8 +1984,8 @@ export default function WebLiveStudioPage() {
                             </p>
                             <p className="text-slate-300 text-[11px] leading-relaxed">
                               💡 <strong>Cách khắc phục:</strong><br />
-                              • <strong>Để có hình ảnh:</strong> Khi tải từ YouTube, hãy chọn mục <strong>"Video MP4 720p/1080p"</strong> (video 24 phút thường có dung lượng từ <strong>150 MB đến 350 MB</strong>).<br />
-                              • <strong>Phát Radio / Podcast:</strong> Bạn vẫn có thể nhấn <strong>"Xuất Bản LiveStream"</strong> ngay, OmniCast sẽ phát luồng âm thanh mượt mà lên kênh của bạn!
+                              • <strong>Để có hình ảnh:</strong> Khi tải từ YouTube, hãy chọn mục <strong>&quot;Video MP4 720p/1080p&quot;</strong> (video 24 phút thường có dung lượng từ <strong>150 MB đến 350 MB</strong>).<br />
+                              • <strong>Phát Radio / Podcast:</strong> Bạn vẫn có thể nhấn <strong>&quot;Xuất Bản LiveStream&quot;</strong> ngay, OmniCast sẽ phát luồng âm thanh mượt mà lên kênh của bạn!
                             </p>
                           </div>
                         </div>
