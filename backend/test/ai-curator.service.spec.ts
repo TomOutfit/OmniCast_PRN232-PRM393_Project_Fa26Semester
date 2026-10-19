@@ -484,22 +484,36 @@ test('applyCuration with markApplied=false does not set lastAppliedAt', async ()
 });
 
 // ---------------------------------------------------------------
-// Pipeline output shape — agentTimings
+// Pipeline output shape — pipelineMs / openaiCallMs (post-2026-10-19)
+//
+// Pre-2026-10-19 this section asserted on `agentTimings` with three
+// keys (sentimentMs / complianceMs / editorialMs) because the
+// pipeline ran three OpenAI calls. We now run ONE consolidated call
+// and the per-agent timing is no longer meaningful. The new fields:
+//
+//   - pipelineMs: total wall-clock time for the pipeline
+//   - openaiCallMs: time spent inside the single OpenAI call
+//                    (undefined in the heuristic path)
+//   - promptVersion: stamped from the prompt file (curator-prompt-v4.0.0)
+//   - aiModelVersion: same string as before
 // ---------------------------------------------------------------
 
-test('runPipelineForInput returns agentTimings with all three keys', async () => {
+test('runPipelineForInput returns pipelineMs, openaiCallMs, and promptVersion (heuristic path)', async () => {
   const { service } = makeService();
   const report: any = await service.analyzePreview(
     { title: 'Bản tin thời sự buổi tối hôm nay' },
     'user-1',
   );
-  assert.ok(report.agentTimings);
-  assert.ok(typeof report.agentTimings.sentimentMs === 'number');
-  assert.ok(typeof report.agentTimings.complianceMs === 'number');
-  assert.ok(typeof report.agentTimings.editorialMs === 'number');
-  assert.ok(report.agentTimings.sentimentMs >= 0);
-  assert.ok(report.agentTimings.complianceMs >= 0);
-  assert.ok(report.agentTimings.editorialMs >= 0);
+  // pipelineMs is always present, non-negative
+  assert.ok(typeof report.pipelineMs === 'number');
+  assert.ok(report.pipelineMs >= 0);
+  // Heuristic path: openaiCallMs is undefined
+  assert.equal(report.openaiCallMs, undefined);
+  // promptVersion is stamped
+  assert.equal(typeof report.promptVersion, 'string');
+  assert.match(report.promptVersion, /^curator-prompt-v\d+\.\d+\.\d+$/);
+  // aiModelVersion is the heuristic fallback string
+  assert.equal(report.aiModelVersion, 'heuristic-fallback-v1');
 });
 
 // ---------------------------------------------------------------

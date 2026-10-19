@@ -272,7 +272,7 @@ test('getStats with period=day only counts reports from the last 24h', async () 
     createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago — EXCLUDED
   });
   seedReport(prisma, {
-    createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000), // 7 days ago — EXCLUDED
+    createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000), // 6 days ago — INCLUDED in week
   });
 
   const dayStats = await service.getStats('day');
