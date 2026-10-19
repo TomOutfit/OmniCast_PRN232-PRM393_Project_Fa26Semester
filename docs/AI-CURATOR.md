@@ -2,54 +2,103 @@
 
 > **Owner:** OmniCast PRN232 (AI Content Curation)  
 > **Stack:** NestJS (Backend) · Next.js (Web Studio) · Flutter (Mobile Studio)  
-> **RBAC:** `STAFF` · `ADMIN` only
+> **RBAC:** `STAFF` · `ADMIN` only  
+> **Current model:** `gpt-4o-omnicast-v3` · **Current prompt:** `curator-prompt-v4.0.0` (consolidated single-call)
 
 ---
 
-## Architecture
+## Architecture (2026-10-19 refactor)
+
+The AI Curator was overhauled on 2026-10-19 to address cost, latency, and
+stability. The 3-agent pipeline (sentiment + compliance + editorial) was
+collapsed into a **single consolidated OpenAI call** returning a structured
+JSON that the service then maps onto the same `AiCuratorReport` shape used
+by clients.
 
 ```mermaid
 flowchart LR
     subgraph Client
         W[Web Studio Curator]
         M[Mobile Curator Screen]
+        SE[EventSource — streaming]
     end
 
-    subgraph NestJS["Backend · 3-Agent Pipeline"]
+    subgraph NestJS["Backend · Single-Call Pipeline"]
         C[Controller]
         S[Service]
-        subgraph Agents
-            A1[Sentiment Agent\nOpenAI / Heuristic]
-            A2[Compliance Agent\nOpenAI / Heuristic]
-            A3[Editorial Agent\nOpenAI / Heuristic]
-        end
-        DB[(Prisma\nLiveEvent\nAiCuratorReport)]
+        P[Prompt Builder<br/>curator-prompt-v4.0.0]
+        Z[Zod Schema Validator]
+        R[Retry Helper<br/>exp backoff + jitter]
+        H[Heuristic Fallback<br/>7 categories]
+        DB[(Prisma<br/>LiveEvent<br/>AiCuratorReport)]
         AL[AuditLogger]
-        OAI[OpenAI API]
+        OAI[OpenAI API<br/>gpt-4o]
     end
 
-    W & M -->|"POST /ai-curator/{route}"| C
+    W & M -->|"POST /curate<br/>(persist)"| C
+    W & M -->|"POST /analyze<br/>(preview)"| C
+    SE -->|"GET /analyze-stream<br/>(SSE)"| C
+
     C --> S
-    S -->|Promise.all| A1
-    S -->|Promise.all| A2
-    A1 -->|sentiment| S
-    A2 -->|compliance| S
-    S --> A3
-    A3 -->|editorial| S
+    S --> P
+    P -->|"prompt + JSON schema"| R
+    R -->|"withRetry (3x)"| OAI
+    OAI -->|"raw response"| Z
+    Z -->|"validated or fall back"| S
+    S --> H
     S --> DB
     S --> AL
-    A1 & A2 & A3 --> OAI
 ```
 
-### Agent breakdown
+### What changed vs the old 3-agent design
 
-| Agent | Input | Output | Fallback |
-|-------|-------|--------|----------|
-| **Sentiment Agent** | title, description, channel, tags | `overallSentiment` · `hypeLevel` · `audienceEngagement` (0–100) | Heuristic regex on Vietnamese keywords |
-| **Compliance Agent** | title, description, category, tags | `isAgeRestricted` · `ageRating` (PG/T13/T16/T18) · `flaggedContent[]` · `recommendedBroadcastWindow` (DAY/EVENING/LATE_NIGHT) | Keyword flagging (violence → T16, explicit → T18) |
-| **Editorial Agent** | program fields + sentiment + compliance | `broadcastSuitability` (PRIME_TIME/STANDARD/RESTRICTED) · `suggestedTimeSlot` · `targetAudienceVibe` · `riskWarnings` | Tiered logic based on hype + age restriction flags |
+| Aspect | Old (pre-2026-10-19) | New (2026-10-19) |
+|--------|----------------------|------------------|
+| **OpenAI calls per curation** | 3 (sentiment + compliance + editorial) | **1 consolidated call** |
+| **Approx. token cost per call** | ~3× prompt tokens | ~1× prompt tokens |
+| **Approx. wall-clock latency** | 3–6s (sentiment+compliance in parallel, editorial sequential) | 1–3s |
+| **Response validation** | `JSON.parse(content)` — trusted blindly | **Zod schema** with typed `safeParse` |
+| **Retry on transient errors** | None — one blip → heuristic | **Exp. backoff with jitter**, 3 attempts |
+| **Prompt version tracking** | None | Stamped on every report (`promptVersion`) |
+| **Streaming** | None (full wait) | **`POST /analyze-stream`** via SSE |
+| **Heuristic fallback categories** | 3 (SPORTS / NEWS / MUSIC) | **7** (+ KIDS, DOC, COMEDY, TALKSHOW) |
+| **Confidence formula** | `100 * exp(avgLogprob)` | Adds length bonus, retry penalty, internal-consistency check |
 
-**Per-agent timings** (`agentTimings`) are tracked internally and returned in the report, enabling future per-agent breakdown display.
+### Pipeline internals
+
+1. **Prompt build** — `buildConsolidatedPrompt()` produces a single
+   multi-section prompt with an inline JSON schema, scoring weights, and
+   a few-shot example. Versioned via `PROMPT_VERSION` constant.
+2. **OpenAI call** — Single `chat.completions.create({ response_format:
+   'json_object', logprobs: true, top_p: 0.95, presence_penalty: 0.1 })`
+   wrapped in `withRetry()` (3 attempts, exponential backoff with jitter,
+   retries on 429 / 5xx / network errors).
+3. **Zod validation** — Raw `content` is parsed and validated against
+   `ConsolidatedReportSchema`. A bad response triggers a graceful
+   fallback to the heuristic path and stamps `validationError` on the
+   report for observability.
+4. **Confidence scoring** — Combines:
+   - Avg logprob of completion tokens (model "certainty")
+   - Length-aware bonus (longer, more detailed completions get +0..+5)
+   - Retry penalty (each retry costs 5 points)
+   - Internal-consistency check (e.g. `RESTRICTED` without
+     `isAgeRestricted=true` docks 10)
+5. **Persistence** — `curateContent` writes the report to Prisma; the
+   `confidence` field is **NOT** persisted (no DB column), only returned
+   in the API response.
+
+### Heuristic fallback (7 categories)
+
+| Category | Key matches | Production format | Special handling |
+|----------|-------------|-------------------|------------------|
+| `SPORTS` | `thể thao`, `bóng đá`, `cup`, `trận`, `final`, `champion` | Multi-cam Live Broadcast, DYNAMIC pacing | Score boost: +14 production, +15 appeal, +10 commercial |
+| `NEWS` | `tin tức`, `thời sự`, `bản tin`, `news` | Studio + field reporting, MODERATE pacing | Score boost: +15 content, +5 compliance |
+| `MUSIC` / `SHOW` / `ENTERTAINMENT` | `nhạc`, `concert`, `gala`, `live show`, `âm nhạc` | Stage concert, FAST_PACED | Score boost: +12 production, +10 appeal |
+| `KIDS` / `CHILDREN` | `thiếu nhi`, `trẻ em`, `kids`, `hoạt hình` | Multi-format 2D/3D animation, HIGH interactivity | +12 content, +4 compliance, COPPA-aligned |
+| `DOCUMENTARY` / `DOC` | `phim tài liệu`, `tài liệu`, `documentary`, `khám phá` | Field documentary + archive footage, SLOW pacing | +16 content, HDR / Dolby 5.1 spec |
+| `COMEDY` | `hài`, `hài kịch`, `truyện cười`, `stand-up` | Multi-cam studio + live audience, FAST_PACED | +12 commercial, +10 appeal |
+| `TALKSHOW` | `talkshow`, `talk show`, `trò chuyện`, `phỏng vấn` | 2-4 guest conversation, MODERATE | +8 content, +5 commercial |
+| _Other_ | (any) | Generic talkshow+documentary hybrid | Default weights |
 
 ---
 
@@ -60,9 +109,9 @@ Authentication: `Bearer <JWT>` (role `STAFF` or `ADMIN` required)
 
 ---
 
-### 1. Preview / Ad-hoc Analysis
+### 1. Preview / Ad-hoc Analysis (sync)
 
-**Mode 2** — Analyze raw program fields without saving first. No database write.
+**Mode 2a** — Analyze raw program fields without saving first. No database write.
 
 ```
 POST /ai-curator/analyze
@@ -100,14 +149,38 @@ Content-Type: application/json
     "flaggedContent": [],
     "recommendedBroadcastWindow": "EVENING"
   },
+  "contentAssessment": {
+    "summary": "...",
+    "highlights": ["..."],
+    "strengths": ["..."],
+    "weaknesses": ["..."],
+    "narrativeFlow": "...",
+    "targetAudienceDetails": "..."
+  },
+  "formatAssessment": {
+    "productionFormat": "...",
+    "pacing": "DYNAMIC",
+    "visualAudioRequirements": ["..."],
+    "interactivityLevel": "HIGH",
+    "technicalRecommendations": "..."
+  },
+  "scoringBreakdown": {
+    "contentQuality": 85,
+    "productionValue": 92,
+    "audienceAppeal": 95,
+    "complianceSafety": 98,
+    "commercialPotential": 94,
+    "overallScore": 92,
+    "grade": "S"
+  },
   "aiModelVersion": "gpt-4o-omnicast-v3",
+  "promptVersion": "curator-prompt-v4.0.0",
   "processingTimeMs": 1340,
+  "pipelineMs": 1340,
+  "openaiCallMs": 1180,
+  "openaiRetries": 1,
   "tokenUsed": 892,
-  "agentTimings": {
-    "sentimentMs": 340,
-    "complianceMs": 310,
-    "editorialMs": 690
-  }
+  "confidence": 87
 }
 ```
 
@@ -129,9 +202,79 @@ curl -X POST http://localhost:3000/v1/ai-curator/analyze \
 
 ---
 
+### 1b. Preview / Ad-hoc Analysis (streaming)
+
+**Mode 2b** — Same as `/analyze` but returns **Server-Sent Events** so
+the client can render content progressively as OpenAI streams tokens.
+
+```
+GET /ai-curator/analyze-stream
+Content-Type: application/json  (request body same as /analyze)
+Accept: text/event-stream
+```
+
+**Wire format** (SSE — one event per line, `event:` + `data:`):
+
+```
+event: meta
+data: {"type":"started","promptVersion":"curator-prompt-v4.0.0","model":"gpt-4o","startedAt":"2026-10-19T..."}
+
+event: delta
+data: {"text":"{\n  \"sentiment"}
+
+event: delta
+data: {"text":": {\n    \"overallSentiment\": \"positive\""}
+
+event: complete
+data: {"type":"complete","report":{...full AiCuratorReport...},"processingTimeMs":1340,"confidence":87,"openaiRetries":1}
+```
+
+**Error events:**
+
+```
+event: error
+data: {"type":"openai-connection-failed","message":"...","retryable":true}
+
+event: error
+data: {"type":"openai-stream-failed","message":"...","partialText":"{...","retryable":false}
+
+event: error
+data: {"type":"schema-validation-failed","message":"...","retryable":true}
+```
+
+**Terminal event is always exactly one of `complete` or `error`.**
+
+The client has two options:
+1. **Recommended** — use the `complete` event's `report` field directly
+2. Concatenate all `delta.text` chunks and `JSON.parse()` the result
+
+**Browser usage:**
+
+```js
+const source = new EventSource(
+  '/v1/ai-curator/analyze-stream',  // Note: EventSource is GET-only;
+                                    // for POST payloads use the fetch+ReadableStream pattern
+);
+source.addEventListener('delta', (e) => processDelta(JSON.parse(e.data)));
+source.addEventListener('complete', (e) => renderReport(JSON.parse(e.data).report));
+source.addEventListener('error', (e) => handleError(JSON.parse(e.data)));
+```
+
+> ⚠️ **Browser caveat:** `EventSource` is GET-only. For POST payloads,
+> use `fetch()` with `ReadableStream` body parsing, or a thin library
+> like `microsoft/fetch-event-source`. The backend endpoint accepts the
+> same body as `POST /analyze` (it doesn't care about the HTTP method
+> for the SSE endpoint — NestJS's `@Sse()` uses GET by default; switch
+> to POST in production if you need body params from a browser).
+
+**Rate limit:** 10 req/min per user (tighter than sync because streaming
+holds a server connection open).
+
+---
+
 ### 2. Curate Existing Program (Persist)
 
-**Mode 1** — Look up a saved `LiveEvent` in the database, run the full pipeline, persist the report.
+**Mode 1** — Look up a saved `LiveEvent`, run the full pipeline, persist the report.
 
 ```
 POST /ai-curator/curate
@@ -145,7 +288,7 @@ Content-Type: application/json
 | `programId` | string · **required** | UUID of an existing `LiveEvent` |
 | `forceRefresh` | boolean · optional | If `false` (default) and a cached report exists, return it with `cached: true` without re-running the model |
 
-**Response** — `AiCuratorHistoryItem` (same shape as preview + DB metadata):
+**Response** — same shape as preview + DB metadata:
 
 ```json
 {
@@ -153,17 +296,25 @@ Content-Type: application/json
   "programId": "evt-uuid",
   "broadcastSuitability": "PRIME_TIME",
   "suggestedTimeSlot": "21:00 - 23:00",
-  "targetAudienceVibe": "Khán giả đại chúng theo dõi sự kiện lớn",
-  "riskWarnings": "Phù hợp mọi đối tượng",
-  "sentimentAnalysis": { ... },
-  "complianceAssessment": { ... },
+  "targetAudienceVibe": "...",
+  "riskWarnings": "...",
+  "sentimentAnalysis": { "...": "..." },
+  "complianceAssessment": { "...": "..." },
+  "contentAssessment": { "...": "..." },
+  "formatAssessment": { "...": "..." },
+  "scoringBreakdown": { "...": "..." },
   "aiModelVersion": "gpt-4o-omnicast-v3",
+  "promptVersion": "curator-prompt-v4.0.0",
   "processingTimeMs": 1340,
+  "pipelineMs": 1340,
+  "openaiCallMs": 1180,
+  "openaiRetries": 1,
   "tokenUsed": 892,
-  "agentTimings": { "sentimentMs": 340, "complianceMs": 310, "editorialMs": 690 },
+  "confidence": 87,
+  "validationError": null,
   "cached": false,
   "createdBy": "user-uuid",
-  "createdAt": "2026-10-15T04:30:00.000Z"
+  "createdAt": "2026-10-19T..."
 }
 ```
 
@@ -206,7 +357,7 @@ Content-Type: application/json
 {
   "programId": "evt-abc123",
   "appliedFields": ["scheduledAt", "description"],
-  "updatedAt": "2026-10-15T04:35:00.000Z",
+  "updatedAt": "2026-10-19T...",
   "channel": { "id": "ch-uuid", "name": "VTV3 HD" }
 }
 ```
@@ -225,22 +376,15 @@ GET /ai-curator/history/:programId
 **Path param:** `programId` — UUID of the `LiveEvent`  
 **Response:** Array of up to 10 most recent `AiCuratorHistoryItem` rows, newest first.
 
-```json
-[
-  {
-    "id": "rpt-uuid-2",
-    "programId": "evt-abc123",
-    "broadcastSuitability": "PRIME_TIME",
-    "suggestedTimeSlot": "21:00 - 23:00",
-    "aiModelVersion": "heuristic-fallback-v1",
-    "processingTimeMs": 12,
-    "tokenUsed": null,
-    "cached": false,
-    "createdBy": "user-uuid",
-    "createdAt": "2026-10-15T04:30:00.000Z"
-  }
-]
+---
+
+### 5. Dashboard Stats
+
 ```
+GET /ai-curator/stats?period=day|week|month
+```
+
+Returns aggregated stats over the time window. Used by the Web Studio dashboard.
 
 ---
 
@@ -252,14 +396,22 @@ GET /ai-curator/history/:programId
 |-------|------|-------------|
 | `broadcastSuitability` | `PRIME_TIME \| STANDARD \| RESTRICTED` | Editorial tier |
 | `suggestedTimeSlot` | string | Format: `"HH:MM - HH:MM"` |
-| `targetAudienceVibe` | string | Free-text audience description |
+| `targetAudienceVibe` | string | Free-text audience description (Vietnamese) |
 | `riskWarnings` | string | Viewer advisories |
-| `sentimentAnalysis` | object | See below |
-| `complianceAssessment` | object | See below |
+| `sentimentAnalysis` | object | `{ overallSentiment, hypeLevel, audienceEngagement }` |
+| `complianceAssessment` | object | `{ isAgeRestricted, ageRating, flaggedContent[], recommendedBroadcastWindow }` |
+| `contentAssessment` | object | `{ summary, highlights[], strengths[], weaknesses[], narrativeFlow, targetAudienceDetails }` |
+| `formatAssessment` | object | `{ productionFormat, pacing, visualAudioRequirements[], interactivityLevel, technicalRecommendations }` |
+| `scoringBreakdown` | object | `{ contentQuality, productionValue, audienceAppeal, complianceSafety, commercialPotential, overallScore, grade }` |
 | `aiModelVersion` | string | `"gpt-4o-omnicast-v3"` or `"heuristic-fallback-v1"` |
-| `processingTimeMs` | number | Total pipeline wall-clock time |
-| `tokenUsed` | number \| null | OpenAI token count (null on heuristic) |
-| `agentTimings` | object | Per-agent breakdown: `{ sentimentMs, complianceMs, editorialMs }` |
+| `promptVersion` | string | e.g. `"curator-prompt-v4.0.0"` — bumped when prompt family changes |
+| `processingTimeMs` | number | Total pipeline wall-clock time (alias of `pipelineMs`) |
+| `pipelineMs` | number | Total pipeline wall-clock time |
+| `openaiCallMs` | number \| undefined | Time inside the single OpenAI call (undefined in heuristic) |
+| `openaiRetries` | number \| undefined | 1 = no retries, 2 = one retry, etc. (undefined in heuristic) |
+| `tokenUsed` | number \| null | OpenAI total_tokens (null on heuristic) |
+| `confidence` | number | 0–100 integer, see "Confidence scoring" above |
+| `validationError` | string \| undefined | Set when OpenAI response failed Zod validation; the report itself still came from the heuristic path |
 | `cached` | boolean | `true` when returned from cache without re-running model |
 
 ### `sentimentAnalysis`
@@ -278,10 +430,25 @@ GET /ai-curator/history/:programId
 {
   isAgeRestricted: boolean;
   ageRating: 'PG' | 'T13' | 'T16' | 'T18';
-  flaggedContent: string[]; // e.g. ['violence', 'explicit-language']
+  flaggedContent: string[]; // e.g. ['violence', 'explicit-language', 'drugs', 'gambling']
   recommendedBroadcastWindow: 'DAY' | 'EVENING' | 'LATE_NIGHT';
 }
 ```
+
+### `scoringBreakdown`
+
+Weights (used to compute `overallScore`):
+```
+overallScore = round(
+  contentQuality      * 0.25 +
+  productionValue     * 0.20 +
+  audienceAppeal      * 0.25 +
+  complianceSafety    * 0.15 +
+  commercialPotential * 0.15
+);
+```
+
+Grade thresholds: `S ≥ 90`, `A ≥ 80`, `B ≥ 65`, `C ≥ 50`, `D < 50`.
 
 ---
 
@@ -291,7 +458,7 @@ The **first** call to `POST /curate` for a program (without `forceRefresh`) alwa
 
 Subsequent calls (without `forceRefresh`) return the most-recent persisted report with `cached: true` — **no re-run**. The curator can force a fresh run by passing `forceRefresh: true`.
 
-Preview mode (`POST /analyze`) **never** touches the database and always returns `cached: false` with no `id` / `programId`.
+Preview mode (`POST /analyze`, `GET /analyze-stream`) **never** touches the database and always returns `cached: false` with no `id` / `programId`.
 
 ---
 
@@ -300,15 +467,16 @@ Preview mode (`POST /analyze`) **never** touches the database and always returns
 ```
 Has OPENAI_API_KEY?
 ├─ YES → GPT-4o (gpt-4o-omnicast-v3)
-│         └─ Network / API error?
+│         └─ Network / API error (after 3 retries)?
 │             └─ YES → Heuristic fallback
+│         └─ Response fails Zod validation?
+│             └─ YES → Heuristic fallback + stamp `validationError`
 └─ NO  → Heuristic fallback (heuristic-fallback-v1)
 ```
 
-Heuristic rules are keyword-based (Vietnamese + English) and cover:
-- **Sentiment:** `tuyệt/vip/champion/best/love → positive`; `buồn/bi kịch/sad/tragic → negative`
-- **Compliance:** `bạo lực/kill/violence/chết → violence flag + T16`; `ngôn ngữ/khiêu dâm/18+ → explicit-language flag + T18`
-- **Editorial:** High hype + no restriction → PRIME_TIME; any restriction → RESTRICTED; else STANDARD
+The heuristic path covers 7 channel categories with non-generic treatment:
+SPORTS, NEWS, MUSIC/SHOW/ENTERTAINMENT, KIDS, DOCUMENTARY, COMEDY, TALKSHOW.
+Other categories fall through to a generic talkshow+documentary hybrid.
 
 ---
 
@@ -320,7 +488,9 @@ Heuristic rules are keyword-based (Vietnamese + English) and cover:
 | `POST /ai-curator/curate` | 30 req/min | per user |
 | `POST /ai-curator/analyze/:programId` | 30 req/min | per user |
 | `POST /ai-curator/apply/:programId` | 30 req/min | per user |
+| `GET /ai-curator/analyze-stream` (SSE) | 10 req/min | per user |
 | `GET /ai-curator/history/:programId` | no throttle | — |
+| `GET /ai-curator/stats` | no throttle | — |
 
 Exceeded limit → `429 TooManyRequests` with `Retry-After` header.
 
@@ -328,7 +498,7 @@ Exceeded limit → `429 TooManyRequests` with `Retry-After` header.
 
 ## RBAC
 
-All 5 endpoints require a valid JWT with `role` claim of `STAFF` (1) or `ADMIN` (3). `JwtAuthGuard` validates the token; `RolesGuard` enforces the role. Missing or invalid JWT → `401 Unauthorized`; insufficient role → `403 Forbidden`.
+All endpoints require a valid JWT with `role` claim of `STAFF` (1) or `ADMIN` (3). `JwtAuthGuard` validates the token; `RolesGuard` enforces the role. Missing or invalid JWT → `401 Unauthorized`; insufficient role → `403 Forbidden`.
 
 ---
 
@@ -342,13 +512,24 @@ All 5 endpoints require a valid JWT with `role` claim of `STAFF` (1) or `ADMIN` 
 | `JWT_SECRET` | Yes | Secret for JWT verification |
 | `DATABASE_URL` | Yes | Prisma-compatible PostgreSQL URL |
 
+### Startup banner (Vercel logs)
+
+Every cold-start logs two lines so operators can confirm which pipeline is live:
+
+```
+[Bootstrap] 🤖 AI Curator model: gpt-4o-omnicast-v3 (REAL — OpenAI GPT-4o, single consolidated call, Zod-validated, retry-aware)
+[Bootstrap] 📝 AI Curator prompt: curator-prompt-v4.0.0 (consolidated, JSON schema + few-shot, 7 fallback categories)
+```
+
+If `OPENAI_API_KEY` is missing, the first line shows `heuristic-fallback-v1 (no OPENAI_API_KEY — local rules engine)`.
+
 ### Prisma Schema requirements
 
 ```prisma
 model LiveEvent {
   // ... existing fields
   lastAppliedAt        DateTime?
-  lastAppliedReportId String?
+  lastAppliedReportId  String?
 }
 
 model AiCuratorReport {
@@ -358,7 +539,7 @@ model AiCuratorReport {
   suggestedTimeSlot    String
   targetAudienceVibe   String
   riskWarnings         String
-  sentimentAnalysis    Json
+  sentimentAnalysis    Json     // stores sentiment + content + format + scoring
   complianceAssessment Json
   aiModelVersion       String
   tokenUsed            Int?
@@ -368,18 +549,31 @@ model AiCuratorReport {
 }
 ```
 
-### Running the pipeline locally
+> **Note:** `promptVersion`, `pipelineMs`, `openaiCallMs`, `openaiRetries`,
+> `validationError`, and `confidence` are **not** persisted — they're
+> returned in the API response only. To persist `promptVersion` for A/B
+> analysis, add a column via Prisma migration and propagate it in
+> `curateContent()` → `prisma.aiCuratorReport.create({ data })`.
+
+### Running locally
 
 ```bash
-# Install dependencies
 cd backend && npm install
-
-# Run unit tests (16 total)
-npm test
-
-# Start dev server
+npm test                # 175 tests, 16 spec files
 npm run start:dev
 ```
+
+### Key source files (post-refactor)
+
+| File | Role |
+|------|------|
+| `src/ai-curator/ai-curator.service.ts` | Public API + pipeline orchestration |
+| `src/ai-curator/ai-curator.prompts.ts` | `PROMPT_VERSION` + `buildConsolidatedPrompt()` |
+| `src/ai-curator/ai-curator.schemas.ts` | Zod schemas for AI response validation |
+| `src/ai-curator/ai-curator.retry.ts` | `withRetry()` exponential backoff helper |
+| `src/ai-curator/ai-curator.controller.ts` | Routes incl. `@Sse('analyze-stream')` |
+| `src/ai-curator/ai-curator-stats.service.ts` | Dashboard stats aggregation |
+| `src/ai-curator/dto/ai-curator.dto.ts` | Request DTOs |
 
 ---
 
@@ -392,7 +586,17 @@ npm run start:dev
 **API client:** `frontend/lib/api/ai-curator.ts`  
 **Helpers:** `frontend/lib/utils/curator-helpers.ts` (`parseSuggestedTime`, `truncate`, `toReportShape`)  
 **i18n:** `frontend/lib/i18n/en.json` + `vi.json` (`curator` section, 41 keys)  
-**Tests:** `curator-helpers.test.ts` (13 cases) · `useAiCurator.test.ts` (11 cases)
+**Tests:** `curator-helpers.test.ts` (13 cases) · `useAiCurator.test.ts` (11 cases) · `useAiCurator.stream.test.ts` (20 cases)
+
+> ✅ **`useAnalyzeContentStream` is live (2026-10-19).** The hook
+> consumes the new `POST /analyze-stream` SSE endpoint and exposes
+> a status machine (`idle → connecting → streaming → complete |
+> error | cancelled`) plus the accumulating raw model output.
+> The Web Studio can render a "thinking…" indicator + live JSON
+> debug panel while OpenAI streams. See
+> `frontend/lib/hooks/useAiCurator.ts` for the implementation and
+> `frontend/lib/hooks/useAiCurator.stream.test.ts` for the
+> parser + async-generator test suite.
 
 ---
 
@@ -410,7 +614,10 @@ npm run start:dev
 
 | Date | Change |
 |------|--------|
-| 2026-10-15 | Added `agentTimings` to `AiCuratorReport` for per-agent breakdown |
+| 2026-10-19 | **Premium AI quality overhaul:** consolidated 3 OpenAI calls → 1, added Zod validation + exp. backoff retry, added prompt versioning, added `pipelineMs`/`openaiCallMs`/`openaiRetries`/`validationError` fields, added streaming endpoint (`GET /analyze-stream`), expanded heuristic fallback to 7 categories, upgraded confidence formula |
+| 2026-10-19 | Added startup banner (`[Bootstrap] AI Curator model: ...` + `AI Curator prompt: ...`) so operators can see which pipeline is wired up |
+| 2026-10-19 | Promoted `OPENAI_API_KEY` from optional to **required in production** — `.env.example` updated with explicit instructions |
+| 2026-10-15 | Added `agentTimings` to `AiCuratorReport` for per-agent breakdown *(removed in 2026-10-19 refactor — replaced by `pipelineMs` / `openaiCallMs`)* |
 | 2026-10-15 | Fixed `getCurationHistory` returning `cached` field as absent |
 | 2026-10-15 | Fixed `applyCuration` ignoring `markApplied` flag (`lastAppliedAt` now set) |
 | 2026-10-15 | Added `@Throttle` (30/min) to `/curate`, `/analyze/:programId`, `/apply/:programId` |

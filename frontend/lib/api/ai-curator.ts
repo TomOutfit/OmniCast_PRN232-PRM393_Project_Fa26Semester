@@ -103,6 +103,239 @@ export async function analyzeContent(
   return data;
 }
 
+// ---------------------------------------------------------------
+// Streaming preview (Mode 2b — Server-Sent Events)
+//
+// The backend exposes a streaming variant of the preview endpoint
+// that returns SSE chunks while OpenAI generates the report:
+//
+//   event: meta     → { type: 'started', promptVersion, model, startedAt }
+//   event: delta    → { text: '...' }            (repeated)
+//   event: complete → { type: 'complete', report, processingTimeMs, confidence, openaiRetries? }
+//   event: error    → { type, message, retryable, partialText? }
+//
+// `analyzeContentStream` is a low-level helper that POSTs to the
+// streaming endpoint and yields the typed events as they arrive.
+// The React hook in `lib/hooks/useAiCurator.ts` wraps this and
+// exposes the accumulating progress to the UI.
+//
+// We use `fetch()` (not the axios `apiClient`) because:
+//   - `EventSource` is GET-only; this endpoint takes a body
+//   - We need a `ReadableStream` for incremental parsing
+//   - The 401-refresh interceptor is awkward to retrofit onto SSE
+//     streams (we'd have to re-issue the request mid-stream)
+// ---------------------------------------------------------------
+
+export interface StreamStartedMeta {
+  type: 'started';
+  promptVersion: string;
+  model: string;
+  startedAt: string;
+}
+
+export interface StreamCompleteEvent {
+  type: 'complete';
+  report: AiCuratorReport & { preview?: true };
+  processingTimeMs: number;
+  confidence: number;
+  openaiRetries?: number;
+}
+
+export interface StreamErrorEvent {
+  type:
+    | 'openai-connection-failed'
+    | 'openai-stream-failed'
+    | 'schema-validation-failed';
+  message: string;
+  retryable: boolean;
+  partialText?: string;
+}
+
+export type StreamEvent =
+  | { event: 'meta'; data: StreamStartedMeta }
+  | { event: 'delta'; data: { text: string } }
+  | { event: 'complete'; data: StreamCompleteEvent }
+  | { event: 'error'; data: StreamErrorEvent };
+
+/**
+ * Internal: parse a single SSE frame (one or more lines between two
+ * blank lines) into a typed `StreamEvent`, or `null` if the frame
+ * is a comment / heartbeat that carries no event.
+ *
+ * Exported for unit-testability. The hook calls `analyzeContentStream`
+ * which assembles the byte stream into frames and dispatches each one
+ * through this parser.
+ */
+export function parseSseFrame(frame: string): StreamEvent | null {
+  if (!frame) return null;
+  let event: string | null = null;
+  const dataLines: string[] = [];
+
+  for (const rawLine of frame.split('\n')) {
+    const line = rawLine.replace(/\r$/, '');
+    if (!line || line.startsWith(':')) continue; // heartbeat / comment
+    const colon = line.indexOf(':');
+    if (colon === -1) continue;
+    const field = line.slice(0, colon);
+    let value = line.slice(colon + 1);
+    if (value.startsWith(' ')) value = value.slice(1);
+
+    if (field === 'event') event = value;
+    else if (field === 'data') dataLines.push(value);
+  }
+
+  if (!event) return null;
+  const dataStr = dataLines.join('\n');
+  if (!dataStr) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(dataStr);
+  } catch {
+    return null;
+  }
+
+  if (event === 'meta') return { event: 'meta', data: parsed as StreamStartedMeta };
+  if (event === 'delta') return { event: 'delta', data: parsed as { text: string } };
+  if (event === 'complete') return { event: 'complete', data: parsed as StreamCompleteEvent };
+  if (event === 'error') return { event: 'error', data: parsed as StreamErrorEvent };
+  return null;
+}
+
+/**
+ * Consume the streaming preview endpoint and yield each typed event
+ * as it arrives. The generator completes naturally after the
+ * terminal `complete` or `error` event is emitted.
+ *
+ * The caller is responsible for surfacing the `AccessToken` to the
+ * server (we read it from `localStorage` for parity with the
+ * `apiClient` interceptor). The retry-on-401 dance used by the
+ * axios interceptor is not applied here — if the token expires
+ * mid-stream the backend will close the connection with a 401
+ * SSE comment, which the caller should treat as a normal
+ * `error` event and prompt the user to re-authenticate.
+ */
+export async function* analyzeContentStream(
+  payload: AnalyzeRequest,
+  options: { token?: string | null; signal?: AbortSignal } = {},
+): AsyncGenerator<StreamEvent, void, void> {
+  const baseUrl = apiClient.defaults.baseURL ?? '/api/v1';
+  const url = `${baseUrl}/ai-curator/analyze-stream`;
+  const token =
+    options.token ??
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('accessToken')
+      : null);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    // Try to surface the server's error message; fall back to status.
+    let message = `HTTP ${response.status}`;
+    try {
+      const body = await response.text();
+      if (body) {
+        try {
+          const parsed = JSON.parse(body);
+          message =
+            parsed?.message ?? parsed?.error?.message ?? body.slice(0, 200);
+        } catch {
+          message = body.slice(0, 200);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    yield {
+      event: 'error',
+      data: {
+        type: 'openai-connection-failed',
+        message,
+        retryable: response.status >= 500 || response.status === 429,
+      },
+    };
+    return;
+  }
+
+  if (!response.body) {
+    yield {
+      event: 'error',
+      data: {
+        type: 'openai-connection-failed',
+        message: 'Response had no body (SSE unsupported by runtime)',
+        retryable: false,
+      },
+    };
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE frames are separated by a blank line (\n\n). Split
+      // on that boundary, keep the partial tail in `buffer`.
+      let sepIndex: number;
+      // eslint-disable-next-line no-cond-assign
+      while ((sepIndex = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, sepIndex);
+        buffer = buffer.slice(sepIndex + 2);
+        const evt = parseSseFrame(frame);
+        if (evt) yield evt;
+      }
+    }
+
+    // Flush any trailing frame that didn't end with \n\n.
+    if (buffer.trim()) {
+      const evt = parseSseFrame(buffer);
+      if (evt) yield evt;
+    }
+  } catch (err) {
+    if ((err as { name?: string })?.name === 'AbortError') {
+      // Caller cancelled; surface as a normal error so the UI can
+      // distinguish cancellation from a real failure.
+      yield {
+        event: 'error',
+        data: {
+          type: 'openai-stream-failed',
+          message: 'Stream was cancelled',
+          retryable: false,
+        },
+      };
+      return;
+    }
+    yield {
+      event: 'error',
+      data: {
+        type: 'openai-stream-failed',
+        message: (err as Error)?.message ?? 'Stream read failed',
+        retryable: false,
+      },
+    };
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // ignore — already released
+    }
+  }
+}
+
 /**
  * Mode 1 — Curate an EXISTING program. The server persists the report.
  */
