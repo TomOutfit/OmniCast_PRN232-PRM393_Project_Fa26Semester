@@ -36,9 +36,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Request,
   UploadedFile,
@@ -51,6 +53,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -59,6 +62,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CloudinaryService } from './cloudinary.service';
 import { SignUploadDto } from './dto/sign-upload.dto';
+import { DeleteAssetDto } from './dto/delete-asset.dto';
 
 @ApiTags('uploads')
 @ApiBearerAuth()
@@ -250,5 +254,58 @@ export class CloudinaryUploadController {
     });
 
     return { data: result };
+  }
+
+  // ============================================================
+  // 3. Delete an asset (orphan cleanup + user cancel)
+  // ============================================================
+  //
+  // When the web Studio uploads a file directly to Cloudinary
+  // and then the register / curate-live step fails — or the user
+  // cancels mid-flight — we need a way to roll the asset back so
+  // Cloudinary doesn't accumulate orphans. The frontend catches
+  // both situations and calls this endpoint fire-and-forget; we
+  // log the reason and respond with `{ result: 'ok' | 'not found' }`.
+  //
+  // "not found" is treated as success because the desired state
+  // (asset is gone) is already true. The 503 still fires if
+  // Cloudinary credentials are missing — that is a real failure.
+
+  @Delete('asset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Xoá một asset đã upload lên Cloudinary (dùng để rollback ' +
+      'khi register/curate-live thất bại, hoặc khi người dùng huỷ ' +
+      'upload giữa chừng).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '200 OK — asset deleted (or already gone)',
+  })
+  @ApiResponse({ status: 400, description: '400 — Invalid publicId' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({
+    status: 503,
+    description: '503 — Cloudinary chưa được cấu hình trên server',
+  })
+  async deleteAsset(
+    @Body() dto: DeleteAssetDto,
+    @Request() req: any,
+  ) {
+    const result = await this.cloudinary.deleteAsset(
+      dto.publicId,
+      dto.resourceType ?? 'video',
+      req.user.sub,
+      dto.reason,
+    );
+    return {
+      data: result,
+      message:
+        result.result === 'ok'
+          ? `Đã xoá asset ${dto.publicId} trên Cloudinary.`
+          : `Asset ${dto.publicId} không tồn tại trên Cloudinary.`,
+    };
   }
 }

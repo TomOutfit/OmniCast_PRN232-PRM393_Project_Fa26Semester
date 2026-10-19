@@ -410,6 +410,63 @@ export class CloudinaryService {
     return result;
   }
 
+  /**
+   * Delete an asset previously uploaded via `signDirectUpload`
+   * or `uploadFromBuffer`. Used by the Studio to roll back orphan
+   * uploads when the register/curate step fails, or when the user
+   * cancels an in-flight upload.
+   *
+   * The Cloudinary `uploader.destroy` API returns `{ result: 'ok' }`
+   * on a successful delete and `{ result: 'not found' }` when the
+   * public_id was never uploaded (e.g. the user cancelled before
+   * any bytes reached the CDN). Both are treated as success because
+   * the desired end state — the asset is gone — is already true.
+   *
+   * The `invalidate: true` flag tells Cloudinary to purge any
+   * cached renditions so a subsequent upload with the same public_id
+   * (e.g. a user retrying) sees a clean slate.
+   */
+  async deleteAsset(
+    publicId: string,
+    resourceType: 'video' | 'image' | 'raw' | 'auto' = 'video',
+    actorId?: string,
+    reason?: string,
+  ): Promise<{ result: 'ok' | 'not found'; publicId: string }> {
+    this.assertConfigured();
+    if (!publicId || typeof publicId !== 'string') {
+      throw new ServiceUnavailableException('publicId is required.');
+    }
+
+    try {
+      const response = await cloudinary.uploader.destroy(publicId, {
+        resource_type: resourceType,
+        invalidate: true,
+      });
+
+      const result =
+        response?.result === 'ok'
+          ? ('ok' as const)
+          : ('not found' as const);
+
+      this.logger.log(
+        `[CloudinaryService] deleteAsset(${publicId}, ${resourceType}) -> ` +
+          `${result}` +
+          (actorId ? ` by user:${actorId}` : '') +
+          (reason ? ` reason="${reason}"` : ''),
+      );
+
+      return { result, publicId };
+    } catch (err: any) {
+      this.logger.error(
+        `[CloudinaryService] deleteAsset(${publicId}) error: ` +
+          (err?.message ?? 'unknown'),
+      );
+      throw new ServiceUnavailableException(
+        `Cloudinary delete failed: ${err?.message ?? 'unknown'}`,
+      );
+    }
+  }
+
   private assertConfigured(): void {
     if (!this.configured) {
       throw new ServiceUnavailableException(
