@@ -240,9 +240,12 @@ class LiveStudioRepository {
       },
     );
     final raw = res.data;
-    final body = (raw is Map && raw['data'] is Map)
-        ? raw['data'] as Map<String, dynamic>
-        : (raw as Map<String, dynamic>);
+    Map<String, dynamic> body = (raw is Map && raw['data'] is Map)
+        ? Map<String, dynamic>.from(raw['data'] as Map)
+        : (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
+    if (body['data'] is Map) {
+      body = Map<String, dynamic>.from(body['data'] as Map);
+    }
     return CloudinarySignedPayload.fromJson(body);
   }
 
@@ -623,9 +626,20 @@ class CloudinarySignedPayload {
     required this.uploadUrl,
   });
 
-  factory CloudinarySignedPayload.fromJson(Map<String, dynamic> json) {
+  factory CloudinarySignedPayload.fromJson(Map<String, dynamic> rawJson) {
+    final json = (rawJson['data'] is Map)
+        ? Map<String, dynamic>.from(rawJson['data'] as Map)
+        : rawJson;
+    final cloudName = json['cloudName']?.toString().trim() ?? '';
+    final rawUploadUrl = json['uploadUrl']?.toString().trim();
+    final uploadUrl = (rawUploadUrl != null && rawUploadUrl.startsWith('http'))
+        ? rawUploadUrl
+        : (cloudName.isNotEmpty
+            ? 'https://api.cloudinary.com/v1_1/$cloudName/video/upload'
+            : '');
+
     return CloudinarySignedPayload(
-      cloudName: json['cloudName']?.toString() ?? '',
+      cloudName: cloudName,
       apiKey: json['apiKey']?.toString() ?? '',
       timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
       signature: json['signature']?.toString() ?? '',
@@ -640,7 +654,7 @@ class CloudinarySignedPayload {
           .toList(growable: false),
       maxFileSize: (json['maxFileSize'] as num?)?.toInt() ?? 0,
       context: json['context']?.toString() ?? '',
-      uploadUrl: json['uploadUrl']?.toString() ?? '',
+      uploadUrl: uploadUrl,
     );
   }
 }
