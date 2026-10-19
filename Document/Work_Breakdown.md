@@ -458,39 +458,40 @@ timeline
 
 ---
 
-## ? Hoàn thành 14 Gap — Round 4 (Oct 2026)
+## ? Hoï¿½n thï¿½nh 14 Gap ï¿½ Round 4 (Oct 2026)
 
-Ph?n b? sung du?i dây ghi nh?n 14 gap cu?i cùng dã du?c dóng theo k? ho?ch hoàn_thành_omnicast_—_14_gap_còn_l?i.
+Ph?n b? sung du?i dï¿½y ghi nh?n 14 gap cu?i cï¿½ng dï¿½ du?c dï¿½ng theo k? ho?ch hoï¿½n_thï¿½nh_omnicast_ï¿½_14_gap_cï¿½n_l?i.
 
 ### Backend (4 gaps)
 
-- ? **B1 — gRPC Audit Logger microservice**: tri?n khai standalone NestJS gRPC service t?i ackend/microservices/audit-logger/. Proto file: protos/audit_logger.proto. H? tr? Write (idempotent qua entry.id) + Stream (server-streaming). Dockerfile distroless + docker-compose.yml + render.yaml d? deploy lên Render/Railway. AuditLoggerService ? main backend t? d?ng forward qua gRPC khi có AUDIT_LOGGER_GRPC_URL (fail-open).
-- ? **B2 — Migration 007 AI Curator telemetry**: thêm lastAppliedAt trên LiveEvent + cached/cachedAt trên AiCuratorReport. Migration idempotent t?i prisma/migrations/007_ai_curator_telemetry.sql.
-- ? **B3 — WINDOW_DAYS audit cache-hit-rate**: thêm constant vào AiCuratorStatsService d? computeCacheHitRate() d?c tr?c ti?p c?t cached.
-- ? **B4 — CORS consistency**: parser FRONTEND_URL dùng chung pattern pi/index.ts & main.ts, fail-closed trong production.
+- ? **B1 ï¿½ gRPC Audit Logger microservice**: tri?n khai standalone NestJS gRPC service t?i ackend/microservices/audit-logger/. Proto file: protos/audit_logger.proto. H? tr? Write (idempotent qua entry.id) + Stream (server-streaming). Dockerfile distroless + docker-compose.yml + render.yaml d? deploy lï¿½n Render/Railway. AuditLoggerService ? main backend t? d?ng forward qua gRPC khi cï¿½ AUDIT_LOGGER_GRPC_URL (fail-open).
+- ? **B2 ï¿½ Migration 007 AI Curator telemetry**: thï¿½m lastAppliedAt trï¿½n LiveEvent + cached/cachedAt trï¿½n AiCuratorReport. Migration idempotent t?i prisma/migrations/007_ai_curator_telemetry.sql.
+- ? **B3 ï¿½ WINDOW_DAYS audit cache-hit-rate**: thï¿½m constant vï¿½o AiCuratorStatsService d? computeCacheHitRate() d?c tr?c ti?p c?t cached.
+- ? **B4 ï¿½ CORS consistency**: parser FRONTEND_URL dï¿½ng chung pattern pi/index.ts & main.ts, fail-closed trong production.
 
 ### Frontend (5 gaps)
 
-- ? **F1 — /forgot-password**: trang form 2 bu?c (email ? token + new password) + reset-password API endpoints ? backend (rate-limited).
-- ? **F2 — /help + /docs**: 2 trang server-rendered d?c t? Document/HELP.md, FAQ.md và các tài li?u k? thu?t. Anchor TOC + dark cinematic styling.
-- ? **F3 — <Skeleton> primitive**: thay th? t?t c? inline nimate-pulse b?ng <Skeleton variant='block'|'text'|'circle' /> xuyên su?t 6 pages.
-- ? **F4 — Query Builder**: lib/query-builder.ts (~190 LOC) cho uildSearchQuery/parseSearchQuery/ppendQueryParam/emoveQueryParam/withQuery. Update lib/api/search.ts & lib/api/programs.ts d? dùng. 17 unit tests passing.
-- ? **F2 — Tài li?u index**: xem /docs.
+- ? **F1 ï¿½ /forgot-password**: trang form 2 bu?c (email ? token + new password) + reset-password API endpoints ? backend (rate-limited).
+- ? **F2 ï¿½ /help + /docs**: 2 trang server-rendered d?c t? Document/HELP.md, FAQ.md vï¿½ cï¿½c tï¿½i li?u k? thu?t. Anchor TOC + dark cinematic styling.
+- ? **F3 ï¿½ <Skeleton> primitive**: thay th? t?t c? inline nimate-pulse b?ng <Skeleton variant='block'|'text'|'circle' /> xuyï¿½n su?t 6 pages.
+- ? **F4 ï¿½ Query Builder**: lib/query-builder.ts (~190 LOC) cho uildSearchQuery/parseSearchQuery/ppendQueryParam/
+emoveQueryParam/withQuery. Update lib/api/search.ts & lib/api/programs.ts d? dï¿½ng. 17 unit tests passing.
+- ? **F2 ï¿½ Tï¿½i li?u index**: xem /docs.
 
 ### Mobile (4 gaps)
 
-- ? **M1 — Premium billing**: BillingService (Google Play via purchases_flutter) + backend BillingService verify receipt + User.premiumUntil + migration  10_premium_until.sql. Stub mode dev-friendly.
-- ? **M2 — FCM Push**: FcmService (firebase_messaging) + NotificationsPushService (firebase-admin) + DeviceToken table + migration  09_device_tokens.sql.
-- ? **M3 — Onboarding**: 3-page swipe screen luu flag trong TokenStorageHelper.isOnboardingComplete(). Router t? redirect l?n d?u.
-- ? **M4 — Supabase Realtime**: SupabaseRealtimeService l?ng nghe INSERT/UPDATE/DELETE cho Comment + Reaction. Polling fallback n?u không có SUPABASE_URL.
+- ? **M1 ï¿½ Premium billing**: BillingService (Google Play via purchases_flutter) + backend BillingService verify receipt + User.premiumUntil + migration  10_premium_until.sql. Stub mode dev-friendly.
+- ? **M2 ï¿½ FCM Push**: FcmService (firebase_messaging) + NotificationsPushService (firebase-admin) + DeviceToken table + migration  09_device_tokens.sql.
+- ? **M3 ï¿½ Onboarding**: 3-page swipe screen luu flag trong TokenStorageHelper.isOnboardingComplete(). Router t? redirect l?n d?u.
+- ? **M4 ï¿½ Supabase Realtime**: SupabaseRealtimeService l?ng nghe INSERT/UPDATE/DELETE cho Comment + Reaction. Polling fallback n?u khï¿½ng cï¿½ SUPABASE_URL.
 
 ### Cross-cutting
 
-- ? 3 migrations m?i ( 08,  09,  10) — t?ng c?ng 10 migrations.
+- ? 3 migrations m?i ( 08,  09,  10) ï¿½ t?ng c?ng 10 migrations.
 - ? Test totals: backend 7/7 pass, frontend 153/153 pass, 17 query-builder tests pass.
 - ? 
-px tsc --noEmit clean trên c? 3 codebase.
+px tsc --noEmit clean trï¿½n c? 3 codebase.
 
 ---
 
-*Tài li?u này là b?n phân công chính th?c cho nhóm 4 thành viên...*
+*Tï¿½i li?u nï¿½y lï¿½ b?n phï¿½n cï¿½ng chï¿½nh th?c cho nhï¿½m 4 thï¿½nh viï¿½n...*
