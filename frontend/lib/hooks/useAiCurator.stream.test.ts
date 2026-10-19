@@ -221,7 +221,6 @@ const originalFetch = globalThis.fetch;
 
 let lastFetchInit: RequestInit | undefined;
 let fetchResponse: any = makeFakeResponse(new FakeSseStream());
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let fetchImpl: any;
 
 function installFetch() {
