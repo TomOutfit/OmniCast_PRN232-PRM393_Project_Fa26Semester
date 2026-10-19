@@ -3,6 +3,13 @@
 // ============================================================
 
 import apiClient from '@/lib/api';
+import {
+  deleteCloudinaryAsset,
+  signCloudinaryUpload,
+  uploadToCloudinaryDirect,
+  CloudinaryAbortError,
+  type CloudinaryUploadEnvelope,
+} from '@/lib/api/cloudinary';
 
 export interface BroadcastableRecording {
   id: string;
@@ -180,4 +187,119 @@ export async function uploadSelfRecord(payload: SelfRecordUploadInput) {
     payload,
   );
   return res.data;
+}
+
+// ============================================================
+// Broadcast a local file to Cloudinary + register it as a
+// Recording on the channel library. Used by Mode 1 of the web
+// Studio (drag-and-drop + "PHÁT SÓNG" button).
+//
+// Flow:
+//   1. `useCloudinaryUpload` signs + uploads the bytes directly to
+//      Cloudinary (bypasses the 4.5 MB Vercel body limit).
+//   2. We then POST the resulting `secure_url` to
+//      `/programs/studio/recordings/upload` so the Recording
+//      row is persisted with metadata (title, duration, visibility).
+//   3. If step 2 fails, we best-effort delete the orphan asset
+//      on Cloudinary so it doesn't accumulate.
+//
+// On cancel (caller aborts `signal`), we delete the Cloudinary
+// asset ONLY if the upload step finished (`publicId` is set).
+// Mid-flight cancels are handled by the XHR abort inside the
+// Cloudinary client — we don't need to call delete in that case.
+// ============================================================
+
+export interface BroadcastLocalFileInput {
+  file: File;
+  channelSlug: string;
+  title: string;
+  description?: string;
+  visibility?: 'IMMEDIATE' | 'SCHEDULED' | 'PRIVATE';
+  tags?: string[];
+  duration?: number;
+  /** AbortSignal — abort() cancels the Cloudinary XHR mid-flight. */
+  signal?: AbortSignal;
+  /** Progress callback (percent 0..100). */
+  onProgress?: (percent: number, loaded: number, total: number) => void;
+}
+
+export interface BroadcastLocalFileResult {
+  recording: any;
+  videoUrl: string;
+  envelope: CloudinaryUploadEnvelope;
+}
+
+export async function broadcastLocalFile(
+  input: BroadcastLocalFileInput,
+): Promise<BroadcastLocalFileResult> {
+  const {
+    file,
+    channelSlug,
+    title,
+    description,
+    visibility = 'SCHEDULED',
+    tags,
+    duration = 180,
+    signal,
+    onProgress,
+  } = input;
+
+  // 1. Sign + upload to Cloudinary
+  let envelope: CloudinaryUploadEnvelope;
+  try {
+    const signed = await signCloudinaryUpload({
+      channelSlug,
+      title,
+      tags: ['studio-local-upload', ...(tags ?? [])],
+    });
+    const result = await uploadToCloudinaryDirect(signed, file, {
+      onProgress,
+      signal,
+    });
+    envelope = {
+      url: result.secure_url,
+      publicId: result.public_id,
+      bytes: result.bytes,
+      durationSec: result.duration,
+      width: result.width,
+      height: result.height,
+      thumbnailUrl:
+        result.eager?.[0]?.secure_url ??
+        `https://res.cloudinary.com/${signed.cloudName}/image/upload/w_640,h_360,c_fill,so_1.0/${result.public_id}.jpg`,
+      format: result.format,
+      resourceType: result.resource_type,
+    };
+  } catch (err) {
+    // Re-throw aborts so the page can mark the row `cancelled`.
+    if (err instanceof CloudinaryAbortError || signal?.aborted) {
+      throw err;
+    }
+    // Other failures (sign 503, upload 4xx) bubble up.
+    throw err;
+  }
+
+  // 2. Persist the Recording on the channel library.
+  try {
+    const res = await uploadSelfRecord({
+      channelId: channelSlug,
+      title,
+      description,
+      videoUrl: envelope.url,
+      thumbnailUrl: envelope.thumbnailUrl,
+      duration: envelope.durationSec ?? duration,
+      visibility,
+      tags: ['studio-local-upload', ...(tags ?? [])],
+    });
+    return {
+      recording: res?.recording ?? res?.data?.recording ?? res,
+      videoUrl: envelope.url,
+      envelope,
+    };
+  } catch (err) {
+    // 3. Best-effort orphan cleanup. We log but don't rethrow
+    //    the cleanup failure — the real error (register failed)
+    //    is what the user cares about.
+    await deleteCloudinaryAsset(envelope.publicId, 'video', 'register_failed');
+    throw err;
+  }
 }
