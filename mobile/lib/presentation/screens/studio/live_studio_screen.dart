@@ -28,6 +28,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
@@ -580,9 +581,23 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   }
 
   String _friendlyError(Object e) {
+    if (e is DioException) {
+      final res = e.response;
+      if (res != null && res.data is Map) {
+        final msg = res.data['message'];
+        if (msg is String && msg.isNotEmpty) return msg;
+        if (msg is List && msg.isNotEmpty) return msg.join(', ');
+      }
+    }
     final raw = e.toString();
+    if (raw.contains('503')) {
+      return 'Dịch vụ lưu trữ video (Cloudinary) tạm thời chưa sẵn sàng (503).';
+    }
+    if (raw.contains('413')) {
+      return 'File video vượt quá giới hạn dung lượng (413).';
+    }
     if (raw.contains('403')) {
-      return 'Nội dung này thuộc nguồn bản quyền, không thể phát trực tiếp.';
+      return 'Bạn không có quyền thực hiện hoặc nội dung bị giới hạn bản quyền.';
     }
     if (raw.contains('401')) return 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
     if (raw.contains('400')) return 'Yêu cầu không hợp lệ. Kiểm tra lại các trường.';
