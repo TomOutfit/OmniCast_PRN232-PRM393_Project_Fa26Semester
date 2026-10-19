@@ -467,6 +467,95 @@ class _OmniPlayerState extends State<OmniPlayer> {
       ),
     );
   }
+
+  Widget _buildAudioVisualizer(VideoPlayerController controller) {
+    return GestureDetector(
+      onTap: _togglePlay,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.9,
+            colors: [
+              Color(0xFF1E293B),
+              Color(0xFF0B1320),
+              Color(0xFF05080E),
+            ],
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Keep VideoPlayer in tree with opacity 0 to maintain sound playback
+            Opacity(opacity: 0, child: VideoPlayer(controller)),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.podcasts_rounded,
+                    color: Colors.black,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.graphic_eq_rounded, color: Color(0xFF00E5FF), size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'LUỒNG PHÁT THANH / RADIO',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'JetBrainsMono',
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Đang phát âm thanh trực tiếp (Audio-Only Stream)',
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -577,95 +666,6 @@ class _PosterOnly extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAudioVisualizer(VideoPlayerController controller) {
-    return GestureDetector(
-      onTap: _togglePlay,
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 0.9,
-            colors: [
-              Color(0xFF1E293B),
-              Color(0xFF0B1320),
-              Color(0xFF05080E),
-            ],
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Keep VideoPlayer in tree with opacity 0 to maintain sound playback
-            Opacity(opacity: 0, child: VideoPlayer(controller)),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                        blurRadius: 18,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.podcasts_rounded,
-                    color: Colors.black,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.graphic_eq_rounded, color: Color(0xFF00E5FF), size: 14),
-                      SizedBox(width: 6),
-                      Text(
-                        'LUỒNG PHÁT THANH / RADIO',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'JetBrainsMono',
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Đang phát âm thanh trực tiếp (Audio-Only Stream)',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
