@@ -13,13 +13,12 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { from, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AiCuratorService } from './ai-curator.service';
 import { AiCuratorStatsService, StatsPeriod } from './ai-curator-stats.service';
 import {
@@ -113,6 +112,56 @@ export class AiCuratorController {
     @Request() req: any,
   ) {
     return this.aiCuratorService.analyzePreview(dto, req.user.sub);
+  }
+
+  /**
+   * Mode 2 (streaming) — Progressive preview via Server-Sent Events.
+   *
+   * Returns SSE events as OpenAI streams tokens. Wire format:
+   *   event: meta     → { type: 'started', promptVersion, model, startedAt }
+   *   event: delta    → { text: '...' }  (repeated)
+   *   event: complete → { type: 'complete', report, processingTimeMs, confidence, openaiRetries }
+   *   event: error    → { type, message, retryable, partialText? }
+   *
+   * The terminal event is always exactly one of `complete` or `error`.
+   * Clients can either:
+   *   1. Use the `complete` event's `report` field directly (recommended)
+   *   2. Concatenate all `delta.text` and JSON.parse() the result
+   *
+   * Throttled tighter than the sync variant because streaming is
+   * more expensive server-side. CORS-friendly (uses native EventSource
+   * on the browser).
+   */
+  @Sse('analyze-stream')
+  @Roles('STAFF', 'ADMIN')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Streaming AI preview via Server-Sent Events (Staff/Admin only). ' +
+      'Emits meta → delta(s) → complete | error.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'SSE stream of `meta` / `delta` / `complete` / `error` events',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden — Staff/Admin only' })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  analyzePreviewStream(
+    @Body() dto: AnalyzeContentPreviewDto,
+    @Request() req: any,
+  ): Observable<MessageEvent> {
+    return from(
+      this.aiCuratorService.analyzePreviewStream(dto, req.user.sub),
+    ).pipe(
+      map((evt) => ({
+        // NestJS MessageEvent uses `type` for the SSE event name and
+        // `data` for the payload — our internal StreamEvent already
+        // matches that shape, so we just hand it through.
+        type: evt.event,
+        data: evt.data,
+      })),
+    );
   }
 
   /**
