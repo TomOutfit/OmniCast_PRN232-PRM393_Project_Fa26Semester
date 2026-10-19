@@ -60,6 +60,11 @@ export function toReportShape(
     riskWarnings: history.riskWarnings,
     sentimentAnalysis: history.sentimentAnalysis,
     complianceAssessment: history.complianceAssessment,
+    contentAssessment: history.contentAssessment,
+    formatAssessment: history.formatAssessment,
+    scoringBreakdown: history.scoringBreakdown,
+    confidence: history.confidence,
+    agentTimings: history.agentTimings,
     aiModelVersion: history.aiModelVersion,
     processingTimeMs: history.processingTimeMs,
   };

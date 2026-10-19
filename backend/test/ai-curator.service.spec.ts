@@ -262,6 +262,12 @@ test('analyzePreview does not persist a report', async () => {
 
   assert.equal(report.preview, true);
   assert.equal(report.cached, false);
+  // Verifies standard report fields: content, format, and diverse scores
+  assert.ok(report.contentAssessment?.summary);
+  assert.ok(Array.isArray(report.contentAssessment?.highlights));
+  assert.ok(report.formatAssessment?.productionFormat);
+  assert.ok(typeof report.scoringBreakdown?.overallScore === 'number');
+  assert.ok(['S', 'A', 'B', 'C', 'D'].includes(report.scoringBreakdown?.grade ?? ''));
   // No DB write
   assert.equal(prisma.reports.length, 0);
   // Audit log written (preview type)

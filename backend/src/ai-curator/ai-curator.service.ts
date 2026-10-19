@@ -22,6 +22,36 @@ export interface AgentTimings {
   editorialMs: number;
 }
 
+/** Đánh giá chuẩn về Nội dung chương trình */
+export interface ContentAssessment {
+  summary: string;
+  highlights: string[];
+  strengths: string[];
+  weaknesses: string[];
+  narrativeFlow: string;
+  targetAudienceDetails: string;
+}
+
+/** Đánh giá chuẩn về Hình thức & Kỹ thuật dàn dựng */
+export interface FormatAssessment {
+  productionFormat: string;
+  pacing: 'SLOW' | 'MODERATE' | 'DYNAMIC' | 'FAST_PACED';
+  visualAudioRequirements: string[];
+  interactivityLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  technicalRecommendations: string;
+}
+
+/** Hệ thống Điểm đánh giá Đa chiều chuẩn truyền hình (0-100 & Xếp loại) */
+export interface ScoringBreakdown {
+  contentQuality: number;       // Điểm chất lượng nội dung & kịch bản (0-100)
+  productionValue: number;      // Điểm hình thức & thẩm mỹ sản xuất (0-100)
+  audienceAppeal: number;       // Điểm sức hút & giữ chân khán giả (0-100)
+  complianceSafety: number;     // Điểm an toàn chuẩn mực phát sóng (0-100)
+  commercialPotential: number;  // Điểm tiềm năng thương mại & tài trợ (0-100)
+  overallScore: number;         // Điểm chỉ số phát sóng tổng hợp OBI (0-100)
+  grade: 'S' | 'A' | 'B' | 'C' | 'D'; // Phân hạng chất lượng phát sóng
+}
+
 export interface AiCuratorReport {
   broadcastSuitability: 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED';
   suggestedTimeSlot: string;
@@ -38,6 +68,12 @@ export interface AiCuratorReport {
     flaggedContent: string[];
     recommendedBroadcastWindow: 'DAY' | 'EVENING' | 'LATE_NIGHT';
   };
+  /** Phân tích chuẩn: Nội dung chương trình */
+  contentAssessment?: ContentAssessment;
+  /** Phân tích chuẩn: Hình thức & Thể loại dàn dựng */
+  formatAssessment?: FormatAssessment;
+  /** Bộ điểm đánh giá đa chỉ số & Phân loại chất lượng */
+  scoringBreakdown?: ScoringBreakdown;
   aiModelVersion: string;
   processingTimeMs: number;
   /**
@@ -159,7 +195,7 @@ export class AiCuratorService {
             });
         }
         return {
-          ...existingReport,
+          ...this.unwrapReport(existingReport),
           cached: true,
           cachedAt,
         };
@@ -175,7 +211,12 @@ export class AiCuratorService {
         suggestedTimeSlot: report.suggestedTimeSlot,
         targetAudienceVibe: report.targetAudienceVibe,
         riskWarnings: report.riskWarnings,
-        sentimentAnalysis: report.sentimentAnalysis as any,
+        sentimentAnalysis: {
+          ...report.sentimentAnalysis,
+          contentAssessment: report.contentAssessment,
+          formatAssessment: report.formatAssessment,
+          scoringBreakdown: report.scoringBreakdown,
+        } as any,
         complianceAssessment: report.complianceAssessment as any,
         aiModelVersion: report.aiModelVersion,
         tokenUsed: report.tokenUsed ?? null,
@@ -195,7 +236,12 @@ export class AiCuratorService {
     // `confidence` is computed at runtime only and intentionally not
     // persisted to the DB (no `confidence` column on `AiCuratorReport`),
     // so we merge it back into the response here.
-    return { ...stored, confidence: report.confidence, cached: false };
+    return {
+      ...this.unwrapReport(stored),
+      confidence: report.confidence,
+      agentTimings: report.agentTimings,
+      cached: false,
+    };
   }
 
   /**
@@ -314,7 +360,10 @@ export class AiCuratorService {
     // `cached: true` row (when serving from the DB cache). Frontend
     // expects the field to exist for every item, so we explicitly set
     // it to `false` here.
-    return rows.map((row: any) => ({ ...row, cached: false }));
+    return rows.map((row: any) => ({
+      ...this.unwrapReport(row),
+      cached: false,
+    }));
   }
 
   // ───────────────────────────────────────────────────────────────
@@ -358,6 +407,9 @@ export class AiCuratorService {
       riskWarnings: editorial.riskWarnings,
       sentimentAnalysis: sentiment.sentimentAnalysis,
       complianceAssessment: compliance.complianceAssessment,
+      contentAssessment: editorial.contentAssessment,
+      formatAssessment: editorial.formatAssessment,
+      scoringBreakdown: editorial.scoringBreakdown,
       aiModelVersion: this.hasRealModel
         ? 'gpt-4o-omnicast-v3'
         : 'heuristic-fallback-v1',
@@ -510,18 +562,41 @@ export class AiCuratorService {
     compliance: any,
   ) {
     const prompt = `
-    Make editorial broadcast decision for this program:
+    Make a comprehensive, broadcast-standard editorial decision and evaluation for this program:
 
-    Program: ${program.title}
+    Program Title: ${program.title}
+    Description: ${program.description || 'No description available'}
+    Category: ${program.channel?.category ?? 'Unknown category'}
     Sentiment Analysis: ${JSON.stringify(sentiment.sentimentAnalysis)}
     Compliance: ${JSON.stringify(compliance.complianceAssessment)}
     Scheduled At: ${program.scheduledAt ?? 'unknown'}
 
-    Decide:
-    1. Broadcast suitability: PRIME_TIME (20:00-22:00) / STANDARD / RESTRICTED
-    2. Exact suggested time slot (e.g., "21:00 - 23:00")
-    3. Target audience vibe description
-    4. Risk warnings for viewers
+    Decide and provide JSON:
+    1. broadcastSuitability: PRIME_TIME (20:00-22:00) / STANDARD / RESTRICTED
+    2. suggestedTimeSlot (e.g., "21:00 - 23:00")
+    3. targetAudienceVibe
+    4. riskWarnings
+    5. contentAssessment:
+       - summary: string (Tóm tắt kịch bản & nội dung cốt lõi)
+       - highlights: string[] (3-5 điểm nhấn nội dung chính)
+       - strengths: string[] (2-4 điểm mạnh nội dung)
+       - weaknesses: string[] (1-3 lưu ý biên tập / điểm cần hoàn thiện)
+       - narrativeFlow: string (Đánh giá mạch dẫn dắt chương trình)
+       - targetAudienceDetails: string (Chi tiết đối tượng tiếp nhận)
+    6. formatAssessment:
+       - productionFormat: string (Định dạng thể loại sản xuất: e.g. Talkshow truyền hình, Phóng sự tài liệu, Live Broadcast trực tiếp...)
+       - pacing: "SLOW" | "MODERATE" | "DYNAMIC" | "FAST_PACED"
+       - visualAudioRequirements: string[] (Yêu cầu kỹ thuật âm thanh, ánh sáng, góc máy, đồ họa)
+       - interactivityLevel: "LOW" | "MEDIUM" | "HIGH"
+       - technicalRecommendations: string (Khuyến nghị kỹ thuật dàn dựng)
+    7. scoringBreakdown:
+       - contentQuality: number (0-100)
+       - productionValue: number (0-100)
+       - audienceAppeal: number (0-100)
+       - complianceSafety: number (0-100)
+       - commercialPotential: number (0-100)
+       - overallScore: number (0-100)
+       - grade: "S" | "A" | "B" | "C" | "D"
     `;
 
     if (!this.hasRealModel) {
@@ -542,6 +617,14 @@ export class AiCuratorService {
         const confidence = this.computeConfidenceFromLogprobs(
           response.choices[0],
         );
+        const contentAssessment =
+          parsed.contentAssessment || this.synthesizeContentAssessment(program);
+        const formatAssessment =
+          parsed.formatAssessment || this.synthesizeFormatAssessment(program);
+        const scoringBreakdown =
+          parsed.scoringBreakdown ||
+          this.synthesizeScoringBreakdown(program, sentiment, compliance);
+
         return {
           broadcastSuitability: (parsed.broadcastSuitability || 'STANDARD') as
             | 'PRIME_TIME'
@@ -551,6 +634,9 @@ export class AiCuratorService {
           targetAudienceVibe:
             parsed.targetAudienceVibe || 'General audience',
           riskWarnings: parsed.riskWarnings || 'Suitable for all ages',
+          contentAssessment,
+          formatAssessment,
+          scoringBreakdown,
           tokenUsed: response.usage?.total_tokens ?? 0,
           confidence,
         };
@@ -659,6 +745,14 @@ export class AiCuratorService {
     const flags: string[] =
       compliance.complianceAssessment?.flaggedContent ?? [];
 
+    const contentAssessment = this.synthesizeContentAssessment(program);
+    const formatAssessment = this.synthesizeFormatAssessment(program);
+    const scoringBreakdown = this.synthesizeScoringBreakdown(
+      program,
+      sentiment,
+      compliance,
+    );
+
     return {
       broadcastSuitability: (isRestricted
         ? 'RESTRICTED'
@@ -667,19 +761,314 @@ export class AiCuratorService {
           : 'STANDARD') as 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED',
       suggestedTimeSlot: suggested,
       targetAudienceVibe: isRestricted
-        ? 'Khán giả trưởng thành'
+        ? 'Khán giả trưởng thành (Yêu cầu độ tuổi 16+/18+)'
         : isPrime
-          ? 'Khán giả đại chúng theo dõi sự kiện lớn'
-          : 'Khán giả phổ thông',
+          ? 'Khán giả đại chúng theo dõi sự kiện tâm điểm (Giờ vàng)'
+          : 'Khán giả phổ thông đa tầng lớp',
       riskWarnings: isRestricted
-        ? 'Nội dung có yếu tố nhạy cảm, cần giám sát của phụ huynh'
-        : 'Phù hợp mọi đối tượng',
+        ? 'Nội dung có yếu tố nhạy cảm, cần dán nhãn cảnh báo và giám sát của phụ huynh'
+        : 'Phù hợp mọi đối tượng khán giả',
+      contentAssessment,
+      formatAssessment,
+      scoringBreakdown,
       confidence: this.heuristicConfidence({
         sentiment: sentiment.sentimentAnalysis?.overallSentiment ?? 'neutral',
         hypeLevel: sentiment.sentimentAnalysis?.hypeLevel ?? 'medium',
         flaggedContent: flags,
         isAgeRestricted: !!isRestricted,
       }),
+    };
+  }
+
+  /**
+   * Tổng hợp đánh giá chuẩn về Nội dung chương trình (kịch bản, điểm nhấn, cấu trúc dẫn dắt)
+   */
+  private synthesizeContentAssessment(program: any): ContentAssessment {
+    const title = program?.title ?? 'Chương trình phát sóng';
+    const desc = program?.description ?? '';
+    const cat = (
+      program?.channel?.category ??
+      program?.category ??
+      ''
+    ).toUpperCase();
+    const text = `${title} ${desc}`.toLowerCase();
+
+    let summary =
+      desc.length > 20
+        ? desc
+        : `Bản tóm lược kịch bản phát sóng cho "${title}", chú trọng khai thác nội dung trọng tâm và kết nối thị hiếu khán giả.`;
+
+    let highlights: string[] = [
+      `Thông điệp chủ đạo xoay quanh tiêu điểm "${title}"`,
+      'Khai thác góc nhìn chân thực, đa chiều và giàu giá trị thông tin',
+      'Định vị nội dung phù hợp với xu hướng theo dõi của khán giả hiện đại',
+    ];
+
+    let strengths: string[] = [
+      'Đề tài có độ gắn kết cao với nhóm công chúng mục tiêu',
+      'Cấu trúc kịch bản mạch lạc, có điểm nhấn tạo sự tò mò và theo dõi liên tục',
+    ];
+
+    let weaknesses: string[] = [
+      'Cần tối ưu thời lượng các phân đoạn chuyển cảnh để tránh phân tán sự chú ý',
+      'Cân nhắc tăng cường thêm thông số đồ họa trực quan minh họa',
+    ];
+
+    let narrativeFlow =
+      'Mạch dẫn mở đầu ấn tượng (Hook), diễn tiến tuần tự phát triển cao trào và kết thúc đọng lại thông điệp rõ ràng.';
+    let targetAudienceDetails =
+      'Khán giả độ tuổi 18–45 quan tâm đến nội dung truyền thông hiện đại và đa nền tảng.';
+
+    if (cat === 'SPORTS' || /(thể thao|bóng đá|cup|match|trận)/i.test(text)) {
+      highlights = [
+        'Tường thuật trực tiếp diễn biến kịch tính với bình luận chuyên sâu',
+        'Phân tích chiến thuật và số liệu thống kê thời gian thực',
+        'Phỏng vấn độc quyền trước và sau sự kiện thể thao',
+      ];
+      strengths = [
+        'Tính thời sự và cảm xúc cao trào tức thì (Instant Thrill)',
+        'Khả năng giữ chân người xem xuyên suốt 90+ phút trận đấu',
+      ];
+      weaknesses = [
+        'Phụ thuộc vào nhịp độ thực tế của diễn biến trên sân',
+        'Cần kịch bản dự phòng khi phát sinh gián đoạn kỹ thuật',
+      ];
+      narrativeFlow =
+        'Nhịp độ dồn dập, bám sát từng phút thi đấu và leo thang kịch tính ở các pha bóng quyết định.';
+      targetAudienceDetails =
+        'Khán giả đam mê thể thao, người hâm mộ cuồng nhiệt và khán giả đại chúng yêu thích tranh tài.';
+    } else if (cat === 'NEWS' || /(tin tức|thời sự|bản tin|news)/i.test(text)) {
+      highlights = [
+        'Cập nhật tin tức chính trị - kinh tế - xã hội nóng hổi trong nước và quốc tế',
+        'Phóng sự hiện trường sắc bén từ các điểm nóng',
+        'Ý kiến chuyên gia đầu ngành mang tính định hướng',
+      ];
+      strengths = [
+        'Độ tin cậy và tính xác thực cao theo chuẩn báo chí chuyên nghiệp',
+        'Ngôn từ cô đọng, khách quan và đa chiều',
+      ];
+      weaknesses = [
+        'Cần rà soát kỹ nguồn tin độc quyền để tránh sai sót kiểm duyệt',
+      ];
+      narrativeFlow =
+        'Khởi động với tin nóng (Top headlines), triển khai chuyên đề tiêu điểm và tổng kết thị trường.',
+      targetAudienceDetails =
+        'Khán giả trưởng thành, giới công sở, nhà đầu tư và người theo dõi dòng chảy thông tin thời sự.';
+    } else if (
+      cat === 'MUSIC' ||
+      cat === 'ENTERTAINMENT' ||
+      cat === 'SHOW' ||
+      /(ca nhạc|âm nhạc|gala|concert|live show)/i.test(text)
+    ) {
+      highlights = [
+        'Các tiết mục biểu diễn nghệ thuật thăng hoa cùng dàn nghệ sĩ khách mời',
+        'Hiệu ứng âm thanh ánh sáng sân khấu đỉnh cao',
+        'Giao lưu nghệ sĩ và chia sẻ hậu trường hấp dẫn',
+      ];
+      strengths = [
+        'Tính giải trí cao, khả năng tạo viral clip trên mạng xã hội',
+        'Cảm xúc âm nhạc chạm đến thị hiếu giới trẻ',
+      ];
+      narrativeFlow =
+        'Mở màn sôi động, đẩy dần cung bậc cảm xúc qua các bản phối đặc sắc và bùng nổ tại tiết mục đinh (Headliner).';
+      targetAudienceDetails =
+        'Khán giả trẻ (Gen Z & Millennials), người yêu nghệ thuật giải trí đại chúng.';
+    }
+
+    return {
+      summary,
+      highlights,
+      strengths,
+      weaknesses,
+      narrativeFlow,
+      targetAudienceDetails,
+    };
+  }
+
+  /**
+   * Đánh giá chuẩn về Hình thức & Kỹ thuật dàn dựng (thể loại, nhịp độ, âm thanh, đồ họa)
+   */
+  private synthesizeFormatAssessment(program: any): FormatAssessment {
+    const title = program?.title ?? '';
+    const desc = program?.description ?? '';
+    const cat = (
+      program?.channel?.category ??
+      program?.category ??
+      ''
+    ).toUpperCase();
+    const text = `${title} ${desc}`.toLowerCase();
+
+    let productionFormat = 'Talkshow trường quay kết hợp phóng sự tư liệu';
+    let pacing: 'SLOW' | 'MODERATE' | 'DYNAMIC' | 'FAST_PACED' = 'MODERATE';
+    let visualAudioRequirements = [
+      'Hệ thống âm thanh Stereo tiêu chuẩn truyền hình & Mic cài chống ồn',
+      'Thiết kế bối cảnh trường quay chuyên nghiệp với ánh sáng 3 điểm (Three-point lighting)',
+      'Đồ họa nhận diện thương hiệu Lower-Thirds đồng bộ',
+    ];
+    let interactivityLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM';
+    let technicalRecommendations =
+      'Đảm bảo kiểm tra tín hiệu audio sync và cân chỉnh màu sắc camera trước giờ lên sóng 15 phút.';
+
+    if (cat === 'SPORTS' || /(thể thao|bóng đá|cup|trận)/i.test(text)) {
+      productionFormat =
+        'Truyền hình trực tiếp thể thao đa góc máy (Multi-cam Live Broadcast)';
+      pacing = 'DYNAMIC';
+      visualAudioRequirements = [
+        'Bảng tỉ số điện tử trực tiếp thời gian thực (Live Scorebug Overlay)',
+        'Góc máy quay chậm (Super Slow-Motion Replay) và flycam toàn cảnh',
+        'Âm thanh vòm thu tiếng khán đài kết hợp mic bình luận viên stereo',
+      ];
+      interactivityLevel = 'HIGH';
+      technicalRecommendations =
+        'Duy trì luồng stream dự phòng (Redundant RTMP/SRT) và độ trễ thấp dưới 3 giây.';
+    } else if (cat === 'NEWS' || /(tin tức|thời sự|news)/i.test(text)) {
+      productionFormat =
+        'Bản tin trường quay trực tiếp kết hợp phóng sự hiện trường';
+      pacing = 'MODERATE';
+      visualAudioRequirements = [
+        'Màn hình LED phông nền độ phân giải cao trình chiếu đồ họa tin tức',
+        'Máy nhắc chữ (Teleprompter) đồng bộ tốc độ MC',
+        'Đồ họa bản đồ thông tin và Infographics trực quan',
+      ];
+      interactivityLevel = 'LOW';
+      technicalRecommendations =
+        'Kiểm tra đường truyền vệ tinh/4G từ các cầu truyền hình hiện trường trước 30 phút.';
+    } else if (
+      cat === 'MUSIC' ||
+      cat === 'SHOW' ||
+      /(nhạc|live show|concert|gala)/i.test(text)
+    ) {
+      productionFormat =
+        'Đại nhạc hội sân khấu trực tiếp tương tác khán giả';
+      pacing = 'FAST_PACED';
+      visualAudioRequirements = [
+        'Bàn trộn âm thanh kỹ thuật số chuyên dụng (Digital Audio Mixing Console)',
+        'Hiệu ứng visual màn hình LED tương tác theo nhịp điệu bài hát',
+        'Hệ thống chiếu sáng moving lights và laser sân khấu đồng bộ DMX',
+      ];
+      interactivityLevel = 'HIGH';
+      technicalRecommendations =
+        'Hiệu chuẩn âm lượng theo tiêu chuẩn EBU R128 (-23 LUFS) tránh hiện tượng xé tiếng.';
+    }
+
+    return {
+      productionFormat,
+      pacing,
+      visualAudioRequirements,
+      interactivityLevel,
+      technicalRecommendations,
+    };
+  }
+
+  /**
+   * Tính toán bộ điểm đa chỉ số đánh giá chương trình (0-100 & phân loại hạng)
+   */
+  private synthesizeScoringBreakdown(
+    program: any,
+    sentiment: any,
+    compliance: any,
+  ): ScoringBreakdown {
+    const isRestricted = compliance.complianceAssessment?.isAgeRestricted;
+    const isPrime =
+      sentiment.sentimentAnalysis?.hypeLevel === 'high' && !isRestricted;
+    const baseEngagement =
+      sentiment.sentimentAnalysis?.audienceEngagement ?? 50;
+
+    let contentQuality = 75;
+    let productionValue = 78;
+    let audienceAppeal = baseEngagement;
+    let complianceSafety = isRestricted ? 60 : 95;
+    let commercialPotential = isPrime ? 88 : 70;
+
+    const cat = (
+      program?.channel?.category ??
+      program?.category ??
+      ''
+    ).toUpperCase();
+    if (cat === 'SPORTS') {
+      productionValue = Math.min(96, productionValue + 14);
+      audienceAppeal = Math.min(98, audienceAppeal + 15);
+      commercialPotential = Math.min(95, commercialPotential + 10);
+    } else if (cat === 'NEWS') {
+      contentQuality = Math.min(95, contentQuality + 15);
+      complianceSafety = Math.min(98, complianceSafety + 5);
+      productionValue = Math.min(85, productionValue + 5);
+    } else if (cat === 'MUSIC' || cat === 'ENTERTAINMENT' || cat === 'SHOW') {
+      productionValue = Math.min(94, productionValue + 12);
+      audienceAppeal = Math.min(95, audienceAppeal + 10);
+      commercialPotential = Math.min(92, commercialPotential + 8);
+    }
+
+    if (compliance.complianceAssessment?.flaggedContent?.length) {
+      complianceSafety = Math.max(
+        40,
+        complianceSafety -
+          compliance.complianceAssessment.flaggedContent.length * 15,
+      );
+    }
+
+    // Trọng số: Chất lượng nội dung (25%) + Hình thức sản xuất (20%) + Sức hút khán giả (25%) + An toàn phát sóng (15%) + Thương mại (15%)
+    const overallScore = Math.round(
+      contentQuality * 0.25 +
+        productionValue * 0.2 +
+        audienceAppeal * 0.25 +
+        complianceSafety * 0.15 +
+        commercialPotential * 0.15,
+    );
+
+    let grade: 'S' | 'A' | 'B' | 'C' | 'D' = 'B';
+    if (overallScore >= 90) grade = 'S';
+    else if (overallScore >= 80) grade = 'A';
+    else if (overallScore >= 65) grade = 'B';
+    else if (overallScore >= 50) grade = 'C';
+    else grade = 'D';
+
+    return {
+      contentQuality,
+      productionValue,
+      audienceAppeal,
+      complianceSafety,
+      commercialPotential,
+      overallScore,
+      grade,
+    };
+  }
+
+  /**
+   * Mở gói dữ liệu báo cáo lưu trữ, giải nén các chỉ số phân tích chuẩn
+   */
+  private unwrapReport(row: any) {
+    if (!row) return row;
+    const sa =
+      row.sentimentAnalysis && typeof row.sentimentAnalysis === 'object'
+        ? row.sentimentAnalysis
+        : {};
+
+    const contentAssessment: ContentAssessment =
+      row.contentAssessment ??
+      sa.contentAssessment ??
+      this.synthesizeContentAssessment(row);
+
+    const formatAssessment: FormatAssessment =
+      row.formatAssessment ??
+      sa.formatAssessment ??
+      this.synthesizeFormatAssessment(row);
+
+    const scoringBreakdown: ScoringBreakdown =
+      row.scoringBreakdown ??
+      sa.scoringBreakdown ??
+      this.synthesizeScoringBreakdown(row, { sentimentAnalysis: sa }, row);
+
+    return {
+      ...row,
+      contentAssessment,
+      formatAssessment,
+      scoringBreakdown,
+      sentimentAnalysis: {
+        overallSentiment: sa.overallSentiment ?? 'neutral',
+        hypeLevel: sa.hypeLevel ?? 'medium',
+        audienceEngagement: sa.audienceEngagement ?? 50,
+      },
     };
   }
 

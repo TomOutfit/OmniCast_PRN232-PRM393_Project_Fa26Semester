@@ -270,6 +270,33 @@ export interface UserStats {
 }
 
 // AI Curator Types
+export interface ContentAssessment {
+  summary: string;
+  highlights: string[];
+  strengths: string[];
+  weaknesses: string[];
+  narrativeFlow: string;
+  targetAudienceDetails: string;
+}
+
+export interface FormatAssessment {
+  productionFormat: string;
+  pacing: 'SLOW' | 'MODERATE' | 'DYNAMIC' | 'FAST_PACED';
+  visualAudioRequirements: string[];
+  interactivityLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  technicalRecommendations: string;
+}
+
+export interface ScoringBreakdown {
+  contentQuality: number;       // 0-100
+  productionValue: number;      // 0-100
+  audienceAppeal: number;       // 0-100
+  complianceSafety: number;     // 0-100
+  commercialPotential: number;  // 0-100
+  overallScore: number;         // 0-100
+  grade: 'S' | 'A' | 'B' | 'C' | 'D';
+}
+
 export interface AiCuratorReport {
   broadcastSuitability: 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED';
   suggestedTimeSlot: string;
@@ -286,6 +313,9 @@ export interface AiCuratorReport {
     flaggedContent: string[];
     recommendedBroadcastWindow: 'DAY' | 'EVENING' | 'LATE_NIGHT';
   };
+  contentAssessment?: ContentAssessment;
+  formatAssessment?: FormatAssessment;
+  scoringBreakdown?: ScoringBreakdown;
   aiModelVersion: string;
   processingTimeMs: number;
   /**
