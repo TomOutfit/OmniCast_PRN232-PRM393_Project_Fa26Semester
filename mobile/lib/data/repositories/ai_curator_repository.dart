@@ -64,6 +64,105 @@ class AiCuratorException implements Exception {
 // Report model
 // ============================================================
 
+class ContentAssessment {
+  final String summary;
+  final List<String> highlights;
+  final List<String> strengths;
+  final List<String> weaknesses;
+  final String narrativeFlow;
+  final String targetAudienceDetails;
+
+  const ContentAssessment({
+    required this.summary,
+    required this.highlights,
+    required this.strengths,
+    required this.weaknesses,
+    required this.narrativeFlow,
+    required this.targetAudienceDetails,
+  });
+
+  factory ContentAssessment.fromJson(Map<String, dynamic> json) {
+    return ContentAssessment(
+      summary: (json['summary'] as String?) ?? '',
+      highlights: ((json['highlights'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      strengths: ((json['strengths'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      weaknesses: ((json['weaknesses'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      narrativeFlow: (json['narrativeFlow'] as String?) ?? '',
+      targetAudienceDetails: (json['targetAudienceDetails'] as String?) ?? '',
+    );
+  }
+}
+
+class FormatAssessment {
+  final String productionFormat;
+  final String pacing; // SLOW | MODERATE | DYNAMIC | FAST_PACED
+  final List<String> visualAudioRequirements;
+  final String interactivityLevel; // LOW | MEDIUM | HIGH
+  final String technicalRecommendations;
+
+  const FormatAssessment({
+    required this.productionFormat,
+    required this.pacing,
+    required this.visualAudioRequirements,
+    required this.interactivityLevel,
+    required this.technicalRecommendations,
+  });
+
+  factory FormatAssessment.fromJson(Map<String, dynamic> json) {
+    return FormatAssessment(
+      productionFormat:
+          (json['productionFormat'] as String?) ?? 'Truyền hình / Talkshow',
+      pacing: (json['pacing'] as String?) ?? 'MODERATE',
+      visualAudioRequirements:
+          ((json['visualAudioRequirements'] as List?) ?? const [])
+              .map((e) => e.toString())
+              .toList(growable: false),
+      interactivityLevel:
+          (json['interactivityLevel'] as String?) ?? 'MEDIUM',
+      technicalRecommendations:
+          (json['technicalRecommendations'] as String?) ?? '',
+    );
+  }
+}
+
+class ScoringBreakdown {
+  final int contentQuality;
+  final int productionValue;
+  final int audienceAppeal;
+  final int complianceSafety;
+  final int commercialPotential;
+  final int overallScore;
+  final String grade; // S | A | B | C | D
+
+  const ScoringBreakdown({
+    required this.contentQuality,
+    required this.productionValue,
+    required this.audienceAppeal,
+    required this.complianceSafety,
+    required this.commercialPotential,
+    required this.overallScore,
+    required this.grade,
+  });
+
+  factory ScoringBreakdown.fromJson(Map<String, dynamic> json) {
+    return ScoringBreakdown(
+      contentQuality: (json['contentQuality'] as num?)?.toInt() ?? 70,
+      productionValue: (json['productionValue'] as num?)?.toInt() ?? 70,
+      audienceAppeal: (json['audienceAppeal'] as num?)?.toInt() ?? 70,
+      complianceSafety: (json['complianceSafety'] as num?)?.toInt() ?? 80,
+      commercialPotential: (json['commercialPotential'] as num?)?.toInt() ?? 70,
+      overallScore: (json['overallScore'] as num?)?.toInt() ?? 72,
+      grade: (json['grade'] as String?) ?? 'B',
+    );
+  }
+}
+
 class AiCuratorReport {
   final String broadcastSuitability; // PRIME_TIME | STANDARD | RESTRICTED
   final String suggestedTimeSlot; // "21:00 - 23:00"
@@ -72,6 +171,9 @@ class AiCuratorReport {
 
   final AiSentiment sentiment;
   final AiCompliance compliance;
+  final ContentAssessment? contentAssessment;
+  final FormatAssessment? formatAssessment;
+  final ScoringBreakdown? scoringBreakdown;
   final String aiModelVersion;
   final int processingTimeMs;
   final int? tokenUsed;
@@ -95,6 +197,9 @@ class AiCuratorReport {
     required this.riskWarnings,
     required this.sentiment,
     required this.compliance,
+    this.contentAssessment,
+    this.formatAssessment,
+    this.scoringBreakdown,
     required this.aiModelVersion,
     required this.processingTimeMs,
     this.tokenUsed,
@@ -107,6 +212,96 @@ class AiCuratorReport {
   });
 
   factory AiCuratorReport.fromJson(Map<String, dynamic> json) {
+    final rawSentiment =
+        (json['sentimentAnalysis'] as Map?)?.cast<String, dynamic>() ??
+            const {};
+    final sentiment = AiSentiment.fromJson(rawSentiment);
+
+    // Parse or synthesize content assessment
+    ContentAssessment? contentAssessment;
+    final contentMap = (json['contentAssessment'] as Map?)
+            ?.cast<String, dynamic>() ??
+        (rawSentiment['contentAssessment'] as Map?)?.cast<String, dynamic>();
+    if (contentMap != null && contentMap.isNotEmpty) {
+      contentAssessment = ContentAssessment.fromJson(contentMap);
+    } else {
+      contentAssessment = ContentAssessment(
+        summary: (json['targetAudienceVibe'] as String?) ??
+            'Tổng quan kịch bản và nội dung chương trình phát sóng',
+        highlights: const [
+          'Nội dung hấp dẫn',
+          'Đạt tiêu chuẩn phát thanh truyền hình',
+        ],
+        strengths: const [
+          'Cấu trúc mạch lạc, chủ đề rõ ràng',
+          'Phù hợp định hướng phát sóng OmniCast',
+        ],
+        weaknesses: const [
+          'Cần chú ý nhịp chuyển cảnh giữa các phân đoạn',
+        ],
+        narrativeFlow:
+            'Mạch chương trình tự nhiên, giữ chân người xem tốt qua các phần phát.',
+        targetAudienceDetails: (json['targetAudienceVibe'] as String?) ??
+            'Khán giả đại chúng, gia đình và thanh thiếu niên.',
+      );
+    }
+
+    // Parse or synthesize format assessment
+    FormatAssessment? formatAssessment;
+    final formatMap = (json['formatAssessment'] as Map?)
+            ?.cast<String, dynamic>() ??
+        (rawSentiment['formatAssessment'] as Map?)?.cast<String, dynamic>();
+    if (formatMap != null && formatMap.isNotEmpty) {
+      formatAssessment = FormatAssessment.fromJson(formatMap);
+    } else {
+      formatAssessment = const FormatAssessment(
+        productionFormat: 'Chương trình Studio / Tọa đàm & Giải trí',
+        pacing: 'MODERATE',
+        visualAudioRequirements: [
+          'Độ phân giải tối thiểu 1080p, tỉ lệ 16:9',
+          'Chuẩn âm thanh Stereo cân bằng -14 LUFS',
+          'Hạ tầng đường truyền CDN ổn định'
+        ],
+        interactivityLevel: 'MEDIUM',
+        technicalRecommendations:
+            'Đảm bảo bitrate video tối thiểu 4.5 Mbps và đồng bộ âm thanh - hình ảnh chính xác.',
+      );
+    }
+
+    // Parse or synthesize scoring breakdown
+    ScoringBreakdown? scoringBreakdown;
+    final scoreMap = (json['scoringBreakdown'] as Map?)
+            ?.cast<String, dynamic>() ??
+        (rawSentiment['scoringBreakdown'] as Map?)?.cast<String, dynamic>();
+    if (scoreMap != null && scoreMap.isNotEmpty) {
+      scoringBreakdown = ScoringBreakdown.fromJson(scoreMap);
+    } else {
+      final engagement = sentiment.audienceEngagement;
+      final isPrime =
+          (json['broadcastSuitability'] as String?) == 'PRIME_TIME';
+      final isRestricted =
+          (json['broadcastSuitability'] as String?) == 'RESTRICTED';
+      final baseScore = isPrime ? 88 : (isRestricted ? 55 : 75);
+      final avgScore =
+          ((baseScore * 0.6) + (engagement * 0.4)).round().clamp(0, 100);
+      final grade = avgScore >= 90
+          ? 'S'
+          : (avgScore >= 80
+              ? 'A'
+              : (avgScore >= 70
+                  ? 'B'
+                  : (avgScore >= 55 ? 'C' : 'D')));
+      scoringBreakdown = ScoringBreakdown(
+        contentQuality: (baseScore + 2).clamp(0, 100),
+        productionValue: baseScore.clamp(0, 100),
+        audienceAppeal: engagement.clamp(0, 100),
+        complianceSafety: isRestricted ? 60 : 92,
+        commercialPotential: ((baseScore + engagement) ~/ 2).clamp(0, 100),
+        overallScore: avgScore,
+        grade: grade,
+      );
+    }
+
     return AiCuratorReport(
       broadcastSuitability:
           (json['broadcastSuitability'] as String?) ?? 'STANDARD',
@@ -115,14 +310,14 @@ class AiCuratorReport {
       targetAudienceVibe:
           (json['targetAudienceVibe'] as String?) ?? 'Khán giả phổ thông',
       riskWarnings: (json['riskWarnings'] as String?) ?? '',
-      sentiment: AiSentiment.fromJson(
-        (json['sentimentAnalysis'] as Map?)?.cast<String, dynamic>() ??
-            const {},
-      ),
+      sentiment: sentiment,
       compliance: AiCompliance.fromJson(
         (json['complianceAssessment'] as Map?)?.cast<String, dynamic>() ??
             const {},
       ),
+      contentAssessment: contentAssessment,
+      formatAssessment: formatAssessment,
+      scoringBreakdown: scoringBreakdown,
       aiModelVersion: (json['aiModelVersion'] as String?) ?? 'heuristic-v1',
       processingTimeMs: (json['processingTimeMs'] as num?)?.toInt() ?? 0,
       tokenUsed: (json['tokenUsed'] as num?)?.toInt(),

@@ -115,6 +115,30 @@ AiCuratorReport _report({
       flaggedContent: ['violence'],
       recommendedBroadcastWindow: 'EVENING',
     ),
+    contentAssessment: const ContentAssessment(
+      summary: 'Football match analysis and preview',
+      highlights: ['Key moments'],
+      strengths: ['Great dynamics'],
+      weaknesses: ['Pacing in second half'],
+      narrativeFlow: 'Fast paced',
+      targetAudienceDetails: 'Sports lovers',
+    ),
+    formatAssessment: const FormatAssessment(
+      productionFormat: 'Live Sports',
+      pacing: 'DYNAMIC',
+      visualAudioRequirements: ['1080p60'],
+      interactivityLevel: 'HIGH',
+      technicalRecommendations: 'High bitrate',
+    ),
+    scoringBreakdown: const ScoringBreakdown(
+      contentQuality: 90,
+      productionValue: 88,
+      audienceAppeal: 92,
+      complianceSafety: 95,
+      commercialPotential: 89,
+      overallScore: 91,
+      grade: 'S',
+    ),
     aiModelVersion: 'gpt-4o-mini-v2',
     processingTimeMs: 1234,
     tokenUsed: 512,
@@ -354,6 +378,9 @@ void main() {
 
     // The result summary should now show on tab 1.
     expect(find.text('Kết quả AI'), findsOneWidget);
+    expect(find.text('CHỈ SỐ ĐÁNH GIÁ ĐA CHIỀU (OBI INDEX)'), findsOneWidget);
+    expect(find.text('THẨM ĐỊNH NỘI DUNG CHƯƠNG TRÌNH'), findsOneWidget);
+    expect(find.text('THẨM ĐỊNH HÌNH THỨC & DÀN DỰNG KỸ THUẬT'), findsOneWidget);
 
     // Switch to tab 3 (Curate-Existing) — result must still be visible.
     await tester.tap(find.text('Phân tích có sẵn'));

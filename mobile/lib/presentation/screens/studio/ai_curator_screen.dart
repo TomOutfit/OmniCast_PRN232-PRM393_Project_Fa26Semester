@@ -1073,6 +1073,24 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         _buildResultSummary(r),
         const SizedBox(height: 16),
 
+        // 1. Scoring breakdown (5-dimension OBI score card)
+        if (r.scoringBreakdown != null) ...[
+          _buildScoringBreakdownCard(r),
+          const SizedBox(height: 16),
+        ],
+
+        // 2. Content Assessment (Script summary, narrative flow, highlights, strengths & weaknesses)
+        if (r.contentAssessment != null) ...[
+          _buildContentAssessmentCard(r),
+          const SizedBox(height: 16),
+        ],
+
+        // 3. Format & Technical Production (Format, pacing, interactivity, A/V specs)
+        if (r.formatAssessment != null) ...[
+          _buildFormatAssessmentCard(r),
+          const SizedBox(height: 16),
+        ],
+
         // Summary card
         _buildSummaryCard(r),
         const SizedBox(height: 16),
@@ -1101,7 +1119,72 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     );
   }
 
+  Color _gradeBgColor(String grade) {
+    switch (grade) {
+      case 'S':
+        return const Color(0xFFF59E0B).withValues(alpha: 0.2);
+      case 'A':
+        return AppColors.success.withValues(alpha: 0.2);
+      case 'B':
+        return const Color(0xFF00E5FF).withValues(alpha: 0.2);
+      case 'C':
+        return AppColors.warning.withValues(alpha: 0.2);
+      case 'D':
+      default:
+        return AppColors.error.withValues(alpha: 0.2);
+    }
+  }
+
+  Color _gradeBorderColor(String grade) {
+    switch (grade) {
+      case 'S':
+        return const Color(0xFFF59E0B).withValues(alpha: 0.6);
+      case 'A':
+        return AppColors.success.withValues(alpha: 0.6);
+      case 'B':
+        return const Color(0xFF00E5FF).withValues(alpha: 0.6);
+      case 'C':
+        return AppColors.warning.withValues(alpha: 0.6);
+      case 'D':
+      default:
+        return AppColors.error.withValues(alpha: 0.6);
+    }
+  }
+
+  Color _gradeTextColor(String grade) {
+    switch (grade) {
+      case 'S':
+        return const Color(0xFFF59E0B);
+      case 'A':
+        return AppColors.success;
+      case 'B':
+        return const Color(0xFF00E5FF);
+      case 'C':
+        return AppColors.warning;
+      case 'D':
+      default:
+        return AppColors.error;
+    }
+  }
+
+  String _gradeDescription(String grade) {
+    switch (grade) {
+      case 'S':
+        return 'Hạng S · Xuất sắc (Ưu tiên giờ vàng cao điểm)';
+      case 'A':
+        return 'Hạng A · Rất tốt (Đạt chuẩn phát sóng cao cấp)';
+      case 'B':
+        return 'Hạng B · Đạt chuẩn (Phát sóng thông thường)';
+      case 'C':
+        return 'Hạng C · Cần hoàn thiện trước khi phát';
+      case 'D':
+      default:
+        return 'Hạng D · Chưa đạt tiêu chuẩn phát sóng';
+    }
+  }
+
   Widget _buildResultSummary(AiCuratorReport r) {
+    final sb = r.scoringBreakdown;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1158,6 +1241,26 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                   ],
                 ),
               ),
+              if (sb != null) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _gradeBgColor(sb.grade),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _gradeBorderColor(sb.grade)),
+                  ),
+                  child: Text(
+                    '${sb.grade} · ${sb.overallScore}đ',
+                    style: TextStyle(
+                      color: _gradeTextColor(sb.grade),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                ),
+              ],
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -1274,6 +1377,516 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildScoringBreakdownCard(AiCuratorReport r) {
+    final sb = r.scoringBreakdown;
+    if (sb == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'CHỈ SỐ ĐÁNH GIÁ ĐA CHIỀU (OBI INDEX)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF00E5FF),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _gradeBgColor(sb.grade),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _gradeBorderColor(sb.grade)),
+                ),
+                child: Text(
+                  'Hạng ${sb.grade}',
+                  style: TextStyle(
+                    color: _gradeTextColor(sb.grade),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Overall OBI banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _gradeBgColor(sb.grade),
+                  const Color(0xFF0F172A),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _gradeBorderColor(sb.grade).withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _gradeTextColor(sb.grade), width: 2),
+                    color: Colors.black.withValues(alpha: 0.3),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${sb.overallScore}',
+                    style: TextStyle(
+                      color: _gradeTextColor(sb.grade),
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _gradeDescription(sb.grade),
+                        style: TextStyle(
+                          color: _gradeTextColor(sb.grade),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Điểm tổng hợp cân đối nội dung, hình thức và chuẩn phát sóng',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // 5 metrics progress bars
+          _buildMetricBar('Chất lượng nội dung (Content)', sb.contentQuality, const Color(0xFF00E5FF)),
+          const SizedBox(height: 8),
+          _buildMetricBar('Giá trị sản xuất (Production)', sb.productionValue, const Color(0xFF38BDF8)),
+          const SizedBox(height: 8),
+          _buildMetricBar('Sức hút khán giả (Audience)', sb.audienceAppeal, const Color(0xFFA855F7)),
+          const SizedBox(height: 8),
+          _buildMetricBar('Chuẩn mực & An toàn (Safety)', sb.complianceSafety, AppColors.success),
+          const SizedBox(height: 8),
+          _buildMetricBar('Tiềm năng thương mại (Commercial)', sb.commercialPotential, const Color(0xFFF59E0B)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricBar(String label, int value, Color color) {
+    final clamped = value.clamp(0, 100);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              '$clamped%',
+              style: TextStyle(
+                color: color,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: clamped / 100.0,
+            minHeight: 5,
+            backgroundColor: const Color(0x14FFFFFF),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentAssessmentCard(AiCuratorReport r) {
+    final ca = r.contentAssessment;
+    if (ca == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.description_rounded, color: Color(0xFF00E5FF), size: 16),
+              SizedBox(width: 8),
+              Text(
+                'THẨM ĐỊNH NỘI DUNG CHƯƠNG TRÌNH',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF00E5FF),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          if (ca.summary.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              ca.summary,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+          ],
+          if (ca.narrativeFlow.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0x3300E5FF)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.timeline_rounded, color: Color(0xFF00E5FF), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      ca.narrativeFlow,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (ca.highlights.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'ĐIỂM NHẤN NỔI BẬT',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: ca.highlights.map((h) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0x1F00E5FF),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0x3300E5FF)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: Color(0xFF00E5FF), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      h,
+                      style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ),
+          ],
+          if (ca.strengths.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'ƯU ĐIỂM CHƯƠNG TRÌNH',
+              style: TextStyle(
+                color: AppColors.success,
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...ca.strengths.map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(s, style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11.5)),
+                  ),
+                ],
+              ),
+            )),
+          ],
+          if (ca.weaknesses.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'ĐIỂM CẦN HOÀN THIỆN',
+              style: TextStyle(
+                color: AppColors.warning,
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...ca.weaknesses.map((w) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(w, style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11.5)),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormatAssessmentCard(AiCuratorReport r) {
+    final fa = r.formatAssessment;
+    if (fa == null) return const SizedBox.shrink();
+
+    String pacingLabel(String p) {
+      switch (p) {
+        case 'SLOW': return 'Chậm rãi · Sâu lắng';
+        case 'MODERATE': return 'Vừa phải · Cân bằng';
+        case 'DYNAMIC': return 'Sôi nổi · Biến đổi';
+        case 'FAST_PACED': return 'Dồn dập · Kịch tính';
+        default: return p;
+      }
+    }
+
+    String interactivityLabel(String i) {
+      switch (i) {
+        case 'LOW': return 'Tương tác Thấp';
+        case 'MEDIUM': return 'Tương tác Vừa';
+        case 'HIGH': return 'Tương tác Cao (Đa nền tảng)';
+        default: return i;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.layers_rounded, color: Color(0xFF00E5FF), size: 16),
+              SizedBox(width: 8),
+              Text(
+                'THẨM ĐỊNH HÌNH THỨC & DÀN DỰNG KỸ THUẬT',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF00E5FF),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Format Type and badges
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  fa.productionFormat,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.speed_rounded, color: Color(0xFF38BDF8), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      pacingLabel(fa.pacing),
+                      style: const TextStyle(
+                        color: Color(0xFF38BDF8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.forum_rounded, color: Color(0xFFA855F7), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      interactivityLabel(fa.interactivityLevel),
+                      style: const TextStyle(
+                        color: Color(0xFFA855F7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (fa.visualAudioRequirements.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'YÊU CẦU HÌNH ẢNH & ÂM THANH',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...fa.visualAudioRequirements.map((req) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.tune_rounded, color: Color(0xFF00E5FF), size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(req, style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11.5)),
+                  ),
+                ],
+              ),
+            )),
+          ],
+          if (fa.technicalRecommendations.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B1726),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0x3300E5FF)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.settings_suggest_rounded, color: Color(0xFF00E5FF), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      fa.technicalRecommendations,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
