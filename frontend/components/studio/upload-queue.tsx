@@ -262,6 +262,7 @@ function UploadRow({
         {/* Thumbnail with optional progress ring */}
         <div className="relative w-24 h-16 rounded-lg bg-black overflow-hidden flex-shrink-0 border border-cyan-900/40">
           {entry.thumbnailUrl && !entry.isAudioOnly ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={entry.thumbnailUrl}
               alt={entry.title}
