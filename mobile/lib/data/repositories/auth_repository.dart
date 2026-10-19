@@ -1,6 +1,7 @@
 // OmniCast - Auth Repository
 
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/network/dio_client.dart';
@@ -83,6 +84,10 @@ class AuthRepository {
       key: AppConstants.refreshTokenKey,
       value: authResponse.refreshToken,
     );
+    await _secureStorage.write(
+      key: AppConstants.userKey,
+      value: jsonEncode(authResponse.user.toJson()),
+    );
 
     return authResponse;
   }
@@ -130,12 +135,41 @@ class AuthRepository {
       if (token == null) return null;
 
       final response = await _dioClient.get(AppEndpoints.me);
-      return UserModel.fromJson(response.data['data']);
-    } catch (_) {
-      // Clear invalid token if fetch fails
-      await _secureStorage.delete(key: AppConstants.accessTokenKey);
-      await _secureStorage.delete(key: AppConstants.refreshTokenKey);
-      await _secureStorage.delete(key: AppConstants.userKey);
+      final user = UserModel.fromJson(response.data['data']);
+      await _secureStorage.write(
+        key: AppConstants.userKey,
+        value: jsonEncode(user.toJson()),
+      );
+      return user;
+    } catch (e) {
+      // If 401 Unauthorized, attempt to refresh token first
+      if (e is DioException && e.response?.statusCode == 401) {
+        try {
+          await refreshToken();
+          final retryResponse = await _dioClient.get(AppEndpoints.me);
+          final user = UserModel.fromJson(retryResponse.data['data']);
+          await _secureStorage.write(
+            key: AppConstants.userKey,
+            value: jsonEncode(user.toJson()),
+          );
+          return user;
+        } catch (_) {
+          // Token refresh failed completely, session is truly dead
+          await _secureStorage.delete(key: AppConstants.accessTokenKey);
+          await _secureStorage.delete(key: AppConstants.refreshTokenKey);
+          await _secureStorage.delete(key: AppConstants.userKey);
+          return null;
+        }
+      }
+
+      // If it's a network glitch, timeout, offline, or transient 5xx:
+      // Fallback to locally cached user so the session is NOT lost!
+      final cachedUserRaw = await _secureStorage.read(key: AppConstants.userKey);
+      if (cachedUserRaw != null && cachedUserRaw.isNotEmpty) {
+        try {
+          return UserModel.fromJson(jsonDecode(cachedUserRaw));
+        } catch (_) {}
+      }
       return null;
     }
   }

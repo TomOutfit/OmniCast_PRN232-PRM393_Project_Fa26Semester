@@ -24,7 +24,7 @@ import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  private readonly refreshTokenExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days
+  private readonly refreshTokenExpiry = 90 * 24 * 60 * 60 * 1000; // 90 days
   private readonly passwordResetTtlMs = 60 * 60 * 1000; // 1 hour
 
   constructor(
@@ -328,7 +328,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d',
+      expiresIn: '90d',
     });
 
     // Store refresh token
