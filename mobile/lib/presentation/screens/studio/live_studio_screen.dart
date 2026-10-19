@@ -91,6 +91,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   XFile? _pickedFile;
   int? _pickedFileDurationSec;
   int? _pickedFileSizeBytes; // populated when the file is picked
+  bool _isAudioOnly = false;
   double _uploadProgress = 0;
   bool _uploading = false;
   String? _uploadError;
@@ -351,6 +352,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       _pickedFile = file;
       _pickedFileDurationSec = null;
       _pickedFileSizeBytes = null;
+      _isAudioOnly = false;
       _uploadProgress = 0;
       _uploadError = null;
     });
@@ -369,15 +371,20 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   Future<void> _probeDuration(XFile file) async {
     // image_picker doesn't expose duration directly. Use a hidden
-    // VideoPlayer probe to read it (best-effort, ~1s). Failures are
-    // silent and the user can re-record / re-pick.
+    // VideoPlayer probe to read it (best-effort, ~1s). Also inspects
+    // the media track size to detect audio-only streams (e.g. YouTube DASH).
     try {
       final controller = VideoPlayerController.file(File(file.path));
       await controller.initialize();
       final dur = controller.value.duration;
+      final size = controller.value.size;
+      final isAudio = size.width == 0 || size.height == 0 || size.isEmpty;
       await controller.dispose();
-      if (mounted && dur.inSeconds > 0) {
-        setState(() => _pickedFileDurationSec = dur.inSeconds);
+      if (mounted) {
+        setState(() {
+          if (dur.inSeconds > 0) _pickedFileDurationSec = dur.inSeconds;
+          _isAudioOnly = isAudio;
+        });
       }
     } catch (_) {
       // No-op — user can still upload without auto-detected duration.
@@ -487,6 +494,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         _pickedFile = null;
         _pickedFileDurationSec = null;
         _pickedFileSizeBytes = null;
+        _isAudioOnly = false;
         _uploadProgress = 0;
         _selfTitleCtrl.clear();
         _selfDescCtrl.clear();
@@ -721,29 +729,135 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   }
 
   Widget _buildChannelChips() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Prominent Target Channel Dropdown Card
+        _buildTargetChannelDropdownCard(),
+        // 2. Quick-pick horizontal chips
+        if (_channels.length > 1) _buildQuickChannelChips(),
+      ],
+    );
+  }
+
+  Widget _buildTargetChannelDropdownCard() {
+    final c = _selected;
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x3300E5FF), width: 1),
+      ),
+      child: Row(
+        children: [
+          if (c != null) ...[
+            ChannelLogo(channel: c, size: 36),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'KÊNH PHÁT SÓNG TARGET',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 9,
+                          fontFamily: 'JetBrainsMono',
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      if (c.isVerified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified, color: Color(0xFF00E5FF), size: 12),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    c.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const Icon(Icons.tv_rounded, color: Color(0xFF00E5FF), size: 24),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Chọn kênh phát sóng target...',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+              foregroundColor: const Color(0xFF00E5FF),
+              elevation: 0,
+              side: const BorderSide(color: Color(0x4400E5FF)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: _openChannelSearchModal,
+            icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+            label: const Text(
+              'ĐỔI KÊNH',
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickChannelChips() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _channels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
           final c = _channels[i];
           final selected = c.id == _selected?.id;
           return GestureDetector(
             onTap: () {
-              setState(() => _selected = c);
-              _onChannelChanged();
+              if (!selected) {
+                setState(() => _selected = c);
+                _onChannelChanged();
+              }
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: selected
                     ? _accent.withValues(alpha: 0.18)
                     : const Color(0xFF0B1320),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: selected
                       ? _accent
@@ -752,26 +866,46 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                 ),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  ChannelLogo(channel: c, size: 28),
-                  const SizedBox(width: 8),
+                  ChannelLogo(channel: c, size: 20),
+                  const SizedBox(width: 6),
                   Text(
                     c.name,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      color: selected ? Colors.white : const Color(0xFFCBD5E1),
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 12,
                       fontFamily: 'Outfit',
                     ),
                   ),
                   if (c.isVerified) ...[
                     const SizedBox(width: 4),
-                    const Icon(Icons.verified, color: _accent, size: 14),
+                    const Icon(Icons.verified, color: _accent, size: 12),
                   ],
                 ],
               ),
             ),
           );
+        },
+      ),
+    );
+  }
+
+  void _openChannelSearchModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ChannelSelectorBottomSheet(
+        channels: _channels,
+        selectedChannel: _selected,
+        onChannelSelected: (channel) {
+          Navigator.pop(ctx);
+          if (channel.id != _selected?.id) {
+            setState(() => _selected = channel);
+            _onChannelChanged();
+          }
         },
       ),
     );
@@ -1629,61 +1763,143 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   Widget _buildPickedFilePreview() {
     final f = _pickedFile!;
     final dur = _pickedFileDurationSec;
+    final sizeMb = (_pickedFileSizeBytes ?? 0) / 1024 / 1024;
+
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF0B1320),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _isAudioOnly
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+              : const Color(0x3300E5FF),
+          width: 1,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(Icons.movie, color: _accent, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  f.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _isAudioOnly
+                      ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
+                      : _accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _isAudioOnly
+                        ? const Color(0xFFF59E0B).withValues(alpha: 0.4)
+                        : _accent.withValues(alpha: 0.4),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  dur != null
-                      ? 'Thời lượng: ${_formatDuration(dur)}'
-                      : 'Đang đo thời lượng…',
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                alignment: Alignment.center,
+                child: Icon(
+                  _isAudioOnly ? Icons.podcasts_rounded : Icons.movie_rounded,
+                  color: _isAudioOnly ? const Color(0xFFF59E0B) : _accent,
+                  size: 26,
                 ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            f.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (_isAudioOnly) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+                              ),
+                            ),
+                            child: const Text(
+                              'ÂM THANH',
+                              style: TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'JetBrainsMono',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      dur != null
+                          ? 'Thời lượng: ${_formatDuration(dur)}${sizeMb > 0 ? " · ${sizeMb.toStringAsFixed(1)} MB" : ""}'
+                          : 'Đang kiểm tra thời lượng…',
+                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Color(0xFF94A3B8)),
+                onPressed: _uploading
+                    ? null
+                    : () {
+                        setState(() {
+                          _pickedFile = null;
+                          _pickedFileDurationSec = null;
+                          _isAudioOnly = false;
+                        });
+                      },
+              ),
+            ],
+          ),
+          if (_isAudioOnly) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lưu ý: Tệp chỉ có luồng âm thanh (thường do tải từ YouTube bằng công cụ tách riêng DASH audio). OmniCast vẫn hỗ trợ phát sóng luồng Radio/Podcast này bình thường, hoặc tải bản video đầy đủ nếu bạn cần hình ảnh.',
+                      style: TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF94A3B8)),
-            onPressed: _uploading
-                ? null
-                : () {
-                    setState(() {
-                      _pickedFile = null;
-                      _pickedFileDurationSec = null;
-                    });
-                  },
-          ),
+          ],
         ],
       ),
     );
@@ -2185,3 +2401,353 @@ class _CatalogThumb extends StatelessWidget {
 /// Inline accent cyan (kept separate so private helper widgets
 /// above can compile without importing the State class).
 const Color _accentCyan = Color(0xFF00E5FF);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Searchable Target Channel Selection Modal BottomSheet
+// ─────────────────────────────────────────────────────────────────────────────
+class _ChannelSelectorBottomSheet extends StatefulWidget {
+  final List<ChannelModel> channels;
+  final ChannelModel? selectedChannel;
+  final ValueChanged<ChannelModel> onChannelSelected;
+
+  const _ChannelSelectorBottomSheet({
+    required this.channels,
+    required this.selectedChannel,
+    required this.onChannelSelected,
+  });
+
+  @override
+  State<_ChannelSelectorBottomSheet> createState() =>
+      _ChannelSelectorBottomSheetState();
+}
+
+class _ChannelSelectorBottomSheetState
+    extends State<_ChannelSelectorBottomSheet> {
+  final TextEditingController _queryCtrl = TextEditingController();
+  String _selectedCategory = 'ALL';
+
+  @override
+  void dispose() {
+    _queryCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> get _categories {
+    final set = <String>{'ALL'};
+    for (final c in widget.channels) {
+      final cat = c.category;
+      if (cat != null && cat.trim().isNotEmpty) {
+        set.add(cat.trim().toUpperCase());
+      }
+    }
+    return set.toList(growable: false);
+  }
+
+  List<ChannelModel> get _filteredChannels {
+    final q = _queryCtrl.text.trim().toLowerCase();
+    return widget.channels.where((c) {
+      if (_selectedCategory != 'ALL') {
+        final cat = (c.category ?? '').toUpperCase();
+        if (cat != _selectedCategory) return false;
+      }
+      if (q.isEmpty) return true;
+      final name = c.name.toLowerCase();
+      final slug = c.slug.toLowerCase();
+      final cat = (c.category ?? '').toLowerCase();
+      return name.contains(q) || slug.contains(q) || cat.contains(q);
+    }).toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filteredChannels;
+    final cats = _categories;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.78,
+      decoration: const BoxDecoration(
+        color: Color(0xFF070B14),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(
+          top: BorderSide(color: Color(0x3300E5FF), width: 1),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.cell_tower_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'CHỌN KÊNH PHÁT SÓNG TARGET',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Outfit',
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'Hiển thị ${filtered.length}/${widget.channels.length} kênh khả dụng',
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Color(0xFF94A3B8)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+
+          // Search textfield
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _queryCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Tìm theo tên kênh, thể loại, slug...',
+                hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00E5FF), size: 18),
+                suffixIcon: _queryCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Color(0xFF94A3B8), size: 16),
+                        onPressed: () {
+                          _queryCtrl.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFF0B1320),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0x2200E5FF)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0x2200E5FF)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+                ),
+              ),
+            ),
+          ),
+
+          // Category chips
+          if (cats.length > 2)
+            Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: cats.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, i) {
+                  final cat = cats[i];
+                  final isSel = cat == _selectedCategory;
+                  return ChoiceChip(
+                    label: Text(
+                      cat == 'ALL' ? 'TẤT CẢ' : cat,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'JetBrainsMono',
+                        color: isSel ? Colors.black : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    selected: isSel,
+                    selectedColor: const Color(0xFF00E5FF),
+                    backgroundColor: const Color(0xFF0B1320),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: isSel ? const Color(0xFF00E5FF) : const Color(0x2200E5FF),
+                      ),
+                    ),
+                    onSelected: (_) => setState(() => _selectedCategory = cat),
+                  );
+                },
+              ),
+            ),
+
+          const SizedBox(height: 6),
+
+          // Channels list
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.search_off_rounded, color: Color(0xFF475569), size: 40),
+                        SizedBox(height: 8),
+                        Text(
+                          'Không tìm thấy kênh nào khớp.',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    itemBuilder: (context, i) {
+                      final c = filtered[i];
+                      final isSelected = c.id == widget.selectedChannel?.id;
+
+                      return GestureDetector(
+                        onTap: () => widget.onChannelSelected(c),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+                                : const Color(0xFF0B1320),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF00E5FF)
+                                  : const Color(0x1F00E5FF),
+                              width: isSelected ? 1.2 : 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              ChannelLogo(channel: c, size: 36),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            c.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (c.isVerified) ...[
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.verified, color: Color(0xFF00E5FF), size: 14),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        if (c.category != null && c.category!.isNotEmpty) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              c.category!.toUpperCase(),
+                                              style: const TextStyle(
+                                                color: Color(0xFF00E5FF),
+                                                fontSize: 9,
+                                                fontFamily: 'JetBrainsMono',
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        Text(
+                                          '@${c.slug}',
+                                          style: const TextStyle(
+                                            color: Color(0xFF64748B),
+                                            fontSize: 10,
+                                            fontFamily: 'JetBrainsMono',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00E5FF),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'ĐANG CHỌN',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'JetBrainsMono',
+                                    ),
+                                  ),
+                                )
+                              else
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Color(0xFF475569),
+                                  size: 18,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}

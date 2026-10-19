@@ -269,6 +269,61 @@ void main() {
       final r4 = AiCuratorReport.fromJson(const {});
       expect(r4.confidence, isNull);
     });
+
+    test('parses and synthesizes ContentAssessment, FormatAssessment, ScoringBreakdown', () {
+      final json = _fullReportJson();
+      json['contentAssessment'] = {
+        'summary': 'Chuyên đề phóng sự thể thao',
+        'highlights': ['Pha bàn thắng đẹp', 'Phỏng vấn HLV'],
+        'strengths': ['Hình ảnh sắc nét', 'Bình luận lôi cuốn'],
+        'weaknesses': ['Âm lượng micro cần đồng đều'],
+        'narrativeFlow': 'Mạch kể chuyện logic chặt chẽ',
+        'targetAudienceDetails': 'Khán giả mê bóng đá độ tuổi 18-45',
+      };
+      json['formatAssessment'] = {
+        'productionFormat': 'Chương trình Tạp chí Thể thao',
+        'pacing': 'DYNAMIC',
+        'visualAudioRequirements': ['Chuẩn 4K HDR', 'Âm thanh 5.1 Surround'],
+        'interactivityLevel': 'HIGH',
+        'technicalRecommendations': 'Đảm bảo bitrate 8Mbps cho các pha chuyển động nhanh',
+      };
+      json['scoringBreakdown'] = {
+        'contentQuality': 92,
+        'productionValue': 88,
+        'audienceAppeal': 94,
+        'complianceSafety': 98,
+        'commercialPotential': 89,
+        'overallScore': 92,
+        'grade': 'S',
+      };
+
+      final report = AiCuratorReport.fromJson(json);
+      expect(report.contentAssessment, isNotNull);
+      expect(report.contentAssessment!.summary, 'Chuyên đề phóng sự thể thao');
+      expect(report.contentAssessment!.highlights.length, 2);
+      expect(report.contentAssessment!.strengths.first, 'Hình ảnh sắc nét');
+      expect(report.contentAssessment!.weaknesses.first, 'Âm lượng micro cần đồng đều');
+
+      expect(report.formatAssessment, isNotNull);
+      expect(report.formatAssessment!.productionFormat, 'Chương trình Tạp chí Thể thao');
+      expect(report.formatAssessment!.pacing, 'DYNAMIC');
+      expect(report.formatAssessment!.interactivityLevel, 'HIGH');
+      expect(report.formatAssessment!.visualAudioRequirements.length, 2);
+
+      expect(report.scoringBreakdown, isNotNull);
+      expect(report.scoringBreakdown!.overallScore, 92);
+      expect(report.scoringBreakdown!.grade, 'S');
+      expect(report.scoringBreakdown!.contentQuality, 92);
+      expect(report.scoringBreakdown!.complianceSafety, 98);
+
+      // Verify fallbacks for empty JSON
+      final fallbackReport = AiCuratorReport.fromJson(const {});
+      expect(fallbackReport.contentAssessment, isNotNull);
+      expect(fallbackReport.formatAssessment, isNotNull);
+      expect(fallbackReport.scoringBreakdown, isNotNull);
+      expect(fallbackReport.scoringBreakdown!.overallScore, greaterThan(0));
+      expect(fallbackReport.scoringBreakdown!.grade, isNotEmpty);
+    });
   });
 
   group('AiSentiment & AiCompliance.fromJson', () {
