@@ -434,7 +434,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         // ─── Cloudinary direct upload (bypasses Vercel) ──────
         final result = await _repo.addToLibraryFromCloudinaryUpload(
           file: pickedFile,
-          channelId: _selected!.slug,
+          channelId: _selected!.id,
           channelSlug: _selected!.slug,
           title: title,
           description: _selfDescCtrl.text.trim().isEmpty
@@ -448,7 +448,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         // Optionally push LIVE immediately on the channel.
         if (_selfVisibility == SelfRecordVisibility.immediate) {
           await _repo.uploadSelfRecord(
-            channelId: _selected!.slug,
+            channelId: _selected!.id,
             title: title,
             description: _selfDescCtrl.text.trim().isEmpty
                 ? null
@@ -476,7 +476,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
           },
         );
         final result = await _repo.uploadSelfRecord(
-          channelId: _selected!.slug,
+          channelId: _selected!.id,
           title: title,
           description: _selfDescCtrl.text.trim().isEmpty
               ? null
@@ -584,12 +584,31 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     if (e is DioException) {
       final res = e.response;
       if (res != null && res.data is Map) {
-        final msg = res.data['message'];
+        final data = res.data as Map;
+        // Check Cloudinary error envelope: {"error": {"message": "..."}}
+        if (data['error'] is Map && data['error']['message'] != null) {
+          final cldMsg = data['error']['message'].toString();
+          if (cldMsg.contains('Invalid cloud_name')) {
+            return 'Lỗi cấu hình máy chủ: Cloud Name Cloudinary không hợp lệ ($cldMsg). Vui lòng cập nhật CLOUDINARY_CLOUD_NAME trên Vercel.';
+          }
+          if (cldMsg.contains('Invalid Signature')) {
+            return 'Lỗi xác thực chữ ký Cloudinary ($cldMsg). Kiểm tra API Secret trên Vercel.';
+          }
+          return 'Lỗi Cloudinary: $cldMsg';
+        }
+        final msg = data['message'];
         if (msg is String && msg.isNotEmpty) return msg;
         if (msg is List && msg.isNotEmpty) return msg.join(', ');
       }
+      if (e.requestOptions.path.contains('cloudinary.com') ||
+          e.requestOptions.baseUrl.contains('cloudinary.com')) {
+        return 'Lỗi kết nối Cloudinary: ${e.message ?? e.toString()}';
+      }
     }
     final raw = e.toString();
+    if (raw.contains('Invalid cloud_name')) {
+      return 'Lỗi cấu hình máy chủ: Cloud Name Cloudinary không hợp lệ. Vui lòng cập nhật CLOUDINARY_CLOUD_NAME trên Vercel.';
+    }
     if (raw.contains('503')) {
       return 'Dịch vụ lưu trữ video (Cloudinary) tạm thời chưa sẵn sàng (503).';
     }
