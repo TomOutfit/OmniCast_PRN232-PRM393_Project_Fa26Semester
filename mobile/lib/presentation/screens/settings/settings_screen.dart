@@ -16,6 +16,7 @@ import '../../../data/datasources/local/database_helper.dart';
 import '../../../data/repositories/newsletter_repository.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../../logic/newsletter/newsletter_bloc.dart';
+import '../../navigation/app_router.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -583,7 +584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       buttonColor: const Color(0xFFF59E0B),
                       onConfirm: () {
                         context.read<AuthBloc>().add(LogoutRequested());
-                        context.go('/login');
+                        AppRouter.router.go('/login');
                       },
                     ),
                     const Padding(
@@ -602,7 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         context.read<AuthBloc>().add(
                               LogoutAllDevicesRequested(),
                             );
-                        context.go('/login');
+                        AppRouter.router.go('/login');
                       },
                     ),
                   ],

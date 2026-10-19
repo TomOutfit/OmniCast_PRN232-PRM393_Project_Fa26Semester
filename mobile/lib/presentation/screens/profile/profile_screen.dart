@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../widgets/brand_logo.dart';
 import '../../../logic/auth/auth_bloc.dart';
+import '../../navigation/app_router.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -531,7 +532,7 @@ class ProfileScreen extends StatelessWidget {
               onTap: () {
                 Navigator.pop(ctx);
                 context.read<AuthBloc>().add(LogoutRequested());
-                context.go('/login');
+                AppRouter.router.go('/login');
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
@@ -578,7 +579,7 @@ class ProfileScreen extends StatelessWidget {
               onTap: () {
                 Navigator.pop(ctx);
                 context.read<AuthBloc>().add(LogoutAllDevicesRequested());
-                context.go('/login');
+                AppRouter.router.go('/login');
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(

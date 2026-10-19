@@ -170,6 +170,16 @@ class _OmniCastAppState extends State<OmniCastApp> {
                   GlobalCupertinoLocalizations.delegate,
                 ],
                 routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  return BlocListener<AuthBloc, AuthState>(
+                    listenWhen: (prev, curr) =>
+                        prev is Authenticated && curr is Unauthenticated,
+                    listener: (context, state) {
+                      AppRouter.router.go('/login');
+                    },
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
               );
             },
           ),
