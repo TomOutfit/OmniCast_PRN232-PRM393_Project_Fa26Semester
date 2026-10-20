@@ -42,6 +42,23 @@ class RegisterRequested extends AuthEvent {
   List<Object?> get props => [email, password, fullName];
 }
 
+class GoogleLoginRequested extends AuthEvent {
+  final String? idToken;
+  final String? email;
+  final String? fullName;
+  final String? avatarUrl;
+
+  const GoogleLoginRequested({
+    this.idToken,
+    this.email,
+    this.fullName,
+    this.avatarUrl,
+  });
+
+  @override
+  List<Object?> get props => [idToken, email, fullName, avatarUrl];
+}
+
 class LogoutRequested extends AuthEvent {}
 
 /// Logout from **every** device the user has an active session on
@@ -95,6 +112,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       transformer: (events, mapper) => events.flatMap((mapper)),
     );
     on<LoginRequested>(_onLoginRequested);
+    on<GoogleLoginRequested>(_onGoogleLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<LogoutAllDevicesRequested>(_onLogoutAllDevicesRequested);
@@ -115,6 +133,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(Unauthenticated());
+    }
+  }
+
+  Future<void> _onGoogleLoginRequested(
+    GoogleLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final response = await _authRepository.loginWithGoogle(
+        idToken: event.idToken,
+        email: event.email,
+        fullName: event.fullName,
+        avatarUrl: event.avatarUrl,
+      );
+      emit(Authenticated(response.user));
+    } catch (e) {
+      emit(AuthError(e.toString()));
     }
   }
 

@@ -58,6 +58,42 @@ class AuthRepository {
     return authResponse;
   }
 
+  Future<AuthResponse> loginWithGoogle({
+    String? idToken,
+    String? email,
+    String? fullName,
+    String? avatarUrl,
+  }) async {
+    final response = await _dioClient.post(
+      AppEndpoints.googleLogin,
+      data: {
+        if (idToken != null) 'idToken': idToken,
+        'email': email ?? 'google.user@omnicast.tv',
+        'fullName': fullName ?? 'Khán giả Google',
+        'avatarUrl': avatarUrl ?? 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+      },
+    );
+
+    final data = response.data['data'];
+    final authResponse = AuthResponse.fromJson(data);
+
+    // Store tokens
+    await _secureStorage.write(
+      key: AppConstants.accessTokenKey,
+      value: authResponse.accessToken,
+    );
+    await _secureStorage.write(
+      key: AppConstants.refreshTokenKey,
+      value: authResponse.refreshToken,
+    );
+    await _secureStorage.write(
+      key: AppConstants.userKey,
+      value: jsonEncode(authResponse.user.toJson()),
+    );
+
+    return authResponse;
+  }
+
   Future<AuthResponse> register({
     required String email,
     required String password,
