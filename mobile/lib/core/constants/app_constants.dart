@@ -62,6 +62,7 @@ class AppConstants {
 class AppEndpoints {
   // Auth
   static const String login = '/v1/auth/login';
+  static const String googleLogin = '/v1/auth/google';
   static const String register = '/v1/auth/register';
   static const String refresh = '/v1/auth/refresh';
   static const String logout = '/v1/auth/logout';

@@ -135,6 +135,39 @@ void main() {
       ],
     );
 
+    blocTest<AuthBloc, AuthState>(
+      'GoogleLoginRequested emits [AuthLoading, Authenticated] on success',
+      build: () {
+        when(
+          () => mockRepo.loginWithGoogle(
+            idToken: any(named: 'idToken'),
+            email: any(named: 'email'),
+            fullName: any(named: 'fullName'),
+            avatarUrl: any(named: 'avatarUrl'),
+          ),
+        ).thenAnswer(
+          (_) async => AuthResponse(
+            accessToken: 'mock_jwt_token',
+            refreshToken: 'mock_refresh_token',
+            user: _makeUser(email: 'google@omnicast.tv'),
+          ),
+        );
+        return AuthBloc(authRepository: mockRepo);
+      },
+      act: (bloc) => bloc.add(const GoogleLoginRequested(
+        email: 'google@omnicast.tv',
+        fullName: 'Google User',
+      )),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<Authenticated>().having(
+          (s) => s.user.email,
+          'email',
+          'google@omnicast.tv',
+        ),
+      ],
+    );
+
     // -----------------------------------------------------------------
     // TC-PRM-04: Refresh token when AuthRepository succeeds
     // -----------------------------------------------------------------
