@@ -79,3 +79,41 @@ export class ResetPasswordDto {
   @MaxLength(100)
   newPassword: string;
 }
+
+export class GoogleLoginDto {
+  @ApiProperty({
+    description: 'Google ID token (JWT) from Google Identity Services',
+    required: false,
+    example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...google-id-token',
+  })
+  @IsOptional()
+  @IsString()
+  idToken?: string;
+
+  @ApiProperty({
+    example: 'user@gmail.com',
+    description: 'Google account email address',
+    required: false,
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({
+    example: 'Google User',
+    description: 'Full name from Google profile',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiProperty({
+    example: 'https://lh3.googleusercontent.com/a/...',
+    description: 'Avatar URL from Google profile',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+}

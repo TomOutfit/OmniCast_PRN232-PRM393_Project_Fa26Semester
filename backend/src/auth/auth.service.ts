@@ -16,7 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
-import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, GoogleLoginDto } from './dto/auth.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { TokenPayload } from './interfaces/auth.interface';
 
@@ -87,6 +87,86 @@ export class AuthService {
     });
 
     return this.generateTokens(user.id, user.email, user.role ?? 'VIEWER', user);
+  }
+
+  async loginWithGoogle(googleDto: GoogleLoginDto) {
+    let email = googleDto.email?.trim().toLowerCase();
+    let fullName = googleDto.fullName?.trim();
+    let avatarUrl = googleDto.avatarUrl?.trim();
+
+    // Decode ID token payload if provided
+    if (googleDto.idToken) {
+      try {
+        const parts = googleDto.idToken.split('.');
+        if (parts.length >= 2) {
+          const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+          const payload = JSON.parse(payloadJson);
+          if (payload.email) email = payload.email.trim().toLowerCase();
+          if (payload.name && !fullName) fullName = payload.name.trim();
+          if (payload.picture && !avatarUrl) avatarUrl = payload.picture.trim();
+        }
+      } catch {
+        // Fall back to direct dto fields
+      }
+    }
+
+    if (!email) {
+      throw new BadRequestException('Google account email is required');
+    }
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      if (user.isActive === false) {
+        throw new UnauthorizedException('Account is deactivated');
+      }
+
+      // Update avatar and last login timestamp
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          avatarUrl: user.avatarUrl || avatarUrl || null,
+        },
+      });
+
+      this.auditLogger.log({
+        userId: user.id,
+        action: 'AUTH_LOGIN_GOOGLE',
+        entityType: 'User',
+        entityId: user.id,
+      });
+
+      return this.generateTokens(user.id, user.email, user.role ?? 'VIEWER', user);
+    }
+
+    // Register new user seamlessly via Google OAuth
+    const tempPassword = crypto.randomBytes(24).toString('hex');
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName: fullName || email.split('@')[0],
+        avatarUrl: avatarUrl || null,
+        role: 'VIEWER',
+        emailVerified: true,
+        isActive: true,
+        lastLoginAt: new Date(),
+      },
+    });
+
+    this.auditLogger.log({
+      userId: newUser.id,
+      action: 'AUTH_REGISTER_GOOGLE',
+      entityType: 'User',
+      entityId: newUser.id,
+    });
+
+    return this.generateTokens(newUser.id, newUser.email, newUser.role ?? 'VIEWER', newUser);
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
