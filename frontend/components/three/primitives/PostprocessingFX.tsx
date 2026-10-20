@@ -23,12 +23,12 @@ export function PostprocessingFX({ tier }: PostprocessingFXProps) {
   return (
     <EffectComposer multisampling={isHigh ? 4 : 0}>
       <Bloom
-        intensity={isHigh ? 0.9 : 0.6}
-        luminanceThreshold={0.18}
-        luminanceSmoothing={0.6}
+        intensity={isHigh ? 1.25 : 0.85}
+        luminanceThreshold={0.15}
+        luminanceSmoothing={0.65}
         mipmapBlur
       />
-      <Vignette eskil={false} offset={0.15} darkness={0.6} />
+      <Vignette eskil={false} offset={0.12} darkness={0.55} />
       <Fragment>
         {isHigh ? (
           <>
