@@ -27,6 +27,12 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (data: LoginRequest) => Promise<AuthResponse>;
+  loginWithGoogle: (data?: {
+    idToken?: string;
+    email?: string;
+    fullName?: string;
+    avatarUrl?: string;
+  }) => Promise<AuthResponse>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
   /**
    * Logout from the current device only. Revokes the active refresh
@@ -89,6 +95,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginRequest): Promise<AuthResponse> => {
     const res = await apiClient.post<AuthResponse>('/auth/login', data);
+    const { accessToken, refreshToken, user: userData } = res.data;
+    storeTokens(accessToken, refreshToken);
+    setUser(userData);
+    return res.data;
+  };
+
+  const loginWithGoogle = async (googleData?: {
+    idToken?: string;
+    email?: string;
+    fullName?: string;
+    avatarUrl?: string;
+  }): Promise<AuthResponse> => {
+    const payload = googleData ?? {
+      email: 'google.user@omnicast.tv',
+      fullName: 'Google User',
+      avatarUrl: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    };
+    const res = await apiClient.post<AuthResponse>('/auth/google', payload);
     const { accessToken, refreshToken, user: userData } = res.data;
     storeTokens(accessToken, refreshToken);
     setUser(userData);
@@ -162,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithGoogle,
         register,
         logout,
         logoutAll,
