@@ -166,7 +166,7 @@ void main() {
     // TC-PRM-05: Logout clears storage
     // -----------------------------------------------------------------
     blocTest<AuthBloc, AuthState>(
-      'LogoutRequested emits [AuthLoading, Unauthenticated] and calls logout()',
+      'LogoutRequested emits Unauthenticated and calls logout()',
       build: () {
         when(() => mockRepo.logout())
             .thenAnswer((_) async {});
@@ -175,7 +175,6 @@ void main() {
       seed: () => Authenticated(_makeUser()),
       act: (bloc) => bloc.add(LogoutRequested()),
       expect: () => [
-        isA<AuthLoading>(),
         isA<Unauthenticated>(),
       ],
       verify: (_) {
@@ -193,7 +192,6 @@ void main() {
       seed: () => Authenticated(_makeUser()),
       act: (bloc) => bloc.add(LogoutRequested()),
       expect: () => [
-        isA<AuthLoading>(),
         isA<Unauthenticated>(),
       ],
     );
@@ -213,7 +211,6 @@ void main() {
       seed: () => Authenticated(_makeUser()),
       act: (bloc) => bloc.add(LogoutAllDevicesRequested()),
       expect: () => [
-        isA<AuthLoading>(),
         isA<Unauthenticated>(),
       ],
       verify: (_) {
@@ -233,7 +230,6 @@ void main() {
       seed: () => Authenticated(_makeUser()),
       act: (bloc) => bloc.add(LogoutAllDevicesRequested()),
       expect: () => [
-        isA<AuthLoading>(),
         isA<Unauthenticated>(),
       ],
     );
