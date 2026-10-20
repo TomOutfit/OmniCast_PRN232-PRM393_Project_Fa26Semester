@@ -107,13 +107,13 @@ export function FloatingShapes({
             <meshPhysicalMaterial
               color={it.color}
               emissive={it.color}
-              emissiveIntensity={0.35}
-              roughness={0.15}
-              metalness={0.85}
-              clearcoat={0.9}
-              clearcoatRoughness={0.1}
+              emissiveIntensity={0.55}
+              roughness={0.12}
+              metalness={0.8}
+              clearcoat={1}
+              clearcoatRoughness={0.08}
               transparent
-              opacity={0.7}
+              opacity={0.82}
               wireframe={false}
             />
           </mesh>
