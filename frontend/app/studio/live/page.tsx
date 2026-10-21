@@ -348,11 +348,20 @@ export default function WebLiveStudioPage() {
       : Array.from(input.target.files || []);
     if (files.length === 0) return;
 
+    const MAX_CLOUDINARY_BYTES = 100 * 1024 * 1024; // 100 MB
+    const oversizedFiles = files.filter((f) => f.size > MAX_CLOUDINARY_BYTES);
+    if (oversizedFiles.length > 0) {
+      toast.error(
+        `${oversizedFiles.length} file có dung lượng vượt quá giới hạn 100 MB của Cloudinary. Vui lòng nén video hoặc dùng tính năng "Thêm qua URL".`,
+      );
+    }
+
     toast.info(`Đang nạp ${files.length} file từ máy tính...`);
 
     const newLocalFiles: LocalPcFile[] = [];
 
     for (const file of files) {
+      const isOversized = file.size > MAX_CLOUDINARY_BYTES;
       const blobUrl = URL.createObjectURL(file);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       const title = file.name.replace(/\.[^/.]+$/, '');
@@ -378,10 +387,13 @@ export default function WebLiveStudioPage() {
         duration,
         thumbnailUrl,
         sizeMb,
-        isSelected: true,
+        isSelected: !isOversized,
         isAudioOnly,
-        phase: 'pending',
+        phase: isOversized ? 'failed' : 'pending',
         percent: 0,
+        error: isOversized
+          ? `Dung lượng ${sizeMb} MB vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng "Thêm qua URL".`
+          : undefined,
       });
     }
 
@@ -564,6 +576,18 @@ export default function WebLiveStudioPage() {
       local: LocalPcFile,
       opts: { allowChannelFallback: boolean },
     ): Promise<string | null> => {
+      // Guard against files exceeding Cloudinary limits upfront
+      const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+      if (local.file.size > MAX_UPLOAD_BYTES) {
+        const errorMsg = `Dung lượng ${local.sizeMb} MB vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
+        updateLocalFile(local.id, {
+          phase: 'failed',
+          error: errorMsg,
+        });
+        toast.error(`File "${local.title}" (${local.sizeMb} MB) vượt quá giới hạn 100 MB.`);
+        return null;
+      }
+
       const ac = new AbortController();
       cancelControllersRef.current.set(local.id, ac);
 
@@ -1421,6 +1445,14 @@ export default function WebLiveStudioPage() {
                 {localPcFiles.length > 0 && (
                   <div className="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-[#0e192a] to-[#09101d] border border-cyan-500/40 shadow-md space-y-3">
                     <div className="flex items-center justify-between">
+                      <input
+                        ref={localFileInputRef}
+                        type="file"
+                        accept="video/*,audio/*"
+                        multiple
+                        onChange={handleLocalFilesSelected}
+                        className="hidden"
+                      />
                       <button
                         type="button"
                         onClick={() => localFileInputRef.current?.click()}
