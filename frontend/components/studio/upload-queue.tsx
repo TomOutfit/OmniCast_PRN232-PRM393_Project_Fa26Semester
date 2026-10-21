@@ -564,10 +564,20 @@ function CircularProgressOverlay({ percent }: { percent: number }) {
 // ============================================================
 
 function formatTime(secs: number): string {
+  if (secs >= 3600) {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60)
+      .toString()
+      .padStart(2, '0');
+    const s = Math.floor(secs % 60)
+      .toString()
+      .padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
   const m = Math.floor(secs / 60)
     .toString()
     .padStart(2, '0');
-  const s = (secs % 60).toString().padStart(2, '0');
+  const s = Math.floor(secs % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
 

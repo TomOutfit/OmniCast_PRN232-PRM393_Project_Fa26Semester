@@ -51,10 +51,9 @@ export class SignUploadDto {
 
   @ApiPropertyOptional({
     description:
-      'Override the per-file byte cap. Defaults to 100 MB ' +
-      '(Cloudinary free-tier hard cap).',
+      'Override the per-file byte cap. Defaults to 2 GB.',
     minimum: 1024,
-    maximum: 100 * 1024 * 1024,
+    maximum: 2 * 1024 * 1024 * 1024,
   })
   @IsOptional()
   @IsInt()

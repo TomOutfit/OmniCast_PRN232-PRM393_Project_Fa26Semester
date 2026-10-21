@@ -245,8 +245,8 @@ function uploadSinglePart(
 
     xhr.onerror = () => {
       let msg = 'Lỗi kết nối khi upload lên Cloudinary.';
-      if (file.size > 100 * 1024 * 1024) {
-        msg = `File (${(file.size / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        msg = `File (${(file.size / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 2 GB của hệ thống. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
       }
       reject(new CloudinaryUploadError(msg, undefined, xhr));
     };
@@ -350,8 +350,8 @@ function uploadChunked(
 
           xhr.onerror = () => {
             let msg = 'Lỗi kết nối khi upload lên Cloudinary.';
-            if (totalSize > 100 * 1024 * 1024) {
-              msg = `File (${(totalSize / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng "Thêm qua URL".`;
+            if (totalSize > 2 * 1024 * 1024 * 1024) {
+              msg = `File (${(totalSize / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 2 GB của hệ thống. Hãy nén video hoặc dùng "Thêm qua URL".`;
             }
             rejectChunk(new CloudinaryUploadError(msg, undefined, xhr));
           };

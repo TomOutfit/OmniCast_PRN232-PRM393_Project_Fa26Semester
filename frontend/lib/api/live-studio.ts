@@ -291,7 +291,7 @@ export async function broadcastLocalFile(
       description,
       videoUrl: envelope.url,
       thumbnailUrl: envelope.thumbnailUrl,
-      duration: envelope.durationSec ?? duration,
+      duration: Math.max(1, Math.round(envelope.durationSec ?? duration)),
       visibility,
       tags: ['studio-local-upload', ...(tags ?? [])],
     });

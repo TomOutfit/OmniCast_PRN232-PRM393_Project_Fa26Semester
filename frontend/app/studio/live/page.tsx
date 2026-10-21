@@ -204,26 +204,56 @@ function drawFrame(
 }
 
 /**
- * Probe a media file for duration + audio-only detection. Falls
- * back to 180 s when the metadata can't be read.
+ * Probe a media file for duration + audio-only detection.
+ * Handles long videos and infinite duration webm/mp4 with a 15 s timeout.
  */
 const probeMediaFile = (blobUrl: string): Promise<{ duration: number; isAudioOnly: boolean }> => {
   return new Promise((resolve) => {
     const tempV = document.createElement('video');
     tempV.preload = 'metadata';
+    let settled = false;
+
+    const finish = (duration: number, isAudioOnly: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      tempV.onloadedmetadata = null;
+      tempV.onerror = null;
+      tempV.ontimeupdate = null;
+      resolve({
+        duration: Math.max(1, Math.round(duration)),
+        isAudioOnly,
+      });
+    };
+
     const timeoutId = window.setTimeout(() => {
-      resolve({ duration: 180, isAudioOnly: false });
-    }, 3000);
+      finish(180, false);
+    }, 15000);
+
     tempV.onloadedmetadata = () => {
-      window.clearTimeout(timeoutId);
-      const duration = Math.max(1, Math.round(tempV.duration || 180));
       const isAudioOnly = tempV.videoWidth === 0 || !tempV.videoWidth;
-      resolve({ duration, isAudioOnly });
+      if (isFinite(tempV.duration) && tempV.duration > 0) {
+        finish(tempV.duration, isAudioOnly);
+      } else {
+        // Fallback for media containers with infinite duration in header
+        tempV.currentTime = 1e101;
+        tempV.ontimeupdate = () => {
+          tempV.ontimeupdate = null;
+          const dur =
+            isFinite(tempV.duration) && tempV.duration > 0
+              ? tempV.duration
+              : tempV.currentTime && tempV.currentTime < 1e100
+                ? tempV.currentTime
+                : 180;
+          finish(dur, isAudioOnly);
+        };
+      }
     };
+
     tempV.onerror = () => {
-      window.clearTimeout(timeoutId);
-      resolve({ duration: 180, isAudioOnly: false });
+      finish(180, false);
     };
+
     tempV.src = blobUrl;
   });
 };
@@ -418,11 +448,11 @@ export default function WebLiveStudioPage() {
       : Array.from(input.target.files || []);
     if (files.length === 0) return;
 
-    const MAX_CLOUDINARY_BYTES = 100 * 1024 * 1024; // 100 MB
+    const MAX_CLOUDINARY_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
     const oversizedFiles = files.filter((f) => f.size > MAX_CLOUDINARY_BYTES);
     if (oversizedFiles.length > 0) {
       toast.error(
-        `${oversizedFiles.length} file có dung lượng vượt quá giới hạn 100 MB của Cloudinary. Vui lòng nén video hoặc dùng tính năng "Thêm qua URL".`,
+        `${oversizedFiles.length} file có dung lượng vượt quá giới hạn 2 GB của hệ thống. Vui lòng nén video hoặc dùng tính năng "Thêm qua URL".`,
       );
     }
 
@@ -454,7 +484,7 @@ export default function WebLiveStudioPage() {
         file,
         title,
         blobUrl,
-        duration,
+        duration: Math.max(1, Math.round(duration)),
         thumbnailUrl,
         sizeMb,
         isSelected: !isOversized,
@@ -462,7 +492,7 @@ export default function WebLiveStudioPage() {
         phase: isOversized ? 'failed' : 'pending',
         percent: 0,
         error: isOversized
-          ? `Dung lượng ${sizeMb} MB vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng "Thêm qua URL".`
+          ? `Dung lượng ${sizeMb} MB vượt quá giới hạn 2 GB của hệ thống. Hãy nén video hoặc dùng "Thêm qua URL".`
           : undefined,
       });
     }
@@ -646,15 +676,15 @@ export default function WebLiveStudioPage() {
       local: LocalPcFile,
       opts: { allowChannelFallback: boolean },
     ): Promise<string | null> => {
-      // Guard against files exceeding Cloudinary limits upfront
-      const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+      // Guard against files exceeding system limits upfront (2 GB)
+      const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
       if (local.file.size > MAX_UPLOAD_BYTES) {
-        const errorMsg = `Dung lượng ${local.sizeMb} MB vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
+        const errorMsg = `Dung lượng ${local.sizeMb} MB vượt quá giới hạn 2 GB của hệ thống. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
         updateLocalFile(local.id, {
           phase: 'failed',
           error: errorMsg,
         });
-        toast.error(`File "${local.title}" (${local.sizeMb} MB) vượt quá giới hạn 100 MB.`);
+        toast.error(`File "${local.title}" (${local.sizeMb} MB) vượt quá giới hạn 2 GB.`);
         return null;
       }
 
@@ -686,7 +716,7 @@ export default function WebLiveStudioPage() {
             customDesc ||
             `Nội dung phát từ PC của bạn (${local.sizeMb} MB)`,
           visibility: 'SCHEDULED',
-          duration: local.duration,
+          duration: Math.max(1, Math.round(local.duration)),
           signal: ac.signal,
           tags: ['studio-local-upload'],
           onProgress: (percent, loaded, total) => {
@@ -1255,10 +1285,22 @@ export default function WebLiveStudioPage() {
   };
 
   const formatTime = (secs: number) => {
+    if (secs >= 3600) {
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60)
+        .toString()
+        .padStart(2, '0');
+      const s = Math.floor(secs % 60)
+        .toString()
+        .padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
     const m = Math.floor(secs / 60)
       .toString()
       .padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
+    const s = Math.floor(secs % 60)
+      .toString()
+      .padStart(2, '0');
     return `${m}:${s}`;
   };
 
@@ -1599,12 +1641,30 @@ export default function WebLiveStudioPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-semibold">Thời lượng ước tính (giây):</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] text-slate-400 font-semibold">Thời lượng ước tính (giây):</label>
+                          <div className="flex items-center gap-1">
+                            {[300, 900, 1800, 3600, 7200].map((sec) => (
+                              <button
+                                key={sec}
+                                type="button"
+                                onClick={() => setCustomUrlDuration(sec)}
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-colors ${
+                                  customUrlDuration === sec
+                                    ? 'bg-cyan-500 text-black'
+                                    : 'bg-[#152339] text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                {sec >= 3600 ? `${sec / 3600}h` : `${sec / 60}p`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <input
                           type="number"
                           value={customUrlDuration}
-                          onChange={(e) => setCustomUrlDuration(Number(e.target.value) || 120)}
-                          placeholder="300"
+                          onChange={(e) => setCustomUrlDuration(Math.max(1, Math.round(Number(e.target.value)) || 300))}
+                          placeholder="3600"
                           className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                         />
                       </div>

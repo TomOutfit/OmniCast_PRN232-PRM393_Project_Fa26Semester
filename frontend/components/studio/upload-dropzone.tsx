@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const ACCEPTED_MIME = 'video/*,audio/*';
-const MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
 export interface UploadDropzoneProps {
   /** Called when the user picks files via picker or drops them. */
@@ -68,7 +68,7 @@ export function UploadDropzone({
 
       if (rejected.length > 0) {
         toast.error(
-          `${rejected.length} file vượt quá giới hạn 100 MB của Cloudinary: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
+          `${rejected.length} file vượt quá giới hạn 2 GB của hệ thống: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
         );
       }
 
@@ -127,7 +127,7 @@ export function UploadDropzone({
 
       if (rejected.length > 0) {
         toast.error(
-          `${rejected.length} file vượt quá giới hạn 100 MB: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
+          `${rejected.length} file vượt quá giới hạn 2 GB: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
         );
       }
 
@@ -241,7 +241,7 @@ export function UploadDropzone({
               MP3 · M4A · OGG
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/[0.04] text-[10px] font-mono font-bold text-slate-300 border border-white/10">
-              Tối đa 100 MB / file
+              Tối đa 2 GB / file
             </span>
           </div>
         )}
