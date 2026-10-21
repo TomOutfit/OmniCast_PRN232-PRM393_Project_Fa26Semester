@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../widgets/live/live_join_prompt_banner.dart';
 
 class MainScreen extends StatefulWidget {
   final Widget child;
@@ -66,9 +67,10 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
-      body: widget.child,
+    return LiveJoinPromptBanner(
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070B12),
+        body: widget.child,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Color(0xFF090F1A),
@@ -165,8 +167,9 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _NavItem {
