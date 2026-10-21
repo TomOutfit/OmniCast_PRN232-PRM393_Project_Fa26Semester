@@ -142,7 +142,9 @@ export async function addFromCatalog(payload: AddFromCatalogInput) {
 }
 
 export async function curateLive(payload: CurateLiveInput) {
-  const res = await apiClient.post('/programs/studio/curate-live', payload);
+  const res = await apiClient.post('/programs/studio/curate-live', payload, {
+    timeout: 60000,
+  });
   return res.data;
 }
 
@@ -150,6 +152,7 @@ export async function stopLive(eventId: string, payload?: StopLiveInput) {
   const res = await apiClient.post(
     `/programs/studio/live-events/${eventId}/stop`,
     payload || {},
+    { timeout: 30000 },
   );
   return res.data;
 }
