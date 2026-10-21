@@ -28,12 +28,17 @@ import { ListNotificationsQueryDto } from './dto/notifications.dto';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller()
 export class NotificationsController {
   constructor(
     private readonly notifications: NotificationsService,
     private readonly prisma: PrismaService,
   ) {}
+
+  private getUserId(req: any): string {
+    return req?.user?.sub ?? req?.user?.id ?? '';
+  }
 
   // ============================================================
   // Notifications
@@ -46,7 +51,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '200 OK — Notifications list' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   async list(@Request() req: any, @Query() query: ListNotificationsQueryDto) {
-    return this.notifications.list(req.user.sub, {
+    const userId = this.getUserId(req);
+    if (!userId) {
+      return { total: 0, unreadCount: 0, items: [] };
+    }
+    return this.notifications.list(userId, {
       limit: query.limit,
       offset: query.offset,
       filter: query.filter,
@@ -60,7 +69,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '200 OK — Unread count' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   async unreadCount(@Request() req: any) {
-    return this.notifications.unreadCount(req.user.sub);
+    const userId = this.getUserId(req);
+    if (!userId) {
+      return { unreadCount: 0 };
+    }
+    return this.notifications.unreadCount(userId);
   }
 
   @Post('me/notifications/read-all')
@@ -69,7 +82,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '200 OK — All marked as read' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   async markAllRead(@Request() req: any) {
-    return this.notifications.markAllRead(req.user.sub);
+    const userId = this.getUserId(req);
+    if (!userId) {
+      return { success: true, updated: 0 };
+    }
+    return this.notifications.markAllRead(userId);
   }
 
   @Post('me/notifications/:id/read')
@@ -78,7 +95,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '200 OK — Notification marked as read' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   async markOneRead(@Request() req: any, @Param('id') id: string) {
-    return this.notifications.markOneRead(req.user.sub, id);
+    const userId = this.getUserId(req);
+    if (!userId) {
+      return { success: true, updated: 0 };
+    }
+    return this.notifications.markOneRead(userId, id);
   }
 
   @Delete('me/notifications/:id')
@@ -86,7 +107,11 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '200 OK — Notification removed' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   async removeOne(@Request() req: any, @Param('id') id: string) {
-    return this.notifications.removeOne(req.user.sub, id);
+    const userId = this.getUserId(req);
+    if (!userId) {
+      return { success: true };
+    }
+    return this.notifications.removeOne(userId, id);
   }
 
   // ============================================================
