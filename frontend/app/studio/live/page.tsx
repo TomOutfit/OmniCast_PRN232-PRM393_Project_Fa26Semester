@@ -72,9 +72,10 @@ import {
   deleteCloudinaryAsset,
   CloudinaryAbortError,
 } from '@/lib/api/cloudinary';
+import { LiveBroadcasterConsole } from '@/components/studio/live-broadcaster-console';
 import { logError } from '@/lib/utils/safe-log';
 
-type StudioTab = 'curated' | 'self-record' | 'catalog';
+type StudioTab = 'curated' | 'self-record' | 'catalog' | 'interaction';
 type RecordSource = 'camera' | 'screen' | 'upload';
 type VisibilityMode = 'IMMEDIATE' | 'SCHEDULED' | 'PRIVATE';
 
@@ -1505,6 +1506,21 @@ export default function WebLiveStudioPage() {
             <Globe className="w-4 h-4" />
             <span>Mode 3: Danh Mục Nguồn Video Công Khai</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('interaction')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'interaction'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/20'
+                : 'bg-[#0e1726] text-slate-400 hover:text-white border border-[#1b2b42]'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-pink-400" />
+            <span>Mode 4: Tương Tác 2 Chiều (Live)</span>
+            {activeLiveForChannel && (
+              <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+            )}
+          </button>
         </div>
 
         {/* ── MODE 1: Curated Live Broadcast ───────────────────────────── */}
@@ -2787,6 +2803,38 @@ export default function WebLiveStudioPage() {
                     );
                   })}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MODE 4: 2-Way Realtime Interaction (Host Console) ──────────── */}
+        {activeTab === 'interaction' && (
+          <div className="space-y-4">
+            {activeLiveForChannel ? (
+              <LiveBroadcasterConsole
+                eventId={activeLiveForChannel.id}
+                channelName={selectedChannel?.name || 'Kênh trực tiếp'}
+                streamTitle={activeLiveForChannel.title}
+                streamUrl={activeLiveForChannel.streamUrl}
+              />
+            ) : (
+              <Card className="glass-card p-12 border border-[#1e2d44] bg-[#0c1421]/60 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-pink-950/40 border border-pink-500/30 flex items-center justify-center text-pink-400 mx-auto">
+                  <Radio className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white">Chưa có sự kiện Live nào đang phát sóng</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Kênh &ldquo;{selectedChannel?.name || 'này'}&rdquo; hiện không có luồng phát sóng trực tiếp nào. Hãy chuyển sang tab &ldquo;Mode 1: Chọn Nội Dung Phát Lên Màn Hình&rdquo; để chọn video và bấm &ldquo;PHÁT LIVE NGAY&rdquo;!
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setActiveTab('curated')}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                >
+                  Sang chọn nội dung phát Live
+                </Button>
+              </Card>
             )}
           </div>
         )}
