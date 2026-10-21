@@ -28,11 +28,14 @@ import {
   ShieldCheck,
   ArrowLeft,
   RefreshCw,
+  Radio,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn, resolveStreamUrl, resolvePosterUrl, VERIFIED_FALLBACK_STREAMS } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
+import { useLiveStream, LiveEvent } from '@/lib/hooks/useLiveStream';
 
 // ── Dynamic hls.js import (avoids SSR / non-browser bundling issues) ──────────
 type HlsType = typeof import('hls.js').default;
@@ -107,6 +110,8 @@ export interface VideoPlayerProps {
   channelName?: string;
   /** Content-attribution text shown as small overlay. */
   sourceAttribution?: string;
+  /** Channel slug for live stream notifications (optional). */
+  channelSlug?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -122,6 +127,7 @@ export function VideoPlayer({
   isPremium = false,
   channelName = 'Kênh Premium',
   sourceAttribution,
+  channelSlug,
 }: VideoPlayerProps) {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -140,11 +146,42 @@ export function VideoPlayer({
   const [hlsRetryLeft, setHlsRetryLeft] = useState(0);
   /** True when we are in the middle of a retry attempt. */
   const [isRetrying, setIsRetrying] = useState(false);
+  /** Current live event (if any) */
+  const [currentLiveEvent, setCurrentLiveEvent] = useState<LiveEvent | null>(null);
+
+  // ── Live Stream Integration ─────────────────────────────────────────────────
+  const { isLive, liveEvent, viewerCount, isConnected } = useLiveStream(channelSlug, {
+    autoConnect: !!channelSlug,
+    debug: false,
+  });
+
+  // Update current live event when received
+  useEffect(() => {
+    if (isLive && liveEvent) {
+      setCurrentLiveEvent(liveEvent);
+      // Show toast notification
+      toast.success('Admin đang phát trực tiếp!', {
+        description: liveEvent.title,
+        icon: '📺',
+        duration: 5000,
+      });
+    } else {
+      setCurrentLiveEvent(null);
+    }
+  }, [isLive, liveEvent]);
+
+  // Determine which URL to play: live stream takes priority
+  const effectiveSrc = useMemo(() => {
+    if (isLive && currentLiveEvent?.streamUrl) {
+      return currentLiveEvent.streamUrl;
+    }
+    return src;
+  }, [isLive, currentLiveEvent, src]);
 
   // ── Build URL fallback chain ──────────────────────────────────────────────
   const chain: string[] = useMemo(() => {
     const list: string[] = [];
-    const primary = resolveStreamUrl(src);
+    const primary = resolveStreamUrl(effectiveSrc);
     if (primary) list.push(primary);
     const fallback = resolveStreamUrl(fallbackSrc);
     if (fallback && !list.includes(fallback)) list.push(fallback);
@@ -158,7 +195,7 @@ export function VideoPlayer({
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, fallbackSrc]);
+  }, [effectiveSrc, fallbackSrc]);
 
   // Reset on new src
   useEffect(() => {
@@ -169,7 +206,7 @@ export function VideoPlayer({
     setHlsRetryLeft(0);
     setIsRetrying(false);
     isRetryingRef.current = false;
-  }, [src, fallbackSrc]);
+  }, [effectiveSrc, fallbackSrc]);
 
   // ── VIP ──────────────────────────────────────────────────────────────────
   const [isVip, setIsVip] = useState<boolean>(false);
@@ -520,6 +557,44 @@ export function VideoPlayer({
 
   return (
     <div className={cn('player-container group relative w-full aspect-video bg-black overflow-hidden', className)}>
+
+      {/* ── LIVE Badge & Viewer Count ──────────────────────────────────────── */}
+      {isLive && currentLiveEvent && (
+        <div className="absolute top-4 left-4 z-30 flex items-center gap-3">
+          {/* LIVE Badge */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 text-white shadow-lg">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider">LIVE</span>
+          </div>
+
+          {/* Live Event Title */}
+          {currentLiveEvent.title && (
+            <div className="max-w-[200px] px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm">
+              <p className="text-xs font-medium text-white truncate">
+                {currentLiveEvent.title}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Viewer Count (when live) ───────────────────────────────────────── */}
+      {isLive && viewerCount > 0 && (
+        <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm">
+          <Users className="w-3.5 h-3.5 text-slate-300" />
+          <span className="text-xs font-medium text-slate-200">
+            {viewerCount.toLocaleString()}
+          </span>
+        </div>
+      )}
+
+      {/* ── WebSocket Connection Status (debug) ────────────────────────────── */}
+      {channelSlug && !isConnected && (
+        <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 px-2 py-1 rounded bg-amber-600/80">
+          <Radio className="w-3 h-3 text-white animate-pulse" />
+          <span className="text-[10px] font-mono text-white">Connecting...</span>
+        </div>
+      )}
 
       {/* ── Retry overlay (shown during HLS network retry) ──────────────── */}
       {isRetrying && (
