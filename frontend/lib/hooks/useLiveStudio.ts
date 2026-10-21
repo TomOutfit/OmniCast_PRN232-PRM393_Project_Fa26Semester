@@ -34,11 +34,12 @@ export function useBroadcastableRecordings(
   channelId: string | undefined,
   search?: string,
   limit: number = 50,
+  allOmnicast: boolean = false,
 ) {
   return useQuery({
-    queryKey: liveStudioKeys.broadcastable(channelId || '', search),
-    queryFn: () => fetchBroadcastableRecordings(channelId!, search, limit),
-    enabled: !!channelId,
+    queryKey: [...liveStudioKeys.broadcastable(allOmnicast ? 'all' : (channelId || ''), search), allOmnicast],
+    queryFn: () => fetchBroadcastableRecordings(channelId || 'all', search, limit, allOmnicast),
+    enabled: !!channelId || allOmnicast,
     staleTime: 10 * 1000,
   });
 }

@@ -38,7 +38,10 @@ import {
   HardDrive,
   Link2,
   Trash2,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
+import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -308,6 +311,7 @@ export default function WebLiveStudioPage() {
   // ----------------------------------------------------
   // Tab 1: Curated Live State
   // ----------------------------------------------------
+  const [useAllOmnicastVod, setUseAllOmnicastVod] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecordingIds, setSelectedRecordingIds] = useState<string[]>(
     [],
@@ -315,11 +319,72 @@ export default function WebLiveStudioPage() {
   const [customTitle, setCustomTitle] = useState('');
   const [customDesc, setCustomDesc] = useState('');
 
+  // Two-way interaction state with mobile viewers
+  const [liveComments, setLiveComments] = useState<any[]>([]);
+  const [hostReplyText, setHostReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [showInteractionPanel, setShowInteractionPanel] = useState(true);
+
+  // Poll live comments every 3 seconds when channel is LIVE
+  useEffect(() => {
+    if (!activeLiveForChannel?.id) {
+      setLiveComments([]);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchComments = async () => {
+      try {
+        const res = await apiClient.get(
+          `/programs/live-events/${activeLiveForChannel.id}/comments?limit=30`,
+        );
+        if (!isMounted) return;
+        const list = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        setLiveComments(list);
+      } catch {
+        // best-effort
+      }
+    };
+
+    fetchComments();
+    const interval = setInterval(fetchComments, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeLiveForChannel?.id]);
+
+  const handleSendHostReply = async () => {
+    if (!activeLiveForChannel?.id || !hostReplyText.trim() || isSendingReply) return;
+    try {
+      setIsSendingReply(true);
+      await apiClient.post(
+        `/programs/live-events/${activeLiveForChannel.id}/comments`,
+        { content: hostReplyText.trim() },
+      );
+      setHostReplyText('');
+      toast.success('Đã gửi tin nhắn đến khán giả trên điện thoại!');
+      const res = await apiClient.get(
+        `/programs/live-events/${activeLiveForChannel.id}/comments?limit=30`,
+      );
+      setLiveComments(res.data?.data || (Array.isArray(res.data) ? res.data : []));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể gửi phản hồi');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
   const {
     data: recordingsData,
     isLoading: loadingRecordings,
     refetch: refetchRecordings,
-  } = useBroadcastableRecordings(selectedChannel?.slug, searchQuery);
+  } = useBroadcastableRecordings(
+    useAllOmnicastVod ? 'all' : selectedChannel?.slug,
+    searchQuery,
+    100,
+    useAllOmnicastVod,
+  );
 
   const curatedRecordings = useMemo(
     () => recordingsData?.items ?? [],
@@ -1257,54 +1322,149 @@ export default function WebLiveStudioPage() {
           liveChannelIds={liveChannelIds}
         />
 
-        {/* 2. Active LIVE Status Banner (if currently live) */}
+        {/* 2. Active LIVE Status Banner & Two-Way Interactive Panel */}
         {activeLiveForChannel && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/40 via-red-900/20 to-[#0c1421] border border-red-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <span className="w-3 h-3 rounded-full bg-red-500 block animate-ping absolute top-0 right-0" />
-                <div className="w-10 h-10 rounded-xl bg-red-950 border border-red-500/60 flex items-center justify-center text-red-400">
-                  <Radio className="w-5 h-5 animate-pulse" />
+          <div className="space-y-3">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/40 via-red-900/20 to-[#0c1421] border border-red-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <span className="w-3 h-3 rounded-full bg-red-500 block animate-ping absolute top-0 right-0" />
+                  <div className="w-10 h-10 rounded-xl bg-red-950 border border-red-500/60 flex items-center justify-center text-red-400">
+                    <Radio className="w-5 h-5 animate-pulse" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono font-black bg-red-600 text-white uppercase tracking-widest">
+                      LIVE NOW
+                    </span>
+                    <span className="text-xs text-slate-300 font-semibold">
+                      Kênh: {selectedChannel?.name}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white mt-1">
+                    {activeLiveForChannel.title}
+                  </h3>
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-mono font-black bg-red-600 text-white uppercase tracking-widest">
-                    LIVE NOW
-                  </span>
-                  <span className="text-xs text-slate-300 font-semibold">
-                    Kênh: {selectedChannel?.name}
-                  </span>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[11px] text-slate-400">Khán giả điện thoại</p>
+                  <p className="text-sm font-black text-cyan-300 font-mono">
+                    {activeLiveForChannel.viewerCount || 0} Viewer
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white mt-1">
-                  {activeLiveForChannel.title}
-                </h3>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowInteractionPanel((prev) => !prev)}
+                  className="gap-1.5 border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/50 font-bold text-xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{showInteractionPanel ? 'Thu gọn chat' : 'Mở chat 2 chiều'}</span>
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleStopLive}
+                  disabled={stopLiveMutation.isPending}
+                  className="gap-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs"
+                >
+                  {stopLiveMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <StopCircle className="w-4 h-4" />
+                  )}
+                  <span>DỪNG PHÁT SÓNG</span>
+                </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs text-slate-400">Người xem trực tiếp</p>
-                <p className="text-sm font-black text-cyan-300 font-mono">
-                  {activeLiveForChannel.viewerCount || 0} Viwer
-                </p>
-              </div>
+            {/* Two-Way Interaction Panel: Live Chat with Mobile Viewers */}
+            {showInteractionPanel && (
+              <div className="p-4 rounded-2xl bg-[#09111c] border border-cyan-500/30 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-[#18273c] pb-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                      Phòng Tương Tác 2 Chiều: Host & Khán Giả Điện Thoại
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
+                      {liveComments.length} bình luận
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Đang kết nối luồng Mobile
+                  </span>
+                </div>
 
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleStopLive}
-                disabled={stopLiveMutation.isPending}
-                className="gap-2 bg-red-600 hover:bg-red-500 text-white font-bold"
-              >
-                {stopLiveMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <StopCircle className="w-4 h-4" />
-                )}
-                <span>DỪNG PHÁT SÓNG</span>
-              </Button>
-            </div>
+                {/* Live Comments Stream */}
+                <div className="h-44 overflow-y-auto space-y-2 pr-2 text-xs divide-y divide-[#142032]">
+                  {liveComments.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-slate-500 text-xs">
+                      Chưa có bình luận nào từ khán giả. Hãy nhập tin nhắn bên dưới để bắt đầu tương tác với người xem điện thoại!
+                    </div>
+                  ) : (
+                    liveComments.map((c: any, idx: number) => (
+                      <div key={c.id || idx} className="pt-2 flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                          {(c.user?.fullName || c.userName || 'U')[0]?.toUpperCase() || 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-cyan-300 text-[11px]">
+                              {c.user?.fullName || c.userName || 'Khán giả OmniCast'}
+                              {c.user?.role === 'ADMIN' || c.user?.role === 'STAFF' ? (
+                                <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] bg-red-600 text-white font-mono">
+                                  HOST
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {c.createdAt ? new Date(c.createdAt).toLocaleTimeString('vi-VN') : ''}
+                            </span>
+                          </div>
+                          <p className="text-slate-200 text-xs mt-0.5 break-words">
+                            {c.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Host Send Message Form */}
+                <div className="flex items-center gap-2 pt-1 border-t border-[#18273c]">
+                  <input
+                    type="text"
+                    value={hostReplyText}
+                    onChange={(e) => setHostReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSendHostReply();
+                    }}
+                    placeholder="Nhập tin nhắn/phản hồi từ Host gửi tới khán giả trên điện thoại..."
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={isSendingReply || !hostReplyText.trim()}
+                    onClick={handleSendHostReply}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 px-4 shadow-[0_0_12px_rgba(0,242,254,0.3)]"
+                  >
+                    {isSendingReply ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    <span>Gửi đến Mobile</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1509,6 +1669,42 @@ export default function WebLiveStudioPage() {
                   </div>
                 )}
 
+                {/* VOD Library Scope Selector: Toàn bộ kho VOD OmniCast vs Kho riêng kênh */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-[#070d17] border border-[#1b2b42]">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-semibold text-slate-300">Nguồn video:</span>
+                    <div className="flex items-center gap-1 bg-[#040810] p-1 rounded-lg border border-[#142032]">
+                      <button
+                        type="button"
+                        onClick={() => setUseAllOmnicastVod(true)}
+                        className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                          useAllOmnicastVod
+                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Kho VOD OmniCast (Khuyên dùng)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUseAllOmnicastVod(false)}
+                        className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                          !useAllOmnicastVod
+                            ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Tv className="w-3 h-3" />
+                        <span>Kênh {selectedChannel?.name ?? ''}</span>
+                      </button>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {curatedRecordings.length} video trong kho
+                  </span>
+                </div>
+
                 {/* Search Bar */}
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1516,7 +1712,11 @@ export default function WebLiveStudioPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm theo tiêu đề video trong kho kênh..."
+                    placeholder={
+                      useAllOmnicastVod
+                        ? 'Tìm kiếm theo tiêu đề trong toàn bộ kho VOD OmniCast (24+ video)...'
+                        : 'Tìm kiếm theo tiêu đề video trong kho kênh...'
+                    }
                     className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -1533,12 +1733,22 @@ export default function WebLiveStudioPage() {
                   <div className="p-8 text-center rounded-xl bg-[#070b12] border border-[#142032] space-y-3">
                     <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
                     <p className="text-xs font-semibold text-slate-300">
-                      Chưa có video nào trong kho lưu trữ của kênh này.
+                      Chưa có video nào phù hợp với bộ lọc tìm kiếm.
                     </p>
                     <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
-                      Bạn có thể chọn nhanh nguồn từ kho video công khai đã kiểm định (Mode 3) hoặc tự quay/upload clip mới (Mode 2).
+                      Bạn có thể chuyển sang chế độ &ldquo;Kho VOD OmniCast&rdquo; để chọn trong hơn 24 video có sẵn hoặc chọn file từ máy tính.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      {!useAllOmnicastVod && (
+                        <Button
+                          size="sm"
+                          onClick={() => setUseAllOmnicastVod(true)}
+                          className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          Xem kho VOD OmniCast
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         onClick={() => localFileInputRef.current?.click()}
@@ -1554,15 +1764,6 @@ export default function WebLiveStudioPage() {
                       >
                         <Globe className="w-3.5 h-3.5" />
                         Thêm từ Mode 3 (Kho công khai)
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setActiveTab('self-record')}
-                        className="border-purple-500/40 text-purple-300 hover:bg-purple-950/40 font-bold text-xs gap-1.5"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        Tự ghi hình ở Mode 2
                       </Button>
                     </div>
                   </div>
@@ -1611,10 +1812,15 @@ export default function WebLiveStudioPage() {
                               <p className="text-[11px] text-slate-400 truncate">
                                 {rec.description || 'Không có mô tả'}
                               </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-900">
-                                  {rec.contentSource}
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-1.5 py-0.2 rounded border border-cyan-800">
+                                  {rec.channel?.name || 'OmniCast VOD'}
                                 </span>
+                                {rec.externalPlatform && (
+                                  <span className="text-[9px] font-mono text-amber-300 bg-amber-950/60 px-1 rounded border border-amber-900/40">
+                                    {rec.externalPlatform}
+                                  </span>
+                                )}
                                 <span className="text-[10px] text-slate-500">
                                   {rec.viewCount || 0} lượt xem
                                 </span>
