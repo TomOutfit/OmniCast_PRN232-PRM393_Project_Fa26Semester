@@ -250,6 +250,7 @@ export class LiveStudioController {
   })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'all', required: false, type: Boolean })
   @ApiResponse({ status: 200, description: '200 OK — Broadcastable recordings' })
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden' })
@@ -258,10 +259,12 @@ export class LiveStudioController {
     @Param('channelId') channelId: string,
     @Query('search') search?: string,
     @Query('limit') limit?: number,
+    @Query('all') all?: string,
   ) {
+    const isAll = all === 'true' || channelId === 'all';
     const items = await this.studioService.listBroadcastableRecordings(
       channelId,
-      { search, limit },
+      { search, limit, allOmnicast: isAll },
     );
     return { total: items.length, items };
   }

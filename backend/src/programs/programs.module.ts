@@ -21,11 +21,14 @@ import { StreamHealthCheckService } from './stream-health-check.service';
 import { StreamHealthCheckCron } from './stream-health-check.cron';
 import { StreamHealthController } from './stream-health.controller';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+
 @Module({
   imports: [
     ScheduleModule.forRoot(), // for @Cron decorators
     AuditLoggerModule,
     IngestModule,
+    NotificationsModule,
   ],
   controllers: [
     ProgramsController,
