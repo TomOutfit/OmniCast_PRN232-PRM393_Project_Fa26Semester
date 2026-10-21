@@ -159,8 +159,8 @@ class _LiveNowScreenState extends State<LiveNowScreen> {
               tooltip: 'Live Studio (Phát sóng)',
               icon: const Icon(Icons.podcasts_rounded, color: _danger),
               onPressed: () {
-                final slug = _activeEvents.isNotEmpty
-                    ? _activeEvents.first.channel?.slug
+                final slug = _events.isNotEmpty
+                    ? _events.first.channel?.slug
                     : null;
                 context.push(
                   slug != null
