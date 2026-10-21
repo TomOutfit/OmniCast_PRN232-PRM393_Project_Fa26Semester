@@ -63,8 +63,12 @@ import {
 } from '@/lib/hooks/useLiveStudio';
 import type { Channel } from '@/types';
 import type { StudioCatalogStream } from '@/lib/api/live-studio';
-import { deleteCloudinaryAsset } from '@/lib/api/cloudinary';
-import { CloudinaryAbortError } from '@/lib/api/cloudinary';
+import {
+  signCloudinaryUpload,
+  uploadToCloudinaryDirect,
+  deleteCloudinaryAsset,
+  CloudinaryAbortError,
+} from '@/lib/api/cloudinary';
 import { logError } from '@/lib/utils/safe-log';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog';
@@ -1113,22 +1117,38 @@ export default function WebLiveStudioPage() {
       setUploadProgress(1);
       let videoUrl: string | undefined = undefined;
 
-      // 1. Try server storage upload first; if file exceeds serverless upload limit, smoothly stream directly from client
+      // 1. Try Cloudinary direct upload first (permanent CDN storage, supports large video files)
       try {
-        const uploadRes = await uploadFileMutation.mutateAsync({
-          file: recordedFile,
+        const signed = await signCloudinaryUpload({
+          channelSlug: selectedChannel.slug,
           title: selfTitle,
-          onProgress: (p) => setUploadProgress(p),
+          tags: ['self-record', 'web-studio'],
         });
-        videoUrl = (uploadRes as any)?.url || (uploadRes as any)?.data?.url || uploadRes.url;
-      } catch (fileUploadErr: any) {
-        console.warn('[Studio Live] Serverless direct storage upload skipped/failed, streaming directly from device:', fileUploadErr);
-        videoUrl = recordedPreviewUrl || URL.createObjectURL(recordedFile);
-        toast.info('Video thời lượng dài (> 4.5 MB) được phát trực tiếp từ máy của bạn vào Live Studio!', { duration: 6000 });
+        const uploadResult = await uploadToCloudinaryDirect(
+          signed,
+          recordedFile,
+          {
+            onProgress: (percent) => setUploadProgress(percent),
+          },
+        );
+        videoUrl = uploadResult.secure_url;
+      } catch (cldErr: any) {
+        console.warn('[Studio Live] Cloudinary direct upload failed, trying server storage:', cldErr);
+        // Fallback to server storage
+        try {
+          const uploadRes = await uploadFileMutation.mutateAsync({
+            file: recordedFile,
+            title: selfTitle,
+            onProgress: (p) => setUploadProgress(p),
+          });
+          videoUrl = (uploadRes as any)?.url || (uploadRes as any)?.data?.url || uploadRes.url;
+        } catch (serverErr: any) {
+          console.warn('[Studio Live] Server storage also failed:', serverErr);
+        }
       }
 
       if (!videoUrl) {
-        throw new Error('Không thể khởi tạo luồng video để phát sóng.');
+        throw new Error('Không thể tải video lên máy chủ lưu trữ (Cloudinary/Server). Vui lòng kiểm tra kết nối mạng và thử lại.');
       }
 
       // 2. Persist recording metadata & optionally curate live

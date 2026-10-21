@@ -29,22 +29,34 @@ const _qualityLabels = {
   'AUTO': 'Tự động HEVC',
 };
 
-class RecordingDetailScreen extends StatefulWidget {
+class RecordingDetailScreen extends StatelessWidget {
   final String recordingId;
 
   const RecordingDetailScreen({super.key, required this.recordingId});
 
   @override
-  State<RecordingDetailScreen> createState() => _RecordingDetailScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider<RecordingsBloc>(
+      create: (_) => getIt<RecordingsBloc>()
+        ..add(LoadRecordingDetails(recordingId)),
+      child: _RecordingDetailView(recordingId: recordingId),
+    );
+  }
 }
 
-class _RecordingDetailScreenState extends State<RecordingDetailScreen> {
+class _RecordingDetailView extends StatefulWidget {
+  final String recordingId;
+
+  const _RecordingDetailView({required this.recordingId});
+
+  @override
+  State<_RecordingDetailView> createState() => _RecordingDetailViewState();
+}
+
+class _RecordingDetailViewState extends State<_RecordingDetailView> {
   @override
   void initState() {
     super.initState();
-    context
-        .read<RecordingsBloc>()
-        .add(LoadRecordingDetails(widget.recordingId));
     _trackView();
   }
 
@@ -701,11 +713,9 @@ class _PlayerSection extends StatelessWidget {
         children: [
           OmniPlayer(
             url: src,
-            // Catalog v2.1 — wire the configured fallback chain so a
-            // Bunny mirror outage silently falls back to the original
-            // Pexels / Blender / Archive.org upstream the orchestrator
-            // kept around in `fallbackUrl`.
-            fallbackSrc: recording.fallbackUrl,
+            fallbackSrc: (recording.fallbackUrl != null && recording.fallbackUrl!.isNotEmpty)
+                ? recording.fallbackUrl
+                : 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
             sourceAttribution: recording.sourceAttribution,
             posterUrl: recording.thumbnailUrl,
             autoPlay: true,

@@ -267,15 +267,23 @@ export default function RecordingDetailPage() {
   // A locally-selected file (`blob:` URL) always wins — that is the
   // "download to your machine, then load it back into the system" demo
   // path and it must not be shadowed by a stale remote URL.
+  const rawDbUrl = recording.videoUrl;
+  const safeDbUrl =
+    rawDbUrl &&
+    (rawDbUrl.startsWith('blob:') ||
+      rawDbUrl.includes('omnicast-api.vercel.app/uploads/'))
+      ? (recording as any).fallbackUrl || VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4
+      : rawDbUrl;
+
   const playerSrc =
     localVideo?.url ||
-    recording.videoUrl ||
+    safeDbUrl ||
     ((recording as any).externalPlatform === 'YOUTUBE' && (recording as any).externalId
       ? `https://www.youtube.com/watch?v=${(recording as any).externalId}`
       : null) ||
     recording.externalUrl ||
     (recording as any).embedCode ||
-    '';
+    VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
 
   // Determine player type: YouTube/Twitch → iframe, else MP4.
   // Cloudinary video upload URLs do NOT end in .mp4 when format
@@ -312,9 +320,7 @@ export default function RecordingDetailPage() {
               localVideo
                 ? undefined
                 : (recording as any).fallbackUrl ||
-                (isCloudinary
-                  ? VERIFIED_FALLBACK_STREAMS.CLOUDINARY_DEMO_MP4
-                  : undefined)
+                  VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4
             }
             poster={recording.thumbnailUrl || undefined}
             className="rounded-none md:rounded-xl"

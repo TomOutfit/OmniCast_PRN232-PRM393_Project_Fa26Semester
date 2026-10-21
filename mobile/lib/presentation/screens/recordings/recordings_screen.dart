@@ -2,6 +2,7 @@
 // Cyber-Dark VOD Experience with Featured Carousel, Category Pills,
 // Search Bar, and Infinite-Scroll 4K VOD Grid.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,8 @@ class RecordingsScreen extends StatefulWidget {
 class _RecordingsScreenState extends State<RecordingsScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  List<RecordingModel> _cachedFeatured = const [];
 
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [{'key': 'ALL', 'label': 'Tất cả'}];
@@ -36,6 +39,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -45,7 +49,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
     if (!_scrollController.hasClients) return;
     final max = _scrollController.position.maxScrollExtent;
     final current = _scrollController.position.pixels;
-    if (max - current <= 300) {
+    if (max > 0 && max - current <= 300) {
       final bloc = context.read<RecordingsBloc>();
       final state = bloc.state;
       if (state is RecordingsLoaded && state.hasMore && !state.isLoadingMore) {
@@ -60,12 +64,17 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   }
 
   Future<void> _onRefresh() async {
+    _searchDebounce?.cancel();
     context.read<RecordingsBloc>().add(RefreshRecordings());
     await Future.delayed(const Duration(milliseconds: 600));
   }
 
   void _onCategoryChanged(String? category) {
+    _searchDebounce?.cancel();
     setState(() => _selectedCategory = category);
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
     context.read<RecordingsBloc>().add(LoadRecordings(
           category: category,
           search: _searchController.text.trim().isEmpty
@@ -76,11 +85,18 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   }
 
   void _onSearch(String value) {
-    context.read<RecordingsBloc>().add(LoadRecordings(
-          category: _selectedCategory,
-          search: value.trim().isEmpty ? null : value.trim(),
-          page: 1,
-        ));
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      context.read<RecordingsBloc>().add(LoadRecordings(
+            category: _selectedCategory,
+            search: value.trim().isEmpty ? null : value.trim(),
+            page: 1,
+          ));
+    });
   }
 
   @override
@@ -105,21 +121,28 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
             IconButton(
               icon: const Icon(Icons.clear_rounded, color: Color(0xFF94A3B8)),
               onPressed: () {
+                _searchDebounce?.cancel();
                 _searchController.clear();
-                _onSearch('');
+                context.read<RecordingsBloc>().add(LoadRecordings(
+                      category: _selectedCategory,
+                      page: 1,
+                    ));
               },
             ),
         ],
       ),
       body: Column(
         children: [
-          // Featured strip
+          // Featured strip (stabilized without jumpy buildWhen)
           BlocBuilder<RecordingsBloc, RecordingsState>(
-            buildWhen: (prev, cur) =>
-                cur is RecordingsLoaded && cur.featured.isNotEmpty,
             builder: (context, state) {
               if (state is RecordingsLoaded && state.featured.isNotEmpty) {
-                return _FeaturedStrip(recordings: state.featured);
+                _cachedFeatured = state.featured;
+              }
+              if (_cachedFeatured.isNotEmpty &&
+                  _selectedCategory == null &&
+                  _searchController.text.isEmpty) {
+                return _FeaturedStrip(recordings: _cachedFeatured);
               }
               return const SizedBox.shrink();
             },
@@ -284,6 +307,27 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                         ),
                       ],
                     ),
+                  );
+                }
+
+                if (state is RecordingsInitial) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                  );
+                }
+
+                if (state is! RecordingsLoaded &&
+                    state is! RecordingsLoading &&
+                    state is! RecordingsError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      context
+                          .read<RecordingsBloc>()
+                          .add(const LoadRecordings(limit: 24));
+                    }
+                  });
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
                   );
                 }
 

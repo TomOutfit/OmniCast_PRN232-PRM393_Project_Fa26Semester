@@ -142,6 +142,11 @@ export function resolveStreamUrl(url: string | null | undefined): string {
     return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
   }
 
+  // Broken Vercel serverless /uploads/ paths that return 500 on Vercel
+  if (lower.includes('omnicast-api.vercel.app/uploads/')) {
+    return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
+  }
+
   if (
     lower.startsWith('http://') ||
     lower.startsWith('https://') ||

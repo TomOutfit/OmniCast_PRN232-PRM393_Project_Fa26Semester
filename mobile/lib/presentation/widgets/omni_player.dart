@@ -14,15 +14,26 @@ import '../../../core/constants/app_constants.dart';
 const _kFallbackStream =
     'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
 
+/// Extracts a YouTube 11-char video ID from any format (watch, shorts, embed, youtu.be).
+String? _extractYouTubeVideoId(String url) {
+  if (url.isEmpty) return null;
+  final regExp = RegExp(
+    r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|watch\?.+&v=))([\w-]{11})',
+    caseSensitive: false,
+  );
+  final match = regExp.firstMatch(url);
+  return match?.group(1);
+}
+
 /// Returns true when the URL should be rendered in a WebView (YouTube
 /// embed / any iframe-only source). The native `video_player` package
 /// cannot decode YouTube's DASH/SABR manifests, so we route YouTube
 /// embeds through a WebView instead.
 bool _isYouTubeEmbed(String url) {
   if (url.isEmpty) return false;
-  return url.contains('youtube.com/embed/') ||
-      url.contains('youtu.be/') ||
-      url.contains('youtube.com/watch?v=');
+  return _extractYouTubeVideoId(url) != null ||
+      url.contains('youtube.com/') ||
+      url.contains('youtu.be/');
 }
 
 class OmniPlayer extends StatefulWidget {
@@ -76,6 +87,11 @@ class _OmniPlayerState extends State<OmniPlayer> {
   @override
   void initState() {
     super.initState();
+    // YouTube embeds are handled exclusively by _YouTubeEmbed WebView.
+    // Do NOT initialize native VideoPlayerController on YouTube URLs.
+    if (_isYouTubeEmbed(widget.url)) {
+      return;
+    }
     if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
       _initialize(widget.url);
     }
@@ -88,6 +104,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
       _disposeController();
       _hasError = false;
       _usedFallback = false;
+      if (_isYouTubeEmbed(widget.url)) {
+        return;
+      }
       if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
         _initialize(widget.url);
       }
@@ -104,9 +123,18 @@ class _OmniPlayerState extends State<OmniPlayer> {
   /// form, so we transparently prefix them with the API origin
   /// here. Absolute URLs (the common case) pass through untouched.
   static String _resolveAbsoluteUrl(String url) {
-    if (url.isEmpty) return url;
+    if (url.isEmpty) return _kFallbackStream;
     final lower = url.toLowerCase();
+    // Browser memory blob URLs cannot be decoded by native video_player
+    if (lower.startsWith('blob:')) {
+      return _kFallbackStream;
+    }
+    // Blocked googleapis bucket
     if (lower.contains('commondatastorage.googleapis.com')) {
+      return _kFallbackStream;
+    }
+    // Broken vercel serverless uploads
+    if (lower.contains('omnicast-api.vercel.app/uploads/')) {
       return _kFallbackStream;
     }
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
@@ -754,20 +782,50 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   @override
   void initState() {
     super.initState();
+    final videoId = _extractYouTubeVideoId(widget.url);
+    final embedSrc = videoId != null
+        ? 'https://www.youtube.com/embed/$videoId?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1'
+        : widget.url;
+
+    final html = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; background: #000; overflow: hidden; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <iframe 
+    src="$embedSrc" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    allowfullscreen>
+  </iframe>
+</body>
+</html>
+''';
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
+      ..setUserAgent('Mozilla/5.0 (Linux; Android 11; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36')
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) {
             if (mounted) setState(() => _loading = false);
           },
-          onWebResourceError: (_) {
-            if (mounted) setState(() => _failed = true);
+          onWebResourceError: (error) {
+            // Only trigger failure on main frame navigation failure
+            if (error.isForMainFrame ?? true) {
+              if (mounted) setState(() => _failed = true);
+            }
           },
         ),
       )
-      ..loadRequest(Uri.parse(widget.url));
+      ..loadHtmlString(html, baseUrl: 'https://www.youtube.com');
   }
 
   @override
@@ -794,10 +852,10 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.white70),
+                  CircularProgressIndicator(color: Color(0xFF00E5FF)),
                   SizedBox(height: 12),
                   Text(
-                    'Đang tải YouTube embed...',
+                    'Đang kết nối YouTube...',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -814,7 +872,7 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
                       color: Color(0xFFEF4444), size: 36),
                   const SizedBox(height: 8),
                   Text(
-                    widget.channelName ?? 'Không tải được video',
+                    widget.channelName ?? 'Không tải được video YouTube',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
