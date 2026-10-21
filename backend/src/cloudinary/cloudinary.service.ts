@@ -117,8 +117,8 @@ export class CloudinaryService {
   private readonly apiSecret: string;
   private readonly defaultFolder: string;
 
-  /** Free-tier hard cap. 100 MB per file. */
-  static readonly FREE_TIER_MAX_BYTES = 100 * 1024 * 1024;
+  /** Studio upload cap. 2 GB per file to accommodate long videos. */
+  static readonly FREE_TIER_MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
   constructor(config: ConfigService) {
     // Resolve credentials from either CLOUDINARY_URL (preferred for
@@ -325,8 +325,8 @@ export class CloudinaryService {
     }
     if (buffer.length > CloudinaryService.FREE_TIER_MAX_BYTES) {
       throw new ServiceUnavailableException(
-        `File too large (${buffer.length} bytes). Free-tier hard cap is ` +
-          `${CloudinaryService.FREE_TIER_MAX_BYTES} bytes (100 MB).`,
+        `File too large (${buffer.length} bytes). Max upload cap is ` +
+          `${CloudinaryService.FREE_TIER_MAX_BYTES} bytes (2 GB).`,
       );
     }
 

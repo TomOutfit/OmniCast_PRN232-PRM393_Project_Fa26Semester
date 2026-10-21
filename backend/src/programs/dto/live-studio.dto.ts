@@ -37,7 +37,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ExternalPlatform } from '@prisma/client';
 
 /**
@@ -124,8 +124,9 @@ export class CurateLiveDto {
     maximum: 1440,
   })
   @IsOptional()
+  @Transform(({ value }) => (value !== undefined && value !== null ? Math.round(Number(value)) : value))
   @IsInt()
-  @Min(10)
+  @Min(1)
   @Max(1440)
   duration?: number;
 
@@ -219,6 +220,7 @@ export class AddToLibraryDto {
       'duration hint to the player.',
     example: 1800,
   })
+  @Transform(({ value }) => (value !== undefined && value !== null ? Math.round(Number(value)) : value))
   @IsInt()
   @Min(1)
   @Type(() => Number)
@@ -357,6 +359,7 @@ export class SelfRecordUploadDto {
     description: 'Length of the recording in seconds.',
     example: 1800,
   })
+  @Transform(({ value }) => (value !== undefined && value !== null ? Math.round(Number(value)) : value))
   @IsInt()
   @Min(1)
   @Type(() => Number)

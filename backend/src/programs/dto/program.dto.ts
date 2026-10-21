@@ -18,7 +18,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   EventStatus,
   StreamQuality,
@@ -128,6 +128,7 @@ export class CreateRecordingDto {
   channelId: string;
 
   @ApiProperty({ example: 3600, description: 'Duration in seconds' })
+  @Transform(({ value }) => (value !== undefined && value !== null ? Math.round(Number(value)) : value))
   @IsInt()
   @Min(1)
   duration: number;

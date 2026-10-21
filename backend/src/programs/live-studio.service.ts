@@ -602,9 +602,12 @@ export class LiveStudioService {
       },
     });
 
-    // Pick the longest recording as the duration hint (minutes).
+    // Calculate effective duration: sum of recordings or longest clip, and respect dto.duration if provided.
+    const totalSec = recordings.reduce((sum, r) => sum + (r.duration || 0), 0);
     const longestSec = Math.max(...recordings.map((r) => r.duration || 0));
-    const longestMin = Math.max(10, Math.round(longestSec / 60));
+    const effectiveSec = Math.max(totalSec, longestSec);
+    const calculatedMin = Math.max(10, Math.round(effectiveSec / 60));
+    const finalDurationMin = dto.duration ? Math.max(1, Math.round(dto.duration)) : calculatedMin;
 
     const first = recordings[0];
     const event = await this.prisma.liveEvent.create({
@@ -623,7 +626,7 @@ export class LiveStudioService {
         startedAt: now,
         // `duration` is stored in seconds per the existing schema
         // convention used by ingest pipelines.
-        duration: longestMin * 60,
+        duration: finalDurationMin * 60,
         language: 'vi',
         quality: StreamQuality.AUTO,
         chatEnabled: true,
@@ -880,7 +883,7 @@ export class LiveStudioService {
         sourceType: StreamSourceType.UPLOADED_LOCAL,
         license: ContentLicense.BUNNY_SELF_HOSTED,
         sourceAttribution: 'Nội dung tự ghi hình — Live Studio',
-        duration: dto.duration,
+        duration: Math.max(1, Math.round(dto.duration || 60)),
         quality: StreamQuality.HD_720P,
         language: 'vi',
         isPublished:
@@ -1027,7 +1030,7 @@ export class LiveStudioService {
         sourceType: gate.normalized.sourceType,
         license: gate.normalized.license,
         sourceAttribution: gate.normalized.sourceAttribution || null,
-        duration: dto.duration,
+        duration: Math.max(1, Math.round(dto.duration || 60)),
         quality: StreamQuality.HD_720P,
         language: 'vi',
         isPublished: dto.isPublished !== false,

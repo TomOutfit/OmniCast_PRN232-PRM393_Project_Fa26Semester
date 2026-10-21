@@ -56,6 +56,10 @@ export const LIMITS = {
   // Pagination
   PAGE_SIZE_DEFAULT: 20,
   PAGE_SIZE_MAX: 100,
+
+  // Studio Upload Limits (Mode 1 & Mode 2)
+  STUDIO_UPLOAD_MAX_BYTES: 2 * 1024 * 1024 * 1024, // 2 GB
+  STUDIO_UPLOAD_MAX_MB: 2048,
 } as const;
 
 /** ISO 639-1 language codes accepted by the platform */
