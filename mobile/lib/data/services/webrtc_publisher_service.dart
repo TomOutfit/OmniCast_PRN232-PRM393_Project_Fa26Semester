@@ -19,6 +19,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -283,25 +284,11 @@ class WebRTCPublisherService {
     final videoTracks = _localStream!.getVideoTracks();
     if (videoTracks.isEmpty) return;
 
-    final currentFacingMode = videoTracks.first.getConstraints()['facingMode'];
-    final newFacingMode = currentFacingMode == 'user' ? 'environment' : 'user';
-
-    // Stop current track
-    videoTracks.first.stop();
-
-    // Get new stream with opposite camera
-    final newStream = await navigator.mediaDevices.getUserMedia({
-      'video': {'facingMode': newFacingMode},
-      'audio': false,
-    });
-
-    // Replace track
-    final newVideoTrack = newStream.getVideoTracks().first;
-    await _peerConnection?.replaceTrack(videoTracks.first, newVideoTrack);
-
-    // Update local stream
-    _localStream!.removeTrack(videoTracks.first);
-    _localStream!.addTrack(newVideoTrack);
+    try {
+      await Helper.switchCamera(videoTracks.first);
+    } catch (e) {
+      debugPrint('[WebRTCPublisher] Error switching camera: $e');
+    }
   }
 
   /// Toggle torch/flashlight
@@ -312,7 +299,10 @@ class WebRTCPublisherService {
     if (videoTracks.isEmpty) return;
 
     try {
-      await videoTracks.first.setFlash(enabled);
+      final track = videoTracks.first;
+      if (await track.hasTorch()) {
+        await track.setTorch(enabled);
+      }
     } catch (e) {
       debugPrint('[WebRTCPublisher] Torch not supported: $e');
     }
@@ -346,18 +336,19 @@ class WebRTCPublisherService {
   Future<bool> _createPeerConnection() async {
     if (_config == null) return false;
 
-    final config = RTCConfiguration();
-    config.sdpSemantics = SdpSemantics.UnifiedPlan;
-    config.iceServers = [
-      RTCIceServer(
-        urls: [
-          'stun:stun.l.google.com:19302',
-          'stun:stun1.l.google.com:19302',
-        ],
-      ),
-    ];
+    final configuration = <String, dynamic>{
+      'sdpSemantics': 'unified-plan',
+      'iceServers': [
+        {
+          'urls': [
+            'stun:stun.l.google.com:19302',
+            'stun:stun1.l.google.com:19302',
+          ],
+        },
+      ],
+    };
 
-    _peerConnection = await createPeerConnection(config);
+    _peerConnection = await createPeerConnection(configuration);
 
     // Add local tracks to peer connection
     if (_localStream != null) {
@@ -412,15 +403,15 @@ class WebRTCPublisherService {
       // Fallback: If WHIP is not supported, try direct WebRTC
       // This would require MediaMTX to have WebRTC enabled
       debugPrint('[WebRTCPublisher] WHIP not supported, using fallback');
-      return _createFallbackAnswer(offerSdp);
+      return await _createFallbackAnswer(offerSdp);
     } catch (e) {
       debugPrint('[WebRTCPublisher] WHIP request failed: $e');
-      return _createFallbackAnswer(offerSdp);
+      return await _createFallbackAnswer(offerSdp);
     }
   }
 
-  Future<String?> _sendWhipDelete() async {
-    if (_config == null) return null;
+  Future<void> _sendWhipDelete() async {
+    if (_config == null) return;
 
     try {
       final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}';
@@ -515,6 +506,3 @@ class WebRTCPublisherService {
     _localDescription = null;
   }
 }
-
-/// Import for HttpClient
-import 'dart:io';
