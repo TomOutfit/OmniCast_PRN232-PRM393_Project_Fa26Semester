@@ -99,6 +99,7 @@ export class CloudinaryUploadController {
   health() {
     const status = this.cloudinary.getStatus();
     return {
+      success: true,
       data: status,
       message: status.configured
         ? `Cloudinary đã sẵn sàng cho cloud "${status.cloudName}".`
@@ -170,6 +171,7 @@ export class CloudinaryUploadController {
       maxBytes: dto.maxBytes,
     });
     return {
+      success: true,
       data: payload,
       message:
         'Đã ký payload. Gọi POST trực tiếp tới `uploadUrl` với các trường ' +
@@ -253,7 +255,10 @@ export class CloudinaryUploadController {
       },
     });
 
-    return { data: result };
+    return {
+      success: true,
+      data: result,
+    };
   }
 
   // ============================================================
@@ -301,6 +306,7 @@ export class CloudinaryUploadController {
       dto.reason,
     );
     return {
+      success: true,
       data: result,
       message:
         result.result === 'ok'

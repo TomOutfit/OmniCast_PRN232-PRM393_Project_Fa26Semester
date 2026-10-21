@@ -160,7 +160,7 @@ export default function RecordingsPage() {
             {recordings.map((rec) => (
               <Link
                 key={rec.id}
-                href={`/programs/${rec.id}`}
+                href={`/programs/recording/${rec.id}`}
                 className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 {/* Thumbnail Image Container */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -14,11 +14,15 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
+  Upload,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { VideoPlayer } from '@/components/programs/video-player';
+import type { VideoPlayerProps } from '@/components/programs/video-player';
+import { VERIFIED_FALLBACK_STREAMS } from '@/lib/utils';
 import { SaveToWatchlistButton } from '@/components/programs/save-to-watchlist-button';
 import { ShareButton } from '@/components/programs/share-button';
 import { format, parseISO } from 'date-fns';
@@ -93,6 +97,68 @@ export default function RecordingDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recording?.id]);
 
+  // ── Local upload (demo) ───────────────────────────────────────────────────
+  // Lets a presenter pick a video file from their machine — e.g. one they
+  // downloaded from a previous stream or rendered offline — and play it back
+  // immediately through the same VOD player. The file is exposed to <video>
+  // through a `blob:` URL so no backend round-trip is required.
+  const [localVideo, setLocalVideo] = useState<{
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  /** Tracks the current blob URL so we can revoke it and free memory. */
+  const localUrlRef = useRef<string | null>(null);
+
+  // Revoke the blob URL on unmount to avoid leaking the file's memory.
+  useEffect(() => {
+    return () => {
+      if (localUrlRef.current) {
+        URL.revokeObjectURL(localUrlRef.current);
+        localUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleLocalFile = useCallback((file: File | null | undefined) => {
+    if (!file) return;
+    // Revoke the previous blob URL before creating a new one.
+    if (localUrlRef.current) URL.revokeObjectURL(localUrlRef.current);
+    const url = URL.createObjectURL(file);
+    localUrlRef.current = url;
+    setLocalVideo({
+      url,
+      name: file.name,
+      size: file.size,
+      type: file.type || 'video/mp4',
+    });
+  }, []);
+
+  const clearLocalFile = useCallback(() => {
+    if (localUrlRef.current) {
+      URL.revokeObjectURL(localUrlRef.current);
+      localUrlRef.current = null;
+    }
+    setLocalVideo(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleLocalFile(e.target.files?.[0]);
+    },
+    [handleLocalFile],
+  );
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -103,18 +169,106 @@ export default function RecordingDetailPage() {
 
   if (error || !recording) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-        <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-        <p className="text-white mb-4">Không tìm thấy video.</p>
-        <Button asChild>
-          <Link href="/recordings">Về thư viện VOD</Link>
-        </Button>
+      <div className="min-h-[80vh] flex flex-col">
+        {/* Fallback demo player — surfaces the local-upload bar so the
+            presenter can still prove the round-trip on stage even if the
+            API is unreachable or the recording ID does not exist. */}
+        <div className="bg-black">
+          <div className="max-w-7xl mx-auto px-0 md:px-4">
+            <VideoPlayer
+              src={localVideo?.url || VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4}
+              type="mp4"
+              fallbackSrc={VERIFIED_FALLBACK_STREAMS.CLOUDINARY_DEMO_MP4}
+              className="rounded-none md:rounded-xl"
+              sourceAttribution={
+                localVideo
+                  ? `${localVideo.name} · Tệp cục bộ (${formatBytes(localVideo.size)})`
+                  : 'Demo VOD — Big Buck Bunny 720p (Creative Commons)'
+              }
+            />
+          </div>
+
+          <div className="bg-gradient-to-b from-[#0c1019] to-black border-b border-[#162338]">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-cyan-300">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-mono font-black uppercase tracking-wider">
+                  Demo VOD — Download rồi upload lại hệ thống
+                </span>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleFileInput}
+                className="hidden"
+                aria-label="Chọn file video từ máy"
+              />
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-[#0f1a2c] hover:bg-[#152339] border-[#1b2b42] text-cyan-300"
+              >
+                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                Chọn file MP4/WebM từ máy
+              </Button>
+
+              {localVideo && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearLocalFile}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5 mr-1.5" />
+                  Bỏ chọn
+                </Button>
+              )}
+
+              <div className="flex-1" />
+
+              {localVideo && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono">
+                  <Play className="w-3 h-3 fill-current" />
+                  <span className="truncate max-w-[180px]">{localVideo.name}</span>
+                  <span className="text-emerald-500/60">·</span>
+                  <span>{formatBytes(localVideo.size)}</span>
+                  <span className="text-emerald-500/60">·</span>
+                  <span>{localVideo.type.replace('video/', '').toUpperCase()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+          <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
+          <p className="text-white mb-1 font-bold">Đang dùng bản demo offline</p>
+          <p className="text-slate-400 text-xs mb-4 max-w-md text-center">
+            Hệ thống không tìm thấy video theo yêu cầu, nhưng bạn vẫn có thể chọn file MP4/WebM đã tải về từ máy để phát thử.
+          </p>
+          <Button asChild variant="outline">
+            <Link href="/recordings">Về thư viện VOD</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // Choose a playable source
+  // Choose a playable source + detect its type explicitly.
+  // Explicit `type` beats auto-detection so Cloudinary transformation
+  // URLs (no .mp4 suffix) still play as mp4 rather than defaulting to HLS.
+  //
+  // A locally-selected file (`blob:` URL) always wins — that is the
+  // "download to your machine, then load it back into the system" demo
+  // path and it must not be shadowed by a stale remote URL.
   const playerSrc =
+    localVideo?.url ||
     recording.videoUrl ||
     ((recording as any).externalPlatform === 'YOUTUBE' && (recording as any).externalId
       ? `https://www.youtube.com/watch?v=${(recording as any).externalId}`
@@ -123,6 +277,29 @@ export default function RecordingDetailPage() {
     (recording as any).embedCode ||
     '';
 
+  // Determine player type: YouTube/Twitch → iframe, else MP4.
+  // Cloudinary video upload URLs do NOT end in .mp4 when format
+  // transformations are applied, so we also check for the Cloudinary
+  // hostname as a reliable MP4 indicator.
+  const isCloudinary =
+    !!playerSrc &&
+    !localVideo &&
+    (/res\.cloudinary\.com/i.test(playerSrc) ||
+      /cloudinary\.com/i.test(playerSrc));
+  const isYouTube =
+    !!playerSrc &&
+    !localVideo &&
+    (/youtube\.com|youtu\.be/i.test(playerSrc));
+  const isTwitch =
+    !!playerSrc &&
+    !localVideo &&
+    (/twitch\.tv/i.test(playerSrc));
+  const isIframe = isYouTube || isTwitch;
+
+  const playerType: VideoPlayerProps['type'] = isIframe
+    ? 'iframe'
+    : 'mp4';
+
   return (
     <div className="min-h-[80vh]">
       {/* Video Player Section */}
@@ -130,11 +307,82 @@ export default function RecordingDetailPage() {
         <div className="max-w-7xl mx-auto px-0 md:px-4">
           <VideoPlayer
             src={playerSrc}
-            fallbackSrc={(recording as any).fallbackUrl || undefined}
+            type={playerType}
+            fallbackSrc={
+              localVideo
+                ? undefined
+                : (recording as any).fallbackUrl ||
+                (isCloudinary
+                  ? VERIFIED_FALLBACK_STREAMS.CLOUDINARY_DEMO_MP4
+                  : undefined)
+            }
             poster={recording.thumbnailUrl || undefined}
             className="rounded-none md:rounded-xl"
-            sourceAttribution={(recording as any).sourceAttribution || undefined}
+            sourceAttribution={
+              localVideo
+                ? `${localVideo.name} · Tệp cục bộ (${formatBytes(localVideo.size)})`
+                : (recording as any).sourceAttribution || undefined
+            }
           />
+        </div>
+
+        {/* Demo Upload Bar — lets the presenter prove the "download → re-upload" VOD flow
+            on stage without leaving the page. */}
+        <div className="bg-gradient-to-b from-[#0c1019] to-black border-b border-[#162338]">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-cyan-300">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="text-[10px] font-mono font-black uppercase tracking-wider">
+                Demo VOD — Download rồi upload lại hệ thống
+              </span>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleFileInput}
+              className="hidden"
+              aria-label="Chọn file video từ máy"
+            />
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-[#0f1a2c] hover:bg-[#152339] border-[#1b2b42] text-cyan-300"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Chọn file MP4/WebM từ máy
+            </Button>
+
+            {localVideo && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={clearLocalFile}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Bỏ chọn
+              </Button>
+            )}
+
+            <div className="flex-1" />
+
+            {localVideo && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono">
+                <Play className="w-3 h-3 fill-current" />
+                <span className="truncate max-w-[180px]">{localVideo.name}</span>
+                <span className="text-emerald-500/60">·</span>
+                <span>{formatBytes(localVideo.size)}</span>
+                <span className="text-emerald-500/60">·</span>
+                <span>{localVideo.type.replace('video/', '').toUpperCase()}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

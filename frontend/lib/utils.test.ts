@@ -139,6 +139,21 @@ describe('resolveStreamUrl', () => {
     const validUrl = 'https://cdn.example.com/live/master.m3u8';
     expect(resolveStreamUrl(validUrl)).toBe(validUrl);
   });
+
+  it('passes blob: URLs through unchanged (local file uploads via URL.createObjectURL)', () => {
+    const blobUrl = 'blob:https://omnicast.local/abc-123-def';
+    expect(resolveStreamUrl(blobUrl)).toBe(blobUrl);
+  });
+
+  it('passes data: URLs through unchanged', () => {
+    const dataUrl = 'data:video/mp4;base64,AAAAFGZ...';
+    expect(resolveStreamUrl(dataUrl)).toBe(dataUrl);
+  });
+
+  it('passes file: URLs through unchanged (local file system)', () => {
+    const fileUrl = 'file:///C:/Users/demo/Downloads/video.mp4';
+    expect(resolveStreamUrl(fileUrl)).toBe(fileUrl);
+  });
 });
 
 describe('resolvePosterUrl', () => {
