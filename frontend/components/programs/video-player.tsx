@@ -52,7 +52,6 @@ async function getHls(): Promise<HlsType | null> {
     const mod = await import('hls.js');
     _Hls = mod.default ?? mod;
     // Check that we got a usable Hls class with the static isSupported method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (_Hls && typeof (_Hls as any).isSupported === 'function') {
       return _Hls;
     }
@@ -328,9 +327,7 @@ export function VideoPlayer({
       if (destroyed || attached) return;
       attached = true;
 
-      const hls = new Hls({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      const hls = new Hls({} as any);
       Object.assign(hls, {
         // ── Stability config ────────────────────────────────────────────────
         enableWorker: true,
@@ -340,7 +337,6 @@ export function VideoPlayer({
         maxMaxBufferLength: 120,    // allow up to 120 s when bandwidth is high
         maxBufferSize: 60 * 1024 * 1024, // 60 MB max buffer
         maxBufferHole: 0.5,        // fill gaps ≤ 0.5 s
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       hlsRef.current = hls;
