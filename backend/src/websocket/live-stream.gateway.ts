@@ -244,12 +244,16 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
    */
   notifyLiveStarted(channelSlug: string, payload: LiveEventPayload) {
     const roomName = `channel:${channelSlug}`;
-    this.server.to(roomName).emit('live:started', {
+    const broadcastData = {
       ...payload,
+      channelSlug,
       timestamp: new Date().toISOString(),
-    });
+    };
+    this.server.to(roomName).emit('live:started', broadcastData);
+    // Broadcast globally to all connected viewers so in-app notifications appear everywhere
+    this.server.emit('live:started', broadcastData);
     this.logger.log(
-      `Broadcast live:started to ${roomName} - "${payload.title}" (eventId: ${payload.eventId})`,
+      `Broadcast live:started globally and to ${roomName} - "${payload.title}" (eventId: ${payload.eventId})`,
     );
   }
 
@@ -259,12 +263,15 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
    */
   notifyLiveStopped(channelSlug: string, payload: LiveStoppedPayload) {
     const roomName = `channel:${channelSlug}`;
-    this.server.to(roomName).emit('live:stopped', {
+    const broadcastData = {
       ...payload,
+      channelSlug,
       timestamp: new Date().toISOString(),
-    });
+    };
+    this.server.to(roomName).emit('live:stopped', broadcastData);
+    this.server.emit('live:stopped', broadcastData);
     this.logger.log(
-      `Broadcast live:stopped to ${roomName} - (eventId: ${payload.eventId})`,
+      `Broadcast live:stopped globally and to ${roomName} - (eventId: ${payload.eventId})`,
     );
   }
 

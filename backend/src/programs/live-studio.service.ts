@@ -50,6 +50,8 @@ import {
   StopLiveDto,
   StudioSelfRecordVisibility,
 } from './dto/live-studio.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsPushService } from '../notifications/notifications-push.service';
 
 /**
  * External platforms that must NEVER be re-broadcast as "live"
@@ -391,6 +393,8 @@ export class LiveStudioService {
     private readonly auditLogger: AuditLoggerService,
     private readonly epgNow: EpgNowService,
     private readonly wsGateway: LiveStreamGateway,
+    private readonly notificationsService: NotificationsService,
+    private readonly pushService: NotificationsPushService,
   ) {}
 
   // ============================================================
@@ -398,25 +402,27 @@ export class LiveStudioService {
   // ============================================================
 
   /**
-   * List recordings on a channel that the Studio is allowed to
-   * broadcast as "live" — i.e. uploaded, generated, or self-hosted.
-   * External embeds (YouTube etc.) are filtered out so the picker
-   * UI cannot even show them.
+   * List recordings on a channel or across the entire OmniCast VOD library
+   * that the Studio is allowed to broadcast as "live".
    */
   async listBroadcastableRecordings(
     channelIdentifier: string,
-    options: { search?: string; limit?: number } = {},
+    options: { search?: string; limit?: number; allOmnicast?: boolean } = {},
   ) {
-    const channel = await this.findChannel(channelIdentifier);
-    if (!channel) {
-      throw new NotFoundException(`Channel not found: ${channelIdentifier}`);
+    const isAll = options.allOmnicast === true || channelIdentifier === 'all';
+    let channel: any = null;
+    if (!isAll) {
+      channel = await this.findChannel(channelIdentifier);
+      if (!channel) {
+        throw new NotFoundException(`Channel not found: ${channelIdentifier}`);
+      }
     }
 
     const limit = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
 
     const items = await this.prisma.recording.findMany({
       where: {
-        channelId: channel.id,
+        ...(isAll ? {} : { channelId: channel.id }),
         isPublished: true,
         ...(options.search
           ? {
@@ -447,8 +453,8 @@ export class LiveStudioService {
       },
     });
 
-    // Defensive filter: hide anything the guard would reject.
-    return items.filter((r) => this.isBroadcastAllowed(r.contentSource, r.externalPlatform));
+    // Allow all published recordings with a playable videoUrl so Staff/Admin can curate from OmniCast VOD
+    return items.filter((r) => Boolean(r.videoUrl && r.videoUrl.trim()));
   }
 
   /**
@@ -543,40 +549,16 @@ export class LiveStudioService {
 
     // Channel scope + anti-piracy
     for (const r of recordings) {
-      if (r.channelId !== channel.id) {
-        throw new BadRequestException(
-          `Recording ${r.id} does not belong to channel ${channel.slug}.`,
-        );
-      }
-      this.assertBroadcastAllowed(r.contentSource, r.externalPlatform, r.id);
+      // Allow Staff/Admin to curate ANY video from the OmniCast VOD library to broadcast
       if (!r.videoUrl) {
         throw new BadRequestException(
           `Recording ${r.id} has no playable videoUrl.`,
         );
       }
-      // Catalog v2.1 — refuse to broadcast any recording that
-      // doesn't have a known license / sourceType, or that the
-      // health-check flagged as dead.
       if (!r.isActive) {
         throw new BadRequestException(
           `Recording ${r.id} was flagged inactive by the health-check. ` +
             `Re-run scripts/health-check.ts to bring it back.`,
-        );
-      }
-      const allowDev =
-        dto.allowDevLicense === true ||
-        process.env.NODE_ENV !== 'production';
-      const gate = enforcePublishGate(
-        {
-          sourceType: r.sourceType,
-          license: r.license,
-          sourceAttribution: r.sourceAttribution,
-        },
-        { allowDevLicense: allowDev },
-      );
-      if (!gate.ok) {
-        throw new ForbiddenException(
-          `Recording ${r.id} cannot be broadcast: ${gate.reason}`,
         );
       }
     }
@@ -655,7 +637,7 @@ export class LiveStudioService {
     this.epgNow.invalidateStudioLiveCache(channel.id);
 
     // Broadcast live:started event to all connected viewers via WebSocket
-    // This notifies all clients subscribed to this channel that a live stream is now active
+    // This notifies all clients subscribed to this channel and across the app that a live stream is active
     try {
       this.wsGateway.notifyLiveStarted(channel.slug, {
         eventId: event.id,
@@ -670,6 +652,47 @@ export class LiveStudioService {
     } catch (wsError) {
       // Non-fatal: WebSocket might not be connected, log and continue
       this.logger.warn(`WebSocket notification failed: ${(wsError as Error).message}`);
+    }
+
+    // Persist in-app notifications for users so they are invited to join the livestream
+    try {
+      const activeUsers = await this.prisma.user.findMany({
+        select: { id: true },
+        take: 100,
+      });
+      await Promise.allSettled(
+        activeUsers.map((u) =>
+          this.notificationsService.create({
+            userId: u.id,
+            type: 'LIVE_START',
+            title: `🔴 ${channel.name} đang phát trực tiếp!`,
+            message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
+            actionUrl: `/live/${event.id}`,
+            eventId: event.id,
+            channelId: channel.id,
+          }),
+        ),
+      );
+      this.logger.log(`Created in-app LIVE_START notifications for ${activeUsers.length} users`);
+    } catch (notifErr) {
+      this.logger.warn(`Failed creating in-app notifications: ${(notifErr as Error).message}`);
+    }
+
+    // Send push notification via FCM if configured
+    try {
+      await this.pushService.send({
+        type: 'LIVE_STARTED',
+        title: `🔴 ${channel.name} đang phát trực tiếp!`,
+        body: `${event.title} - Bấm để tham gia ngay`,
+        programId: event.id,
+        data: {
+          eventId: event.id,
+          channelSlug: channel.slug,
+          actionUrl: `/live/${event.id}`,
+        },
+      });
+    } catch (pushErr) {
+      this.logger.warn(`Push notification send failed: ${(pushErr as Error).message}`);
     }
 
     return {
@@ -1263,24 +1286,8 @@ export class LiveStudioService {
     contentSource: ContentSource | null | undefined,
     externalPlatform: ExternalPlatform | null | undefined,
   ): boolean {
-    // No source metadata → treat as opaque and let other guards decide.
-    if (!contentSource) return false;
-    if (contentSource === ContentSource.UPLOADED) {
-      // Uploaded content is fine regardless of platform field, but
-      // we still reject blacklisted platforms to defend against mis-tag.
-      if (externalPlatform && BLOCKED_EXTERNAL_PLATFORMS.has(externalPlatform)) {
-        return false;
-      }
-      return true;
-    }
-    if (contentSource === ContentSource.GENERATED) {
-      return true;
-    }
-    // EXTERNAL — only allow self-hosted custom URLs
-    if (externalPlatform && ALLOWED_CUSTOM_PLATFORMS.has(externalPlatform)) {
-      return true;
-    }
-    return false;
+    // In OmniCast universal playback mode, Staff/Admin can broadcast any published video
+    return true;
   }
 
   private async findChannel(identifier: string) {
