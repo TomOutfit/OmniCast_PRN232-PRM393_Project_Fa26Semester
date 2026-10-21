@@ -451,9 +451,12 @@ function RecordingView({ recording }: { recording: any }) {
         <div className="max-w-7xl mx-auto px-0 md:px-4">
           <VideoPlayer
             src={playerSrc}
+            fallbackSrc={recording.fallbackUrl || undefined}
             poster={recording.thumbnailUrl || undefined}
             autoPlay={true}
             className="rounded-none md:rounded-xl"
+            isPremium={isChannelPremium(recording.channel?.slug)}
+            channelName={recording.channel?.name || recording.title}
           />
         </div>
       </div>

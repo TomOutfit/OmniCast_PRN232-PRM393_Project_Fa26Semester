@@ -172,12 +172,18 @@ export function VideoPlayer({
   }, [src, fallbackSrc]);
 
   // ── VIP ──────────────────────────────────────────────────────────────────
-  const [isVip, setIsVip] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem(VIP_STORAGE_KEY) === 'true';
+  const [isVip, setIsVip] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage.getItem(VIP_STORAGE_KEY) === 'true') {
+        setIsVip(true);
+      }
+    } catch {
+      // ignore
     }
-    return false;
-  });
+  }, []);
+
   const hasAccess = !isPremium || isVip || user?.role === 'ADMIN' || user?.role === 'STAFF';
 
   // ── Resolved values ───────────────────────────────────────────────────────

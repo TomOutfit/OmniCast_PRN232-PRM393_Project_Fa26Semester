@@ -28,79 +28,118 @@ export class NotificationsService {
     userId: string,
     options: { limit?: number; offset?: number; filter?: 'all' | 'unread' | 'read' } = {},
   ): Promise<NotificationListResponseDto> {
-    const { limit = 20, offset = 0, filter = 'all' } = options;
+    if (!userId) {
+      return { total: 0, unreadCount: 0, items: [] };
+    }
+    try {
+      const { limit = 20, offset = 0, filter = 'all' } = options;
 
-    const where: any = { userId };
-    if (filter === 'unread') where.isRead = false;
-    if (filter === 'read') where.isRead = true;
+      const where: any = { userId };
+      if (filter === 'unread') where.isRead = false;
+      if (filter === 'read') where.isRead = true;
 
-    const [rows, total, unreadCount] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: offset,
-        take: limit,
-        include: {
-          actor: {
-            select: {
-              id: true,
-              fullName: true,
-              avatarUrl: true,
+      const [rows, total, unreadCount] = await Promise.all([
+        this.prisma.notification.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limit,
+          include: {
+            actor: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+              },
             },
           },
-        },
-      }),
-      this.prisma.notification.count({ where }),
-      this.prisma.notification.count({
-        where: { userId, isRead: false },
-      }),
-    ]);
+        }),
+        this.prisma.notification.count({ where }),
+        this.prisma.notification.count({
+          where: { userId, isRead: false },
+        }),
+      ]);
 
-    return {
-      total,
-      unreadCount,
-      items: rows.map((row) => this.toItemDto(row)),
-    };
+      return {
+        total,
+        unreadCount,
+        items: rows.map((row) => this.toItemDto(row)),
+      };
+    } catch (err) {
+      console.error('[NotificationsService.list] Failed to fetch notifications:', err);
+      return { total: 0, unreadCount: 0, items: [] };
+    }
   }
 
   async unreadCount(userId: string): Promise<UnreadCountResponseDto> {
-    const unreadCount = await this.prisma.notification.count({
-      where: { userId, isRead: false },
-    });
-    return { unreadCount };
+    if (!userId) {
+      return { unreadCount: 0 };
+    }
+    try {
+      const unreadCount = await this.prisma.notification.count({
+        where: { userId, isRead: false },
+      });
+      return { unreadCount };
+    } catch (err) {
+      console.error('[NotificationsService.unreadCount] Failed to count unread notifications:', err);
+      return { unreadCount: 0 };
+    }
   }
 
   async markOneRead(
     userId: string,
     notificationId: string,
   ): Promise<MarkReadResponseDto> {
-    // Make sure the notification belongs to this user before mutating.
-    const exists = await this.prisma.notification.findFirst({
-      where: { id: notificationId, userId },
-      select: { id: true },
-    });
-    if (!exists) {
+    if (!userId || !notificationId) {
       return { success: true, updated: 0 };
     }
-    await this.prisma.notification.update({
-      where: { id: notificationId },
-      data: { isRead: true, readAt: new Date() },
-    });
-    return { success: true, updated: 1 };
+    try {
+      // Make sure the notification belongs to this user before mutating.
+      const exists = await this.prisma.notification.findFirst({
+        where: { id: notificationId, userId },
+        select: { id: true },
+      });
+      if (!exists) {
+        return { success: true, updated: 0 };
+      }
+      await this.prisma.notification.update({
+        where: { id: notificationId },
+        data: { isRead: true, readAt: new Date() },
+      });
+      return { success: true, updated: 1 };
+    } catch (err) {
+      console.error('[NotificationsService.markOneRead] Failed to mark notification read:', err);
+      return { success: true, updated: 0 };
+    }
   }
 
   async markAllRead(userId: string): Promise<MarkReadResponseDto> {
-    const result = await this.prisma.notification.updateMany({
-      where: { userId, isRead: false },
-      data: { isRead: true, readAt: new Date() },
-    });
-    return { success: true, updated: result.count };
+    if (!userId) {
+      return { success: true, updated: 0 };
+    }
+    try {
+      const result = await this.prisma.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true, readAt: new Date() },
+      });
+      return { success: true, updated: result.count };
+    } catch (err) {
+      console.error('[NotificationsService.markAllRead] Failed to mark all notifications read:', err);
+      return { success: true, updated: 0 };
+    }
   }
 
   async removeOne(userId: string, notificationId: string): Promise<{ success: true }> {
-    await this.prisma.notification.deleteMany({
-      where: { id: notificationId, userId },
-    });
+    if (!userId || !notificationId) {
+      return { success: true };
+    }
+    try {
+      await this.prisma.notification.deleteMany({
+        where: { id: notificationId, userId },
+      });
+    } catch (err) {
+      console.error('[NotificationsService.removeOne] Failed to delete notification:', err);
+    }
     return { success: true };
   }
 
