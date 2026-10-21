@@ -35,15 +35,23 @@ class _CommentsSectionState extends State<CommentsSection> {
   bool _isSubmitting = false;
   StreamSubscription<RealtimeCommentEvent>? _realtimeSub;
 
+  Timer? _livePollTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchComments();
     _subscribeRealtimeIfAvailable();
+    if (widget.kind == 'live') {
+      _livePollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+        if (mounted) _fetchComments(silent: true);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _livePollTimer?.cancel();
     _realtimeSub?.cancel();
     _controller.dispose();
     super.dispose();
@@ -91,10 +99,10 @@ class _CommentsSectionState extends State<CommentsSection> {
         : '${AppEndpoints.liveEvents}/${widget.targetId}/comments';
   }
 
-  Future<void> _fetchComments() async {
+  Future<void> _fetchComments({bool silent = false}) async {
     try {
       final dio = getIt<DioClient>();
-      final res = await dio.get(_endpoint, queryParameters: {'limit': 20});
+      final res = await dio.get(_endpoint, queryParameters: {'limit': 30});
       final data = res.data;
       final rawList = (data is Map && data['data'] is List)
           ? data['data'] as List
@@ -108,11 +116,11 @@ class _CommentsSectionState extends State<CommentsSection> {
               _comments.add(_CommentItem.fromJson(item));
             }
           }
-          _isLoading = false;
+          if (!silent) _isLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && !silent) {
         setState(() => _isLoading = false);
       }
     }

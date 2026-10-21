@@ -166,8 +166,17 @@ class _NotificationsView extends StatelessWidget {
     BuildContext context,
     NotificationModel n,
   ) async {
-    final url = n.actionUrl;
-    if (url == null || url.isEmpty) return;
+    final rawUrl = n.actionUrl?.isNotEmpty == true
+        ? n.actionUrl!
+        : (n.eventId != null && n.eventId!.isNotEmpty
+            ? '/live/${n.eventId}'
+            : (n.recordingId != null && n.recordingId!.isNotEmpty
+                ? '/recording/${n.recordingId}'
+                : null));
+    if (rawUrl == null || rawUrl.isEmpty) return;
+    final url = rawUrl.startsWith('/programs/live/')
+        ? rawUrl.replaceFirst('/programs/live/', '/live/')
+        : rawUrl;
     if (url.startsWith('http://') || url.startsWith('https://')) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -521,10 +530,10 @@ class _EmptyView extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 80),
-        Icon(
+        const Icon(
           Icons.notifications_off_rounded,
           size: 72,
-          color: const Color(0xFF1E293B),
+          color: Color(0xFF1E293B),
         ),
         const SizedBox(height: 16),
         Center(
