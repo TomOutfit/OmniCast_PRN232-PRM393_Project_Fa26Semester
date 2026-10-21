@@ -49,7 +49,11 @@ class FcmService {
 
   Future<void> initialise({
     GlobalKey<NavigatorState>? navigatorKey,
+    void Function(String token)? onTokenRefresh,
   }) async {
+    if (navigatorKey != null) {
+      _navigatorKey = navigatorKey;
+    }
     if (_initialised) return;
     _initialised = true;
     try {
@@ -62,15 +66,14 @@ class FcmService {
       final token = await messaging.getToken();
       _cachedToken = token;
       if (token != null) {
-        await TokenStorageHelper().saveAccessToken(
-          // Reuse the secure storage helper to write device token into
-          // a separate key — kept out of the access-token path.
-          token,
-        );
+        await TokenStorageHelper().saveDeviceToken(token);
+        onTokenRefresh?.call(token);
       }
 
-      messaging.onTokenRefresh.listen((newToken) {
+      messaging.onTokenRefresh.listen((newToken) async {
         _cachedToken = newToken;
+        await TokenStorageHelper().saveDeviceToken(newToken);
+        onTokenRefresh?.call(newToken);
         if (kDebugMode) {
           // ignore: avoid_print
           print('[FCM] token refreshed: $newToken');
@@ -80,7 +83,7 @@ class FcmService {
       // Subscribe to FCM streams (static getters on the SDK class).
       // ignore: invalid_use_of_protected_member
       FirebaseMessaging.onMessage.listen((msg) {
-        _handleForegroundMessage(msg, navigatorKey);
+        _handleForegroundMessage(msg, _navigatorKey ?? navigatorKey);
       });
       // ignore: invalid_use_of_protected_member
       FirebaseMessaging.onMessageOpenedApp.listen((msg) {
@@ -128,12 +131,14 @@ class FcmService {
   void _handleOpenedMessage(RemoteMessage msg) {
     final type = msg.data['type']?.toString();
     final programId = msg.data['programId']?.toString();
+    final eventId = msg.data['eventId']?.toString();
+    final targetId = eventId ?? programId;
     final ctx = _navigatorContext;
     if (ctx == null) return;
-    if (type == 'PROGRAM_REMINDER' && programId != null) {
-      GoRouter.of(ctx).go('/program/$programId');
-    } else if (type == 'LIVE_STARTED' && programId != null) {
-      GoRouter.of(ctx).go('/live/$programId');
+    if (type == 'PROGRAM_REMINDER' && targetId != null) {
+      GoRouter.of(ctx).go('/program/$targetId');
+    } else if (type == 'LIVE_STARTED' && targetId != null) {
+      GoRouter.of(ctx).go('/live/$targetId');
     } else {
       GoRouter.of(ctx).go('/notifications');
     }

@@ -13,6 +13,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/supabase_realtime_service.dart';
+import '../../../data/services/live_socket_service.dart';
 
 class CommentsSection extends StatefulWidget {
   final String targetId;
@@ -34,6 +35,8 @@ class _CommentsSectionState extends State<CommentsSection> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   StreamSubscription<RealtimeCommentEvent>? _realtimeSub;
+  StreamSubscription<Map<String, dynamic>>? _liveSocketSub;
+  StreamSubscription<Map<String, dynamic>>? _liveDeleteSub;
 
   Timer? _livePollTimer;
 
@@ -43,7 +46,32 @@ class _CommentsSectionState extends State<CommentsSection> {
     _fetchComments();
     _subscribeRealtimeIfAvailable();
     if (widget.kind == 'live') {
-      _livePollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _liveSocketSub = LiveSocketService.instance.onChatNew.listen((data) {
+        if (!mounted) return;
+        if (data['eventId'] == widget.targetId) {
+          final comment = data['comment'];
+          if (comment is Map<String, dynamic>) {
+            final incoming = _CommentItem.fromJson(comment);
+            setState(() {
+              if (!_comments.any((c) => c.id == incoming.id)) {
+                _comments.insert(0, incoming);
+              }
+            });
+          }
+        }
+      });
+      _liveDeleteSub = LiveSocketService.instance.onChatDeleted.listen((data) {
+        if (!mounted) return;
+        if (data['eventId'] == widget.targetId) {
+          final commentId = data['commentId']?.toString();
+          if (commentId != null) {
+            setState(() {
+              _comments.removeWhere((c) => c.id == commentId);
+            });
+          }
+        }
+      });
+      _livePollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
         if (mounted) _fetchComments(silent: true);
       });
     }
@@ -53,6 +81,8 @@ class _CommentsSectionState extends State<CommentsSection> {
   void dispose() {
     _livePollTimer?.cancel();
     _realtimeSub?.cancel();
+    _liveSocketSub?.cancel();
+    _liveDeleteSub?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -132,6 +162,12 @@ class _CommentsSectionState extends State<CommentsSection> {
 
     setState(() => _isSubmitting = true);
     try {
+      if (widget.kind == 'live' && LiveSocketService.instance.isConnected) {
+        LiveSocketService.instance.sendChat(
+          eventId: widget.targetId,
+          content: text,
+        );
+      }
       final dio = getIt<DioClient>();
       final res = await dio.post(_endpoint, data: {'content': text});
       final data = res.data;

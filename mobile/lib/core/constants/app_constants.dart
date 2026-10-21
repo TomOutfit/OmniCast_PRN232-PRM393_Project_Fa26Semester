@@ -26,12 +26,21 @@ class AppConstants {
   // Storage Keys
   static const String accessTokenKey = 'access_token';
   static const String refreshTokenKey = 'refresh_token';
+  static const String fcmDeviceTokenKey = 'fcm_device_token';
   static const String userKey = 'user_data';
   static const String onboardingKey = 'onboarding_complete';
   static const String themeModeKey = 'app_theme_mode';
   static const String localeKey = 'app_locale';
   static const String notificationPrefsKey = 'app_notification_prefs';
   static const String dataSaverKey = 'app_data_saver';
+
+  /// Derive WebSocket base URL from baseUrl (e.g. https://... -> wss://...)
+  static String get socketUrl {
+    final uri = Uri.parse(baseUrl);
+    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    final portPart = uri.hasPort ? ':${uri.port}' : '';
+    return '$wsScheme://${uri.host}$portPart';
+  }
 
   // Database
   static const String databaseName = 'omnicast_local.db';
@@ -115,6 +124,7 @@ class AppEndpoints {
   static String notificationById(String id) => '/v1/me/notifications/$id';
   static String notificationMarkRead(String id) =>
       '/v1/me/notifications/$id/read';
+  static const String deviceTokens = '/v1/me/device-tokens';
 
   // Newsletter (public, rate-limited to 5 req/min/IP server-side)
   static const String newsletterSubscribe = '/v1/newsletter/subscribe';

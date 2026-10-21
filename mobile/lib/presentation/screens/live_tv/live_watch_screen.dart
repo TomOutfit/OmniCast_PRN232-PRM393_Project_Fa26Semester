@@ -30,6 +30,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/share_helper.dart';
 import '../../../data/models/program_model.dart';
+import '../../../data/services/live_socket_service.dart';
 import '../../widgets/omni_player.dart';
 import '../../widgets/social/comments_section.dart';
 
@@ -77,6 +78,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   // posts to the backend, so the player counter doesn't lag.
   int _localLikeDelta = 0;
 
+  bool _hasJoinedLobby = false;
+  String? _broadcasterAnnouncement;
+  final List<StreamSubscription> _socketSubscriptions = [];
+
   @override
   void initState() {
     super.initState();
@@ -84,9 +89,64 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
     _bootstrap();
   }
 
+  void _joinLiveSession() {
+    setState(() => _hasJoinedLobby = true);
+    _initSocket();
+  }
+
+  void _initSocket() {
+    LiveSocketService.instance.connect();
+    LiveSocketService.instance.subscribeEvent(widget.eventId);
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onViewerCount.listen((count) {
+        if (mounted && _event != null) {
+          setState(() {
+            _event = _event!.copyWith(viewerCount: count);
+          });
+        }
+      }),
+    );
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onReactionNew.listen((data) {
+        final type = data['type']?.toString();
+        if (type != null && mounted) {
+          _spawnReactionParticles(type);
+        }
+      }),
+    );
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onBroadcasterMessage.listen((data) {
+        final msg = data['message']?.toString();
+        if (msg != null && mounted) {
+          setState(() => _broadcasterAnnouncement = msg);
+          _toast('📢 Thông báo từ Host: $msg', accent: _warn);
+        }
+      }),
+    );
+  }
+
+  void _spawnReactionParticles(String type) {
+    for (int i = 0; i < 3 + _rng.nextInt(3); i++) {
+      _floating.add(_FloatingReaction(
+        emoji: _emojiFor(type),
+        left: 24 + _rng.nextDouble() * 80,
+        bottom: 60 + _rng.nextDouble() * 40,
+        delay: Duration(milliseconds: 60 * i),
+      ));
+    }
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    for (final s in _socketSubscriptions) {
+      s.cancel();
+    }
+    LiveSocketService.instance.unsubscribeEvent(widget.eventId);
     super.dispose();
   }
 
@@ -171,18 +231,12 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   }
 
   Future<void> _onTapReaction(String type) async {
-    // Spawn 3-5 floating particles for the visible feedback
-    for (int i = 0; i < 3 + _rng.nextInt(3); i++) {
-      _floating.add(_FloatingReaction(
-        emoji: _emojiFor(type),
-        left: 24 + _rng.nextDouble() * 80,
-        bottom: 60 + _rng.nextDouble() * 40,
-        delay: Duration(milliseconds: 60 * i),
-      ));
-    }
-    if (mounted) setState(() {});
-    // Also bump the local like counter + the backend reaction
+    _spawnReactionParticles(type);
     setState(() => _localLikeDelta++);
+    LiveSocketService.instance.sendReaction(
+      eventId: widget.eventId,
+      type: type,
+    );
     try {
       await _dio.post(
         '${AppEndpoints.liveEvents}/${widget.eventId}/reactions',
@@ -290,6 +344,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         ),
       );
     }
+
+    if (!_hasJoinedLobby) {
+      return _buildJoinLobbyView();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF070B12),
       appBar: _buildAppBar(),
@@ -300,6 +359,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           padding: EdgeInsets.zero,
           children: [
             _buildPlayerSection(),
+            _buildBroadcasterBanner(),
             _buildLiveInfoCard(),
             _buildReactionsRow(),
             if (_otherLiveEvents.isNotEmpty) ...[
@@ -318,6 +378,253 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             _buildChannelFooter(),
             const SizedBox(height: 32),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBroadcasterBanner() {
+    if (_broadcasterAnnouncement == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1500),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _warn.withValues(alpha: 0.6), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: _warn.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.campaign_rounded, color: _warn, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'THÔNG BÁO TỪ KÊNH / STAFF',
+                  style: TextStyle(
+                    color: _warn,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _broadcasterAnnouncement!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.close, color: Colors.white60, size: 16),
+            onPressed: () => setState(() => _broadcasterAnnouncement = null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJoinLobbyView() {
+    final ev = _event!;
+    final ch = ev.channel;
+    return Scaffold(
+      backgroundColor: const Color(0xFF070B12),
+      appBar: _buildAppBar(),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 480),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _accent.withValues(alpha: 0.3),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _accent.withValues(alpha: 0.12),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _danger.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _danger.withValues(alpha: 0.6)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _PulsingDot(),
+                      SizedBox(width: 8),
+                      Text(
+                        'LIVESTREAM ĐANG DIỄN RA',
+                        style: TextStyle(
+                          color: _danger,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (ev.thumbnailUrl != null && ev.thumbnailUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: ev.thumbnailUrl!,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(color: Colors.black26),
+                            errorWidget: (_, __, ___) => Container(color: Colors.black26),
+                          ),
+                          Container(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            child: const Center(
+                              child: Icon(Icons.play_circle_fill_rounded,
+                                  color: _accent, size: 54),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  ev.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Outfit',
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (ch != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (ch.logoUrl != null && ch.logoUrl!.isNotEmpty)
+                        ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: ch.logoUrl!,
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        ch.name,
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_formatViewers(ev.viewerCount)} người đang xem trực tiếp',
+                    style: const TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Staff / Admin đã chọn phát nội dung từ kho OmniCast VOD. Bạn có muốn tham gia buổi phát trực tiếp và tương tác cùng người xem khác không?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.sensors_rounded, size: 20),
+                    label: const Text(
+                      'ĐỒNG Ý VÀO XEM NGAY',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: Colors.black,
+                      elevation: 6,
+                      shadowColor: _accent.withValues(alpha: 0.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _joinLiveSession,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                  child: const Text(
+                    'Để sau',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

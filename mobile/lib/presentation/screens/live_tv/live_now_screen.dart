@@ -158,7 +158,16 @@ class _LiveNowScreenState extends State<LiveNowScreen> {
             return IconButton(
               tooltip: 'Live Studio (Phát sóng)',
               icon: const Icon(Icons.podcasts_rounded, color: _danger),
-              onPressed: () => context.push('/studio/live'),
+              onPressed: () {
+                final slug = _activeEvents.isNotEmpty
+                    ? _activeEvents.first.channel?.slug
+                    : null;
+                context.push(
+                  slug != null
+                      ? '/studio/live?channel=$slug'
+                      : '/studio/live',
+                );
+              },
             );
           },
         ),

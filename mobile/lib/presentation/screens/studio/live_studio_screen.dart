@@ -41,7 +41,9 @@ import '../../../data/models/recording_model.dart';
 import '../../../data/models/studio_catalog_model.dart';
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/repositories/live_studio_repository.dart';
+import '../../../data/services/live_socket_service.dart';
 import '../../widgets/channel_logo.dart';
+import '../../widgets/social/comments_section.dart';
 import 'mobile_studio_recorder_screen.dart';
 
 class LiveStudioScreen extends StatefulWidget {
@@ -61,10 +63,11 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   late final LiveStudioRepository _repo = getIt<LiveStudioRepository>();
   late final ChannelsRepository _channelsRepo = getIt<ChannelsRepository>();
-  late final TabController _tabController = TabController(length: 3, vsync: this);
+  late final TabController _tabController = TabController(length: 4, vsync: this);
 
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _catalogSearchCtrl = TextEditingController();
+  final TextEditingController _announcementCtrl = TextEditingController();
   Timer? _searchDebounce;
   Timer? _catalogSearchDebounce;
 
@@ -115,6 +118,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     _tabController.dispose();
     _searchCtrl.dispose();
     _catalogSearchCtrl.dispose();
+    _announcementCtrl.dispose();
     _selfTitleCtrl.dispose();
     _selfDescCtrl.dispose();
     _searchDebounce?.cancel();
@@ -712,6 +716,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                 _buildCuratedTab(),
                 _buildSelfRecordTab(),
                 _buildCatalogTab(),
+                _buildInteractionTab(),
               ],
             ),
           ),
@@ -1057,6 +1062,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
           Tab(text: 'CHỌN NỘI DUNG'),
           Tab(text: 'TỰ GHI HÌNH'),
           Tab(text: 'DANH MỤC NGUỒN'),
+          Tab(text: 'TƯƠNG TÁC (LIVE)'),
         ],
       ),
     );
@@ -2016,6 +2022,240 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     if (h > 0) return '${h}h${m.toString().padLeft(2, '0')}';
     if (m > 0) return '${m}p${s.toString().padLeft(2, '0')}';
     return '${s}s';
+  }
+
+  // ─── Tab 4: Two-Way Interaction (Live Host) ───────────────────
+  Widget _buildInteractionTab() {
+    final live = _activeLive;
+    if (live == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: _danger.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _danger.withValues(alpha: 0.4)),
+                ),
+                child: const Icon(Icons.sensors_off_rounded,
+                    color: _danger, size: 32),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Chưa có sự kiện Live nào đang phát',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Outfit',
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Kênh "${_selected?.name ?? ''}" hiện đang ở trạng thái nghỉ. Hãy chọn nội dung từ kho VOD và bấm "PHÁT NGAY" để bắt đầu tương tác 2 chiều với người xem!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _accent,
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () => _tabController.animateTo(0),
+                icon: const Icon(Icons.video_library_rounded, size: 18),
+                label: const Text(
+                  'CHỌN NỘI DUNG TỪ KHO VOD',
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Live Host Telemetry Header
+        Container(
+          margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _danger.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _danger,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.sensors_rounded, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'LIVE HOST',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      live.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '${live.viewerCount} khán giả đang xem trực tiếp',
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _accent,
+                  side: const BorderSide(color: Color(0x6600E5FF)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => context.push('/live/${live.eventId}'),
+                icon: const Icon(Icons.remove_red_eye_rounded, size: 14),
+                label: const Text(
+                  'XEM',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Broadcaster Announcement Bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _announcementCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Phát thông báo ghim tới mọi Viewer...',
+                    hintStyle:
+                        const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    prefixIcon:
+                        const Icon(Icons.campaign_rounded, color: _warn, size: 18),
+                    filled: true,
+                    fillColor: const Color(0xFF0F172A),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0x33F59E0B)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0x33F59E0B)),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(color: _warn),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _warn,
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  final text = _announcementCtrl.text.trim();
+                  if (text.isEmpty) return;
+                  LiveSocketService.instance.sendBroadcasterMessage(
+                    eventId: live.eventId,
+                    message: text,
+                  );
+                  _announcementCtrl.clear();
+                  _toast('Đã phát thông báo ghim tới toàn bộ viewer!',
+                      accent: _warn);
+                },
+                child: const Icon(Icons.send_rounded, size: 18),
+              ),
+            ],
+          ),
+        ),
+
+        // Two-way live chat stream
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1320),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF1E293B)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: CommentsSection(
+                targetId: live.eventId,
+                kind: 'live',
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
