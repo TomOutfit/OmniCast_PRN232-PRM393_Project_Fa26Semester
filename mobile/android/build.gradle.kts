@@ -1,10 +1,9 @@
+import com.android.build.gradle.BaseExtension
+
 allprojects {
     repositories {
         google()
         mavenCentral()
-    }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
     }
 }
 
@@ -18,6 +17,16 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+subprojects {
+    if (project.name == "flutter_webrtc") {
+        afterEvaluate {
+            val android = project.extensions.findByName("android") as? BaseExtension
+            android?.compileSdkVersion(34)
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
