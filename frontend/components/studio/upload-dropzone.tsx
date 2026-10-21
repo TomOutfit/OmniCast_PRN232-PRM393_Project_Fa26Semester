@@ -25,6 +25,7 @@
 
 import { useCallback, useRef, useState, type DragEvent } from 'react';
 import { FolderUp, FileVideo, Mic } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const ACCEPTED_MIME = 'video/*,audio/*';
@@ -54,7 +55,24 @@ export function UploadDropzone({
   const handlePickerChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []);
-      if (files.length > 0) onFiles(files);
+      const accepted: File[] = [];
+      const rejected: File[] = [];
+
+      for (const f of files) {
+        if (f.size > MAX_BYTES) {
+          rejected.push(f);
+        } else {
+          accepted.push(f);
+        }
+      }
+
+      if (rejected.length > 0) {
+        toast.error(
+          `${rejected.length} file vượt quá giới hạn 100 MB của Cloudinary: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
+        );
+      }
+
+      if (accepted.length > 0) onFiles(accepted);
       // Reset so picking the same file twice still fires `change`.
       if (inputRef.current) inputRef.current.value = '';
     },
@@ -93,13 +111,26 @@ export function UploadDropzone({
       e.stopPropagation();
       setIsDragOver(false);
       const files = Array.from(e.dataTransfer?.files ?? []);
-      // Filter by accepted mime + size so the queue doesn't blow up.
-      const accepted = files.filter((f) => {
+      const accepted: File[] = [];
+      const rejected: File[] = [];
+
+      for (const f of files) {
         if (f.type && !f.type.startsWith('video/') && !f.type.startsWith('audio/')) {
-          return false;
+          continue;
         }
-        return f.size <= MAX_BYTES;
-      });
+        if (f.size > MAX_BYTES) {
+          rejected.push(f);
+        } else {
+          accepted.push(f);
+        }
+      }
+
+      if (rejected.length > 0) {
+        toast.error(
+          `${rejected.length} file vượt quá giới hạn 100 MB: ${rejected.map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ')}. Hãy nén video hoặc dùng "Thêm qua URL".`,
+        );
+      }
+
       if (accepted.length > 0) onFiles(accepted);
     },
     [onFiles],

@@ -207,42 +207,55 @@ export interface CloudinaryUploadResponse {
  *   • `CloudinaryUploadError` if Cloudinary replies non-2xx or
  *     the network drops.
  */
-export function uploadToCloudinaryDirect(
+/** Chunk size for Cloudinary uploads. 10 MB per chunk prevents NGINX 413 and enables CORS on error. */
+const CHUNK_SIZE = 10 * 1024 * 1024;
+
+export async function uploadToCloudinaryDirect(
+  signed: CloudinarySignedPayload,
+  file: File,
+  options: UploadToCloudinaryDirectOptions = {},
+): Promise<CloudinaryUploadResponse> {
+  if (!signed || !signed.uploadUrl) {
+    throw new CloudinaryUploadError('Missing uploadUrl in signed Cloudinary payload.');
+  }
+
+  // Use single-part upload for smaller files (<= 15 MB)
+  if (file.size <= 15 * 1024 * 1024) {
+    return uploadSinglePart(signed, file, options);
+  }
+
+  // Use Cloudinary Chunked Upload for larger files
+  return uploadChunked(signed, file, options);
+}
+
+function uploadSinglePart(
   signed: CloudinarySignedPayload,
   file: File,
   options: UploadToCloudinaryDirectOptions = {},
 ): Promise<CloudinaryUploadResponse> {
   return new Promise<CloudinaryUploadResponse>((resolve, reject) => {
-    if (!signed || !signed.uploadUrl) {
-      reject(new CloudinaryUploadError('Missing uploadUrl in signed Cloudinary payload.'));
-      return;
-    }
-
     const xhr = new XMLHttpRequest();
     xhr.open('POST', signed.uploadUrl, true);
-    // Cloudinary accepts multipart/form-data with these fields.
-    // The browser fills in the boundary when we set the header
-    // ourselves.
+
     xhr.upload.onprogress = (evt) => {
       if (!evt.lengthComputable) return;
       const percent = Math.round((evt.loaded * 100) / evt.total);
       options.onProgress?.(percent, evt.loaded, evt.total);
     };
+
     xhr.onerror = () => {
-      reject(
-        new CloudinaryUploadError(
-          'Network error during Cloudinary upload.',
-          undefined,
-          xhr,
-        ),
-      );
+      let msg = 'Lỗi kết nối khi upload lên Cloudinary.';
+      if (file.size > 100 * 1024 * 1024) {
+        msg = `File (${(file.size / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng tính năng "Thêm qua URL".`;
+      }
+      reject(new CloudinaryUploadError(msg, undefined, xhr));
     };
+
     xhr.onabort = () => {
       reject(new CloudinaryAbortError());
     };
+
     xhr.onload = () => {
-      // Cloudinary replies with 200 on success and a JSON body.
-      // Any 2xx is OK; non-2xx carries an `error` message.
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const body: CloudinaryUploadResponse = JSON.parse(xhr.responseText);
@@ -259,7 +272,6 @@ export function uploadToCloudinaryDirect(
         return;
       }
 
-      // Try to surface the Cloudinary error message verbatim.
       let message = `Cloudinary upload failed (HTTP ${xhr.status}).`;
       try {
         const body = JSON.parse(xhr.responseText);
@@ -270,52 +282,162 @@ export function uploadToCloudinaryDirect(
       reject(new CloudinaryUploadError(message, xhr.status, xhr));
     };
 
-    // Hook up AbortSignal -> xhr.abort()
     if (options.signal) {
       if (options.signal.aborted) {
         reject(new CloudinaryAbortError());
         return;
       }
       options.signal.addEventListener('abort', () => {
-        // The `onabort` handler will reject with the right error.
         xhr.abort();
       });
     }
 
-    // Build the multipart payload. We use `FormData` so the
-    // browser sets the correct `Content-Type` with boundary.
-    const fd = new FormData();
-    fd.append('file', file);
-    if (signed.apiKey) fd.append('api_key', signed.apiKey);
-    if (signed.timestamp) fd.append('timestamp', String(signed.timestamp));
-    if (signed.signature) fd.append('signature', signed.signature);
-    if (signed.folder) fd.append('folder', signed.folder);
-    if (signed.publicId) fd.append('public_id', signed.publicId);
-
-    const tags = Array.isArray(signed.tags)
-      ? signed.tags.join(',')
-      : (typeof signed.tags === 'string' ? signed.tags : '');
-    if (tags) {
-      fd.append('tags', tags);
-    }
-
-    if (signed.context) {
-      fd.append('context', signed.context);
-    }
-
-    const allowedFormats = Array.isArray(signed.allowedFormats)
-      ? signed.allowedFormats.join(',')
-      : (typeof signed.allowedFormats === 'string'
-        ? signed.allowedFormats
-        : (typeof (signed as any)?.allowed_formats === 'string'
-          ? (signed as any).allowed_formats
-          : 'mp4,mov,m4v,webm,mkv'));
-    if (allowedFormats) {
-      fd.append('allowed_formats', allowedFormats);
-    }
-
+    const fd = buildCloudinaryFormData(signed, file);
     xhr.send(fd);
   });
+}
+
+function uploadChunked(
+  signed: CloudinarySignedPayload,
+  file: File,
+  options: UploadToCloudinaryDirectOptions = {},
+): Promise<CloudinaryUploadResponse> {
+  return new Promise<CloudinaryUploadResponse>(async (resolve, reject) => {
+    const totalSize = file.size;
+    const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
+    const uniqueUploadId = `cld_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    let activeXhr: XMLHttpRequest | null = null;
+    let isAborted = false;
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        reject(new CloudinaryAbortError());
+        return;
+      }
+      options.signal.addEventListener('abort', () => {
+        isAborted = true;
+        activeXhr?.abort();
+        reject(new CloudinaryAbortError());
+      });
+    }
+
+    let finalResponse: CloudinaryUploadResponse | null = null;
+
+    for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+      if (isAborted) return;
+
+      const start = chunkIdx * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, totalSize);
+      const chunkBlob = file.slice(start, end);
+
+      try {
+        const resp = await new Promise<CloudinaryUploadResponse | null>((resolveChunk, rejectChunk) => {
+          const xhr = new XMLHttpRequest();
+          activeXhr = xhr;
+          xhr.open('POST', signed.uploadUrl, true);
+
+          // Standard Cloudinary Chunked Upload headers
+          xhr.setRequestHeader('X-Unique-Upload-Id', uniqueUploadId);
+          xhr.setRequestHeader('Content-Range', `bytes ${start}-${end - 1}/${totalSize}`);
+
+          xhr.upload.onprogress = (evt) => {
+            if (!evt.lengthComputable) return;
+            const currentTotalLoaded = start + evt.loaded;
+            const percent = Math.min(99, Math.round((currentTotalLoaded * 100) / totalSize));
+            options.onProgress?.(percent, currentTotalLoaded, totalSize);
+          };
+
+          xhr.onerror = () => {
+            let msg = 'Lỗi kết nối khi upload lên Cloudinary.';
+            if (totalSize > 100 * 1024 * 1024) {
+              msg = `File (${(totalSize / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 100 MB của Cloudinary. Hãy nén video hoặc dùng "Thêm qua URL".`;
+            }
+            rejectChunk(new CloudinaryUploadError(msg, undefined, xhr));
+          };
+
+          xhr.onabort = () => {
+            rejectChunk(new CloudinaryAbortError());
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const body = JSON.parse(xhr.responseText);
+                resolveChunk(body);
+              } catch (parseErr) {
+                rejectChunk(new CloudinaryUploadError('Cloudinary response was not valid JSON.', xhr.status, parseErr));
+              }
+              return;
+            }
+
+            let message = `Cloudinary upload failed (HTTP ${xhr.status}).`;
+            try {
+              const body = JSON.parse(xhr.responseText);
+              if (body?.error?.message) message = body.error.message;
+            } catch {
+              // keep generic message
+            }
+            if (xhr.status === 400 && message.toLowerCase().includes('file size too large')) {
+              message = `Dung lượng ${(totalSize / (1024 * 1024)).toFixed(1)} MB vượt quá giới hạn tài khoản Cloudinary (tối đa 100 MB). Vui lòng nén video hoặc dùng "Thêm qua URL".`;
+            }
+            rejectChunk(new CloudinaryUploadError(message, xhr.status, xhr));
+          };
+
+          const fd = buildCloudinaryFormData(signed, chunkBlob);
+          xhr.send(fd);
+        });
+
+        if (chunkIdx === totalChunks - 1 && resp) {
+          finalResponse = resp;
+        }
+      } catch (chunkErr) {
+        reject(chunkErr);
+        return;
+      }
+    }
+
+    if (finalResponse) {
+      options.onProgress?.(100, totalSize, totalSize);
+      resolve(finalResponse);
+    } else {
+      reject(new CloudinaryUploadError('Upload hoàn tất nhưng không nhận được phản hồi từ Cloudinary.'));
+    }
+  });
+}
+
+function buildCloudinaryFormData(signed: CloudinarySignedPayload, fileOrBlob: Blob | File): FormData {
+  const fd = new FormData();
+  fd.append('file', fileOrBlob);
+  if (signed.apiKey) fd.append('api_key', signed.apiKey);
+  if (signed.timestamp) fd.append('timestamp', String(signed.timestamp));
+  if (signed.signature) fd.append('signature', signed.signature);
+  if (signed.folder) fd.append('folder', signed.folder);
+  if (signed.publicId) fd.append('public_id', signed.publicId);
+
+  const tags = Array.isArray(signed.tags)
+    ? signed.tags.join(',')
+    : (typeof signed.tags === 'string' ? signed.tags : '');
+  if (tags) {
+    fd.append('tags', tags);
+  }
+
+  if (signed.context) {
+    fd.append('context', signed.context);
+  }
+
+  const allowedFormats = Array.isArray(signed.allowedFormats)
+    ? signed.allowedFormats.join(',')
+    : (typeof signed.allowedFormats === 'string'
+      ? signed.allowedFormats
+      : (typeof (signed as any)?.allowed_formats === 'string'
+        ? (signed as any).allowed_formats
+        : 'mp4,mov,m4v,webm,mkv'));
+  if (allowedFormats) {
+    fd.append('allowed_formats', allowedFormats);
+  }
+
+  return fd;
 }
 
 // ------------------------------------------------------------
