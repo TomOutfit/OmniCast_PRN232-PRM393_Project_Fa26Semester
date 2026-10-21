@@ -145,7 +145,23 @@ export async function signCloudinaryUpload(
     const res = await apiClient.post('/uploads/cloudinary/sign', input);
     // The interceptor in lib/api.ts auto-unwraps `data` when the
     // response is `{ success, data, message }` without `meta`.
-    return res.data as CloudinarySignedPayload;
+    // If the controller returned `{ data: payload }` or nested envelopes,
+    // safely unwrap down to the payload containing `signature` / `uploadUrl`.
+    let payload = res.data as any;
+    while (
+      payload &&
+      typeof payload === 'object' &&
+      'data' in payload &&
+      payload.data &&
+      typeof payload.data === 'object' &&
+      !('signature' in payload)
+    ) {
+      payload = payload.data;
+    }
+    if (!payload || typeof payload !== 'object' || !payload.signature || !payload.uploadUrl) {
+      throw new CloudinarySignError('Invalid signed Cloudinary response payload from server.');
+    }
+    return payload as CloudinarySignedPayload;
   } catch (err: any) {
     const apiMsg =
       err?.response?.data?.message ??
@@ -197,6 +213,11 @@ export function uploadToCloudinaryDirect(
   options: UploadToCloudinaryDirectOptions = {},
 ): Promise<CloudinaryUploadResponse> {
   return new Promise<CloudinaryUploadResponse>((resolve, reject) => {
+    if (!signed || !signed.uploadUrl) {
+      reject(new CloudinaryUploadError('Missing uploadUrl in signed Cloudinary payload.'));
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
     xhr.open('POST', signed.uploadUrl, true);
     // Cloudinary accepts multipart/form-data with these fields.
@@ -265,21 +286,33 @@ export function uploadToCloudinaryDirect(
     // browser sets the correct `Content-Type` with boundary.
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('api_key', signed.apiKey);
-    fd.append('timestamp', String(signed.timestamp));
-    fd.append('signature', signed.signature);
-    fd.append('folder', signed.folder);
-    fd.append('public_id', signed.publicId);
-    if (signed.tags.length > 0) {
-      fd.append('tags', signed.tags.join(','));
+    if (signed.apiKey) fd.append('api_key', signed.apiKey);
+    if (signed.timestamp) fd.append('timestamp', String(signed.timestamp));
+    if (signed.signature) fd.append('signature', signed.signature);
+    if (signed.folder) fd.append('folder', signed.folder);
+    if (signed.publicId) fd.append('public_id', signed.publicId);
+
+    const tags = Array.isArray(signed.tags)
+      ? signed.tags.join(',')
+      : (typeof signed.tags === 'string' ? signed.tags : '');
+    if (tags) {
+      fd.append('tags', tags);
     }
+
     if (signed.context) {
       fd.append('context', signed.context);
     }
-    fd.append(
-      'allowed_formats',
-      signed.allowedFormats.join(','),
-    );
+
+    const allowedFormats = Array.isArray(signed.allowedFormats)
+      ? signed.allowedFormats.join(',')
+      : (typeof signed.allowedFormats === 'string'
+        ? signed.allowedFormats
+        : (typeof (signed as any)?.allowed_formats === 'string'
+          ? (signed as any).allowed_formats
+          : 'mp4,mov,m4v,webm,mkv'));
+    if (allowedFormats) {
+      fd.append('allowed_formats', allowedFormats);
+    }
 
     xhr.send(fd);
   });
@@ -298,7 +331,18 @@ export async function deleteCloudinaryAsset(
     const res = await apiClient.delete('/uploads/cloudinary/asset', {
       data: { publicId, resourceType, reason },
     });
-    return res.data as { result: 'ok' | 'not found'; publicId: string };
+    let data = res.data as any;
+    while (
+      data &&
+      typeof data === 'object' &&
+      'data' in data &&
+      data.data &&
+      typeof data.data === 'object' &&
+      !('result' in data)
+    ) {
+      data = data.data;
+    }
+    return data as { result: 'ok' | 'not found'; publicId: string };
   } catch (err: any) {
     // Swallow non-2xx so callers can `.catch(noop)` for cleanup.
     // Log so dev / preview mode still surfaces the failure.
@@ -315,11 +359,16 @@ export async function deleteCloudinaryAsset(
 
 export async function getCloudinaryHealth(): Promise<CloudinaryHealthStatus> {
   const res = await apiClient.get('/uploads/cloudinary/health');
-  // Server returns `{ data: { configured, cloudName, defaultFolder }, ... }`
-  // and the interceptor unwraps the outer envelope.
-  const data = res.data as
-    | CloudinaryHealthStatus
-    | { data: CloudinaryHealthStatus };
-  if ('data' in data && data.data) return data.data;
+  let data = res.data as any;
+  while (
+    data &&
+    typeof data === 'object' &&
+    'data' in data &&
+    data.data &&
+    typeof data.data === 'object' &&
+    !('configured' in data)
+  ) {
+    data = data.data;
+  }
   return data as CloudinaryHealthStatus;
 }

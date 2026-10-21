@@ -104,6 +104,13 @@ export const VERIFIED_FALLBACK_STREAMS = {
   BIG_BUCK_BUNNY_HLS: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
   SINTEL_MP4:
     'https://test-videos.co.uk/vids/sintel/mp4/h264/720/Sintel_720_10s_1MB.mp4',
+  /**
+   * Cloudinary demo account — always HTTP 200, CORS enabled.
+   * Used as the fallback when a Cloudinary-hosted recording URL
+   * is unreachable (e.g. deleted asset or misconfigured bucket).
+   */
+  CLOUDINARY_DEMO_MP4:
+    'https://res.cloudinary.com/demo/video/upload/v1/samples/elephants.mp4',
 };
 
 export const VERIFIED_FALLBACK_POSTER =
@@ -139,7 +146,8 @@ export function resolveStreamUrl(url: string | null | undefined): string {
     lower.startsWith('http://') ||
     lower.startsWith('https://') ||
     lower.startsWith('blob:') ||
-    lower.startsWith('data:')
+    lower.startsWith('data:') ||
+    lower.startsWith('file:')
   ) {
     return trimmed;
   }

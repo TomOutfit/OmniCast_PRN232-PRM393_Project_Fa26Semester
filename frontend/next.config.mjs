@@ -58,6 +58,26 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.githubusercontent.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'test-videos.co.uk',
+      },
+      {
+        protocol: 'https',
+        hostname: 'test-streams.mux.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: 'commondatastorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'demo-res.cloudinary.com',
+      },
     ],
   },
   async rewrites() {

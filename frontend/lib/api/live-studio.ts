@@ -265,7 +265,9 @@ export async function broadcastLocalFile(
       height: result.height,
       thumbnailUrl:
         result.eager?.[0]?.secure_url ??
-        `https://res.cloudinary.com/${signed.cloudName}/image/upload/w_640,h_360,c_fill,so_1.0/${result.public_id}.jpg`,
+        (signed.cloudName && result.public_id
+          ? `https://res.cloudinary.com/${signed.cloudName}/image/upload/w_640,h_360,c_fill,so_1.0/${result.public_id}.jpg`
+          : undefined),
       format: result.format,
       resourceType: result.resource_type,
     };
