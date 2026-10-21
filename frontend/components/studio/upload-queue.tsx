@@ -283,7 +283,13 @@ function UploadRow({
           </span>
           {/* Circular progress overlay while in flight */}
           {isInFlight && (
-            <CircularProgressOverlay percent={entry.percent} />
+            <CircularProgressOverlay
+              percent={entry.percent}
+              isProcessing={
+                entry.phase === 'registering' ||
+                (entry.phase === 'uploading' && entry.percent >= 80)
+              }
+            />
           )}
         </div>
 
@@ -398,6 +404,7 @@ function UploadRow({
 // ============================================================
 
 function PhasePill({ phase, percent }: { phase: UploadPhase; percent: number }) {
+  const isServerProcessing = phase === 'uploading' && percent >= 80;
   const map: Record<UploadPhase, { label: string; className: string; icon?: React.ReactNode }> = {
     pending: {
       label: 'Chờ',
@@ -409,9 +416,9 @@ function PhasePill({ phase, percent }: { phase: UploadPhase; percent: number }) 
       icon: <Loader2 className="w-3 h-3 animate-spin" />,
     },
     uploading: {
-      label: `Upload ${percent}%`,
+      label: isServerProcessing ? 'Đang xử lý' : `Upload ${percent}%`,
       className: 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40',
-      icon: <Upload className="w-3 h-3" />,
+      icon: isServerProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />,
     },
     registering: {
       label: 'Đăng ký',
@@ -463,16 +470,21 @@ function UploadProgressBar({
   etaSec?: number;
   phase: UploadPhase;
 }) {
+  const isServerProcessing = phase === 'uploading' && percent >= 80;
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-slate-400">
         <span>
           {phase === 'signing' && 'Đang ký payload với Cloudinary…'}
-          {phase === 'uploading' && `Đang upload ${percent}%`}
-          {phase === 'registering' && 'Đang đăng ký vào kho kênh…'}
+          {phase === 'uploading' && (
+            isServerProcessing
+              ? 'Đã tải lên 100% · Đang xử lý video trên máy chủ…'
+              : `Đang upload ${percent}%`
+          )}
+          {phase === 'registering' && 'Đang đăng ký vào kho kênh OmniCast…'}
         </span>
         <span className="flex items-center gap-1.5 tabular-nums">
-          {phase === 'uploading' && speedBps !== undefined && speedBps > 0 && (
+          {phase === 'uploading' && !isServerProcessing && speedBps !== undefined && speedBps > 0 && (
             <>
               <span>{formatBytes(speedBps)}/s</span>
               {etaSec !== undefined && etaSec > 0 && (
@@ -483,6 +495,12 @@ function UploadProgressBar({
               )}
             </>
           )}
+          {(isServerProcessing || phase === 'registering') && (
+            <span className="inline-flex items-center gap-1 text-cyan-400">
+              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+              <span>Vui lòng chờ giây lát</span>
+            </span>
+          )}
         </span>
       </div>
       <div className="relative h-1.5 mt-0.5 rounded-full bg-slate-800 overflow-hidden">
@@ -490,8 +508,8 @@ function UploadProgressBar({
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 transition-[width] duration-150"
           style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
         />
-        {/* Animated shine effect while uploading */}
-        {phase === 'uploading' && (
+        {/* Animated shine effect while uploading or processing */}
+        {(phase === 'uploading' || phase === 'registering') && (
           <div
             className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent"
             style={{
@@ -518,7 +536,13 @@ function UploadProgressBar({
 // CircularProgressOverlay — small radial ring on the thumbnail
 // ============================================================
 
-function CircularProgressOverlay({ percent }: { percent: number }) {
+function CircularProgressOverlay({
+  percent,
+  isProcessing,
+}: {
+  percent: number;
+  isProcessing?: boolean;
+}) {
   const radius = 14;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (percent / 100) * circumference;
@@ -552,9 +576,13 @@ function CircularProgressOverlay({ percent }: { percent: number }) {
           </linearGradient>
         </defs>
       </svg>
-      <span className="absolute text-[10px] font-bold font-mono text-white">
-        {Math.round(percent)}
-      </span>
+      {isProcessing ? (
+        <Loader2 className="w-3.5 h-3.5 text-cyan-300 animate-spin absolute" />
+      ) : (
+        <span className="absolute text-[10px] font-bold font-mono text-white">
+          {Math.round(percent)}
+        </span>
+      )}
     </div>
   );
 }
