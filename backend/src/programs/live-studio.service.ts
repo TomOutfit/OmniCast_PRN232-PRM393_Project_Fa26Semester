@@ -680,79 +680,84 @@ export class LiveStudioService {
       this.logger.warn(`WebSocket notification failed: ${(wsError as Error).message}`);
     }
 
-    // Persist in-app notifications for users so they are invited to join the livestream
-    try {
-      const activeUsers = await this.prisma.user.findMany({
-        where: {
-          role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
-          isActive: true,
-        },
-        select: { id: true },
-      });
-      const chunkSize = 100;
-      for (let i = 0; i < activeUsers.length; i += chunkSize) {
-        const chunk = activeUsers.slice(i, i + chunkSize);
-        await Promise.allSettled(
-          chunk.map((u) =>
-            this.notificationsService.create({
-              userId: u.id,
-              type: 'LIVE_START',
-              title: `🔴 ${channel.name} đang phát trực tiếp!`,
-              message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
-              actionUrl: `/live/${event.id}`,
-              eventId: event.id,
-              channelId: channel.id,
-            }),
-          ),
-        );
-      }
-      this.logger.log(
-        `Created in-app LIVE_START notifications for ${activeUsers.length} users`,
-      );
-    } catch (notifErr) {
-      this.logger.warn(
-        `Failed creating in-app notifications: ${(notifErr as Error).message}`,
-      );
-    }
-
-    // Send push notification via FCM to all registered active devices
-    try {
-      const deviceTokenRows = await this.prisma.deviceToken.findMany({
-        where: {
-          user: {
+    // Dispatch in-app notifications and FCM push asynchronously in background
+    // so Studio operators don't get blocked by external FCM/DB notification latencies.
+    (async () => {
+      try {
+        const activeUsers = await this.prisma.user.findMany({
+          where: {
             role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
             isActive: true,
           },
-        },
-        select: { token: true },
-      });
-      const pushTokens = Array.from(
-        new Set(
-          deviceTokenRows.map((r: any) => r.token).filter(Boolean),
-        ),
-      );
-      if (pushTokens.length > 0) {
-        await this.pushService.send({
-          tokens: pushTokens,
-          type: 'LIVE_STARTED',
-          title: `🔴 ${channel.name} đang phát trực tiếp!`,
-          body: `${event.title} - Bấm để tham gia ngay`,
-          programId: event.id,
-          data: {
-            eventId: event.id,
-            channelSlug: channel.slug,
-            actionUrl: `/live/${event.id}`,
-          },
+          select: { id: true },
         });
+        const chunkSize = 100;
+        for (let i = 0; i < activeUsers.length; i += chunkSize) {
+          const chunk = activeUsers.slice(i, i + chunkSize);
+          await Promise.allSettled(
+            chunk.map((u) =>
+              this.notificationsService.create({
+                userId: u.id,
+                type: 'LIVE_START',
+                title: `🔴 ${channel.name} đang phát trực tiếp!`,
+                message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
+                actionUrl: `/live/${event.id}`,
+                eventId: event.id,
+                channelId: channel.id,
+              }),
+            ),
+          );
+        }
         this.logger.log(
-          `Sent FCM LIVE_STARTED push to ${pushTokens.length} device tokens`,
+          `Created in-app LIVE_START notifications for ${activeUsers.length} users`,
+        );
+      } catch (notifErr) {
+        this.logger.warn(
+          `Failed creating in-app notifications: ${(notifErr as Error).message}`,
         );
       }
-    } catch (pushErr) {
-      this.logger.warn(
-        `Push notification send failed: ${(pushErr as Error).message}`,
-      );
-    }
+
+      // Send push notification via FCM to all registered active devices
+      try {
+        const deviceTokenRows = await this.prisma.deviceToken.findMany({
+          where: {
+            user: {
+              role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
+              isActive: true,
+            },
+          },
+          select: { token: true },
+        });
+        const pushTokens = Array.from(
+          new Set(
+            deviceTokenRows.map((r: any) => r.token).filter(Boolean),
+          ),
+        );
+        if (pushTokens.length > 0) {
+          await this.pushService.send({
+            tokens: pushTokens,
+            type: 'LIVE_STARTED',
+            title: `🔴 ${channel.name} đang phát trực tiếp!`,
+            body: `${event.title} - Bấm để tham gia ngay`,
+            programId: event.id,
+            data: {
+              eventId: event.id,
+              channelSlug: channel.slug,
+              actionUrl: `/live/${event.id}`,
+            },
+          });
+          this.logger.log(
+            `Sent FCM LIVE_STARTED push to ${pushTokens.length} device tokens`,
+          );
+        }
+      } catch (pushErr) {
+        this.logger.warn(
+          `Push notification send failed: ${(pushErr as Error).message}`,
+        );
+      }
+    })().catch((err) => {
+      this.logger.error(`Background notification task error: ${err.message}`);
+    });
 
     return {
       event,

@@ -142,7 +142,9 @@ export async function signCloudinaryUpload(
   input: SignCloudinaryInput,
 ): Promise<CloudinarySignedPayload> {
   try {
-    const res = await apiClient.post('/uploads/cloudinary/sign', input);
+    const res = await apiClient.post('/uploads/cloudinary/sign', input, {
+      timeout: 30000,
+    });
     // The interceptor in lib/api.ts auto-unwraps `data` when the
     // response is `{ success, data, message }` without `meta`.
     // If the controller returned `{ data: payload }` or nested envelopes,
