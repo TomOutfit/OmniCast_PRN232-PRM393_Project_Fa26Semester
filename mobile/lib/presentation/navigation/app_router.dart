@@ -34,13 +34,13 @@ import '../../presentation/screens/live_tv/live_watch_screen.dart';
 import '../../data/models/program_model.dart';
 
 class AppRouter {
-  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   static GoRouter get router => _router;
 
   static final GoRouter _router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
     redirect: (context, state) {

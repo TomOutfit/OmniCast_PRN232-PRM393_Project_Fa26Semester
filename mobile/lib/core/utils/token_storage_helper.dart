@@ -55,6 +55,19 @@ class TokenStorageHelper {
     ]);
   }
 
+  // FCM Device Token Operations
+  Future<void> saveDeviceToken(String token) async {
+    await _storage.write(key: AppConstants.fcmDeviceTokenKey, value: token);
+  }
+
+  Future<String?> getDeviceToken() async {
+    return await _storage.read(key: AppConstants.fcmDeviceTokenKey);
+  }
+
+  Future<void> clearDeviceToken() async {
+    await _storage.delete(key: AppConstants.fcmDeviceTokenKey);
+  }
+
   // User Operations
   Future<void> saveUser(UserModel user) async {
     final userJson = jsonEncode(user.toJson());

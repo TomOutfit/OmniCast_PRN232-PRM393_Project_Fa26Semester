@@ -53,7 +53,8 @@ void main() async {
   // Initialize optional services (best-effort — they fall back to
   // no-ops when the platform isn't configured).
   await SupabaseRealtimeService.instance.initialise();
-  await FcmService.instance.initialise();
+  FcmService.instance.navigatorKey = AppRouter.rootNavigatorKey;
+  await FcmService.instance.initialise(navigatorKey: AppRouter.rootNavigatorKey);
   await BillingService.instance.initialise();
 
   // Hydrate theme + locale from secure storage

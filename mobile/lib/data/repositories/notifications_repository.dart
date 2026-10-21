@@ -94,6 +94,41 @@ class NotificationsRepository {
     );
   }
 
+  /// Register an FCM device token for push notifications
+  Future<bool> registerDeviceToken({
+    required String token,
+    String platform = 'ANDROID',
+    String? appVersion,
+    String? deviceName,
+  }) async {
+    try {
+      final res = await _dioClient.post<Map<String, dynamic>>(
+        AppEndpoints.deviceTokens,
+        data: {
+          'token': token,
+          'platform': platform,
+          if (appVersion != null) 'appVersion': appVersion,
+          if (deviceName != null) 'deviceName': deviceName,
+        },
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Remove an FCM device token from backend
+  Future<bool> deleteDeviceToken(String token) async {
+    try {
+      final res = await _dioClient.delete<Map<String, dynamic>>(
+        '${AppEndpoints.deviceTokens}/$token',
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ============================================================
   // HELPERS
   // ============================================================

@@ -5,7 +5,10 @@ import 'package:equatable/equatable.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/notifications_repository.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/utils/token_storage_helper.dart';
+import '../../../core/di/injection.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -128,6 +131,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = await _authRepository.getCurrentUser();
       if (user != null) {
         emit(Authenticated(user));
+        _registerFcmToken();
       } else {
         emit(Unauthenticated());
       }
@@ -149,6 +153,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         avatarUrl: event.avatarUrl,
       );
       emit(Authenticated(response.user));
+      _registerFcmToken();
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -165,6 +170,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
       emit(Authenticated(response.user));
+      _registerFcmToken();
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -182,6 +188,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         fullName: event.fullName,
       );
       emit(Authenticated(response.user));
+      _registerFcmToken();
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -191,6 +198,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    _deleteFcmToken();
     emit(Unauthenticated());
     try {
       await _authRepository.logout();
@@ -203,6 +211,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutAllDevicesRequested event,
     Emitter<AuthState> emit,
   ) async {
+    _deleteFcmToken();
     emit(Unauthenticated());
     try {
       await _authRepository.logout(revokeAllDevices: true);
@@ -220,5 +229,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(Unauthenticated());
     }
+  }
+
+  void _registerFcmToken() async {
+    try {
+      final token = await TokenStorageHelper().getDeviceToken();
+      if (token != null && token.isNotEmpty) {
+        final repo = getIt<NotificationsRepository>();
+        await repo.registerDeviceToken(token: token, platform: 'ANDROID');
+      }
+    } catch (_) {}
+  }
+
+  void _deleteFcmToken() async {
+    try {
+      final token = await TokenStorageHelper().getDeviceToken();
+      if (token != null && token.isNotEmpty) {
+        final repo = getIt<NotificationsRepository>();
+        await repo.deleteDeviceToken(token);
+      }
+    } catch (_) {}
   }
 }
