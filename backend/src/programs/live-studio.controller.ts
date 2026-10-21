@@ -39,9 +39,12 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { LiveStudioService } from './live-studio.service';
 import { StudioCatalogService } from './studio-catalog.service';
 import { StorageService } from './storage.service';
+import { SocialService } from './social.service';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   CurateLiveDto,
   AddToLibraryDto,
@@ -79,6 +82,8 @@ export class LiveStudioController {
     private readonly storage: StorageService,
     private readonly configService: ConfigService,
     private readonly liveStreamGateway: LiveStreamGateway,
+    private readonly socialService: SocialService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ============================================================
@@ -181,6 +186,7 @@ export class LiveStudioController {
   // ============================================================
 
   @Get('live/active')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all currently active live streams across all channels.',
@@ -199,6 +205,7 @@ export class LiveStudioController {
   // ============================================================
 
   @Get('stream-url/:channelSlug')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -219,12 +226,15 @@ export class LiveStudioController {
       return {
         isLive: true,
         type: 'live',
-        streamUrl: channelHlsUrl,
+        streamUrl: liveEvent.streamUrl || channelHlsUrl,
+        hlsUrl: channelHlsUrl,
         eventId: liveEvent.id,
         title: liveEvent.title,
+        description: liveEvent.description,
         thumbnailUrl: liveEvent.thumbnailUrl,
         startedAt: liveEvent.startedAt?.toISOString(),
-        viewerCount: 0, // Will be updated via WebSocket
+        duration: liveEvent.duration,
+        viewerCount: liveEvent.viewerCount || 0,
       };
     }
 
@@ -233,6 +243,66 @@ export class LiveStudioController {
       type: 'vod',
       streamUrl: null,
       message: 'No live event currently active',
+    };
+  }
+
+  // ============================================================
+  // 0d. Get live event interaction snapshot (fallback before socket connects)
+  // ============================================================
+
+  @Get('events/:eventId/interaction')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Get live event interaction snapshot (realtime viewer count, comments, reactions).',
+  })
+  async getLiveInteraction(@Param('eventId') eventId: string) {
+    const [event, commentsRes, reactionsRes] = await Promise.all([
+      this.prisma.liveEvent.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          thumbnailUrl: true,
+          status: true,
+          streamUrl: true,
+          viewerCount: true,
+          likeCount: true,
+          commentCount: true,
+          startedAt: true,
+          duration: true,
+          channel: {
+            select: { id: true, slug: true, name: true, logoUrl: true },
+          },
+        },
+      }),
+      this.socialService.listCommentsByLiveEvent(eventId, { limit: 50 }),
+      this.socialService.listReactionsByLiveEvent(eventId),
+    ]);
+
+    if (!event) {
+      throw new NotFoundException(`Live event not found: ${eventId}`);
+    }
+
+    const realtimeViewerCount = this.liveStreamGateway.getEventRoomSize(eventId);
+    const viewerCount = Math.max(realtimeViewerCount, event.viewerCount || 0);
+
+    return {
+      eventId: event.id,
+      title: event.title,
+      description: event.description,
+      thumbnailUrl: event.thumbnailUrl,
+      status: event.status,
+      streamUrl: event.streamUrl,
+      channel: event.channel,
+      startedAt: event.startedAt?.toISOString(),
+      duration: event.duration,
+      viewerCount,
+      comments: commentsRes.data,
+      reactions: reactionsRes.data,
+      totalReactions: reactionsRes.total,
     };
   }
 

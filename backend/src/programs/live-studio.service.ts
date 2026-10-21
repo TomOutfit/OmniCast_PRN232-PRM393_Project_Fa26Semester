@@ -38,6 +38,7 @@ import {
   Prisma,
   StreamQuality,
   StreamSourceType,
+  UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
@@ -453,8 +454,17 @@ export class LiveStudioService {
       },
     });
 
-    // Allow all published recordings with a playable videoUrl so Staff/Admin can curate from OmniCast VOD
-    return items.filter((r) => Boolean(r.videoUrl && r.videoUrl.trim()));
+    // Defensive filter: hide anything the guard would reject.
+    return items.filter((r) => {
+      if (!r.videoUrl || !r.videoUrl.trim()) return false;
+      if (
+        r.externalPlatform &&
+        BLOCKED_EXTERNAL_PLATFORMS.has(r.externalPlatform)
+      ) {
+        return false;
+      }
+      return true;
+    });
   }
 
   /**
@@ -485,6 +495,7 @@ export class LiveStudioService {
         startedAt: true,
         endedAt: true,
         duration: true,
+        viewerCount: true,
         channel: {
           select: { id: true, slug: true, name: true },
         },
@@ -549,7 +560,19 @@ export class LiveStudioService {
 
     // Channel scope + anti-piracy
     for (const r of recordings) {
-      // Allow Staff/Admin to curate ANY video from the OmniCast VOD library to broadcast
+      if (r.channelId && r.channelId !== channel.id && !dto.allowDevLicense) {
+        throw new BadRequestException(
+          `Recording ${r.id} does not belong to channel ${channel.slug}.`,
+        );
+      }
+      if (
+        r.externalPlatform &&
+        BLOCKED_EXTERNAL_PLATFORMS.has(r.externalPlatform)
+      ) {
+        throw new ForbiddenException(
+          `Recording ${r.id} cannot be broadcast: external platform ${r.externalPlatform} is not allowed.`,
+        );
+      }
       if (!r.videoUrl) {
         throw new BadRequestException(
           `Recording ${r.id} has no playable videoUrl.`,
@@ -657,42 +680,75 @@ export class LiveStudioService {
     // Persist in-app notifications for users so they are invited to join the livestream
     try {
       const activeUsers = await this.prisma.user.findMany({
+        where: {
+          role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
+          isActive: true,
+        },
         select: { id: true },
-        take: 100,
       });
-      await Promise.allSettled(
-        activeUsers.map((u) =>
-          this.notificationsService.create({
-            userId: u.id,
-            type: 'LIVE_START',
-            title: `🔴 ${channel.name} đang phát trực tiếp!`,
-            message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
-            actionUrl: `/live/${event.id}`,
-            eventId: event.id,
-            channelId: channel.id,
-          }),
-        ),
+      const chunkSize = 100;
+      for (let i = 0; i < activeUsers.length; i += chunkSize) {
+        const chunk = activeUsers.slice(i, i + chunkSize);
+        await Promise.allSettled(
+          chunk.map((u) =>
+            this.notificationsService.create({
+              userId: u.id,
+              type: 'LIVE_START',
+              title: `🔴 ${channel.name} đang phát trực tiếp!`,
+              message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
+              actionUrl: `/live/${event.id}`,
+              eventId: event.id,
+              channelId: channel.id,
+            }),
+          ),
+        );
+      }
+      this.logger.log(
+        `Created in-app LIVE_START notifications for ${activeUsers.length} users`,
       );
-      this.logger.log(`Created in-app LIVE_START notifications for ${activeUsers.length} users`);
     } catch (notifErr) {
-      this.logger.warn(`Failed creating in-app notifications: ${(notifErr as Error).message}`);
+      this.logger.warn(
+        `Failed creating in-app notifications: ${(notifErr as Error).message}`,
+      );
     }
 
-    // Send push notification via FCM if configured
+    // Send push notification via FCM to all registered active devices
     try {
-      await this.pushService.send({
-        type: 'LIVE_STARTED',
-        title: `🔴 ${channel.name} đang phát trực tiếp!`,
-        body: `${event.title} - Bấm để tham gia ngay`,
-        programId: event.id,
-        data: {
-          eventId: event.id,
-          channelSlug: channel.slug,
-          actionUrl: `/live/${event.id}`,
+      const deviceTokenRows = await this.prisma.deviceToken.findMany({
+        where: {
+          user: {
+            role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
+            isActive: true,
+          },
         },
+        select: { token: true },
       });
+      const pushTokens = Array.from(
+        new Set(
+          deviceTokenRows.map((r: any) => r.token).filter(Boolean),
+        ),
+      );
+      if (pushTokens.length > 0) {
+        await this.pushService.send({
+          tokens: pushTokens,
+          type: 'LIVE_STARTED',
+          title: `🔴 ${channel.name} đang phát trực tiếp!`,
+          body: `${event.title} - Bấm để tham gia ngay`,
+          programId: event.id,
+          data: {
+            eventId: event.id,
+            channelSlug: channel.slug,
+            actionUrl: `/live/${event.id}`,
+          },
+        });
+        this.logger.log(
+          `Sent FCM LIVE_STARTED push to ${pushTokens.length} device tokens`,
+        );
+      }
     } catch (pushErr) {
-      this.logger.warn(`Push notification send failed: ${(pushErr as Error).message}`);
+      this.logger.warn(
+        `Push notification send failed: ${(pushErr as Error).message}`,
+      );
     }
 
     return {
@@ -1374,6 +1430,8 @@ export class LiveStudioService {
         streamUrl: true,
         startedAt: true,
         duration: true,
+        viewerCount: true,
+        tags: true,
         channel: {
           select: {
             id: true,
@@ -1388,16 +1446,22 @@ export class LiveStudioService {
 
     const mediaMtxHlsUrl = process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
 
-    return liveEvents.map((event) => ({
-      eventId: event.id,
-      title: event.title,
-      description: event.description,
-      hlsUrl: event.channel?.slug
-        ? `${mediaMtxHlsUrl}/${event.channel.slug}/live.m3u8`
-        : '',
-      startedAt: event.startedAt?.toISOString(),
-      duration: event.duration,
-      channel: event.channel,
-    }));
+    return liveEvents.map((event) => {
+      const recTag = event.tags?.find((t: string) => t.startsWith('rec:'));
+      return {
+        eventId: event.id,
+        title: event.title,
+        description: event.description,
+        streamUrl: event.streamUrl,
+        hlsUrl: event.channel?.slug
+          ? `${mediaMtxHlsUrl}/${event.channel.slug}/live.m3u8`
+          : '',
+        sourceRecordingId: recTag ? recTag.replace('rec:', '') : null,
+        startedAt: event.startedAt?.toISOString(),
+        duration: event.duration,
+        viewerCount: event.viewerCount || 0,
+        channel: event.channel,
+      };
+    });
   }
 }

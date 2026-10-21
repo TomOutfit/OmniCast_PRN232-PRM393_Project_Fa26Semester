@@ -175,6 +175,7 @@ model LiveEvent {
   curatorReports   AiCuratorReport[]
   reactions        Reaction[]
   watchlistItems   Watchlist[]
+  comments         Comment[]         @relation("CommentLiveEvent")
 
   // ── Relation back to LiveChannel (see `001_init.sql:142`) ────────
   channel LiveChannel? @relation("LiveEventChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -308,6 +309,7 @@ model Comment {
   content     String    @db.VarChar(1000)
   userId      String?   @db.Uuid
   recordingId String?   @db.Uuid
+  liveEventId String?   @db.Uuid
   parentId    String?   @db.Uuid
   likeCount   Int?      @default(0)
   isPinned    Boolean?  @default(false)
@@ -318,12 +320,14 @@ model Comment {
   // ── Relations (see `001_init.sql:256-258`) ──────────────────────
   user      User?      @relation("CommentAuthor", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   recording Recording? @relation("CommentRecording", fields: [recordingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  liveEvent LiveEvent? @relation("CommentLiveEvent", fields: [liveEventId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   replies   Comment[]  @relation("CommentReplies")
   likes     CommentLike[]
 
   @@index([parentId], map: "idx_comment_parent")
   @@index([recordingId], map: "idx_comment_recording")
+  @@index([liveEventId], map: "idx_comment_live_event")
 }
 
 model CommentLike {

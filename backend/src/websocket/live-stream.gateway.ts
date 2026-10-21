@@ -2,21 +2,27 @@
 // OmniCast - Live Stream WebSocket Gateway
 // ============================================================
 //
-// Real-time WebSocket gateway for live streaming notifications.
-// When Admin/Staff starts or stops a live stream, this gateway
-// broadcasts events to all connected viewers so they can:
-//   - See LIVE badge appear/disappear
-//   - Auto-switch to the live stream
-//   - Get real-time viewer count updates
+// Real-time WebSocket gateway for live streaming notifications,
+// two-way chat, reactions, and viewer counts.
 //
-// Events emitted:
-//   - live:started   → when Admin starts streaming
-//   - live:stopped   → when Admin stops streaming
-//   - live:viewerCount → periodic viewer count update
+// Events emitted to room `event:{eventId}`:
+//   - live:chat:new       → new comment in the live event
+//   - live:reaction:new   → reaction updated in the live event
+//   - broadcaster:message → pinned announcement from Staff/Admin
+//   - chat:deleted        → moderated comment removed
+//   - live:viewerCount    → live viewer count update
+//
+// Events emitted to room `channel:{channelSlug}` and globally:
+//   - live:started        → when Admin starts streaming
+//   - live:stopped        → when Admin stops streaming
 //
 // Events listened:
-//   - subscribe:channel    → join a channel room
-//   - unsubscribe:channel  → leave a channel room
+//   - subscribe:event / unsubscribe:event
+//   - subscribe:channel / unsubscribe:channel
+//   - live:chat
+//   - live:reaction
+//   - broadcaster:message
+//   - chat:delete
 // ============================================================
 
 import {
@@ -28,9 +34,13 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
+import { SocialService } from '../programs/social.service';
+import { ReactionType } from '@prisma/client';
 
 export interface LiveEventPayload {
   eventId: string;
@@ -49,13 +59,18 @@ export interface LiveStoppedPayload {
 }
 
 export interface ViewerCountPayload {
-  channelSlug: string;
+  channelSlug?: string;
+  eventId?: string;
   viewerCount: number;
+  timestamp: string;
 }
 
 interface ClientInfo {
   userId?: string;
+  role?: string;
+  name?: string;
   channelSlug?: string;
+  eventId?: string;
   joinedAt: Date;
 }
 
@@ -68,35 +83,332 @@ interface ClientInfo {
   pingInterval: 25000,
   pingTimeout: 20000,
 })
-export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class LiveStreamGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
 
   private readonly logger = new Logger(LiveStreamGateway.name);
   private readonly connectedClients = new Map<string, ClientInfo>();
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => SocialService))
+    private readonly socialService: SocialService,
+  ) {}
 
   // ============================================================
   // Connection Lifecycle
   // ============================================================
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
+    const rawToken =
+      (client.handshake.auth?.token as string) ||
+      (client.handshake.headers?.authorization
+        ? (client.handshake.headers.authorization as string).replace(
+            /^Bearer\s+/i,
+            '',
+          )
+        : null);
+
+    let userId: string | undefined;
+    let role: string | undefined;
+    let name: string | undefined;
+
+    if (rawToken && rawToken.trim()) {
+      try {
+        const decoded: any = await this.jwtService.verifyAsync(
+          rawToken.trim(),
+          {
+            secret: this.configService.get<string>('JWT_SECRET'),
+          },
+        );
+        userId = decoded.sub || decoded.userId || decoded.id;
+        role = decoded.role;
+        name = decoded.name || decoded.fullName;
+        client.data = { userId, role, name };
+      } catch (err) {
+        this.logger.warn(
+          `Invalid/expired JWT token on socket ${client.id}: ${(err as Error).message}`,
+        );
+        client.emit('auth:error', {
+          message: 'Invalid or expired authentication token',
+        });
+        client.disconnect(true);
+        return;
+      }
+    }
+
     this.connectedClients.set(client.id, {
+      userId,
+      role,
+      name,
       joinedAt: new Date(),
     });
-    this.logger.log(`Client connected: ${client.id} (total: ${this.connectedClients.size})`);
+
+    this.logger.log(
+      `Client connected: ${client.id} (user: ${userId ?? 'guest'}, role: ${role ?? 'none'}) (total: ${this.connectedClients.size})`,
+    );
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     const clientInfo = this.connectedClients.get(client.id);
     this.connectedClients.delete(client.id);
+
+    if (clientInfo?.eventId) {
+      const remainingCount = this.getEventRoomSize(clientInfo.eventId);
+      this.notifyViewerCountForEvent(clientInfo.eventId, remainingCount);
+    }
+
     this.logger.log(
-      `Client disconnected: ${client.id} (was on channel: ${clientInfo?.channelSlug ?? 'none'}) (total: ${this.connectedClients.size})`,
+      `Client disconnected: ${client.id} (event: ${clientInfo?.eventId ?? 'none'}, channel: ${clientInfo?.channelSlug ?? 'none'}) (total: ${this.connectedClients.size})`,
     );
   }
 
   // ============================================================
-  // Channel Subscription
+  // Event-specific Room Subscription (event:{eventId})
+  // ============================================================
+
+  @SubscribeMessage('subscribe:event')
+  async handleSubscribeEvent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { eventId?: string } | string,
+  ) {
+    const eventId =
+      typeof payload === 'string' ? payload : payload?.eventId;
+    if (!eventId) {
+      return { error: 'eventId is required' };
+    }
+
+    const roomName = `event:${eventId}`;
+    await client.join(roomName);
+
+    const clientInfo = this.connectedClients.get(client.id);
+    if (clientInfo) {
+      clientInfo.eventId = eventId;
+    }
+
+    const viewerCount = this.getEventRoomSize(eventId);
+    this.logger.log(
+      `Client ${client.id} joined ${roomName} (viewers: ${viewerCount})`,
+    );
+
+    // Broadcast updated viewer count to everyone in the live event room
+    this.notifyViewerCountForEvent(eventId, viewerCount);
+
+    return {
+      event: 'subscribed:event',
+      data: {
+        eventId,
+        viewerCount,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
+  @SubscribeMessage('unsubscribe:event')
+  async handleUnsubscribeEvent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { eventId?: string } | string,
+  ) {
+    const eventId =
+      typeof payload === 'string' ? payload : payload?.eventId;
+    if (!eventId) {
+      return { error: 'eventId is required' };
+    }
+
+    const roomName = `event:${eventId}`;
+    await client.leave(roomName);
+
+    const clientInfo = this.connectedClients.get(client.id);
+    if (clientInfo && clientInfo.eventId === eventId) {
+      clientInfo.eventId = undefined;
+    }
+
+    const viewerCount = this.getEventRoomSize(eventId);
+    this.notifyViewerCountForEvent(eventId, viewerCount);
+
+    this.logger.log(`Client ${client.id} left ${roomName}`);
+    return { event: 'unsubscribed:event', data: { eventId } };
+  }
+
+  // ============================================================
+  // Two-way Real-time Chat & Reactions
+  // ============================================================
+
+  @SubscribeMessage('live:chat')
+  async handleLiveChat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      eventId: string;
+      content: string;
+      parentId?: string;
+    },
+  ) {
+    const userId = client.data?.userId;
+    if (!userId) {
+      return { error: 'UNAUTHORIZED', message: 'Vui lòng đăng nhập để bình luận' };
+    }
+    if (!payload?.eventId || !payload?.content?.trim()) {
+      return { error: 'BAD_REQUEST', message: 'Nội dung bình luận không được rỗng' };
+    }
+
+    try {
+      const comment = await this.socialService.createCommentForLiveEvent(
+        payload.eventId,
+        userId,
+        {
+          content: payload.content.trim(),
+          parentId: payload.parentId,
+        },
+      );
+
+      const roomName = `event:${payload.eventId}`;
+      this.server.to(roomName).emit('live:chat:new', {
+        eventId: payload.eventId,
+        comment,
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, comment };
+    } catch (err) {
+      this.logger.warn(`Failed to post live chat: ${(err as Error).message}`);
+      return {
+        error: 'CHAT_FAILED',
+        message: (err as Error).message || 'Không thể gửi bình luận',
+      };
+    }
+  }
+
+  @SubscribeMessage('live:reaction')
+  async handleLiveReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      eventId: string;
+      type: ReactionType;
+    },
+  ) {
+    const userId = client.data?.userId;
+    if (!userId) {
+      return { error: 'UNAUTHORIZED', message: 'Vui lòng đăng nhập để thả cảm xúc' };
+    }
+    if (!payload?.eventId || !payload?.type) {
+      return { error: 'BAD_REQUEST', message: 'Thiếu eventId hoặc loại cảm xúc' };
+    }
+
+    try {
+      const res = await this.socialService.toggleReactionByLiveEvent(
+        payload.eventId,
+        userId,
+        payload.type,
+      );
+
+      const counts = await this.socialService.listReactionsByLiveEvent(
+        payload.eventId,
+      );
+
+      const roomName = `event:${payload.eventId}`;
+      this.server.to(roomName).emit('live:reaction:new', {
+        eventId: payload.eventId,
+        userId,
+        type: payload.type,
+        toggled: res.toggled,
+        counts: counts.data,
+        total: counts.total,
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, ...res, counts: counts.data };
+    } catch (err) {
+      this.logger.warn(`Failed to toggle reaction: ${(err as Error).message}`);
+      return { error: 'REACTION_FAILED', message: (err as Error).message };
+    }
+  }
+
+  @SubscribeMessage('broadcaster:message')
+  async handleBroadcasterMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      eventId: string;
+      message: string;
+    },
+  ) {
+    const role = client.data?.role;
+    if (role !== 'STAFF' && role !== 'ADMIN') {
+      return {
+        error: 'FORBIDDEN',
+        message: 'Chỉ Staff hoặc Admin mới có quyền phát thông điệp trên live stream',
+      };
+    }
+    if (!payload?.eventId || !payload?.message?.trim()) {
+      return { error: 'BAD_REQUEST', message: 'Nội dung thông điệp không được rỗng' };
+    }
+
+    const roomName = `event:${payload.eventId}`;
+    const broadcastPayload = {
+      eventId: payload.eventId,
+      message: payload.message.trim(),
+      senderName: client.data?.name || 'Broadcaster',
+      senderRole: role,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.server.to(roomName).emit('broadcaster:message', broadcastPayload);
+    this.logger.log(
+      `Broadcaster message in ${roomName} from ${client.id} (${client.data?.name}): "${payload.message}"`,
+    );
+
+    return { success: true, ...broadcastPayload };
+  }
+
+  @SubscribeMessage('chat:delete')
+  async handleChatDelete(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      eventId: string;
+      commentId: string;
+    },
+  ) {
+    const userId = client.data?.userId;
+    const role = client.data?.role;
+    if (!userId) {
+      return { error: 'UNAUTHORIZED' };
+    }
+    if (role !== 'STAFF' && role !== 'ADMIN') {
+      return {
+        error: 'FORBIDDEN',
+        message: 'Chỉ Staff hoặc Admin mới có quyền xoá bình luận',
+      };
+    }
+
+    try {
+      await this.socialService.deleteComment(
+        payload.commentId,
+        userId,
+        role,
+      );
+
+      const roomName = `event:${payload.eventId}`;
+      this.server.to(roomName).emit('chat:deleted', {
+        eventId: payload.eventId,
+        commentId: payload.commentId,
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, commentId: payload.commentId };
+    } catch (err) {
+      return { error: 'DELETE_FAILED', message: (err as Error).message };
+    }
+  }
+
+  // ============================================================
+  // Channel Subscription (Legacy & Channel Viewfinder)
   // ============================================================
 
   @SubscribeMessage('subscribe:channel')
@@ -113,10 +425,10 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
     }
 
     const viewerCount = this.getRoomSize(channelSlug);
-    this.logger.log(`Client ${client.id} subscribed to ${roomName} (viewers: ${viewerCount})`);
+    this.logger.log(
+      `Client ${client.id} subscribed to ${roomName} (viewers: ${viewerCount})`,
+    );
 
-    // Send current live status to newly connected viewer
-    // This will be populated by LiveStudioService when events are active
     return {
       event: 'subscribed',
       data: {
@@ -145,83 +457,54 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   // ============================================================
-  // WebRTC Signaling Events (for mobile push-to-live)
+  // WebRTC Signaling Events
   // ============================================================
 
-  /**
-   * Handle incoming WebRTC offer from mobile broadcaster.
-   * Mobile sends offer → Server relays to viewers → Viewers send answer back.
-   */
   @SubscribeMessage('webrtc:offer')
   handleWebRtcOffer(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { channelSlug: string; sdp: string },
   ) {
     const roomName = `channel:${data.channelSlug}`;
-    
-    // Log the event
-    this.logger.log(
-      `WebRTC offer from ${client.id} for channel ${data.channelSlug}`,
-    );
-
-    // Broadcast offer to all viewers in the channel
-    // Viewers will respond with 'webrtc:answer'
     client.to(roomName).emit('webrtc:offer', {
       broadcasterId: client.id,
       sdp: data.sdp,
       timestamp: new Date().toISOString(),
     });
-
     return { event: 'webrtc:offer-ack', data: { received: true } };
   }
 
-  /**
-   * Handle incoming WebRTC answer from a viewer.
-   * Viewer sends answer → Server relays to the broadcaster.
-   */
   @SubscribeMessage('webrtc:answer')
   handleWebRtcAnswer(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { broadcasterId: string; sdp: string },
   ) {
-    this.logger.log(
-      `WebRTC answer from viewer ${client.id} to broadcaster ${data.broadcasterId}`,
-    );
-
-    // Send answer back to the specific broadcaster
     this.server.to(data.broadcasterId).emit('webrtc:answer', {
       viewerId: client.id,
       sdp: data.sdp,
       timestamp: new Date().toISOString(),
     });
-
     return { event: 'webrtc:answer-ack', data: { received: true } };
   }
 
-  /**
-   * Handle ICE candidate exchange.
-   * Bidirectional: broadcaster ↔ viewers.
-   */
   @SubscribeMessage('webrtc:ice-candidate')
   handleIceCandidate(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { targetId?: string; channelSlug?: string; candidate: any },
+    @MessageBody()
+    data: { targetId?: string; channelSlug?: string; candidate: any },
   ) {
     if (data.targetId) {
-      // Direct message to specific client
       this.server.to(data.targetId).emit('webrtc:ice-candidate', {
         fromId: client.id,
         candidate: data.candidate,
       });
     } else if (data.channelSlug) {
-      // Broadcast to channel room (for broadcaster sending to all viewers)
       const roomName = `channel:${data.channelSlug}`;
       client.to(roomName).emit('webrtc:ice-candidate', {
         fromId: client.id,
         candidate: data.candidate,
       });
     }
-
     return { event: 'webrtc:ice-ack', data: { received: true } };
   }
 
@@ -238,10 +521,6 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
   // Public Broadcast Methods (called by services)
   // ============================================================
 
-  /**
-   * Broadcast "live started" event to all viewers of a channel.
-   * Called by LiveStudioService when Admin starts a live stream.
-   */
   notifyLiveStarted(channelSlug: string, payload: LiveEventPayload) {
     const roomName = `channel:${channelSlug}`;
     const broadcastData = {
@@ -249,18 +528,13 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
       channelSlug,
       timestamp: new Date().toISOString(),
     };
-    this.server.to(roomName).emit('live:started', broadcastData);
-    // Broadcast globally to all connected viewers so in-app notifications appear everywhere
-    this.server.emit('live:started', broadcastData);
+    this.server?.to(roomName).emit('live:started', broadcastData);
+    this.server?.emit('live:started', broadcastData);
     this.logger.log(
       `Broadcast live:started globally and to ${roomName} - "${payload.title}" (eventId: ${payload.eventId})`,
     );
   }
 
-  /**
-   * Broadcast "live stopped" event to all viewers of a channel.
-   * Called by LiveStudioService when Admin stops a live stream.
-   */
   notifyLiveStopped(channelSlug: string, payload: LiveStoppedPayload) {
     const roomName = `channel:${channelSlug}`;
     const broadcastData = {
@@ -268,20 +542,16 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
       channelSlug,
       timestamp: new Date().toISOString(),
     };
-    this.server.to(roomName).emit('live:stopped', broadcastData);
-    this.server.emit('live:stopped', broadcastData);
+    this.server?.to(roomName).emit('live:stopped', broadcastData);
+    this.server?.emit('live:stopped', broadcastData);
     this.logger.log(
       `Broadcast live:stopped globally and to ${roomName} - (eventId: ${payload.eventId})`,
     );
   }
 
-  /**
-   * Broadcast viewer count update to all viewers of a channel.
-   * Can be called periodically by a background job.
-   */
   notifyViewerCount(channelSlug: string, viewerCount: number) {
     const roomName = `channel:${channelSlug}`;
-    this.server.to(roomName).emit('live:viewerCount', {
+    this.server?.to(roomName).emit('live:viewerCount', {
       channelSlug,
       viewerCount,
       timestamp: new Date().toISOString(),
@@ -289,40 +559,53 @@ export class LiveStreamGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   /**
-   * Send a direct message to a specific client (e.g., for auth errors).
+   * Broadcast viewer count update to an event room and persist to DB.
    */
+  async notifyViewerCountForEvent(eventId: string, viewerCount?: number) {
+    const count =
+      typeof viewerCount === 'number'
+        ? viewerCount
+        : this.getEventRoomSize(eventId);
+
+    const roomName = `event:${eventId}`;
+    this.server?.to(roomName).emit('live:viewerCount', {
+      eventId,
+      viewerCount: count,
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      await this.prisma.liveEvent.update({
+        where: { id: eventId },
+        data: { viewerCount: count },
+      });
+    } catch (_) {
+      // Non-fatal if event row doesn't exist
+    }
+  }
+
   sendToClient(clientId: string, event: string, data: unknown) {
-    this.server.to(clientId).emit(event, data);
+    this.server?.to(clientId).emit(event, data);
   }
 
   // ============================================================
   // Helper Methods
   // ============================================================
 
-  /**
-   * Get the number of connected clients in a channel room.
-   */
   getRoomSize(channelSlug: string): number {
-    const room = this.server.sockets.adapter.rooms.get(`channel:${channelSlug}`);
+    const room = this.server?.sockets?.adapter?.rooms?.get(
+      `channel:${channelSlug}`,
+    );
     return room?.size ?? 0;
   }
 
-  /**
-   * Get all channel slugs that currently have active viewers.
-   */
-  getActiveChannels(): string[] {
-    const channels: string[] = [];
-    this.server.sockets.adapter.rooms.forEach((_: any, roomName: string) => {
-      if (roomName.startsWith('channel:')) {
-        channels.push(roomName.replace('channel:', ''));
-      }
-    });
-    return channels;
+  getEventRoomSize(eventId: string): number {
+    const room = this.server?.sockets?.adapter?.rooms?.get(
+      `event:${eventId}`,
+    );
+    return room?.size ?? 0;
   }
 
-  /**
-   * Get total connected clients across all channels.
-   */
   getTotalConnections(): number {
     return this.connectedClients.size;
   }

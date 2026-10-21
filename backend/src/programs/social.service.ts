@@ -164,7 +164,7 @@ export class SocialService {
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
-    if (comment.userId !== userId && role !== 'ADMIN') {
+    if (comment.userId !== userId && role !== 'ADMIN' && role !== 'STAFF') {
       throw new ForbiddenException('You cannot delete this comment');
     }
 
@@ -177,6 +177,14 @@ export class SocialService {
         where: { id: comment.recordingId },
         data: { commentCount: { decrement: 1 } },
       });
+    }
+
+    const commentWithLive = comment as typeof comment & { liveEventId?: string | null };
+    if (commentWithLive.liveEventId) {
+      await this.prisma.liveEvent.update({
+        where: { id: commentWithLive.liveEventId },
+        data: { commentCount: { decrement: 1 } },
+      }).catch(() => null);
     }
 
     await this.auditLogger.log({
@@ -199,33 +207,53 @@ export class SocialService {
     }
     const event = await this.prisma.liveEvent.findUnique({
       where: { id: liveEventId },
-      select: { id: true, channelId: true },
+      select: { id: true },
     });
     if (!event) {
       throw new NotFoundException('Live event not found');
     }
 
-    const recording = await this.prisma.recording.findFirst({
-      where: {
-        OR: [
-          { generatedFromEventId: liveEventId },
-          { channelId: event.channelId },
-        ],
-      },
-      select: { id: true },
-    });
-    if (!recording) {
-      return {
-        data: [],
-        meta: {
-          page: options.page || 1,
-          limit: options.limit || 20,
-          total: 0,
-          totalPages: 0,
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const commentClient = this.prisma.comment as any;
+    const [data, total] = await Promise.all([
+      commentClient.findMany({
+        where: { liveEventId, parentId: null },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: { id: true, fullName: true, avatarUrl: true, role: true },
+          },
+          _count: { select: { replies: true, likes: true } },
+          replies: {
+            take: 5,
+            orderBy: { createdAt: 'asc' },
+            include: {
+              user: {
+                select: { id: true, fullName: true, avatarUrl: true, role: true },
+              },
+            },
+          },
         },
-      };
-    }
-    return this.listCommentsByRecording(recording.id, options);
+      }),
+      commentClient.count({
+        where: { liveEventId, parentId: null },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async createCommentOnLiveEvent(
@@ -238,36 +266,73 @@ export class SocialService {
     }
     const event = await this.prisma.liveEvent.findUnique({
       where: { id: liveEventId },
-      select: { id: true, channelId: true, title: true },
+      select: {
+        id: true,
+        title: true,
+        chatEnabled: true,
+        channel: {
+          select: { id: true, allowComments: true },
+        },
+      },
     });
     if (!event) {
       throw new NotFoundException('Live event not found');
     }
 
-    let recording = await this.prisma.recording.findFirst({
-      where: {
-        OR: [
-          { generatedFromEventId: liveEventId },
-          { channelId: event.channelId },
-        ],
-      },
-      select: { id: true },
-    });
-
-    if (!recording) {
-      recording = await this.prisma.recording.create({
-        data: {
-          title: `Stream Archive: ${event.title}`,
-          channelId: event.channelId,
-          generatedFromEventId: liveEventId,
-          duration: 3600,
-          videoUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
-        },
-        select: { id: true },
-      });
+    if (event.chatEnabled === false || event.channel?.allowComments === false) {
+      throw new ForbiddenException('Comments are disabled for this live stream');
     }
 
-    return this.createComment(recording.id, userId, dto);
+    const commentClient = this.prisma.comment as any;
+    if (dto.parentId) {
+      if (!this.isUuid(dto.parentId)) {
+        throw new NotFoundException('Parent comment not found');
+      }
+      const parent = await commentClient.findUnique({
+        where: { id: dto.parentId },
+        select: { id: true, liveEventId: true },
+      });
+      if (!parent || parent.liveEventId !== liveEventId) {
+        throw new NotFoundException('Parent comment not found in this live event');
+      }
+    }
+
+    const comment = await commentClient.create({
+      data: {
+        content: dto.content,
+        userId,
+        liveEventId,
+        parentId: dto.parentId,
+      },
+      include: {
+        user: {
+          select: { id: true, fullName: true, avatarUrl: true, role: true },
+        },
+      },
+    });
+
+    await this.prisma.liveEvent.update({
+      where: { id: liveEventId },
+      data: { commentCount: { increment: 1 } },
+    }).catch(() => null);
+
+    await this.auditLogger.log({
+      userId,
+      action: 'CREATE_LIVE_COMMENT',
+      entityType: 'Comment',
+      entityId: comment.id,
+      newValues: { liveEventId, content: dto.content },
+    });
+
+    return comment;
+  }
+
+  async createCommentForLiveEvent(
+    liveEventId: string,
+    userId: string,
+    dto: CreateCommentDto,
+  ) {
+    return this.createCommentOnLiveEvent(liveEventId, userId, dto);
   }
 
   // ============================================================
