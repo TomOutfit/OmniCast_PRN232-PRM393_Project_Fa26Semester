@@ -51,6 +51,12 @@
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
+	<key>NSCameraUsageDescription</key>
+	<string>OmniCast cần quyền truy cập camera để quay video trực tiếp cho buổi phát sóng.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>OmniCast cần quyền truy cập microphone để thu âm thanh trong buổi phát sóng trực tiếp.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>OmniCast cần quyền truy cập thư viện ảnh để lưu video đã quay.</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
