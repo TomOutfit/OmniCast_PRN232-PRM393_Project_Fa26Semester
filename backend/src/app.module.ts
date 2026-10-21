@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { WebsocketModule } from './websocket/websocket.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ChannelsModule } from './channels/channels.module';
@@ -54,6 +55,9 @@ import { BillingModule } from './billing/billing.module';
 
     // Database
     PrismaModule,
+
+    // WebSocket Gateway (Global - for live streaming notifications)
+    WebsocketModule,
 
     // Feature Modules
     AuthModule,

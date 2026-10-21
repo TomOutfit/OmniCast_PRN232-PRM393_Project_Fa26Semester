@@ -25,6 +25,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -48,6 +49,23 @@ import {
   SelfRecordUploadDto,
   StopLiveDto,
 } from './dto/live-studio.dto';
+import { LiveStreamGateway } from '../websocket/live-stream.gateway';
+
+// ============================================================
+// DTOs for Mobile Push-to-Live
+// ============================================================
+
+class MobilePushToLiveDto {
+  channelSlug: string;
+  title: string;
+  streamKey: string; // WebRTC stream key
+  thumbnailUrl?: string;
+}
+
+class MobileStopLiveDto {
+  eventId?: string;
+  channelSlug: string;
+}
 
 @ApiTags('studio')
 @ApiBearerAuth()
@@ -59,7 +77,164 @@ export class LiveStudioController {
     private readonly studioService: LiveStudioService,
     private readonly catalog: StudioCatalogService,
     private readonly storage: StorageService,
+    private readonly configService: ConfigService,
+    private readonly liveStreamGateway: LiveStreamGateway,
   ) {}
+
+  // ============================================================
+  // 0a. Mobile Push-to-Live: Start streaming from mobile camera
+  // ============================================================
+
+  @Post('live/mobile/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Mobile broadcaster notifies backend when starting a live stream. ' +
+      'Backend broadcasts to all connected viewers via WebSocket.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Live started' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid payload' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
+  async mobilePushToLive(@Body() dto: MobilePushToLiveDto, @Request() req: any) {
+    const eventId = `mobile-${Date.now()}-${dto.channelSlug}`;
+    const mediaMtxWsUrl = this.configService.get('MEDIAMTX_WS_URL', 'ws://localhost:8889');
+    
+    // Construct HLS URL for viewers
+    const mediaMtxHlsUrl = this.configService.get('MEDIAMTX_HLS_URL', 'http://localhost:8888');
+    const hlsUrl = `${mediaMtxHlsUrl}/${dto.channelSlug}/live.m3u8`;
+    
+    // Construct WebRTC URL for viewers to connect
+    const webrtcUrl = `${mediaMtxWsUrl}/${dto.channelSlug}`;
+
+    // Broadcast to all viewers via WebSocket
+    this.liveStreamGateway.notifyLiveStarted(dto.channelSlug, {
+      eventId,
+      title: dto.title,
+      streamUrl: webrtcUrl,
+      hlsUrl: hlsUrl,
+      thumbnailUrl: dto.thumbnailUrl,
+      startedAt: new Date().toISOString(),
+      duration: 0, // Live has no scheduled end
+    });
+
+    // Also log to audit
+    await this.studioService.logLiveEvent({
+      eventType: 'LIVE_STARTED',
+      channelSlug: dto.channelSlug,
+      eventId,
+      userId: req.user.sub,
+      metadata: { title: dto.title, source: 'mobile' },
+    });
+
+    return {
+      success: true,
+      eventId,
+      channelSlug: dto.channelSlug,
+      hlsUrl,
+      webrtcUrl,
+      message: 'Live stream started. Viewers are being notified.',
+    };
+  }
+
+  // ============================================================
+  // 0b. Mobile Push-to-Live: Stop streaming
+  // ============================================================
+
+  @Post('live/mobile/stop')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Mobile broadcaster notifies backend when stopping a live stream. ' +
+      'Backend broadcasts to all connected viewers via WebSocket.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Live stopped' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid payload' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
+  async mobileStopLive(@Body() dto: MobileStopLiveDto, @Request() req: any) {
+    // Broadcast to all viewers via WebSocket
+    this.liveStreamGateway.notifyLiveStopped(dto.channelSlug, {
+      eventId: dto.eventId || 'unknown',
+      reason: 'broadcaster_ended',
+      stoppedAt: new Date().toISOString(),
+    });
+
+    // Also log to audit
+    await this.studioService.logLiveEvent({
+      eventType: 'LIVE_STOPPED',
+      channelSlug: dto.channelSlug,
+      eventId: dto.eventId,
+      userId: req.user.sub,
+      metadata: { source: 'mobile' },
+    });
+
+    return {
+      success: true,
+      channelSlug: dto.channelSlug,
+      message: 'Live stream stopped. Viewers are being notified.',
+    };
+  }
+
+  // ============================================================
+  // 0c. Get all active live streams (for viewer app)
+  // ============================================================
+
+  @Get('live/active')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all currently active live streams across all channels.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — List of active live streams' })
+  async getActiveLiveStreams() {
+    const activeStreams = await this.studioService.getActiveLiveStreams();
+    return {
+      total: activeStreams.length,
+      streams: activeStreams,
+    };
+  }
+
+  // ============================================================
+  // 0. Get stream URL (public - no auth required)
+  // ============================================================
+
+  @Get('stream-url/:channelSlug')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Get the current stream URL for a channel. Returns live stream ' +
+      'URL if Admin/Staff is currently broadcasting, otherwise returns ' +
+      'the fallback playlist URL. This endpoint is public so viewers ' +
+      'can get stream URLs without authentication.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Stream URL info' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
+  async getStreamUrl(@Param('channelSlug') channelSlug: string) {
+    const liveEvent = await this.studioService.getCurrentLiveEvent(channelSlug);
+
+    const mediaMtxHlsUrl = this.configService.get('MEDIAMTX_HLS_URL', 'http://localhost:8888');
+    const channelHlsUrl = `${mediaMtxHlsUrl}/${channelSlug}/live.m3u8`;
+
+    if (liveEvent) {
+      return {
+        isLive: true,
+        type: 'live',
+        streamUrl: channelHlsUrl,
+        eventId: liveEvent.id,
+        title: liveEvent.title,
+        thumbnailUrl: liveEvent.thumbnailUrl,
+        startedAt: liveEvent.startedAt?.toISOString(),
+        viewerCount: 0, // Will be updated via WebSocket
+      };
+    }
+
+    return {
+      isLive: false,
+      type: 'vod',
+      streamUrl: null,
+      message: 'No live event currently active',
+    };
+  }
 
   // ============================================================
   // 1. List recordings the Studio can broadcast

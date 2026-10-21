@@ -1,0 +1,99 @@
+# ============================================================
+# OmniCast - MediaMTX Streaming Server
+# ============================================================
+#
+# MediaMTX is a ready-to-use, self-hosted SRT/RTMP server
+# for live streaming. This docker-compose setup provides:
+#   - RTMP ingest (port 1935)
+#   - HLS output (port 8888)
+#   - WebRTC (port 8889)
+#   - Metrics (port 9997)
+#
+# Usage:
+#   docker-compose -f docker-compose.yml up -d
+#
+# RTMP Push URL: rtmp://localhost:1935/live/{stream_key}
+# HLS URL: http://localhost:8888/{stream_key}/live.m3u8
+# WebRTC: ws://localhost:8889/{stream_key}
+# ============================================================
+
+version: '3.8'
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: omnicast-mtx
+    restart: unless-stopped
+    ports:
+      # RTMP ingest - for OBS, mobile apps
+      - "1935:1935"
+      # HLS output - for web and mobile players
+      - "8888:8888"
+      # WebRTC - for low-latency streaming
+      - "8889:8889"
+      # Metrics - for monitoring
+      - "9997:9997"
+    environment:
+      # Protocols to enable
+      MTX_PROTOCOLS: rtmp,hls,webrtc
+      
+      # HLS settings (low latency)
+      MTX_HLSDIRECTORY: /var/media/hls
+      MTX_HLSPLAYLISTLENGTH: 3
+      MTX_HLSSEGMENTDURATION: 2
+      MTX_HLSALWAYSSTARTFROMPREVIOUSSEQUENCE: true
+      
+      # RTMP settings
+      MTX_RTMPPUBLISHVALIDATEPROJECTION: false
+      MTX_RTMPCOMPATIBILITY: false
+      
+      # WebRTC settings
+      MTX_WEBRTCISSR: false
+      MTX_WEBRTCICEHOSTS: ""
+      MTX_WEBRTCICEPORTMIN: 0
+      MTX_WEBRTCICEPORTMAX: 0
+      
+      # Recording settings (optional - record streams to disk)
+      MTX_RECORD: false
+      # MTX_RECORDDIRECTORY: /var/media/recordings
+      # MTX_RECORDPATHS: ""
+      # MTX_RECORDFORMAT: ffmpeg
+      # MTX_RECORDFMTPROBE: ""
+      
+      # API and metrics
+      MTX_API: true
+      MTX_APIPORT: 9998
+      MTX_METRICS: true
+      MTX_METRICSPORTS: 9997
+      
+      # Logging
+      MTX_LOGDESTINATION: stdout
+      MTX_LOGLEVEL: info
+      
+    volumes:
+      - media-data:/var/media
+    
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9998/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: FFmpeg for transcoding if needed
+  # ffmpeg:
+  #   image: jrottenberg/ffmpeg:latest
+  #   container_name: omnicast-ffmpeg
+  #   volumes:
+  #     - media-data:/var/media
+  #   environment:
+  #     - FFMPEG_INPUT_OPTS: -fflags +genpts
+  #   restart: unless-stopped
+
+volumes:
+  media-data:
+    driver: local
+
+networks:
+  default:
+    name: omnicast-network
