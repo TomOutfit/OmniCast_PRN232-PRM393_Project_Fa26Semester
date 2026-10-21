@@ -28,7 +28,20 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/channel_model.dart';
+import '../../../data/services/webrtc_publisher_service.dart';
+import '../../../data/services/live_studio_api_service.dart';
 import '../../widgets/channel_logo.dart';
+
+// ============================================================
+// Broadcast Mode Selection
+// ============================================================
+enum BroadcastMode {
+  /// Push-to-Live: Real-time streaming from camera (WebRTC)
+  pushToLive,
+
+  /// Record-then-Live: Record video first, then broadcast
+  recordThenLive,
+}
 
 class MobileStudioRecorderScreen extends StatefulWidget {
   final ChannelModel? channel;
@@ -70,6 +83,16 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Timer? _recordTimer;
   Timer? _vuTimer;
   XFile? _capturedFile;
+
+  // Broadcast mode state
+  BroadcastMode _broadcastMode = BroadcastMode.recordThenLive;
+  WebRTCPublisherService? _webrtcPublisher;
+  bool _isLiveStreaming = false;
+  BroadcastState _broadcastState = BroadcastState.idle;
+  
+  // Live Studio API service
+  LiveStudioApiService? _liveApiService;
+  String? _currentEventId;
 
   // Audio VU meter simulation / reactive levels
   double _leftVu = 0.25;
@@ -120,7 +143,15 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   void initState() {
     super.initState();
     _initHardwareCameras();
+    _initLiveApiService();
     _startVuMeterSimulation();
+  }
+  
+  /// Initialize Live Studio API service
+  void _initLiveApiService() {
+    // TODO: Get base URL from app config
+    const baseUrl = 'http://localhost:3000/api';
+    _liveApiService = LiveStudioApiService(baseUrl: baseUrl);
   }
 
   @override
@@ -134,6 +165,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     _prompterScroll.dispose();
     _cameraCtrl?.dispose();
     _reviewPlayerCtrl?.dispose();
+    _webrtcPublisher?.dispose();
+    _liveApiService?.dispose();
     super.dispose();
   }
 
@@ -259,6 +292,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   Future<void> _startRecording() async {
     HapticFeedback.heavyImpact();
+
+    // Check broadcast mode
+    if (_broadcastMode == BroadcastMode.pushToLive) {
+      await _startLiveStreaming();
+      return;
+    }
+
+    // Record-then-Live mode (original flow)
     try {
       if (_cameraCtrl != null && _cameraCtrl!.value.isInitialized) {
         await _cameraCtrl!.startVideoRecording();
@@ -290,6 +331,117 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     }
   }
 
+  // ============================================================
+  // WebRTC Live Streaming
+  // ============================================================
+
+  Future<void> _startLiveStreaming() async {
+    HapticFeedback.heavyImpact();
+
+    // Configure WebRTC publisher
+    _webrtcPublisher = WebRTCPublisherService();
+    _webrtcPublisher!.configure(
+      WebRTCPublisherConfig(
+        serverUrl: 'ws://localhost:8889',
+        streamKey: widget.channel?.slug ?? 'default',
+        videoConstraints: const VideoConstraints(
+          width: 1280,
+          height: 720,
+          frameRate: 30,
+        ),
+        debug: true,
+      ),
+    );
+
+    // Set up callbacks
+    _webrtcPublisher!.onStateChanged = (state) {
+      if (mounted) {
+        setState(() => _broadcastState = state);
+      }
+    };
+
+    _webrtcPublisher!.onError = (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi streaming: $error'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+    };
+
+    _webrtcPublisher!.onBroadcastStatusChanged = (isLive) {
+      if (mounted) {
+        setState(() => _isLiveStreaming = isLive);
+        if (isLive) {
+          _notifyBackendLiveStarted();
+        } else {
+          _notifyBackendLiveStopped();
+        }
+      }
+    };
+
+    // Start broadcasting
+    final success = await _webrtcPublisher!.startBroadcast();
+
+    if (success) {
+      setState(() {
+        _isRecording = true;
+        _isLiveStreaming = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đang phát trực tiếp! Người xem có thể xem ngay.'),
+          backgroundColor: _green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _stopLiveStreaming() async {
+    HapticFeedback.heavyImpact();
+    await _webrtcPublisher?.stopBroadcast();
+    setState(() {
+      _isRecording = false;
+      _isLiveStreaming = false;
+    });
+  }
+
+  void _notifyBackendLiveStarted() async {
+    // TODO: Get auth token from auth service
+    // _liveApiService?.setAuthToken(authToken);
+    
+    final response = await _liveApiService?.pushToLive(
+      channelSlug: widget.channel?.slug ?? 'default',
+      title: widget.initialTopic ?? 'Live from Mobile Studio',
+      streamKey: widget.channel?.slug ?? 'default',
+    );
+    
+    if (response != null && response.success) {
+      _currentEventId = response.eventId;
+      debugPrint('[Studio] Backend notified - Event ID: ${response.eventId}');
+      debugPrint('[Studio] HLS URL: ${response.hlsUrl}');
+      debugPrint('[Studio] WebRTC URL: ${response.webrtcUrl}');
+    } else {
+      debugPrint('[Studio] Failed to notify backend of live start');
+    }
+  }
+
+  void _notifyBackendLiveStopped() async {
+    final success = await _liveApiService?.stopLive(
+      channelSlug: widget.channel?.slug ?? 'default',
+      eventId: _currentEventId,
+    );
+    
+    if (success == true) {
+      debugPrint('[Studio] Backend notified - Live stopped');
+    } else {
+      debugPrint('[Studio] Failed to notify backend of live stop');
+    }
+    _currentEventId = null;
+  }
+
   Future<void> _pauseOrResumeRecording() async {
     if (!_isRecording) return;
     HapticFeedback.mediumImpact();
@@ -311,6 +463,15 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _stopRecording() async {
     HapticFeedback.heavyImpact();
     _recordTimer?.cancel();
+
+    // Handle live streaming mode
+    if (_broadcastMode == BroadcastMode.pushToLive && _isLiveStreaming) {
+      await _stopLiveStreaming();
+      Navigator.of(context).pop(_capturedFile);
+      return;
+    }
+
+    // Record-then-Live mode (original flow)
     XFile? file;
     try {
       if (_cameraCtrl != null && _cameraCtrl!.value.isRecordingVideo) {
@@ -902,6 +1063,56 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           ),
           const SizedBox(width: 8),
 
+          // Broadcast Mode Selector (only show when not recording)
+          if (!_isRecording)
+            GestureDetector(
+              onTap: _showBroadcastModeSelector,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _broadcastMode == BroadcastMode.pushToLive
+                      ? _green.withOpacity(0.2)
+                      : const Color(0xFF0F172A).withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _broadcastMode == BroadcastMode.pushToLive
+                        ? _green
+                        : _accent.withOpacity(0.6),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _broadcastMode == BroadcastMode.pushToLive
+                          ? Icons.cast
+                          : Icons.videocam,
+                      size: 12,
+                      color: _broadcastMode == BroadcastMode.pushToLive
+                          ? _green
+                          : _accent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _broadcastMode == BroadcastMode.pushToLive
+                          ? 'LIVE'
+                          : 'RECORD',
+                      style: TextStyle(
+                        color: _broadcastMode == BroadcastMode.pushToLive
+                            ? _green
+                            : _accent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'JetBrainsMono',
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Tally Indicator Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -933,7 +1144,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 const SizedBox(width: 6),
                 Text(
                   _isRecording
-                      ? (_isPaused ? 'PAUSED' : 'REC • PGM 1')
+                      ? (_isPaused
+                          ? 'PAUSED'
+                          : (_isLiveStreaming ? 'LIVE • PUSH' : 'REC • PGM 1'))
                       : 'STANDBY • PRV 1',
                   style: TextStyle(
                     color: _isRecording ? Colors.white : _accent,
@@ -1498,6 +1711,137 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ============================================================
+  // Broadcast Mode Selector
+  // ============================================================
+
+  void _showBroadcastModeSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'CHỌN CHẾ ĐỘ PHÁT SÓNG',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Outfit',
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Chọn cách thức phát sóng trực tiếp',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Push-to-Live Option
+            _buildModeOption(
+              mode: BroadcastMode.pushToLive,
+              icon: Icons.cast,
+              title: 'PUH-TO-LIVE',
+              subtitle: 'Phát trực tiếp từ camera (WebRTC, độ trễ thấp <1s)',
+              color: _green,
+            ),
+            const SizedBox(height: 12),
+
+            // Record-then-Live Option
+            _buildModeOption(
+              mode: BroadcastMode.recordThenLive,
+              icon: Icons.videocam,
+              title: 'RECORD THEN LIVE',
+              subtitle: 'Ghi hình trước, kiểm tra, rồi mới phát',
+              color: _accent,
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeOption({
+    required BroadcastMode mode,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    final isSelected = _broadcastMode == mode;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() => _broadcastMode = mode);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.15) : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected ? color : Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: color, size: 24),
+          ],
+        ),
+      ),
     );
   }
 

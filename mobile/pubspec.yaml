@@ -70,6 +70,13 @@ dependencies:
   reactive_forms: ^16.1.1
   camera: ^0.12.1
 
+  # WebRTC for live streaming
+  flutter_webrtc: ^0.12.0+hotfix.1
+  permission_handler: ^11.3.1
+
+  # Socket.IO for real-time notifications
+  socket_io_client: ^2.0.3+1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
