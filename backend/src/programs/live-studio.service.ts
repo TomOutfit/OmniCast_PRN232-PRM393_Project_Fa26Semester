@@ -42,6 +42,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { EpgNowService } from './epg-now.service';
+import { LiveStreamGateway } from '../websocket/live-stream.gateway';
 import {
   AddToLibraryDto,
   CurateLiveDto,
@@ -383,10 +384,13 @@ function enforcePublishGate(
 
 @Injectable()
 export class LiveStudioService {
+  private readonly logger = new Logger(LiveStudioService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
     private readonly epgNow: EpgNowService,
+    private readonly wsGateway: LiveStreamGateway,
   ) {}
 
   // ============================================================
@@ -445,6 +449,43 @@ export class LiveStudioService {
 
     // Defensive filter: hide anything the guard would reject.
     return items.filter((r) => this.isBroadcastAllowed(r.contentSource, r.externalPlatform));
+  }
+
+  /**
+   * Get the currently active live event for a channel.
+   * Returns null if no live event is currently active.
+   *
+   * This is used by the stream URL API to determine if a channel
+   * is currently broadcasting live.
+   */
+  async getCurrentLiveEvent(channelIdentifier: string) {
+    const channel = await this.findChannel(channelIdentifier);
+    if (!channel) {
+      return null;
+    }
+
+    const liveEvent = await this.prisma.liveEvent.findFirst({
+      where: {
+        channelId: channel.id,
+        status: EventStatus.LIVE,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        thumbnailUrl: true,
+        streamUrl: true,
+        status: true,
+        startedAt: true,
+        endedAt: true,
+        duration: true,
+        channel: {
+          select: { id: true, slug: true, name: true },
+        },
+      },
+    });
+
+    return liveEvent;
   }
 
   /**
@@ -613,6 +654,24 @@ export class LiveStudioService {
     // 10s for the cache window to expire).
     this.epgNow.invalidateStudioLiveCache(channel.id);
 
+    // Broadcast live:started event to all connected viewers via WebSocket
+    // This notifies all clients subscribed to this channel that a live stream is now active
+    try {
+      this.wsGateway.notifyLiveStarted(channel.slug, {
+        eventId: event.id,
+        title: event.title,
+        streamUrl: event.streamUrl || '',
+        hlsUrl: `${process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888'}/${channel.slug}/live.m3u8`,
+        thumbnailUrl: event.thumbnailUrl || undefined,
+        startedAt: event.startedAt?.toISOString() || new Date().toISOString(),
+        duration: event.duration || undefined,
+      });
+      this.logger.log(`WebSocket: notified live:started for channel "${channel.slug}"`);
+    } catch (wsError) {
+      // Non-fatal: WebSocket might not be connected, log and continue
+      this.logger.warn(`WebSocket notification failed: ${(wsError as Error).message}`);
+    }
+
     return {
       event,
       recordings,
@@ -681,6 +740,22 @@ export class LiveStudioService {
     // query always returns it).
     if (event.channel?.id) {
       this.epgNow.invalidateStudioLiveCache(event.channel.id);
+    }
+
+    // Broadcast live:stopped event to all connected viewers via WebSocket
+    // This notifies all clients subscribed to this channel that the live stream has ended
+    try {
+      if (event.channel?.slug) {
+        this.wsGateway.notifyLiveStopped(event.channel.slug, {
+          eventId: eventId,
+          reason: dto.keepAsVod ? 'kept_as_vod' : 'ended',
+          stoppedAt: new Date().toISOString(),
+        });
+        this.logger.log(`WebSocket: notified live:stopped for channel "${event.channel.slug}"`);
+      }
+    } catch (wsError) {
+      // Non-fatal: WebSocket might not be connected, log and continue
+      this.logger.warn(`WebSocket notification failed: ${(wsError as Error).message}`);
     }
 
     return {
@@ -790,8 +865,6 @@ export class LiveStudioService {
   // ============================================================
   // 4. Add to library (mở rộng kho nội dung từ URL bất kỳ)
   // ============================================================
-
-  private readonly logger = new Logger(LiveStudioService.name);
 
   /**
    * Persist a new `Recording` row pointing at any reachable
@@ -1231,5 +1304,93 @@ export class LiveStudioService {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
       s,
     );
+  }
+
+  // ============================================================
+  // MOBILE PUSH-TO-LIVE METHODS
+  // ============================================================
+
+  /**
+   * Log a live streaming event (for audit trail).
+   * Used by mobile push-to-live notifications.
+   */
+  async logLiveEvent(params: {
+    eventType: 'LIVE_STARTED' | 'LIVE_STOPPED' | 'VIEWER_JOINED' | 'VIEWER_LEFT';
+    channelSlug: string;
+    eventId?: string;
+    userId?: string;
+    metadata?: Record<string, any>;
+  }) {
+    try {
+      // Try to find the channel
+      const channel = await this.prisma.liveChannel.findFirst({
+        where: { slug: params.channelSlug, isActive: true },
+        select: { id: true },
+      });
+
+      // Create audit log entry
+      await this.auditLogger.log({
+        userId: params.userId || 'system',
+        action: `MOBILE_LIVE_${params.eventType}`,
+        entityType: 'LiveEvent',
+        entityId: params.eventId || `mobile-${Date.now()}`,
+        newValues: {
+          channelSlug: params.channelSlug,
+          channelId: channel?.id,
+          eventId: params.eventId,
+          metadata: params.metadata,
+        },
+      });
+
+      this.logger.log(`Mobile live event logged: ${params.eventType} for ${params.channelSlug}`);
+    } catch (error) {
+      // Non-fatal: logging failure should not affect the live stream
+      this.logger.warn(`Failed to log mobile live event: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Get all active live streams across all channels.
+   * Used by the viewer app to show "LIVE NOW" indicators.
+   */
+  async getActiveLiveStreams() {
+    const liveEvents = await this.prisma.liveEvent.findMany({
+      where: {
+        status: EventStatus.LIVE,
+        startedAt: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        thumbnailUrl: true,
+        streamUrl: true,
+        startedAt: true,
+        duration: true,
+        channel: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            logoUrl: true,
+          },
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    const mediaMtxHlsUrl = process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
+
+    return liveEvents.map((event) => ({
+      eventId: event.id,
+      title: event.title,
+      description: event.description,
+      hlsUrl: event.channel?.slug
+        ? `${mediaMtxHlsUrl}/${event.channel.slug}/live.m3u8`
+        : '',
+      startedAt: event.startedAt?.toISOString(),
+      duration: event.duration,
+      channel: event.channel,
+    }));
   }
 }
