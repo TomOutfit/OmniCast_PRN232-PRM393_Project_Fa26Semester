@@ -100,13 +100,16 @@ export async function fetchBroadcastableRecordings(
   channelId: string,
   search?: string,
   limit: number = 50,
+  allOmnicast: boolean = false,
 ): Promise<{ total: number; items: BroadcastableRecording[] }> {
   const params = new URLSearchParams();
   if (search) params.append('search', search);
   if (limit) params.append('limit', limit.toString());
+  if (allOmnicast) params.append('all', 'true');
 
+  const targetChannel = allOmnicast ? 'all' : channelId;
   const res = await apiClient.get(
-    `/programs/studio/channels/${channelId}/recordings?${params.toString()}`,
+    `/programs/studio/channels/${targetChannel}/recordings?${params.toString()}`,
   );
   return res.data;
 }
