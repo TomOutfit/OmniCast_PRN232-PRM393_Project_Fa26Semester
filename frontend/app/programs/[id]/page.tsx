@@ -116,12 +116,27 @@ export default function ProgramDetailPage() {
   const looksLikeRecordingId =
     id.startsWith('rec_') || id.startsWith('rec-') || id.startsWith('recording/');
 
+  // Query LiveEvent unless explicitly prefixed as recording
   const liveQuery = useLiveEventById(looksLikeRecordingId ? undefined : id);
-  const recQuery = useRecordingById(looksLikeRecordingId ? id : undefined);
 
-  const useRecording = looksLikeRecordingId || (liveQuery.isError && !recQuery.isError);
+  // Always query Recording so standard UUID-based recording IDs resolve cleanly
+  const recQuery = useRecordingById(id);
 
-  if (liveQuery.isLoading || recQuery.isLoading) {
+  // 1. If live event is found, prioritize live event
+  if (liveQuery.data) {
+    return <LiveEventView program={liveQuery.data} />;
+  }
+
+  // 2. If recording is found, display recording view
+  if (recQuery.data) {
+    return <RecordingView recording={recQuery.data} />;
+  }
+
+  // 3. While either active query is still in flight
+  const isStillLoading =
+    (!looksLikeRecordingId && liveQuery.isLoading) || recQuery.isLoading;
+
+  if (isStillLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
@@ -129,41 +144,14 @@ export default function ProgramDetailPage() {
     );
   }
 
-  if (useRecording) {
-    if (recQuery.error || !recQuery.data) {
-      return (
-        <NotFoundBlock
-          message="Không tìm thấy video."
-          backHref="/recordings"
-          backLabel="Về thư viện VOD"
-        />
-      );
-    }
-    return <RecordingView recording={recQuery.data} />;
-  }
-
-  if (liveQuery.error || !liveQuery.data) {
-    // Fallback: try recording once before declaring not found
-    if (!recQuery.isFetched && !recQuery.isError) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
-        </div>
-      );
-    }
-    if (recQuery.data) {
-      return <RecordingView recording={recQuery.data} />;
-    }
-    return (
-      <NotFoundBlock
-        message="Không tìm thấy chương trình."
-        backHref="/epg"
-        backLabel="Về lịch phát sóng"
-      />
-    );
-  }
-
-  return <LiveEventView program={liveQuery.data} />;
+  // 4. Both queries finished and neither found a match
+  return (
+    <NotFoundBlock
+      message="Không tìm thấy chương trình hoặc video."
+      backHref="/recordings"
+      backLabel="Về thư viện VOD"
+    />
+  );
 }
 
 function NotFoundBlock({
