@@ -207,8 +207,8 @@ export interface CloudinaryUploadResponse {
  *   • `CloudinaryUploadError` if Cloudinary replies non-2xx or
  *     the network drops.
  */
-/** Chunk size for Cloudinary uploads. 10 MB per chunk prevents NGINX 413 and enables CORS on error. */
-const CHUNK_SIZE = 10 * 1024 * 1024;
+/** Chunk size for Cloudinary uploads (> 100 MB). 20 MB per chunk. */
+const CHUNK_SIZE = 20 * 1024 * 1024;
 
 export async function uploadToCloudinaryDirect(
   signed: CloudinarySignedPayload,
@@ -219,12 +219,12 @@ export async function uploadToCloudinaryDirect(
     throw new CloudinaryUploadError('Missing uploadUrl in signed Cloudinary payload.');
   }
 
-  // Use single-part upload for smaller files (<= 15 MB)
-  if (file.size <= 15 * 1024 * 1024) {
+  // Use fast single-part upload for files up to 100 MB (Cloudinary standard single upload limit)
+  if (file.size <= 100 * 1024 * 1024) {
     return uploadSinglePart(signed, file, options);
   }
 
-  // Use Cloudinary Chunked Upload for larger files
+  // Use Cloudinary Chunked Upload for larger files (> 100 MB up to 2 GB)
   return uploadChunked(signed, file, options);
 }
 
@@ -384,7 +384,7 @@ function uploadChunked(
             rejectChunk(new CloudinaryUploadError(message, xhr.status, xhr));
           };
 
-          const fd = buildCloudinaryFormData(signed, chunkBlob);
+          const fd = buildCloudinaryFormData(signed, chunkBlob, file.name);
           xhr.send(fd);
         });
 
@@ -406,9 +406,17 @@ function uploadChunked(
   });
 }
 
-function buildCloudinaryFormData(signed: CloudinarySignedPayload, fileOrBlob: Blob | File): FormData {
+function buildCloudinaryFormData(
+  signed: CloudinarySignedPayload,
+  fileOrBlob: Blob | File,
+  fileNameOverride?: string,
+): FormData {
   const fd = new FormData();
-  fd.append('file', fileOrBlob);
+  if (fileNameOverride) {
+    fd.append('file', fileOrBlob, fileNameOverride);
+  } else {
+    fd.append('file', fileOrBlob);
+  }
   if (signed.apiKey) fd.append('api_key', signed.apiKey);
   if (signed.timestamp) fd.append('timestamp', String(signed.timestamp));
   if (signed.signature) fd.append('signature', signed.signature);

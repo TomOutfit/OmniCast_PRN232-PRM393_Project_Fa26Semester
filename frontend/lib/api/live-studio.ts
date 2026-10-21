@@ -188,6 +188,7 @@ export async function uploadSelfRecord(payload: SelfRecordUploadInput) {
   const res = await apiClient.post(
     '/programs/studio/recordings/upload',
     payload,
+    { timeout: 60000 },
   );
   return res.data;
 }
@@ -224,6 +225,8 @@ export interface BroadcastLocalFileInput {
   signal?: AbortSignal;
   /** Progress callback (percent 0..100). */
   onProgress?: (percent: number, loaded: number, total: number) => void;
+  /** Callback fired when transitioning between stages (signing -> uploading -> registering -> done). */
+  onPhaseChange?: (phase: 'signing' | 'uploading' | 'registering' | 'done') => void;
 }
 
 export interface BroadcastLocalFileResult {
@@ -245,16 +248,20 @@ export async function broadcastLocalFile(
     duration = 180,
     signal,
     onProgress,
+    onPhaseChange,
   } = input;
 
   // 1. Sign + upload to Cloudinary
   let envelope: CloudinaryUploadEnvelope;
   try {
+    onPhaseChange?.('signing');
     const signed = await signCloudinaryUpload({
       channelSlug,
       title,
       tags: ['studio-local-upload', ...(tags ?? [])],
     });
+
+    onPhaseChange?.('uploading');
     const result = await uploadToCloudinaryDirect(signed, file, {
       onProgress,
       signal,
@@ -285,6 +292,7 @@ export async function broadcastLocalFile(
 
   // 2. Persist the Recording on the channel library.
   try {
+    onPhaseChange?.('registering');
     const res = await uploadSelfRecord({
       channelId: channelSlug,
       title,
@@ -295,6 +303,7 @@ export async function broadcastLocalFile(
       visibility,
       tags: ['studio-local-upload', ...(tags ?? [])],
     });
+    onPhaseChange?.('done');
     return {
       recording: res?.recording ?? res?.data?.recording ?? res,
       videoUrl: envelope.url,

@@ -719,6 +719,22 @@ export default function WebLiveStudioPage() {
           duration: Math.max(1, Math.round(local.duration)),
           signal: ac.signal,
           tags: ['studio-local-upload'],
+          onPhaseChange: (phase) => {
+            if (phase === 'signing') {
+              updateLocalFile(local.id, { phase: 'signing', percent: 2 });
+            } else if (phase === 'uploading') {
+              updateLocalFile(local.id, { phase: 'uploading', percent: SIGN_WEIGHT });
+            } else if (phase === 'registering') {
+              updateLocalFile(local.id, {
+                phase: 'registering',
+                percent: SIGN_WEIGHT + UPLOAD_WEIGHT + 5, // 85%
+                speedBps: undefined,
+                etaSec: undefined,
+              });
+            } else if (phase === 'done') {
+              updateLocalFile(local.id, { phase: 'done', percent: 100 });
+            }
+          },
           onProgress: (percent, loaded, total) => {
             const now = Date.now();
             const elapsedSec = Math.max(0.001, (now - lastProgressAt) / 1000);
@@ -730,21 +746,14 @@ export default function WebLiveStudioPage() {
               speedBps > 0 ? Math.round((total - loaded) / speedBps) : undefined;
             // Map upload percent (0..100) into the SIGN..SIGN+UPLOAD range.
             const overall = SIGN_WEIGHT + (percent * UPLOAD_WEIGHT) / 100;
+            const isFinishedUploading = percent >= 100;
             updateLocalFile(local.id, {
               phase: 'uploading',
               percent: Math.min(SIGN_WEIGHT + UPLOAD_WEIGHT, overall),
-              speedBps,
-              etaSec: remaining,
+              speedBps: isFinishedUploading ? undefined : speedBps,
+              etaSec: isFinishedUploading ? undefined : remaining,
             });
           },
-        });
-
-        // Sign completed, upload succeeded. Stash the publicId for
-        // cancel-cleanup before the register step runs.
-        updateLocalFile(local.id, {
-          phase: 'registering',
-          percent: SIGN_WEIGHT + UPLOAD_WEIGHT,
-          publicId: result.envelope.publicId,
         });
 
         const recordingId =
@@ -757,6 +766,7 @@ export default function WebLiveStudioPage() {
           phase: 'done',
           percent: 100,
           recordingId: recordingId ?? local.recordingId,
+          publicId: result?.envelope?.publicId,
         });
 
         return recordingId;
