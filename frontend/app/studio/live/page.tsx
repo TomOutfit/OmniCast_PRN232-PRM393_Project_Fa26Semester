@@ -51,6 +51,7 @@ import { ChannelTargetSelector } from '@/components/studio/channel-target-select
 import { UploadDropzone } from '@/components/studio/upload-dropzone';
 import { UploadQueue, type UploadQueueEntry } from '@/components/studio/upload-queue';
 import { CloudinaryHealthBanner } from '@/components/studio/cloudinary-health-banner';
+import { extractGoogleDriveFileId } from '@/components/programs/video-player';
 import { useAuth } from '@/lib/auth-context';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveEvents } from '@/lib/hooks/usePrograms';
@@ -524,14 +525,13 @@ export default function WebLiveStudioPage() {
     let url = (raw || '').trim();
     if (!url) return '';
 
-    // Google Drive share link -> direct download/stream link
-    const gDriveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (gDriveMatch && gDriveMatch[1]) {
-      return `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`;
-    }
-    const gDriveIdMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-    if (gDriveIdMatch && gDriveIdMatch[1]) {
-      return `https://drive.google.com/uc?export=download&id=${gDriveIdMatch[1]}`;
+    // Strip wrapping quotes or angle brackets
+    url = url.replace(/^["'<]+|["'>]+$/g, '').trim();
+
+    // Google Drive share / view link -> preview embed link (bypasses download quota & virus scan blocks)
+    const gDriveId = extractGoogleDriveFileId(url);
+    if (gDriveId) {
+      return `https://drive.google.com/file/d/${gDriveId}/preview`;
     }
 
     // Dropbox share link -> direct media stream
@@ -548,27 +548,67 @@ export default function WebLiveStudioPage() {
   };
 
   const handleAddCustomUrl = async () => {
-    if (!selectedChannel || !customUrlInput.trim()) return;
+    if (!selectedChannel) {
+      toast.warning('Vui lòng chọn một kênh trước khi thêm video!');
+      return;
+    }
+    const rawInput = customUrlInput.trim();
+    if (!rawInput) {
+      toast.warning('Vui lòng nhập hoặc dán đường dẫn URL video!');
+      return;
+    }
+
+    const cleanUrl = normalizeMediaUrl(rawInput);
+    if (
+      !cleanUrl.startsWith('http://') &&
+      !cleanUrl.startsWith('https://') &&
+      !cleanUrl.startsWith('blob:')
+    ) {
+      toast.error('Đường dẫn URL không hợp lệ (cần bắt đầu bằng http:// hoặc https://)');
+      return;
+    }
+
+    const isGoogleDrive = Boolean(extractGoogleDriveFileId(cleanUrl)) || cleanUrl.includes('drive.google.com');
+
     try {
       setIsAddingUrl(true);
-      const cleanUrl = normalizeMediaUrl(customUrlInput);
-      const title = customUrlTitle.trim() || `Video liên kết - ${new Date().toLocaleTimeString('vi-VN')}`;
-      await uploadRecordMutation.mutateAsync({
+      const title =
+        customUrlTitle.trim() ||
+        (isGoogleDrive
+          ? `Google Drive Video - ${new Date().toLocaleTimeString('vi-VN')}`
+          : `Video liên kết - ${new Date().toLocaleTimeString('vi-VN')}`);
+
+      const res = await uploadRecordMutation.mutateAsync({
         channelId: selectedChannel.slug,
         title,
-        description: 'Video thêm trực tiếp từ đường link tải xuống / phát trực tuyến',
+        description: isGoogleDrive
+          ? 'Video Google Drive được nhúng trực tiếp qua chế độ preview (không giới hạn băng thông)'
+          : 'Video thêm trực tiếp từ đường link tải xuống / phát trực tuyến',
         videoUrl: cleanUrl,
         duration: customUrlDuration || 300,
         visibility: 'SCHEDULED',
-        tags: ['custom-url', 'direct-stream'],
+        tags: isGoogleDrive
+          ? ['custom-url', 'google-drive', 'direct-stream']
+          : ['custom-url', 'direct-stream'],
       });
+
       toast.success('Đã thêm video vào kho của kênh thành công!');
+
+      // Automatically queue the newly created recording
+      if (res?.recording?.id) {
+        setSelectedRecordingIds((prev) => [
+          res.recording.id,
+          ...prev.filter((id) => id !== res.recording.id),
+        ]);
+      }
+
       setCustomUrlInput('');
       setCustomUrlTitle('');
       setShowAddUrlModal(false);
-      refetchRecordings();
+      await refetchRecordings();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Không thể thêm video từ URL');
+      logError('[OmniCast Studio Add URL Error]:', err);
+      toast.error(err.response?.data?.message || err.message || 'Không thể thêm video từ URL');
     } finally {
       setIsAddingUrl(false);
     }
@@ -1646,9 +1686,21 @@ export default function WebLiveStudioPage() {
                           type="text"
                           value={customUrlInput}
                           onChange={(e) => setCustomUrlInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCustomUrl();
+                            }
+                          }}
                           placeholder="Dán link video hoặc link tải về (Drive, Dropbox, direct MP4/m3u8, CDN...)"
                           className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                         />
+                        {Boolean(extractGoogleDriveFileId(customUrlInput)) && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-cyan-400 font-medium pt-0.5">
+                            <CheckCircle2 className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                            <span>Đã phát hiện Google Drive: Sẽ tự động nhúng qua Preview Player không giới hạn băng thông.</span>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -1674,6 +1726,12 @@ export default function WebLiveStudioPage() {
                           type="number"
                           value={customUrlDuration}
                           onChange={(e) => setCustomUrlDuration(Math.max(1, Math.round(Number(e.target.value)) || 300))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCustomUrl();
+                            }
+                          }}
                           placeholder="3600"
                           className="w-full px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                         />
@@ -1685,6 +1743,12 @@ export default function WebLiveStudioPage() {
                         type="text"
                         value={customUrlTitle}
                         onChange={(e) => setCustomUrlTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomUrl();
+                          }
+                        }}
                         placeholder="Tiêu đề video (Ví dụ: Giới thiệu kênh OmniCast HD)..."
                         className="flex-1 px-3 py-1.5 rounded-lg bg-[#05080e] border border-[#1b2b42] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                       />
@@ -3025,13 +3089,26 @@ export default function WebLiveStudioPage() {
             </div>
 
             {/* Modal Video Player */}
-            <div className="relative aspect-video bg-black">
-              <video
-                src={previewingVideo.url}
-                controls
-                autoPlay
-                className="w-full h-full object-contain"
-              />
+            <div className="relative aspect-video bg-black flex items-center justify-center">
+              {extractGoogleDriveFileId(previewingVideo.url) || previewingVideo.url.includes('drive.google.com') ? (
+                <iframe
+                  src={
+                    previewingVideo.url.includes('/preview')
+                      ? previewingVideo.url
+                      : `https://drive.google.com/file/d/${extractGoogleDriveFileId(previewingVideo.url)}/preview`
+                  }
+                  className="w-full h-full border-0"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={previewingVideo.url}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
 
             {/* Modal Footer */}

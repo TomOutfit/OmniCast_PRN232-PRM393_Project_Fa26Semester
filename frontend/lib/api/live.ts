@@ -45,10 +45,10 @@ export interface LiveComment {
 export async function fetchLiveInteraction(
   eventId: string,
 ): Promise<LiveEventInteractionSnapshot> {
-  const res = await apiClient.get<LiveEventInteractionSnapshot>(
+  const res = await apiClient.get<any>(
     `/programs/studio/events/${eventId}/interaction`,
   );
-  return res.data;
+  return (res.data as any)?.data ?? res.data;
 }
 
 export async function fetchLiveEventComments(

@@ -246,6 +246,10 @@ export class LiveStudioController {
     };
   }
 
+  private isUuid(val?: string): boolean {
+    return !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  }
+
   // ============================================================
   // 0d. Get live event interaction snapshot (fallback before socket connects)
   // ============================================================
@@ -258,6 +262,24 @@ export class LiveStudioController {
       'Get live event interaction snapshot (realtime viewer count, comments, reactions).',
   })
   async getLiveInteraction(@Param('eventId') eventId: string) {
+    if (!eventId || !this.isUuid(eventId)) {
+      return {
+        eventId,
+        title: 'Live Stream',
+        description: null,
+        thumbnailUrl: null,
+        status: 'LIVE',
+        streamUrl: null,
+        channel: null,
+        startedAt: new Date().toISOString(),
+        duration: 0,
+        viewerCount: this.liveStreamGateway.getEventRoomSize(eventId) || 0,
+        comments: [],
+        reactions: {},
+        totalReactions: 0,
+      };
+    }
+
     const [event, commentsRes, reactionsRes] = await Promise.all([
       this.prisma.liveEvent.findUnique({
         where: { id: eventId },
@@ -277,13 +299,31 @@ export class LiveStudioController {
             select: { id: true, slug: true, name: true, logoUrl: true },
           },
         },
-      }),
-      this.socialService.listCommentsByLiveEvent(eventId, { limit: 50 }),
-      this.socialService.listReactionsByLiveEvent(eventId),
+      }).catch(() => null),
+      this.socialService
+        .listCommentsByLiveEvent(eventId, { limit: 50 })
+        .catch(() => ({ data: [], meta: { page: 1, limit: 50, total: 0, totalPages: 0 } })),
+      this.socialService
+        .listReactionsByLiveEvent(eventId)
+        .catch(() => ({ data: {}, total: 0 })),
     ]);
 
     if (!event) {
-      throw new NotFoundException(`Live event not found: ${eventId}`);
+      return {
+        eventId,
+        title: 'Live Stream',
+        description: null,
+        thumbnailUrl: null,
+        status: 'LIVE',
+        streamUrl: null,
+        channel: null,
+        startedAt: new Date().toISOString(),
+        duration: 0,
+        viewerCount: this.liveStreamGateway.getEventRoomSize(eventId) || 0,
+        comments: commentsRes?.data || [],
+        reactions: reactionsRes?.data || {},
+        totalReactions: reactionsRes?.total || 0,
+      };
     }
 
     const realtimeViewerCount = this.liveStreamGateway.getEventRoomSize(eventId);
@@ -300,9 +340,9 @@ export class LiveStudioController {
       startedAt: event.startedAt?.toISOString(),
       duration: event.duration,
       viewerCount,
-      comments: commentsRes.data,
-      reactions: reactionsRes.data,
-      totalReactions: reactionsRes.total,
+      comments: commentsRes?.data || [],
+      reactions: reactionsRes?.data || {},
+      totalReactions: reactionsRes?.total || 0,
     };
   }
 
