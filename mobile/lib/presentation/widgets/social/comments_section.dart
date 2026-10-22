@@ -187,61 +187,80 @@ class _CommentsSectionState extends State<CommentsSection> {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSubmitting) return;
 
-    setState(() => _isSubmitting = true);
-    try {
-      if (widget.kind == 'live') {
-        if (LiveSocketService.instance.isConnected) {
-          LiveSocketService.instance.sendChat(
-            eventId: widget.targetId,
-            content: text,
-          );
-        } else {
-          final dio = getIt<DioClient>();
-          final res = await dio.post(_endpoint, data: {'content': text});
+    // 0ms Optimistic UI: Immediately render comment in UI and clear input
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final optimisticComment = _CommentItem(
+      id: tempId,
+      content: text,
+      userName: 'Bạn',
+      createdAt: DateTime.now(),
+    );
+
+    setState(() {
+      _comments.insert(0, optimisticComment);
+      _isSubmitting = false;
+    });
+    _controller.clear();
+    FocusScope.of(context).unfocus();
+
+    if (widget.kind == 'live') {
+      if (LiveSocketService.instance.isConnected) {
+        LiveSocketService.instance.sendChat(
+          eventId: widget.targetId,
+          content: text,
+        );
+      }
+
+      // Background HTTP sync (best-effort, non-blocking)
+      final dio = getIt<DioClient>();
+      unawaited(
+        dio.post(
+          _endpoint,
+          data: {'content': text},
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        ).then((res) {
           final data = res.data;
           if (mounted && data is Map<String, dynamic>) {
             final parsed = _CommentItem.fromJson(data);
-            if (!_comments.any((c) => c.id == parsed.id)) {
-              setState(() => _comments.insert(0, parsed));
-            }
+            setState(() {
+              final idx = _comments.indexWhere((c) => c.id == tempId);
+              if (idx != -1) {
+                _comments[idx] = parsed;
+              }
+            });
           }
-        }
-      } else {
-        final dio = getIt<DioClient>();
-        final res = await dio.post(_endpoint, data: {'content': text});
-        final data = res.data;
-        if (mounted && data is Map<String, dynamic>) {
-          final parsed = _CommentItem.fromJson(data);
-          if (!_comments.any((c) => c.id == parsed.id)) {
-            setState(() => _comments.insert(0, parsed));
+        }).catchError((_) {
+          // Keep optimistic comment on screen
+        }),
+      );
+    } else {
+      final dio = getIt<DioClient>();
+      unawaited(
+        dio.post(
+          _endpoint,
+          data: {'content': text},
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        ).then((res) {
+          final data = res.data;
+          if (mounted && data is Map<String, dynamic>) {
+            final parsed = _CommentItem.fromJson(data);
+            setState(() {
+              final idx = _comments.indexWhere((c) => c.id == tempId);
+              if (idx != -1) {
+                _comments[idx] = parsed;
+              }
+            });
           }
-        }
-      }
-
-      if (mounted) {
-        _controller.clear();
-        FocusScope.of(context).unfocus();
-        setState(() => _isSubmitting = false);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã gửi bình luận thành công!'),
-            duration: Duration(milliseconds: 1000),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        _controller.clear();
-        FocusScope.of(context).unfocus();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể gửi bình luận: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+        }).catchError((_) {
+          // Keep optimistic comment on screen
+        }),
+      );
     }
   }
 
