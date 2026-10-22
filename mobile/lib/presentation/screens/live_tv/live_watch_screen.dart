@@ -155,6 +155,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   // ============================================================
 
   Future<void> _bootstrap() async {
+    _initSocket();
     await _loadEvent();
     _loadOtherLive();
     if (_event != null) {

@@ -13,7 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { LiveComment } from '@/lib/api/live';
+import { LiveComment, fetchLiveEventComments, postLiveEventComment } from '@/lib/api/live';
 
 export interface BroadcasterAnnouncement {
   eventId: string;
@@ -83,7 +83,13 @@ export function useLiveSession(
     if (!eventId) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws');
+    let socketBase = 'http://localhost:3000';
+    try {
+      const parsed = new URL(apiUrl.startsWith('http') ? apiUrl : `http://${apiUrl}`);
+      socketBase = `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      socketBase = apiUrl.replace(/\/api.*$/, '');
+    }
 
     const token =
       typeof window !== 'undefined'
@@ -92,7 +98,7 @@ export function useLiveSession(
           localStorage.getItem('accessToken')
         : null;
 
-    const socket = io(`${wsUrl}/live`, {
+    const socket = io(`${socketBase}/live`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
@@ -187,7 +193,34 @@ export function useLiveSession(
       }
     });
 
+    // Periodic background sync fallback (useful if socket is interrupted or on serverless)
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetchLiveEventComments(eventId, { page: 1, limit: 30 });
+        if (res?.data && Array.isArray(res.data)) {
+          setMessages((prev) => {
+            const map = new Map(prev.map((m) => [m.id, m]));
+            let hasNew = false;
+            for (const item of res.data) {
+              if (!map.has(item.id)) {
+                map.set(item.id, item);
+                hasNew = true;
+              }
+            }
+            if (!hasNew) return prev;
+            return Array.from(map.values()).sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            );
+          });
+        }
+      } catch (_) {
+        // Silently ignore background poll errors
+      }
+    }, 4000);
+
     return () => {
+      clearInterval(pollInterval);
       socket.emit('unsubscribe:event', { eventId });
       socket.disconnect();
       socketRef.current = null;
@@ -196,13 +229,35 @@ export function useLiveSession(
   }, [eventId]);
 
   const sendMessage = useCallback(
-    (content: string, parentId?: string) => {
-      if (!socketRef.current || !eventIdRef.current || !content.trim()) return;
-      socketRef.current.emit('live:chat', {
-        eventId: eventIdRef.current,
-        content: content.trim(),
-        parentId,
-      });
+    async (content: string, parentId?: string) => {
+      const trimmed = content.trim();
+      if (!eventIdRef.current || !trimmed) return;
+      const currentEventId = eventIdRef.current;
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('live:chat', {
+          eventId: currentEventId,
+          content: trimmed,
+          parentId,
+        });
+      } else {
+        // Fallback to REST API if socket is not connected
+        try {
+          const newComment = await postLiveEventComment(
+            currentEventId,
+            trimmed,
+            parentId,
+          );
+          if (newComment) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newComment.id)) return prev;
+              return [newComment, ...prev];
+            });
+          }
+        } catch (err) {
+          console.error('[LiveSession] Failed to post comment via REST fallback:', err);
+        }
+      }
     },
     [],
   );
