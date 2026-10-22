@@ -495,53 +495,56 @@ export function OmniCastHomeExperience() {
             ))
           ) : (
             showcasePosters.map((item) => (
-              <ChannelCardTilt key={item.id} intensity={14} className="h-full">
-                <div className="group relative h-full rounded-2xl overflow-hidden bg-[#0a111d]/90 border border-[#162338] hover:border-cyan-500/60 hover:shadow-[0_0_25px_rgba(0,242,254,0.3)] transition-all duration-300 flex flex-col backdrop-blur-md">
+              <ChannelCardTilt key={item.id} intensity={10} className="h-full">
+                <div className="group relative h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#0e1726]/95 via-[#08101d]/95 to-[#04070e]/98 border border-[#1b2b42] hover:border-cyan-400/70 hover:shadow-[0_20px_45px_rgba(0,242,254,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent group-hover:before:via-cyan-400/80 cursor-pointer">
                   <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#060a12]">
                     <Image
                       src={item.poster}
                       alt={item.title}
                       fill
                       unoptimized
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                     />
 
-                    <div className="absolute top-2 left-2 z-10">
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-500 text-black shadow-[0_0_8px_rgba(0,242,254,0.6)]">
+                    {/* Gradient Vignette */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#04070e] via-transparent to-black/30 pointer-events-none" />
+
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase tracking-wider bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(0,242,254,0.6)]">
                         {item.quality}
                       </span>
                     </div>
 
-                    <div className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-black/80 backdrop-blur-md text-amber-400 border border-amber-500/30">
-                      <Star className="w-2.5 h-2.5 fill-amber-400" />
+                    <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-black bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                      <Star className="w-2.5 h-2.5 fill-amber-300" />
                       {item.rating}
                     </div>
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 space-y-2">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3.5 space-y-2 backdrop-blur-[1px]">
                       <Link
                         href={item.href}
-                        className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,242,254,0.5)] transition-transform group-hover:scale-105 cursor-pointer"
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,242,254,0.5)] transition-all hover:scale-[1.02] cursor-pointer"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
                         XEM NGAY
                       </Link>
-                      <div className="text-[10px] text-center text-slate-300 font-medium">
+                      <div className="text-[10px] text-center text-slate-300 font-mono font-bold">
                         {item.audio} • {item.channel}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5">
+                  <div className="p-3.5 flex flex-col flex-1 justify-between space-y-1.5 relative z-10">
                     <div>
-                      <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                      <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono">
                         {item.category}
                       </span>
-                      <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-300 transition-colors font-display mt-0.5">
                         {item.title}
                       </h3>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-[#131f32]">
-                      <span>{item.year}</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/5 font-mono">
+                      <span className="text-slate-300 font-bold">{item.year}</span>
                       <span className="text-slate-400 font-bold">{item.channel}</span>
                     </div>
                   </div>

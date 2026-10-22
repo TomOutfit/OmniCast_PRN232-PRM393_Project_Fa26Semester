@@ -229,14 +229,14 @@ export default function ProgramsHubPage() {
             <p className="text-xs text-slate-400">Vui lòng thử đổi bộ lọc hoặc kiểm tra lại lịch phát sóng EPG.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredEvents.map((event) => {
               const isLive = event.status === 'LIVE';
               return (
-                <ChannelCardTilt key={event.id} intensity={12} className="h-full">
+                <ChannelCardTilt key={event.id} intensity={10} className="h-full">
                   <Link
                     href={`/programs/${event.id}`}
-                    className="group rounded-2xl bg-[#0b1320]/90 hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/60 overflow-hidden shadow-xl transition-all flex flex-col justify-between h-full backdrop-blur-md"
+                    className="group relative rounded-2xl bg-gradient-to-b from-[#0e1726]/95 via-[#08101d]/95 to-[#04070e]/98 border border-[#1b2b42] hover:border-cyan-400/70 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_45px_rgba(0,242,254,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between h-full before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent group-hover:before:via-cyan-400/80 cursor-pointer"
                   >
                     {/* Thumbnail / Channel Banner */}
                     <div className="relative aspect-video w-full bg-[#05080e] overflow-hidden">
@@ -245,61 +245,82 @@ export default function ProgramsHubPage() {
                           src={event.thumbnailUrl}
                           alt={event.title}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0c1829] to-[#05080e]">
-                          <Tv className="w-8 h-8 text-cyan-400/40" />
+                          <Tv className="w-10 h-10 text-cyan-400/40" />
                         </div>
                       )}
 
-                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                      {/* Top Gradient Vignette */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#04070e] via-transparent to-black/40 pointer-events-none" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
                         {isLive ? (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-500 text-white shadow-md flex items-center gap-1 animate-pulse">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.6)] border border-red-400/30">
+                            {/* Animated Equalizer */}
+                            <span className="flex items-center gap-0.5 h-2">
+                              <span className="w-0.5 h-1.5 bg-white rounded-full animate-pulse" />
+                              <span className="w-0.5 h-2 bg-white rounded-full animate-ping" />
+                              <span className="w-0.5 h-1 bg-white rounded-full animate-pulse" />
+                            </span>
                             LIVE NOW
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-black/70 text-slate-300 backdrop-blur-md">
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase bg-black/70 text-slate-300 backdrop-blur-md border border-white/10">
                             {event.status || 'SCHEDULED'}
                           </span>
                         )}
 
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-cyan-500 text-black shadow-md">
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(0,242,254,0.5)]">
                           4K UHD
                         </span>
                       </div>
 
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-cyan-500 text-black flex items-center justify-center shadow-[0_0_20px_#00f2fe] transform scale-75 group-hover:scale-100 transition-transform">
+                      {/* Play Button Overlay with Radiant Glow */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                        <div className="w-13 h-13 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-slate-950 flex items-center justify-center shadow-[0_0_25px_rgba(0,242,254,0.7)] transform scale-75 group-hover:scale-100 transition-all duration-300">
                           <Play className="w-5 h-5 fill-current ml-0.5" />
                         </div>
                       </div>
                     </div>
 
                     {/* Body Content */}
-                    <div className="p-4 flex flex-col flex-1 justify-between">
+                    <div className="p-4 flex flex-col flex-1 justify-between relative z-10">
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <span className="text-[10px] font-bold text-cyan-400 uppercase truncate">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {event.channel && (
+                            <div className="w-4 h-4 rounded-md overflow-hidden bg-[#101b2a] flex-shrink-0">
+                              <ChannelLogo
+                                slug={event.channel.slug}
+                                name={event.channel.name}
+                                logoUrl={event.channel.logoUrl ?? undefined}
+                                size="sm"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          )}
+                          <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono truncate">
                             {event.channel?.name || 'Kênh OmniCast'}
                           </span>
                         </div>
 
-                        <h3 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+                        <h3 className="text-xs font-black text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug font-display">
                           {event.title}
                         </h3>
                       </div>
 
                       <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-500" />
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-cyan-400/70" />
                           {event.scheduledAt
                             ? format(parseISO(event.scheduledAt), 'HH:mm dd/MM', { locale: vi })
-                            : 'Đang chiếu'}
+                            : 'Đang phát sóng'}
                         </span>
-                        <span className="text-cyan-400 font-bold group-hover:underline">
-                          Xem chi tiết &rarr;
+                        <span className="text-cyan-400 font-extrabold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                          Xem ngay &rarr;
                         </span>
                       </div>
                     </div>
