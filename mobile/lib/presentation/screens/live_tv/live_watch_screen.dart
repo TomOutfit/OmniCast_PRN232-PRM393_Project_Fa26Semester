@@ -234,16 +234,24 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   Future<void> _onTapReaction(String type) async {
     _spawnReactionParticles(type);
     setState(() => _localLikeDelta++);
-    LiveSocketService.instance.sendReaction(
-      eventId: widget.eventId,
-      type: type,
-    );
+    if (LiveSocketService.instance.isConnected) {
+      LiveSocketService.instance.sendReaction(
+        eventId: widget.eventId,
+        type: type,
+      );
+      return;
+    }
+
     try {
       await _dio.post(
         '${AppEndpoints.liveEvents}/${widget.eventId}/reactions',
         data: {'type': type},
       );
-    } catch (_) {/* best-effort */}
+    } catch (error) {
+      if (mounted) {
+        _toast('Khong the gui cam xuc: $error', accent: _warn);
+      }
+    }
   }
 
   String _emojiFor(String type) {
@@ -308,8 +316,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: _danger, size: 56),
+                const Icon(Icons.error_outline, color: _danger, size: 56),
                 const SizedBox(height: 12),
                 const Text(
                   'Không tìm thấy sự kiện live',
@@ -334,9 +341,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                     backgroundColor: _accent,
                     foregroundColor: Colors.black,
                   ),
-                  onPressed: () => context.canPop()
-                      ? context.pop()
-                      : context.go('/home'),
+                  onPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/home'),
                   child: const Text('Quay lại'),
                 ),
               ],
@@ -473,7 +479,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: _danger.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -508,8 +515,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                           CachedNetworkImage(
                             imageUrl: ev.thumbnailUrl!,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(color: Colors.black26),
-                            errorWidget: (_, __, ___) => Container(color: Colors.black26),
+                            placeholder: (_, __) =>
+                                Container(color: Colors.black26),
+                            errorWidget: (_, __, ___) =>
+                                Container(color: Colors.black26),
                           ),
                           Container(
                             color: Colors.black.withValues(alpha: 0.4),
@@ -561,7 +570,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
@@ -613,7 +623,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                  onPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/home'),
                   child: const Text(
                     'Để sau',
                     style: TextStyle(
@@ -765,7 +776,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   const _PulsingDot(),
                   const SizedBox(width: 6),
                   Text(
-                    ev.isLive ? 'TRỰC TIẾP' : (ev.isScheduled ? 'SẮP PHÁT' : 'ĐÃ KẾT THÚC'),
+                    ev.isLive
+                        ? 'TRỰC TIẾP'
+                        : (ev.isScheduled ? 'SẮP PHÁT' : 'ĐÃ KẾT THÚC'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -873,7 +886,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                           width: 32,
                           height: 32,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => _channelLogoPlaceholder(),
+                          errorWidget: (_, __, ___) =>
+                              _channelLogoPlaceholder(),
                           placeholder: (_, __) => _channelLogoPlaceholder(),
                         ),
                       )
@@ -967,7 +981,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               children: [
                 for (final tag in ev.tags.take(8))
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F172A),
                       borderRadius: BorderRadius.circular(6),
@@ -1140,7 +1155,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   children: [
                     Text(
                       'Tất cả',
-                      style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: _accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
                     ),
                     Icon(Icons.chevron_right, size: 14, color: _accent),
                   ],
@@ -1183,11 +1201,13 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            if (ev.thumbnailUrl != null && ev.thumbnailUrl!.isNotEmpty)
+                            if (ev.thumbnailUrl != null &&
+                                ev.thumbnailUrl!.isNotEmpty)
                               CachedNetworkImage(
                                 imageUrl: ev.thumbnailUrl!,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => Container(color: const Color(0xFF0F172A)),
+                                errorWidget: (_, __, ___) =>
+                                    Container(color: const Color(0xFF0F172A)),
                               )
                             else
                               Container(color: const Color(0xFF0F172A)),
@@ -1195,14 +1215,18 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                               top: 4,
                               left: 4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: _danger,
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                                 child: const Text(
                                   'LIVE',
-                                  style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900),
                                 ),
                               ),
                             ),
@@ -1210,14 +1234,18 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                               top: 4,
                               right: 4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                                 child: Text(
                                   '${_formatViewers(ev.viewerCount)} xem',
-                                  style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -1418,8 +1446,8 @@ class _FloatingReactionsLayerState extends State<_FloatingReactionsLayer>
               children: [
                 for (final item in _items)
                   Positioned(
-                    left: constraints.maxWidth * (item.reaction.left / 100) -
-                        14,
+                    left:
+                        constraints.maxWidth * (item.reaction.left / 100) - 14,
                     bottom:
                         constraints.maxHeight * (item.reaction.bottom / 100),
                     child: Opacity(

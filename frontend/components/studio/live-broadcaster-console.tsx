@@ -10,9 +10,10 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Send, Trash2, Megaphone, Radio, Sparkles, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchLiveInteraction } from '@/lib/api/live';
 import { useLiveSession } from '@/lib/hooks/useLiveSession';
 
 export interface LiveBroadcasterConsoleProps {
@@ -30,6 +31,34 @@ export function LiveBroadcasterConsole({
 }: LiveBroadcasterConsoleProps) {
   const [announcementText, setAnnouncementText] = useState('');
   const [chatInput, setChatInput] = useState('');
+  const [initialData, setInitialData] = useState<{
+    comments: Awaited<ReturnType<typeof fetchLiveInteraction>>['comments'];
+    reactions: Record<string, number>;
+    viewerCount: number;
+  }>();
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    fetchLiveInteraction(eventId)
+      .then((snapshot) => {
+        if (isCurrent) {
+          setInitialData({
+            comments: snapshot.comments,
+            reactions: snapshot.reactions,
+            viewerCount: snapshot.viewerCount,
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('[LiveBroadcasterConsole] Failed to load live interaction snapshot:', error);
+        toast.error('Không thể tải số liệu realtime ban đầu.');
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [eventId]);
 
   const {
     isConnected,
@@ -40,7 +69,7 @@ export function LiveBroadcasterConsole({
     sendMessage,
     broadcastAnnouncement,
     deleteMessage,
-  } = useLiveSession(eventId);
+  } = useLiveSession(eventId, initialData);
 
   const handleSendAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();

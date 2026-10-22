@@ -110,7 +110,7 @@ export default function LiveWatchPage() {
           description={snapshot.description}
           thumbnailUrl={snapshot.thumbnailUrl}
           channel={snapshot.channel}
-          viewerCount={liveSession.viewerCount || snapshot.viewerCount}
+          viewerCount={liveSession.viewerCount}
           onJoin={() => setHasJoinedLobby(true)}
         />
       </div>
@@ -159,7 +159,7 @@ export default function LiveWatchPage() {
             <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-slate-300">
               <Users className="h-4 w-4 text-cyan-400" />
               <span className="font-bold text-white">
-                {liveSession.viewerCount || snapshot.viewerCount}
+                {liveSession.viewerCount}
               </span>
               <span>đang xem</span>
             </div>
