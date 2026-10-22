@@ -132,6 +132,14 @@ export function useLiveSession(
         if (payload.eventId === eventId && payload.comment) {
           setMessages((prev) => {
             if (prev.some((m) => m.id === payload.comment.id)) return prev;
+            const tempIdx = prev.findIndex(
+              (m) => m.id.startsWith('temp-') && m.content === payload.comment.content,
+            );
+            if (tempIdx !== -1) {
+              const updated = [...prev];
+              updated[tempIdx] = payload.comment;
+              return updated;
+            }
             return [payload.comment, ...prev];
           });
         }
@@ -193,8 +201,9 @@ export function useLiveSession(
       }
     });
 
-    // Periodic background sync fallback (useful if socket is interrupted or on serverless)
+    // Periodic background sync fallback (only runs if socket is disconnected or every 10s)
     const pollInterval = setInterval(async () => {
+      if (socketRef.current?.connected) return; // Skip polling when realtime WebSocket is active
       try {
         const res = await fetchLiveEventComments(eventId, { page: 1, limit: 30 });
         if (res?.data && Array.isArray(res.data)) {
@@ -217,7 +226,7 @@ export function useLiveSession(
       } catch (_) {
         // Silently ignore background poll errors
       }
-    }, 4000);
+    }, 10000);
 
     return () => {
       clearInterval(pollInterval);
@@ -233,6 +242,22 @@ export function useLiveSession(
       const trimmed = content.trim();
       if (!eventIdRef.current || !trimmed) return;
       const currentEventId = eventIdRef.current;
+
+      // 0ms Optimistic UI: Immediately render comment in UI
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const optimisticComment: LiveComment = {
+        id: tempId,
+        content: trimmed,
+        createdAt: new Date().toISOString(),
+        user: {
+          id: 'me',
+          fullName: 'OmniCast Studio',
+          avatarUrl: null,
+          role: 'HOST',
+        },
+        parentId,
+      };
+      setMessages((prev) => [optimisticComment, ...prev]);
 
       if (socketRef.current?.connected) {
         socketRef.current.emit('live:chat', {
@@ -250,6 +275,12 @@ export function useLiveSession(
           );
           if (newComment) {
             setMessages((prev) => {
+              const idx = prev.findIndex((m) => m.id === tempId);
+              if (idx !== -1) {
+                const updated = [...prev];
+                updated[idx] = newComment;
+                return updated;
+              }
               if (prev.some((m) => m.id === newComment.id)) return prev;
               return [newComment, ...prev];
             });
@@ -263,11 +294,21 @@ export function useLiveSession(
   );
 
   const sendReaction = useCallback((type: string) => {
-    if (!socketRef.current || !eventIdRef.current) return;
-    socketRef.current.emit('live:reaction', {
-      eventId: eventIdRef.current,
-      type,
-    });
+    if (!eventIdRef.current) return;
+    // 0ms instant UI reaction update
+    setReactions((prev) => ({
+      ...prev,
+      [type]: (prev[type] || 0) + 1,
+    }));
+    setLatestReaction(type);
+    setTimeout(() => setLatestReaction(null), 1500);
+
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('live:reaction', {
+        eventId: eventIdRef.current,
+        type,
+      });
+    }
   }, []);
 
   const broadcastAnnouncement = useCallback((message: string) => {

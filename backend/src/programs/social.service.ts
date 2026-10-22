@@ -449,16 +449,20 @@ export class SocialService {
   ) {
     const result = await this.toggleReaction({ liveEventId }, userId, type);
 
+    // Broadcast reaction update asynchronously in the background for ultra-low latency response
     if (this.liveStreamGateway) {
-      const counts = await this.listReactionsByLiveEvent(liveEventId);
-      this.liveStreamGateway.notifyReactionUpdated({
-        eventId: liveEventId,
-        userId,
-        type,
-        toggled: result.toggled,
-        counts: counts.data,
-        total: counts.total,
-      });
+      void this.listReactionsByLiveEvent(liveEventId)
+        .then((counts) => {
+          this.liveStreamGateway?.notifyReactionUpdated({
+            eventId: liveEventId,
+            userId,
+            type,
+            toggled: result.toggled,
+            counts: counts.data,
+            total: counts.total,
+          });
+        })
+        .catch(() => {});
     }
 
     return result;
