@@ -138,15 +138,15 @@ export function ChannelCard3D({
 
 /**
  * ChannelCardTilt — DOM-side 3D card with CSS transform parallax.
- * Use this when you have a real list of channels and want them to
- * react to the cursor without paying for a full R3F render.
+ * Features real 3D perspective, dynamic cursor-following radial glow,
+ * holographic specular sheen, and preserve-3d stereoscopic depth.
  */
 export function ChannelCardTilt({
   children,
   className,
   intensity = 14,
   glow = true,
-  scale = 1.02,
+  scale = 1.03,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -156,7 +156,7 @@ export function ChannelCardTilt({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<React.CSSProperties>({
-    transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+    transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
   });
   const [coords, setCoords] = useState<{ x: number; y: number; active: boolean }>({
     x: 50,
@@ -177,7 +177,7 @@ export function ChannelCardTilt({
 
       setCoords({ x: px * 100, y: py * 100, active: true });
       setStyle({
-        transform: `perspective(1000px) rotateY(${x * intensity}deg) rotateX(${
+        transform: `perspective(1200px) rotateY(${x * intensity}deg) rotateX(${
           -y * intensity
         }deg) scale3d(${scale}, ${scale}, ${scale})`,
         transition: 'transform 0.08s ease-out',
@@ -187,8 +187,8 @@ export function ChannelCardTilt({
     const onLeave = () => {
       setCoords((prev) => ({ ...prev, active: false }));
       setStyle({
-        transform: 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)',
-        transition: 'transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transform: 'perspective(1200px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)',
+        transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
       });
     };
 
@@ -212,14 +212,26 @@ export function ChannelCardTilt({
     >
       {children}
       {glow && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300 z-30"
-          style={{
-            opacity: coords.active ? 1 : 0,
-            background: `radial-gradient(400px circle at ${coords.x}% ${coords.y}%, rgba(0, 242, 254, 0.22), transparent 60%)`,
-          }}
-        />
+        <>
+          {/* Radial Light Source that moves with cursor */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300 z-30"
+            style={{
+              opacity: coords.active ? 1 : 0,
+              background: `radial-gradient(500px circle at ${coords.x}% ${coords.y}%, rgba(0, 242, 254, 0.25), transparent 65%)`,
+            }}
+          />
+          {/* Holographic Specular Diagonal Glare */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-500 z-30 mix-blend-overlay"
+            style={{
+              opacity: coords.active ? 0.8 : 0,
+              background: `linear-gradient(${coords.x * 2 + 45}deg, transparent 30%, rgba(255, 255, 255, 0.15) 45%, rgba(0, 242, 254, 0.3) 50%, rgba(168, 85, 247, 0.2) 55%, transparent 70%)`,
+            }}
+          />
+        </>
       )}
     </div>
   );

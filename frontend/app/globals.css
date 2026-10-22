@@ -382,4 +382,39 @@
     background-size: 200% 100%;
     animation: shimmerSweep 3.5s infinite;
   }
+
+  /* 3D Stereoscopic Layering & Radiant Breath */
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .perspective-1200 {
+    perspective: 1200px;
+  }
+
+  @keyframes pulseGlow3D {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.25), 0 10px 30px rgba(0, 0, 0, 0.7);
+      transform: scale3d(1, 1, 1);
+    }
+    50% {
+      box-shadow: 0 0 35px rgba(0, 242, 254, 0.5), 0 15px 45px rgba(0, 0, 0, 0.9);
+      transform: scale3d(1.02, 1.02, 1.02);
+    }
+  }
+
+  .animate-pulse-glow-3d {
+    animation: pulseGlow3D 4s ease-in-out infinite;
+  }
+
+  /* Layer separation for cards in 3D tilt */
+  .tilt-elevate-10 {
+    transform: translateZ(10px);
+  }
+  .tilt-elevate-20 {
+    transform: translateZ(20px);
+  }
+  .tilt-elevate-30 {
+    transform: translateZ(30px);
+  }
 }

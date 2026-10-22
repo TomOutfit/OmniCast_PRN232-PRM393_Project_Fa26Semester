@@ -241,57 +241,67 @@ export default function ChannelsPage() {
             <p className="text-xs text-slate-400">Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc thể loại.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {channels.map((channel, idx) => {
               const liveEvent = liveChannelMap.get(channel.id);
               const isPremium = isChannelPremium(channel.slug);
               return (
                 <ChannelCardTilt
                   key={channel.id}
-                  className="group rounded-2xl bg-[#0b1320] hover:bg-[#0f1a2c] border border-[#16253c] hover:border-cyan-500/50 p-5 shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
+                  className="group relative rounded-2xl bg-gradient-to-b from-[#0e1726]/95 via-[#09101d]/95 to-[#05080f]/98 border border-[#1c2c44] hover:border-cyan-400/60 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_45px_rgba(0,242,254,0.18)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent group-hover:before:via-cyan-400/80"
                   intensity={10}
                 >
                   {/* Top Ambient Glow on Hover */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/15 transition-all pointer-events-none" />
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-400/20 group-hover:scale-125 transition-all duration-500 pointer-events-none" />
+                  <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl group-hover:bg-blue-500/15 transition-all duration-500 pointer-events-none" />
 
                   {/* Channel Header */}
-                  <div>
+                  <div className="relative z-10">
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-[#121e30] border border-[#1f304a] p-2 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#142338] to-[#091220] border border-[#223652] p-2 flex items-center justify-center shadow-lg group-hover:scale-105 group-hover:border-cyan-400/50 group-hover:shadow-[0_0_15px_rgba(0,242,254,0.25)] transition-all duration-300">
                           <ChannelLogo
                             slug={channel.slug}
                             name={channel.name}
                             logoUrl={channel.logoUrl ?? undefined}
                             category={channel.category}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain filter drop-shadow"
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] font-mono text-slate-500 font-bold">
-                            CH #{String(idx + 1).padStart(3, '0')}
-                          </span>
-                          <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-cyan-300/80 bg-cyan-950/50 border border-cyan-800/40 font-bold">
+                              CH #{String(idx + 1).padStart(3, '0')}
+                            </span>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 font-mono">
+                              {CATEGORY_LABELS[channel.category as LiveCategory] || channel.category}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors mt-0.5 line-clamp-1 font-display">
                             {channel.name}
                           </h3>
-                          <span className="text-[10px] font-bold uppercase text-cyan-400">
-                            {CATEGORY_LABELS[channel.category as LiveCategory] || channel.category}
-                          </span>
                         </div>
                       </div>
 
                       {/* Tier & Live Badges */}
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-950/80 text-red-400 border border-red-800 shadow-[0_0_8px_rgba(239,68,68,0.3)]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.5)] border border-red-400/30">
+                          {/* Mini Equalizer Waves */}
+                          <span className="flex items-center gap-0.5 h-2">
+                            <span className="w-0.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            <span className="w-0.5 h-2 bg-white rounded-full animate-ping" />
+                            <span className="w-0.5 h-1 bg-white rounded-full animate-pulse" />
+                          </span>
                           LIVE
                         </span>
+
                         {isPremium ? (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 border border-amber-500/40 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-400/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+                            <Star className="w-2.5 h-2.5 fill-amber-300" />
                             VIP 4K
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-950/60 border border-emerald-500/40 text-emerald-300">
                             FREE
                           </span>
                         )}
@@ -299,27 +309,32 @@ export default function ChannelsPage() {
                     </div>
 
                     {/* Current Broadcasting Info */}
-                    <div className="p-3 rounded-xl bg-[#070e1a] border border-[#142236] space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="font-bold text-slate-300">Đang phát:</span>
-                        <span className="text-amber-400 font-mono font-semibold">ON-AIR 4K</span>
+                    <div className="p-3.5 rounded-xl bg-[#060c17]/90 border border-[#16253c] group-hover:border-cyan-500/30 space-y-2 mb-4 transition-colors">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="font-extrabold text-slate-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                          ĐANG CHIẾU:
+                        </span>
+                        <span className="text-amber-400 font-mono font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/30">
+                          ON-AIR 4K HDR
+                        </span>
                       </div>
-                      <p className="text-xs font-bold text-white line-clamp-1">
-                        {liveEvent?.title || `${channel.name} — Chương trình đặc biệt`}
+                      <p className="text-xs font-black text-white line-clamp-1 group-hover:text-cyan-200 transition-colors">
+                        {liveEvent?.title || `${channel.name} — Phát sóng trực tiếp`}
                       </p>
                       
-                      {/* Fake Progress Bar */}
-                      <div className="w-full h-1 bg-[#162338] rounded-full overflow-hidden">
-                        <div className="bg-cyan-400 h-full w-[65%]" />
+                      {/* Broadcast Progress Bar */}
+                      <div className="w-full h-1.5 bg-[#101b2a] rounded-full overflow-hidden p-0.5 border border-[#1a2d46]">
+                        <div className="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 h-full w-[72%] rounded-full shadow-[0_0_8px_#00f2fe]" />
                       </div>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/5 relative z-10">
                     <Link
                       href={liveEvent ? `/programs/${liveEvent.id}` : `/channels/${channel.slug}`}
-                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,242,254,0.3)] transition-all"
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,242,254,0.35)] hover:shadow-[0_0_25px_rgba(0,242,254,0.6)] transition-all hover:scale-[1.02] cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       Xem Trực Tiếp
@@ -327,7 +342,7 @@ export default function ChannelsPage() {
 
                     <button
                       onClick={() => setQuickViewChannel(channel)}
-                      className="p-2 rounded-xl bg-[#101b2c] hover:bg-[#182840] border border-[#1e3250] text-slate-300 hover:text-cyan-400 transition-colors"
+                      className="p-2.5 rounded-xl bg-[#0e1726] hover:bg-[#152338] border border-[#1e304a] hover:border-cyan-400/50 text-slate-300 hover:text-cyan-300 transition-all cursor-pointer shadow-sm"
                       title="Xem nhanh thông tin kênh"
                     >
                       <Info className="w-4 h-4" />
