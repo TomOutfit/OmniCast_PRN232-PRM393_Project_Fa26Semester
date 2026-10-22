@@ -243,26 +243,33 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   }
 
   Future<void> _onTapReaction(String type) async {
+    // 0ms instant feedback: haptics + visual particles + local counter bump
+    HapticFeedback.lightImpact();
     _spawnReactionParticles(type);
     setState(() => _localLikeDelta++);
+
+    // Real-time socket broadcast if connected
     if (LiveSocketService.instance.isConnected) {
       LiveSocketService.instance.sendReaction(
         eventId: widget.eventId,
         type: type,
       );
-      return;
     }
 
-    try {
-      await _dio.post(
+    // Best-effort background HTTP persistence (non-blocking, never shows timeout toast)
+    unawaited(
+      _dio.post(
         '${AppEndpoints.liveEvents}/${widget.eventId}/reactions',
         data: {'type': type},
-      );
-    } catch (error) {
-      if (mounted) {
-        _toast('Không thể gửi cảm xúc: $error', accent: _warn);
-      }
-    }
+        options: Options(
+          sendTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        ),
+      ).catchError((_) {
+        // Silent catch: live reactions are fire-and-forget
+        return Response(requestOptions: RequestOptions(path: ''));
+      }),
+    );
   }
 
   String _emojiFor(String type) {
@@ -840,186 +847,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
     );
   }
 
-  // ============================================================
-  // Live info / status card
-  // ============================================================
 
-  Widget _buildLiveInfoCard() {
-    final ev = _event!;
-    final ch = ev.channel;
-    final peak = ev.peakViewers;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFF1F2937),
-          width: 0.8,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          Text(
-            ev.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Outfit',
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Channel + open channel link
-          if (ch != null)
-            InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => context.push('/channel/${ev.channelId}'),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0x1F00E5FF),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    if (ch.logoUrl != null && ch.logoUrl!.isNotEmpty)
-                      ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: ch.logoUrl!,
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) =>
-                              _channelLogoPlaceholder(),
-                          placeholder: (_, __) => _channelLogoPlaceholder(),
-                        ),
-                      )
-                    else
-                      _channelLogoPlaceholder(),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ch.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (ch.category != null && ch.category!.isNotEmpty)
-                            Text(
-                              ch.category!.toUpperCase(),
-                              style: const TextStyle(
-                                color: _accent,
-                                fontSize: 10,
-                                fontFamily: 'JetBrainsMono',
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded,
-                        color: _accent, size: 14),
-                  ],
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-
-          // Telemetry strip
-          Row(
-            children: [
-              _statTile(
-                icon: Icons.visibility_rounded,
-                value: _formatViewers(ev.viewerCount),
-                label: 'ĐANG XEM',
-                color: _danger,
-              ),
-              const SizedBox(width: 8),
-              _statTile(
-                icon: Icons.trending_up_rounded,
-                value: _formatViewers(peak),
-                label: 'ĐỈNH',
-                color: _warn,
-              ),
-              const SizedBox(width: 8),
-              _statTile(
-                icon: Icons.favorite_rounded,
-                value: _formatViewers(ev.likeCount + _localLikeDelta),
-                label: 'CẢM XÚC',
-                color: const Color(0xFFEC4899),
-              ),
-              const SizedBox(width: 8),
-              _statTile(
-                icon: Icons.chat_bubble_rounded,
-                value: _formatViewers(ev.commentCount),
-                label: 'BÌNH LUẬN',
-                color: _accent,
-              ),
-            ],
-          ),
-
-          if (ev.description != null && ev.description!.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              ev.description!,
-              style: const TextStyle(
-                color: Color(0xFFCBD5E1),
-                fontSize: 13,
-                height: 1.55,
-              ),
-            ),
-          ],
-
-          if (ev.tags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final tag in ev.tags.take(8))
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: const Color(0x1F00E5FF),
-                        width: 0.6,
-                      ),
-                    ),
-                    child: Text(
-                      '#$tag',
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 10,
-                        fontFamily: 'JetBrainsMono',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _channelLogoPlaceholder() {
     return Container(
@@ -1037,54 +865,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
     );
   }
 
-  Widget _statTile({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: color.withValues(alpha: 0.25),
-            width: 0.8,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'JetBrainsMono',
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 9,
-                fontFamily: 'JetBrainsMono',
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   // ============================================================
   // Reactions (floating + side panel)
