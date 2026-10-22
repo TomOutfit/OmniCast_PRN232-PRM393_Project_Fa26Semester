@@ -694,6 +694,15 @@ export function VideoPlayer({
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+export function extractGoogleDriveFileId(url: string): string | null {
+  if (!url) return null;
+  const fileMatch = url.match(/(?:\/file\/d\/|\/file\/u\/\d+\/d\/|\/d\/)([a-zA-Z0-9_-]+)/i);
+  if (fileMatch && fileMatch[1]) return fileMatch[1];
+  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+  if (idMatch && idMatch[1]) return idMatch[1];
+  return null;
+}
+
 function getEmbedUrl(url: string): string {
   if (!url) return url;
   const ytMatch = url.match(
@@ -710,6 +719,10 @@ function getEmbedUrl(url: string): string {
         : 'localhost';
     return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${parent}&autoplay=true`;
   }
+  const gDriveId = extractGoogleDriveFileId(url);
+  if (gDriveId) {
+    return `https://drive.google.com/file/d/${gDriveId}/preview`;
+  }
   return url;
 }
 
@@ -723,6 +736,9 @@ function detectType(url: string): NonNullable<VideoPlayerProps['type']> {
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
   )
     return 'iframe';

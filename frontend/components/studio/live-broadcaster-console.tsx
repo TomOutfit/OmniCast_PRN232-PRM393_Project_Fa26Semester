@@ -42,17 +42,23 @@ export function LiveBroadcasterConsole({
 
     fetchLiveInteraction(eventId)
       .then((snapshot) => {
-        if (isCurrent) {
+        if (isCurrent && snapshot) {
           setInitialData({
-            comments: snapshot.comments,
-            reactions: snapshot.reactions,
-            viewerCount: snapshot.viewerCount,
+            comments: Array.isArray(snapshot.comments) ? snapshot.comments : [],
+            reactions: snapshot.reactions || {},
+            viewerCount: typeof snapshot.viewerCount === 'number' ? snapshot.viewerCount : 0,
           });
         }
       })
       .catch((error: unknown) => {
-        console.error('[LiveBroadcasterConsole] Failed to load live interaction snapshot:', error);
-        toast.error('Không thể tải số liệu realtime ban đầu.');
+        console.warn('[LiveBroadcasterConsole] Live interaction snapshot not ready, falling back to realtime socket:', error);
+        if (isCurrent) {
+          setInitialData({
+            comments: [],
+            reactions: {},
+            viewerCount: 0,
+          });
+        }
       });
 
     return () => {

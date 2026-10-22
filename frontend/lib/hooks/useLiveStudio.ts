@@ -105,6 +105,7 @@ export function useUploadSelfRecord() {
       queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
       queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
       queryClient.invalidateQueries({ queryKey: ['programs', 'recordings'] });
+      queryClient.invalidateQueries({ queryKey: liveStudioKeys.all });
     },
   });
 }

@@ -37,6 +37,15 @@ vi.mock('@/lib/auth-context', () => ({
 
 type PlayerType = 'hls' | 'mp4' | 'webm' | 'iframe';
 
+function extractGoogleDriveFileId(url: string): string | null {
+  if (!url) return null;
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  if (fileMatch && fileMatch[1]) return fileMatch[1];
+  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+  if (idMatch && idMatch[1]) return idMatch[1];
+  return null;
+}
+
 function detectType(url: string): PlayerType {
   const lower = url.toLowerCase();
   if (lower.includes('.m3u8')) return 'hls';
@@ -47,6 +56,9 @@ function detectType(url: string): PlayerType {
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
   )
     return 'iframe';
@@ -69,6 +81,10 @@ function getEmbedUrl(url: string): string {
         ? window.location.hostname
         : 'localhost';
     return `https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${parent}&autoplay=true`;
+  }
+  const gDriveId = extractGoogleDriveFileId(url);
+  if (gDriveId) {
+    return `https://drive.google.com/file/d/${gDriveId}/preview`;
   }
   return url;
 }
@@ -138,6 +154,12 @@ describe('detectType', () => {
 
   it('returns iframe for Vimeo URLs', () => {
     expect(detectType('https://vimeo.com/123456789')).toBe('iframe');
+  });
+
+  it('returns iframe for Google Drive URLs', () => {
+    expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('iframe');
+    expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('iframe');
+    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.google.com/file/d/1B2C3D4E5F6G/preview');
   });
 
   it('defaults to hls for unknown URL patterns', () => {
