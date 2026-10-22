@@ -2,7 +2,21 @@
 
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://omnicast-api.vercel.app/api';
+  static const String _defaultBaseUrl = 'https://omnicast-api.vercel.app/api';
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const String _envSocketUrl = String.fromEnvironment('SOCKET_BASE_URL');
+  static String _customBaseUrl = '';
+
+  static void setCustomBaseUrl(String url) {
+    _customBaseUrl = url;
+  }
+
+  static String get baseUrl {
+    if (_customBaseUrl.isNotEmpty) return _customBaseUrl;
+    if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
+    return _defaultBaseUrl;
+  }
+
   static const String cdnBaseUrl = 'https://omnicast.tv';
   static const Duration apiTimeout = Duration(seconds: 30);
 
@@ -36,6 +50,7 @@ class AppConstants {
 
   /// Derive WebSocket base URL from baseUrl (e.g. https://... -> wss://...)
   static String get socketUrl {
+    if (_envSocketUrl.isNotEmpty) return _envSocketUrl;
     final uri = Uri.parse(baseUrl);
     final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final portPart = uri.hasPort ? ':${uri.port}' : '';

@@ -46,6 +46,9 @@ class _CommentsSectionState extends State<CommentsSection> {
     _fetchComments();
     _subscribeRealtimeIfAvailable();
     if (widget.kind == 'live') {
+      LiveSocketService.instance.connect();
+      LiveSocketService.instance.subscribeEvent(widget.targetId);
+
       _liveSocketSub = LiveSocketService.instance.onChatNew.listen((data) {
         if (!mounted) return;
         if (data['eventId'] == widget.targetId) {
@@ -79,6 +82,9 @@ class _CommentsSectionState extends State<CommentsSection> {
 
   @override
   void dispose() {
+    if (widget.kind == 'live') {
+      LiveSocketService.instance.unsubscribeEvent(widget.targetId);
+    }
     _livePollTimer?.cancel();
     _realtimeSub?.cancel();
     _liveSocketSub?.cancel();
@@ -140,13 +146,25 @@ class _CommentsSectionState extends State<CommentsSection> {
 
       if (mounted) {
         setState(() {
-          _comments.clear();
-          for (final item in rawList) {
-            if (item is Map<String, dynamic>) {
-              _comments.add(_CommentItem.fromJson(item));
+          if (!silent) {
+            _comments.clear();
+            for (final item in rawList) {
+              if (item is Map<String, dynamic>) {
+                _comments.add(_CommentItem.fromJson(item));
+              }
             }
+            _isLoading = false;
+          } else {
+            for (final item in rawList) {
+              if (item is Map<String, dynamic>) {
+                final parsed = _CommentItem.fromJson(item);
+                if (!_comments.any((c) => c.id == parsed.id)) {
+                  _comments.add(parsed);
+                }
+              }
+            }
+            _comments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           }
-          if (!silent) _isLoading = false;
         });
       }
     } catch (_) {
@@ -162,39 +180,39 @@ class _CommentsSectionState extends State<CommentsSection> {
 
     setState(() => _isSubmitting = true);
     try {
-      if (widget.kind == 'live' && LiveSocketService.instance.isConnected) {
-        LiveSocketService.instance.sendChat(
-          eventId: widget.targetId,
-          content: text,
-        );
+      if (widget.kind == 'live') {
+        if (LiveSocketService.instance.isConnected) {
+          LiveSocketService.instance.sendChat(
+            eventId: widget.targetId,
+            content: text,
+          );
+        } else {
+          final dio = getIt<DioClient>();
+          final res = await dio.post(_endpoint, data: {'content': text});
+          final data = res.data;
+          if (mounted && data is Map<String, dynamic>) {
+            final parsed = _CommentItem.fromJson(data);
+            if (!_comments.any((c) => c.id == parsed.id)) {
+              setState(() => _comments.insert(0, parsed));
+            }
+          }
+        }
+      } else {
+        final dio = getIt<DioClient>();
+        final res = await dio.post(_endpoint, data: {'content': text});
+        final data = res.data;
+        if (mounted && data is Map<String, dynamic>) {
+          final parsed = _CommentItem.fromJson(data);
+          if (!_comments.any((c) => c.id == parsed.id)) {
+            setState(() => _comments.insert(0, parsed));
+          }
+        }
       }
-      final dio = getIt<DioClient>();
-      final res = await dio.post(_endpoint, data: {'content': text});
-      final data = res.data;
 
       if (mounted) {
         _controller.clear();
         FocusScope.of(context).unfocus();
-
-        if (data is Map<String, dynamic>) {
-          setState(() {
-            _comments.insert(0, _CommentItem.fromJson(data));
-            _isSubmitting = false;
-          });
-        } else {
-          setState(() {
-            _comments.insert(
-              0,
-              _CommentItem(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                content: text,
-                userName: 'Tôi',
-                createdAt: DateTime.now(),
-              ),
-            );
-            _isSubmitting = false;
-          });
-        }
+        setState(() => _isSubmitting = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -205,25 +223,13 @@ class _CommentsSectionState extends State<CommentsSection> {
       }
     } catch (e) {
       if (mounted) {
-        // Fallback optimistic display
-        setState(() {
-          _comments.insert(
-            0,
-            _CommentItem(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              content: text,
-              userName: 'Tôi',
-              createdAt: DateTime.now(),
-            ),
-          );
-          _isSubmitting = false;
-        });
+        setState(() => _isSubmitting = false);
         _controller.clear();
         FocusScope.of(context).unfocus();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã lưu bình luận!'),
-            duration: Duration(milliseconds: 800),
+          SnackBar(
+            content: Text('Không thể gửi bình luận: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }

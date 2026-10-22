@@ -266,13 +266,6 @@ export class LiveStreamGateway
         },
       );
 
-      const roomName = `event:${payload.eventId}`;
-      this.server.to(roomName).emit('live:chat:new', {
-        eventId: payload.eventId,
-        comment,
-        timestamp: new Date().toISOString(),
-      });
-
       return { success: true, comment };
     } catch (err) {
       this.logger.warn(`Failed to post live chat: ${(err as Error).message}`);
@@ -393,13 +386,6 @@ export class LiveStreamGateway
         userId,
         role,
       );
-
-      const roomName = `event:${payload.eventId}`;
-      this.server.to(roomName).emit('chat:deleted', {
-        eventId: payload.eventId,
-        commentId: payload.commentId,
-        timestamp: new Date().toISOString(),
-      });
 
       return { success: true, commentId: payload.commentId };
     } catch (err) {
@@ -586,6 +572,26 @@ export class LiveStreamGateway
 
   sendToClient(clientId: string, event: string, data: unknown) {
     this.server?.to(clientId).emit(event, data);
+  }
+
+  notifyCommentCreated(eventId: string, comment: any) {
+    const roomName = `event:${eventId}`;
+    this.server?.to(roomName).emit('live:chat:new', {
+      eventId,
+      comment,
+      timestamp: new Date().toISOString(),
+    });
+    this.logger.log(`Broadcasted live:chat:new to ${roomName} (commentId: ${comment?.id})`);
+  }
+
+  notifyCommentDeleted(eventId: string, commentId: string) {
+    const roomName = `event:${eventId}`;
+    this.server?.to(roomName).emit('chat:deleted', {
+      eventId,
+      commentId,
+      timestamp: new Date().toISOString(),
+    });
+    this.logger.log(`Broadcasted chat:deleted to ${roomName} (commentId: ${commentId})`);
   }
 
   // ============================================================

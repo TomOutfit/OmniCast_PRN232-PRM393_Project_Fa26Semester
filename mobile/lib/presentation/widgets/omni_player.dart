@@ -144,7 +144,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
     // `…/api` form (e.g. `https://omnicast-api.vercel.app/api`);
     // strip the trailing `/api` so the result lives on the same
     // origin as the API host.
-    const apiBase = AppConstants.baseUrl;
+    final apiBase = AppConstants.baseUrl;
     final origin = apiBase.endsWith('/api')
         ? apiBase.substring(0, apiBase.length - 4)
         : apiBase;

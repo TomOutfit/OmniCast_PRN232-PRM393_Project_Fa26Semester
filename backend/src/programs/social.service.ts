@@ -6,17 +6,22 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { CreateCommentDto } from './dto/social.dto';
 import { ReactionType } from '@prisma/client';
+import { LiveStreamGateway } from '../websocket/live-stream.gateway';
 
 @Injectable()
 export class SocialService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
+    @Inject(forwardRef(() => LiveStreamGateway))
+    private readonly liveStreamGateway?: LiveStreamGateway,
   ) {}
 
   private isUuid(val?: string): boolean {
@@ -185,6 +190,14 @@ export class SocialService {
         where: { id: commentWithLive.liveEventId },
         data: { commentCount: { decrement: 1 } },
       }).catch(() => null);
+
+      if (this.liveStreamGateway) {
+        try {
+          this.liveStreamGateway.notifyCommentDeleted(commentWithLive.liveEventId, commentId);
+        } catch (_) {
+          // Non-fatal
+        }
+      }
     }
 
     await this.auditLogger.log({
@@ -323,6 +336,14 @@ export class SocialService {
       entityId: comment.id,
       newValues: { liveEventId, content: dto.content },
     });
+
+    if (this.liveStreamGateway) {
+      try {
+        this.liveStreamGateway.notifyCommentCreated(liveEventId, comment);
+      } catch (_) {
+        // Non-fatal if socket gateway is unreachable
+      }
+    }
 
     return comment;
   }
