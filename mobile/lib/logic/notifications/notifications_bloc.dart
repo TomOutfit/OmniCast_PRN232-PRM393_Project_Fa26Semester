@@ -158,10 +158,9 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     on<NotificationDeleted>(_onDeleted);
   }
 
-  /// Tick interval for the background poll. 30s matches the web
-  /// client's React Query interval so both surfaces stay roughly
-  /// in sync.
-  static const _pollInterval = Duration(seconds: 30);
+  /// Tick interval for the background poll. 60s reduces continuous network
+  /// overhead on mobile while keeping notifications reasonably fresh.
+  static const _pollInterval = Duration(seconds: 60);
 
   @override
   Future<void> close() async {

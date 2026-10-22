@@ -16,9 +16,10 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 
 import '../di/injection.dart';
+import '../network/dio_client.dart';
+import '../constants/app_constants.dart';
 
 enum VipProductId {
   monthly,
@@ -120,9 +121,9 @@ class BillingService {
   Future<BillingResult> purchase(VipProductId product) async {
     try {
       final token = 'play-token-${product.value}-${DateTime.now().millisecondsSinceEpoch}';
-      final dio = getIt<Dio>();
-      final response = await dio.post(
-        '/billing/verify-android-receipt',
+      final client = getIt<DioClient>();
+      final response = await client.post(
+        AppEndpoints.billingVerifyReceipt,
         data: {
           'productId': product.value,
           'purchaseToken': token,
@@ -158,10 +159,14 @@ class BillingService {
   /// Restoring purchases — checks active entitlement.
   Future<bool> restore() async {
     try {
-      final dio = getIt<Dio>();
-      final response = await dio.get('/users/profile');
+      final client = getIt<DioClient>();
+      final response = await client.get(AppEndpoints.me);
       if (response.statusCode == 200 && response.data != null) {
-        final premiumUntilStr = response.data['premiumUntil'];
+        final raw = response.data;
+        final data = (raw is Map && raw['data'] is Map)
+            ? raw['data'] as Map<String, dynamic>
+            : (raw is Map ? raw as Map<String, dynamic> : <String, dynamic>{});
+        final premiumUntilStr = data['premiumUntil'];
         if (premiumUntilStr != null) {
           final expiry = DateTime.tryParse(premiumUntilStr.toString());
           if (expiry != null && expiry.isAfter(DateTime.now())) {

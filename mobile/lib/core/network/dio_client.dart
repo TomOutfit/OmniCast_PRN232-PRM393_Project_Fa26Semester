@@ -42,15 +42,15 @@ class DioClient {
 
     _dio.interceptors.addAll([
       _AuthInterceptor(_secureStorage),
-      // SECURITY NOTE: `requestBody: true` / `responseBody: true`
-      // would normally leak the login password, refresh token,
-      // and any `Authorization: Bearer …` header to the device
-      // log on every API call. The `logPrint` bridge below
-      // routes every line through `safePrint` so the redactor
-      // scrubs tokens before they hit the console.
+      // NOTE: `requestBody: false` / `responseBody: false` prevent large JSON payloads
+      // (like 25-channel EPG schedules) from running regex redaction loops on the
+      // main UI isolate, eliminating stutter and frame lag.
       LogInterceptor(
-        requestBody: true,
-        responseBody: true,
+        request: true,
+        requestHeader: false,
+        requestBody: false,
+        responseHeader: false,
+        responseBody: false,
         error: true,
         logPrint: (o) => safePrint('[omnicast:dio]', o.toString()),
       ),

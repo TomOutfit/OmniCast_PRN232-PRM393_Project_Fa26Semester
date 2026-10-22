@@ -18,7 +18,7 @@ class AppConstants {
   }
 
   static const String cdnBaseUrl = 'https://omnicast.tv';
-  static const Duration apiTimeout = Duration(seconds: 30);
+  static const Duration apiTimeout = Duration(seconds: 12);
 
   /**
    * Resolve an asset path (like `/Channel_Logos/01-omni-sport-1-icon.svg`)
@@ -168,7 +168,8 @@ class AppEndpoints {
   static String channelSubscribe(String channelId) =>
       '/v1/channels/$channelId/subscribe';
 
-  // Billing mock
+  // Billing
+  static const String billingVerifyReceipt = '/v1/billing/verify-android-receipt';
   static const String billingPlans = '/v1/billing/me/plans';
   static const String billingInvoices = '/v1/billing/me/invoices';
   static const String billingCheckoutMock = '/v1/billing/checkout-mock';

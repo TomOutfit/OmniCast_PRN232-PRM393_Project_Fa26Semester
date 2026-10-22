@@ -104,14 +104,25 @@ class ProgramsRepository {
     int page = 1,
     int limit = 20,
   }) async {
-    final response = await _dioClient.get(
-      AppEndpoints.continueWatching,
-      queryParameters: {'page': page, 'limit': limit},
-    );
-    return ProgramsPage<RecordingModel>.fromJson(
-      response.data as Map<String, dynamic>,
-      RecordingModel.fromJson,
-    );
+    try {
+      final response = await _dioClient.get(
+        AppEndpoints.continueWatching,
+        queryParameters: {'page': page, 'limit': limit},
+      );
+      return ProgramsPage<RecordingModel>.fromJson(
+        response.data as Map<String, dynamic>,
+        RecordingModel.fromJson,
+      );
+    } catch (_) {
+      // Endpoint may not be active or user has no continue watching history
+      return ProgramsPage<RecordingModel>(
+        items: const [],
+        total: 0,
+        page: page,
+        limit: limit,
+        totalPages: 0,
+      );
+    }
   }
 
   /// Scheduled programs for EPG. Uses the `/epg/day` endpoint and

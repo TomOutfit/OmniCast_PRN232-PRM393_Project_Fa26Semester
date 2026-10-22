@@ -41,9 +41,9 @@ class _LiveJoinPromptBannerState extends State<LiveJoinPromptBanner>
       curve: Curves.easeOutBack,
     );
 
-    // Initial check + periodic check every 8 seconds
+    // Initial check + periodic check every 30 seconds
     _checkActiveLive();
-    _checkTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+    _checkTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _checkActiveLive();
     });
   }

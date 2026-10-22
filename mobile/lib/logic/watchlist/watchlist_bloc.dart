@@ -159,9 +159,9 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
     on<RemoveFromWatchlist>(_onRemoveFromWatchlist);
     on<ToggleWatchlistReminder>(_onToggleWatchlistReminder);
 
-    // Auto-sync every 30s + on connectivity-up
+    // Auto-sync every 60s + on connectivity-up
     _syncTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(seconds: 60),
       (_) => add(const RefreshWatchlistFromCloud()),
     );
     _connSub = Connectivity().onConnectivityChanged.listen((result) {
