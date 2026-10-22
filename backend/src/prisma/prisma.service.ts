@@ -22,24 +22,25 @@ export function optimizeDatabaseUrl(rawUrl?: string): string | undefined {
       // Always enable pgbouncer transaction mode
       parsed.searchParams.set('pgbouncer', 'true');
 
-      // Set connection limit: 1 for serverless, 5 for standalone server / dev
+      // Set connection limit: Supabase transaction pooler (port 6543 with pgbouncer=true)
+      // supports multiplexing. A limit of 10-15 per instance avoids internal Prisma query queuing.
       const isServerless =
         Boolean(process.env.VERCEL) ||
         Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
         Boolean(process.env.LAMBDA_TASK_ROOT) ||
         (typeof process.cwd === 'function' && process.cwd().startsWith('/var/task'));
 
-      const defaultLimit = isServerless ? '1' : (process.env.DB_POOL_LIMIT || '5');
+      const defaultLimit = process.env.DB_POOL_LIMIT || (isServerless ? '10' : '15');
       if (!parsed.searchParams.has('connection_limit')) {
         parsed.searchParams.set('connection_limit', defaultLimit);
       }
 
-      // Add pool and connect timeouts to fail fast instead of hanging connections
+      // Add pool and connect timeouts (30s pool timeout avoids fast timeouts under load)
       if (!parsed.searchParams.has('pool_timeout')) {
-        parsed.searchParams.set('pool_timeout', '15');
+        parsed.searchParams.set('pool_timeout', '30');
       }
       if (!parsed.searchParams.has('connect_timeout')) {
-        parsed.searchParams.set('connect_timeout', '10');
+        parsed.searchParams.set('connect_timeout', '15');
       }
     }
 
