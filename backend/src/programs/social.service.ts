@@ -447,7 +447,21 @@ export class SocialService {
     userId: string,
     type: ReactionType,
   ) {
-    return this.toggleReaction({ liveEventId }, userId, type);
+    const result = await this.toggleReaction({ liveEventId }, userId, type);
+
+    if (this.liveStreamGateway) {
+      const counts = await this.listReactionsByLiveEvent(liveEventId);
+      this.liveStreamGateway.notifyReactionUpdated({
+        eventId: liveEventId,
+        userId,
+        type,
+        toggled: result.toggled,
+        counts: counts.data,
+        total: counts.total,
+      });
+    }
+
+    return result;
   }
 
   /**

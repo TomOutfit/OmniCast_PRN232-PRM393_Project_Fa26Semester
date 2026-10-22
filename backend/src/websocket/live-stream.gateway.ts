@@ -300,22 +300,7 @@ export class LiveStreamGateway
         payload.type,
       );
 
-      const counts = await this.socialService.listReactionsByLiveEvent(
-        payload.eventId,
-      );
-
-      const roomName = `event:${payload.eventId}`;
-      this.server.to(roomName).emit('live:reaction:new', {
-        eventId: payload.eventId,
-        userId,
-        type: payload.type,
-        toggled: res.toggled,
-        counts: counts.data,
-        total: counts.total,
-        timestamp: new Date().toISOString(),
-      });
-
-      return { success: true, ...res, counts: counts.data };
+      return { success: true, ...res };
     } catch (err) {
       this.logger.warn(`Failed to toggle reaction: ${(err as Error).message}`);
       return { error: 'REACTION_FAILED', message: (err as Error).message };
@@ -582,6 +567,20 @@ export class LiveStreamGateway
       timestamp: new Date().toISOString(),
     });
     this.logger.log(`Broadcasted live:chat:new to ${roomName} (commentId: ${comment?.id})`);
+  }
+
+  notifyReactionUpdated(payload: {
+    eventId: string;
+    userId: string;
+    type: ReactionType;
+    toggled: boolean;
+    counts: Record<string, number>;
+    total: number;
+  }) {
+    this.server?.to(`event:${payload.eventId}`).emit('live:reaction:new', {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   notifyCommentDeleted(eventId: string, commentId: string) {

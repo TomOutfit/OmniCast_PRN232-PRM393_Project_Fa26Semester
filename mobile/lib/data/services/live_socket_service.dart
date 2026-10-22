@@ -50,11 +50,16 @@ class LiveSocketService {
 
   /// Connect to the `/live` WebSocket namespace with JWT authentication
   Future<void> connect({String? customToken}) async {
+    if (_socket != null) {
+      if (kDebugMode) print('[LiveSocket] Connection already initialized');
+      return;
+    }
+
     final token = customToken ?? await TokenStorageHelper().getAccessToken();
     final baseUrl = AppConstants.socketUrl;
 
-    if (_socket != null && _isConnected) {
-      if (kDebugMode) print('[LiveSocket] Already connected');
+    if (_socket != null) {
+      if (kDebugMode) print('[LiveSocket] Connection already initialized');
       return;
     }
 
