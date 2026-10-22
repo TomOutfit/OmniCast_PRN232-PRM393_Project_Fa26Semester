@@ -96,11 +96,15 @@ class VideoConstraints {
   Map<String, dynamic> toMediaConstraints() {
     return {
       'mandatory': {
-        'minWidth': width.toString(),
-        'minHeight': height.toString(),
-        'minFrameRate': frameRate.toString(),
+        'minWidth': '640',
+        'maxWidth': width.toString(),
+        'minHeight': '360',
+        'maxHeight': height.toString(),
+        'minFrameRate': '15',
+        'maxFrameRate': frameRate.toString(),
       },
       'facingMode': 'user',
+      'optional': [],
     };
   }
 }

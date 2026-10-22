@@ -8,6 +8,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
@@ -74,7 +75,7 @@ class _CommentsSectionState extends State<CommentsSection> {
           }
         }
       });
-      _livePollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _livePollTimer = Timer.periodic(const Duration(seconds: 8), (_) {
         if (mounted) _fetchComments(silent: true);
       });
     }
@@ -166,6 +167,14 @@ class _CommentsSectionState extends State<CommentsSection> {
             _comments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           }
         });
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        _livePollTimer?.cancel();
+        _livePollTimer = null;
+      }
+      if (mounted && !silent) {
+        setState(() => _isLoading = false);
       }
     } catch (_) {
       if (mounted && !silent) {

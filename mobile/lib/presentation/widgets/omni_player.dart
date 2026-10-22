@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import 'payment/subscription_payment_sheet.dart';
 
 // Demo fallback stream. Big Buck Bunny — Creative Commons MP4 hosted
 // on verified CDN mirror. Plays directly in `video_player`,
@@ -34,6 +35,42 @@ bool _isYouTubeEmbed(String url) {
   return _extractYouTubeVideoId(url) != null ||
       url.contains('youtube.com/') ||
       url.contains('youtu.be/');
+}
+
+/// Extracts a Google Drive file ID from view, open, or uc URLs.
+String? _extractGoogleDriveFileId(String url) {
+  if (url.isEmpty) return null;
+  final regExp1 = RegExp(
+    r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)',
+    caseSensitive: false,
+  );
+  final match1 = regExp1.firstMatch(url);
+  if (match1?.group(1) != null) return match1!.group(1);
+
+  final regExp2 = RegExp(
+    r'[?&]id=([a-zA-Z0-9_-]+)',
+    caseSensitive: false,
+  );
+  final match2 = regExp2.firstMatch(url);
+  if (match2?.group(1) != null) return match2!.group(1);
+
+  final regExp3 = RegExp(
+    r'docs\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)',
+    caseSensitive: false,
+  );
+  final match3 = regExp3.firstMatch(url);
+  return match3?.group(1);
+}
+
+/// Returns true when the URL points to Google Drive.
+/// Google Drive download links frequently fail with HTTP 403 / bandwidth quota
+/// exceeded on direct MP4 fetch. Routing to a preview embed WebView utilizes
+/// Google's internal streaming engine without bandwidth/virus check limits.
+bool _isGoogleDriveUrl(String url) {
+  if (url.isEmpty) return false;
+  return _extractGoogleDriveFileId(url) != null ||
+      url.contains('drive.google.com') ||
+      url.contains('docs.google.com/file');
 }
 
 class OmniPlayer extends StatefulWidget {
@@ -83,13 +120,16 @@ class _OmniPlayerState extends State<OmniPlayer> {
   bool _usedFallback = false;
   bool _userPaused = false;
   bool _isVipUnlocked = false;
+  int _lastTickSec = -1;
+  bool? _lastBuffering;
+  bool? _lastPlaying;
 
   @override
   void initState() {
     super.initState();
-    // YouTube embeds are handled exclusively by _YouTubeEmbed WebView.
-    // Do NOT initialize native VideoPlayerController on YouTube URLs.
-    if (_isYouTubeEmbed(widget.url)) {
+    // YouTube & Google Drive embeds are handled exclusively by WebViews.
+    // Do NOT initialize native VideoPlayerController on these URLs.
+    if (_isYouTubeEmbed(widget.url) || _isGoogleDriveUrl(widget.url)) {
       return;
     }
     if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
@@ -104,7 +144,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       _disposeController();
       _hasError = false;
       _usedFallback = false;
-      if (_isYouTubeEmbed(widget.url)) {
+      if (_isYouTubeEmbed(widget.url) || _isGoogleDriveUrl(widget.url)) {
         return;
       }
       if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
@@ -257,7 +297,19 @@ class _OmniPlayerState extends State<OmniPlayer> {
   }
 
   void _onTick() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final c = _controller;
+    if (c == null) return;
+    final val = c.value;
+    final curSec = val.position.inSeconds;
+    if (curSec != _lastTickSec ||
+        val.isBuffering != _lastBuffering ||
+        val.isPlaying != _lastPlaying) {
+      _lastTickSec = curSec;
+      _lastBuffering = val.isBuffering;
+      _lastPlaying = val.isPlaying;
+      setState(() {});
+    }
   }
 
   void _togglePlay() {
@@ -357,25 +409,48 @@ class _OmniPlayerState extends State<OmniPlayer> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF59E0B),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            onPressed: () {
+                              SubscriptionPaymentSheet.show(
+                                context,
+                                onSuccess: _unlockVipDemo,
+                              );
+                            },
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                            label: const Text(
+                              'NẠP TIỀN / MUA VIP',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                        ),
-                        onPressed: _unlockVipDemo,
-                        icon: const Icon(Icons.flash_on_rounded, size: 16),
-                        label: const Text(
-                          'KÍCH HOẠT VIP DEMO',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: _unlockVipDemo,
+                            child: const Text(
+                              'VIP DEMO',
+                              style: TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -390,6 +465,15 @@ class _OmniPlayerState extends State<OmniPlayer> {
     // 2. YouTube embed — render in WebView (free, no native YouTube SDK)
     if (_isYouTubeEmbed(widget.url)) {
       return _YouTubeEmbed(
+        url: widget.url,
+        posterUrl: widget.posterUrl,
+        channelName: widget.channelName,
+      );
+    }
+
+    // 2b. Google Drive embed — render in preview WebView to bypass bandwidth quotas
+    if (_isGoogleDriveUrl(widget.url)) {
+      return _GoogleDriveEmbed(
         url: widget.url,
         posterUrl: widget.posterUrl,
         channelName: widget.channelName,
@@ -887,3 +971,141 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
     );
   }
 }
+
+// ============================================================
+// Google Drive Embed Widget (WebView based)
+// ============================================================
+// Google Drive download links frequently fail with HTTP 403 or quota limits
+// on direct video_player fetch. Rendering the official Google Drive Preview
+// inside a WebView uses Google's CDN streaming engine without download quotas.
+class _GoogleDriveEmbed extends StatefulWidget {
+  final String url;
+  final String? posterUrl;
+  final String? channelName;
+
+  const _GoogleDriveEmbed({
+    required this.url,
+    this.posterUrl,
+    this.channelName,
+  });
+
+  @override
+  State<_GoogleDriveEmbed> createState() => _GoogleDriveEmbedState();
+}
+
+class _GoogleDriveEmbedState extends State<_GoogleDriveEmbed> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final fileId = _extractGoogleDriveFileId(widget.url) ?? '';
+    final previewSrc = 'https://drive.google.com/file/d/$fileId/preview';
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..setUserAgent(
+        'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          onWebResourceError: (error) {
+            // Only trigger fatal state if main frame completely failed to load
+            if (error.isForMainFrame == true &&
+                error.errorCode != -1 &&
+                error.description.isNotEmpty) {
+              if (mounted) setState(() => _failed = true);
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(previewSrc));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.posterUrl != null && widget.posterUrl!.isNotEmpty)
+            Image.network(
+              widget.posterUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: Colors.black),
+            )
+          else
+            Container(color: const Color(0xFF070B14)),
+          WebViewWidget(controller: _controller),
+          if (_loading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.55),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Đang kết nối Google Drive...',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      '⚡ Bypassing Bandwidth Quota',
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (_failed)
+            Container(
+              color: Colors.black.withValues(alpha: 0.8),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.cloud_off_rounded,
+                      color: Color(0xFFEF4444), size: 36),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.channelName ?? 'Không tải được video Google Drive',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Kiểm tra quyền truy cập công khai của liên kết Drive',
+                    style: TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+

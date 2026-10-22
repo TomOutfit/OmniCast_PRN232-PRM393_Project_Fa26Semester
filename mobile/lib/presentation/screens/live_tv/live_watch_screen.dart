@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:dio/dio.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
@@ -33,6 +34,7 @@ import '../../../data/models/program_model.dart';
 import '../../../data/services/live_socket_service.dart';
 import '../../widgets/omni_player.dart';
 import '../../widgets/social/comments_section.dart';
+import '../../widgets/social/live_donation_modal.dart';
 
 class LiveWatchScreen extends StatefulWidget {
   final String eventId;
@@ -56,6 +58,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   static const _accent = Color(0xFF00E5FF);
   static const _danger = Color(0xFFFF2A55);
   static const _warn = Color(0xFFF59E0B);
+  static const _gold = Color(0xFFF59E0B);
 
   final DioClient _dio = getIt<DioClient>();
 
@@ -81,6 +84,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   bool _hasJoinedLobby = false;
   String? _broadcasterAnnouncement;
   final List<StreamSubscription> _socketSubscriptions = [];
+
+  // Super Chat & Donate state
+  LiveDonationResult? _latestSuperChat;
+  Timer? _superChatTimer;
 
   @override
   void initState() {
@@ -210,6 +217,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         });
       }
     } catch (e) {
+      if (e is DioException && e.response?.statusCode == 404) {
+        _refreshTimer?.cancel();
+        _refreshTimer = null;
+      }
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -249,7 +260,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       );
     } catch (error) {
       if (mounted) {
-        _toast('Khong the gui cam xuc: $error', accent: _warn);
+        _toast('Không thể gửi cảm xúc: $error', accent: _warn);
       }
     }
   }
@@ -367,7 +378,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           children: [
             _buildPlayerSection(),
             _buildBroadcasterBanner(),
-            _buildLiveInfoCard(),
+            if (_latestSuperChat != null)
+              _buildSuperChatCard(_latestSuperChat!),
             _buildReactionsRow(),
             if (_otherLiveEvents.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -1081,15 +1093,221 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   Widget _buildReactionsRow() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: Row(
+      child: Column(
         children: [
-          _reactionPill('❤️', 'HEART'),
-          const SizedBox(width: 8),
-          _reactionPill('🔥', 'FIRE'),
-          const SizedBox(width: 8),
-          _reactionPill('👏', 'CLAP'),
-          const SizedBox(width: 8),
-          _reactionPill('😮', 'WOW'),
+          Row(
+            children: [
+              _reactionPill('❤️', 'HEART'),
+              const SizedBox(width: 8),
+              _reactionPill('🔥', 'FIRE'),
+              const SizedBox(width: 8),
+              _reactionPill('👏', 'CLAP'),
+              const SizedBox(width: 8),
+              _reactionPill('😮', 'WOW'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildDonateCtaBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonateCtaBar() {
+    return GestureDetector(
+      onTap: _openDonateModal,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E1504), Color(0xFF0F172A)],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _gold.withOpacity(0.6),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _gold.withOpacity(0.12),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_gold, const Color(0xFFEF4444)],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ỦNG HỘ STREAMER (SUPER CHAT)',
+                    style: TextStyle(
+                      color: _gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Gửi tin nhắn nổi bật & tiếp lửa cho phiên phát sóng',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _gold,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.flash_on_rounded, color: Colors.black, size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    'DONATE',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openDonateModal() {
+    final chName = _event?.channel?.name ?? 'Kênh phát sóng';
+    LiveDonationModal.show(
+      context,
+      channelName: chName,
+      eventTitle: _event?.title,
+      onDonated: (result) {
+        if (!mounted) return;
+        setState(() {
+          _latestSuperChat = result;
+        });
+
+        // Spawn reaction celebration particles
+        _spawnReactionParticles('FIRE');
+
+        // Broadcast to live chat
+        try {
+          LiveSocketService.instance.sendChat(
+            eventId: widget.eventId,
+            content: '🎉 [SUPER CHAT ${result.amount}đ] ${result.donorName}: ${result.message}',
+          );
+        } catch (_) {}
+
+        _toast('🎉 Cảm ơn bạn đã ủng hộ ${result.amount}đ!', accent: _gold);
+
+        // Auto hide super chat after 20 seconds
+        _superChatTimer?.cancel();
+        _superChatTimer = Timer(const Duration(seconds: 20), () {
+          if (mounted) setState(() => _latestSuperChat = null);
+        });
+      },
+    );
+  }
+
+  Widget _buildSuperChatCard(LiveDonationResult sc) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF261D08), Color(0xFF140D04)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _gold, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: _gold.withOpacity(0.25),
+            blurRadius: 14,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _gold,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  sc.tier.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  sc.donorName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '${sc.amount} ₫',
+                style: const TextStyle(
+                  color: _gold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'JetBrainsMono',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sc.message,
+            style: const TextStyle(
+              color: Color(0xFFF1F5F9),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );

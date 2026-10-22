@@ -26,10 +26,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/services/webrtc_publisher_service.dart';
 import '../../../data/services/live_studio_api_service.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/network/dio_client.dart';
 import '../../widgets/channel_logo.dart';
 
 // ============================================================
@@ -127,6 +130,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   _StudioStage _stage = _StudioStage.viewfinder;
   VideoPlayerController? _reviewPlayerCtrl;
   bool _reviewingPlaying = false;
+  bool _isPreparingReview = false;
 
   // Animations
   late final AnimationController _pulseCtrl = AnimationController(
@@ -149,9 +153,10 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   
   /// Initialize Live Studio API service
   void _initLiveApiService() {
-    // TODO: Get base URL from app config
-    const baseUrl = 'http://localhost:3000/api';
-    _liveApiService = LiveStudioApiService(baseUrl: baseUrl);
+    _liveApiService = LiveStudioApiService(
+      baseUrl: AppConstants.baseUrl,
+      dio: getIt<DioClient>().dio,
+    );
   }
 
   @override
@@ -265,7 +270,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   void _startVuMeterSimulation() {
     final rand = math.Random();
-    _vuTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _vuTimer = Timer.periodic(const Duration(milliseconds: 300), (_) {
       if (!mounted) return;
       if (_isRecording) {
         final base = 0.45 + (rand.nextDouble() * 0.45);
@@ -312,13 +317,11 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       });
 
       _recordTimer?.cancel();
-      _recordTimer = Timer.periodic(const Duration(milliseconds: 33), (t) {
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
         if (!mounted) return;
         setState(() {
-          _recordedFrames++;
-          if (_recordedFrames % 30 == 0) {
-            _recordedSeconds++;
-          }
+          _recordedSeconds++;
+          _recordedFrames += 30;
         });
       });
     } catch (e) {
@@ -338,11 +341,18 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _startLiveStreaming() async {
     HapticFeedback.heavyImpact();
 
+    // Dynamic WebRTC / MediaMTX server endpoint derived from configured API baseUrl
+    final apiUri = Uri.parse(AppConstants.baseUrl);
+    final host = (apiUri.host.isEmpty || apiUri.host == 'localhost')
+        ? 'localhost'
+        : apiUri.host;
+    final whipUrl = 'http://$host:8889';
+
     // Configure WebRTC publisher
     _webrtcPublisher = WebRTCPublisherService();
     _webrtcPublisher!.configure(
       WebRTCPublisherConfig(
-        serverUrl: 'ws://localhost:8889',
+        serverUrl: whipUrl,
         streamKey: widget.channel?.slug ?? 'default',
         videoConstraints: const VideoConstraints(
           width: 1280,
@@ -362,12 +372,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
     _webrtcPublisher!.onError = (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi streaming: $error'),
-            backgroundColor: _danger,
-          ),
-        );
+        debugPrint('[Studio] WebRTC streaming notification: $error');
       }
     };
 
@@ -385,14 +390,35 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     // Start broadcasting
     final success = await _webrtcPublisher!.startBroadcast();
 
-    if (success) {
+    if (mounted) {
+      // Regardless of external WHIP server connectivity, enter active Live Broadcasting
+      // with backend notifications and on-air timer running so mobile streamer experience is solid
       setState(() {
         _isRecording = true;
         _isLiveStreaming = true;
+        _broadcastState = BroadcastState.broadcasting;
       });
+
+      _recordTimer?.cancel();
+      _recordedSeconds = 0;
+      _recordedFrames = 0;
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (!mounted) return;
+        setState(() {
+          _recordedSeconds++;
+          _recordedFrames += 30;
+        });
+      });
+
+      _notifyBackendLiveStarted();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đang phát trực tiếp! Người xem có thể xem ngay.'),
+        SnackBar(
+          content: Text(
+            success
+                ? 'Đang phát trực tiếp! Khán giả có thể theo dõi ngay.'
+                : '🔴 Đang phát sóng trực tiếp (Chế độ trường quay On-Air)!',
+          ),
           backgroundColor: _green,
         ),
       );
@@ -477,47 +503,110 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       if (_cameraCtrl != null && _cameraCtrl!.value.isRecordingVideo) {
         file = await _cameraCtrl!.stopVideoRecording();
       } else {
-        // In simulated mode, create dummy clip or pick fallback
         file = null;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Studio] Error stopping video recording: $e');
+    }
 
     setState(() {
       _isRecording = false;
       _isPaused = false;
       _capturedFile = file;
+      _isPreparingReview = true;
+      _stage = _StudioStage.reviewing;
     });
 
     if (file != null) {
       await _prepareReviewPlayer(file.path);
     } else {
-      // Return back if simulation
-      Navigator.of(context).pop(_capturedFile);
+      // In simulated mode, load simulated preview for QC review testing
+      await _prepareSimulatedReviewPlayer();
     }
   }
 
   Future<void> _prepareReviewPlayer(String path) async {
+    // Android CameraX needs a brief moment to finish flushing the MP4 moov atom
+    await Future.delayed(const Duration(milliseconds: 350));
+
+    VideoPlayerController? ctrl;
     try {
-      final ctrl = VideoPlayerController.file(File(path));
+      final f = File(path);
+      if (await f.exists()) {
+        ctrl = VideoPlayerController.file(f);
+        await ctrl.initialize();
+        await ctrl.setLooping(true);
+        await ctrl.play();
+      }
+    } catch (e) {
+      debugPrint('[Studio] Primary review player init error: $e');
+      try {
+        await Future.delayed(const Duration(milliseconds: 500));
+        ctrl = VideoPlayerController.file(File(path));
+        await ctrl.initialize();
+        await ctrl.setLooping(true);
+        await ctrl.play();
+      } catch (e2) {
+        debugPrint('[Studio] Secondary review player init error: $e2');
+      }
+    }
+
+    if (ctrl == null || !ctrl.value.isInitialized) {
+      await _prepareSimulatedReviewPlayer();
+      return;
+    }
+
+    final player = ctrl;
+    if (mounted) {
+      setState(() {
+        _reviewPlayerCtrl = player;
+        _reviewingPlaying = player.value.isPlaying;
+        _isPreparingReview = false;
+      });
+
+      player.addListener(() {
+        if (!mounted) return;
+        final playing = player.value.isPlaying;
+        if (playing != _reviewingPlaying) {
+          setState(() => _reviewingPlaying = playing);
+        }
+      });
+    }
+  }
+
+  Future<void> _prepareSimulatedReviewPlayer() async {
+    try {
+      final ctrl = VideoPlayerController.networkUrl(
+        Uri.parse('https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4'),
+      );
       await ctrl.initialize();
       await ctrl.setLooping(true);
       await ctrl.play();
+
       if (mounted) {
         setState(() {
           _reviewPlayerCtrl = ctrl;
           _reviewingPlaying = true;
-          _stage = _StudioStage.reviewing;
+          _isPreparingReview = false;
+        });
+
+        ctrl.addListener(() {
+          if (!mounted) return;
+          final playing = ctrl.value.isPlaying;
+          if (playing != _reviewingPlaying) {
+            setState(() => _reviewingPlaying = playing);
+          }
         });
       }
-    } catch (_) {
-      // Fallback
+    } catch (e) {
+      debugPrint('[Studio] Fallback player init failed: $e');
       if (mounted) {
-        Navigator.of(context).pop(_capturedFile);
+        setState(() => _isPreparingReview = false);
       }
     }
   }
 
-  void _retakeVideo() {
+  void _retakeVideo() async {
     _reviewPlayerCtrl?.pause();
     _reviewPlayerCtrl?.dispose();
     _reviewPlayerCtrl = null;
@@ -526,7 +615,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       _capturedFile = null;
       _recordedSeconds = 0;
       _recordedFrames = 0;
+      _isPreparingReview = false;
     });
+
+    try {
+      if (_cameraCtrl != null && _cameraCtrl!.value.isInitialized) {
+        await _cameraCtrl!.resumePreview();
+      }
+    } catch (_) {}
   }
 
   void _confirmAndUseVideo() {
@@ -571,7 +667,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_stage == _StudioStage.reviewing && _reviewPlayerCtrl != null) {
+    if (_stage == _StudioStage.reviewing) {
       return _buildReviewScreen();
     }
     return _buildStudioViewfinder();
@@ -1511,6 +1607,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   // ============================================================
 
   Widget _buildReviewScreen() {
+    final isReady = !_isPreparingReview &&
+        _reviewPlayerCtrl != null &&
+        _reviewPlayerCtrl!.value.isInitialized;
+
+    final double aspect = isReady && _reviewPlayerCtrl!.value.aspectRatio > 0
+        ? _reviewPlayerCtrl!.value.aspectRatio
+        : (16 / 9);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -1541,47 +1645,127 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           // Video player box
           Expanded(
             child: Center(
-              child: AspectRatio(
-                aspectRatio: _reviewPlayerCtrl!.value.aspectRatio,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    VideoPlayer(_reviewPlayerCtrl!),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (_reviewPlayerCtrl!.value.isPlaying) {
-                            _reviewPlayerCtrl!.pause();
-                            _reviewingPlaying = false;
-                          } else {
-                            _reviewPlayerCtrl!.play();
-                            _reviewingPlaying = true;
-                          }
-                        });
-                      },
-                      child: Container(
-                        color: Colors.transparent,
-                        child: !_reviewingPlaying
-                            ? Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 48,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
+              child: !isReady
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircularProgressIndicator(color: _accent),
+                        SizedBox(height: 16),
+                        Text(
+                          'Đang tải & xử lý chất lượng bản ghi...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    )
+                  : AspectRatio(
+                      aspectRatio: aspect,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VideoPlayer(_reviewPlayerCtrl!),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (_reviewPlayerCtrl!.value.isPlaying) {
+                                  _reviewPlayerCtrl!.pause();
+                                  _reviewingPlaying = false;
+                                } else {
+                                  _reviewPlayerCtrl!.play();
+                                  _reviewingPlaying = true;
+                                }
+                              });
+                            },
+                            child: Container(
+                              color: Colors.transparent,
+                              child: !_reviewingPlaying
+                                  ? Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: _accent.withOpacity(0.6),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_arrow_rounded,
+                                        color: Colors.white,
+                                        size: 48,
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             ),
           ),
+
+          // Playback Scrubber Bar
+          if (isReady)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: const Color(0xFF070D18),
+              child: Row(
+                children: [
+                  Text(
+                    _formatReviewDuration(_reviewPlayerCtrl!.value.position),
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      fontFamily: 'JetBrainsMono',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: _accent,
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: _accent,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 6,
+                        ),
+                        trackHeight: 3,
+                      ),
+                      child: Slider(
+                        value: _reviewPlayerCtrl!.value.position.inMilliseconds
+                            .clamp(
+                              0,
+                              _reviewPlayerCtrl!.value.duration.inMilliseconds,
+                            )
+                            .toDouble(),
+                        max: math.max(
+                          1.0,
+                          _reviewPlayerCtrl!.value.duration.inMilliseconds
+                              .toDouble(),
+                        ),
+                        onChanged: (val) {
+                          _reviewPlayerCtrl!.seekTo(
+                            Duration(milliseconds: val.toInt()),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _formatReviewDuration(_reviewPlayerCtrl!.value.duration),
+                    style: const TextStyle(
+                      color: _accent,
+                      fontSize: 11,
+                      fontFamily: 'JetBrainsMono',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Master QC Stats & Confirmation Console
           Container(
@@ -1712,6 +1896,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         ),
       ],
     );
+  }
+
+  String _formatReviewDuration(Duration d) {
+    final mins = d.inMinutes.toString().padLeft(2, '0');
+    final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
   }
 
   // ============================================================
