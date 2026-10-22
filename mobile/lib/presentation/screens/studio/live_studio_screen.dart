@@ -352,6 +352,190 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     }
   }
 
+  // ─── Google Drive Cloud Video Import ───────────────────────
+  String? _extractGoogleDriveId(String url) {
+    if (url.isEmpty) return null;
+    final r1 = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)', caseSensitive: false);
+    final m1 = r1.firstMatch(url);
+    if (m1?.group(1) != null) return m1!.group(1);
+    final r2 = RegExp(r'[?&]id=([a-zA-Z0-9_-]+)', caseSensitive: false);
+    final m2 = r2.firstMatch(url);
+    return m2?.group(1);
+  }
+
+  Future<void> _showGoogleDriveImportDialog() async {
+    if (_selected == null) {
+      _toast('Vui lòng chọn kênh trước.');
+      return;
+    }
+    final urlCtrl = TextEditingController();
+    final titleCtrl = TextEditingController(
+      text: 'Video Google Drive - ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          final rawUrl = urlCtrl.text.trim();
+          final gDriveId = _extractGoogleDriveId(rawUrl);
+          final isValid = gDriveId != null && rawUrl.isNotEmpty;
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF0F172A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0x3300E5FF)),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.add_to_drive_rounded, color: Color(0xFFF59E0B), size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'NHẬP TỪ GOOGLE DRIVE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Dán liên kết chia sẻ từ Google Drive. Trình phát OmniPlayer sẽ tự động phân giải luồng stream qua cơ chế Preview để tránh nghẽn băng thông.',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('LIÊN KẾT GOOGLE DRIVE *',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: urlCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    onChanged: (_) => setDlgState(() {}),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFF070B14),
+                      hintText: 'https://drive.google.com/file/d/.../view',
+                      hintStyle: const TextStyle(color: Color(0xFF475569)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+                      ),
+                    ),
+                  ),
+                  if (isValid) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 16),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Đã nhận diện File ID: $gDriveId',
+                              style: const TextStyle(
+                                color: Color(0xFF22C55E),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'JetBrainsMono',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  const Text('TIÊU ĐỀ NỘI DUNG *',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: titleCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFF070B14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('HỦY', style: TextStyle(color: Color(0xFF94A3B8))),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00E5FF),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isValid && titleCtrl.text.trim().isNotEmpty
+                    ? () => Navigator.of(ctx).pop(true)
+                    : null,
+                icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+                label: const Text('LƯU VÀO KHO', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirmed == true) {
+      final rawUrl = urlCtrl.text.trim();
+      final title = titleCtrl.text.trim();
+      _saveGoogleDriveToLibrary(rawUrl, title, 1800);
+    }
+  }
+
+  Future<void> _saveGoogleDriveToLibrary(String rawUrl, String title, int duration) async {
+    try {
+      _toast('Đang lưu video Google Drive vào kho...', accent: _accent);
+      final fileId = _extractGoogleDriveId(rawUrl) ?? '';
+      final directUrl = 'https://drive.google.com/file/d/$fileId/preview';
+
+      await _repo.addToLibrary(
+        channelId: _selected!.id,
+        title: title,
+        videoUrl: directUrl,
+        duration: duration,
+        extraTags: ['google-drive', 'cloud-storage', 'prm393'],
+        sourceAttribution: 'Google Drive Cloud Storage',
+      );
+
+      _toast('Đã lưu video Google Drive vào kho Studio!', accent: _accent);
+      _loadRecordings();
+    } catch (e) {
+      _toast('Không thể lưu video Google Drive: $e', accent: _danger);
+    }
+  }
+
   void _onPickedFile(XFile file, {required bool fromCamera}) {
     setState(() {
       _pickedFile = file;
@@ -1409,6 +1593,16 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                   subtitle: 'Chọn clip có sẵn',
                   accent: _accent,
                   onTap: _pickFromGallery,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _captureActionButton(
+                  icon: Icons.add_to_drive_rounded,
+                  label: 'GOOGLE DRIVE',
+                  subtitle: 'Nhập link đám mây',
+                  accent: _warn,
+                  onTap: _showGoogleDriveImportDialog,
                 ),
               ),
             ],

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/brand_logo.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../navigation/app_router.dart';
+import '../../widgets/payment/subscription_payment_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -214,6 +215,10 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // ── VIP & WALLET PAYMENT CARD ───────────────────────
+                  _buildVipSubscriptionCard(context),
 
                   const SizedBox(height: 20),
 
@@ -685,5 +690,152 @@ class ProfileScreen extends StatelessWidget {
       default:
         return 'Khách Vãng Lai (Role 0)';
     }
+  }
+
+  Widget _buildVipSubscriptionCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1F1604), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withOpacity(0.5),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withOpacity(0.12),
+            blurRadius: 14,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: Color(0xFFF59E0B),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'GÓI VIP 4K & NẠP TIỀN VÍ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '35.000 ₫/THÁNG',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Thanh toán qua VietQR (MBBank), Ví MoMo hoặc Google Play để mở khóa toàn bộ kênh bản quyền 4K HEVC & hỗ trợ các streamer trực tiếp.',
+            style: TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 6,
+                  ),
+                  onPressed: () {
+                    SubscriptionPaymentSheet.show(
+                      context,
+                      type: PaymentType.vipSubscription,
+                    );
+                  },
+                  icon: const Icon(Icons.flash_on_rounded, size: 16),
+                  label: const Text(
+                    'NÂNG CẤP VIP',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF00E5FF),
+                    side: const BorderSide(color: Color(0xFF00E5FF)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    SubscriptionPaymentSheet.show(
+                      context,
+                      type: PaymentType.walletDeposit,
+                    );
+                  },
+                  icon: const Icon(Icons.account_balance_wallet_rounded, size: 16),
+                  label: const Text(
+                    'NẠP TIỀN VÍ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
