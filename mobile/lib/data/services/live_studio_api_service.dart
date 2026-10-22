@@ -202,7 +202,7 @@ class LiveStudioApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/programs/studio/live/mobile/start',
+        '/v1/programs/studio/live/mobile/start',
         data: {
           'channelSlug': channelSlug,
           'title': title,
@@ -233,7 +233,7 @@ class LiveStudioApiService {
   }) async {
     try {
       final response = await _dio.post(
-        '/programs/studio/live/mobile/stop',
+        '/v1/programs/studio/live/mobile/stop',
         data: {
           'channelSlug': channelSlug,
           'eventId': eventId,
@@ -253,7 +253,7 @@ class LiveStudioApiService {
    */
   Future<List<ActiveLiveStream>> getActiveLiveStreams() async {
     try {
-      final response = await _dio.get('/programs/studio/live/active');
+      final response = await _dio.get('/v1/programs/studio/live/active');
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -277,7 +277,7 @@ class LiveStudioApiService {
   Future<StreamUrlResponse?> getStreamUrl(String channelSlug) async {
     try {
       final response = await _dio.get(
-        '/programs/studio/stream-url/$channelSlug',
+        '/v1/programs/studio/stream-url/$channelSlug',
       );
 
       if (response.statusCode == 200) {
