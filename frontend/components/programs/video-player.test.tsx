@@ -84,7 +84,7 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.google.com/file/d/${gDriveId}/preview`;
+    return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
   }
   return url;
 }
@@ -159,7 +159,7 @@ describe('detectType', () => {
   it('returns iframe for Google Drive URLs', () => {
     expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('iframe');
     expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('iframe');
-    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.google.com/file/d/1B2C3D4E5F6G/preview');
+    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.google.com/file/d/1B2C3D4E5F6G/preview?autoplay=1');
   });
 
   it('defaults to hls for unknown URL patterns', () => {
