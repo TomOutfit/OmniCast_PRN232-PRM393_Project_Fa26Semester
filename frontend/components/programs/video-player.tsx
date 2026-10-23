@@ -448,11 +448,17 @@ export function VideoPlayer({
   // iframe embed
   if (resolvedType === 'iframe') {
     const embedSrc = getEmbedUrl(resolvedSrc);
+    const isDrive = embedSrc.includes('drive.google.com');
     return (
       <div className={cn('player-container relative w-full aspect-video bg-black overflow-hidden', className)}>
         <iframe
           src={embedSrc}
-          className="w-full h-full border-0"
+          className={cn(
+            'border-0',
+            isDrive
+              ? 'absolute w-full h-[calc(100%+60px)] -top-[56px] left-0 pointer-events-auto'
+              : 'w-full h-full'
+          )}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           title="Live stream"
@@ -696,7 +702,7 @@ export function VideoPlayer({
 // ── Helpers ────────────────────────────────────────────────────────────────────
 export function extractGoogleDriveFileId(url: string): string | null {
   if (!url) return null;
-  const fileMatch = url.match(/(?:\/file\/d\/|\/file\/u\/\d+\/d\/|\/d\/)([a-zA-Z0-9_-]+)/i);
+  const fileMatch = url.match(/(?:drive|docs)\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:d\/|open\?id=)([a-zA-Z0-9_-]+)/i);
   if (fileMatch && fileMatch[1]) return fileMatch[1];
   const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
   if (idMatch && idMatch[1]) return idMatch[1];
@@ -709,7 +715,7 @@ function getEmbedUrl(url: string): string {
     /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
   );
   if (ytMatch && ytMatch[1]) {
-    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&enablejsapi=1`;
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0`;
   }
   const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
   if (twitchMatch && twitchMatch[1]) {
@@ -721,7 +727,7 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.google.com/file/d/${gDriveId}/preview`;
+    return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
   }
   return url;
 }

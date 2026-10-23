@@ -531,7 +531,15 @@ export default function WebLiveStudioPage() {
     // Google Drive share / view link -> preview embed link (bypasses download quota & virus scan blocks)
     const gDriveId = extractGoogleDriveFileId(url);
     if (gDriveId) {
-      return `https://drive.google.com/file/d/${gDriveId}/preview`;
+      return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
+    }
+
+    // YouTube share / watch link -> embed link with autoplay=1 & mute=1
+    const ytMatch = url.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
+    );
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&playsinline=1&rel=0`;
     }
 
     // Dropbox share link -> direct media stream
@@ -3089,13 +3097,28 @@ export default function WebLiveStudioPage() {
             </div>
 
             {/* Modal Video Player */}
-            <div className="relative aspect-video bg-black flex items-center justify-center">
+            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
               {extractGoogleDriveFileId(previewingVideo.url) || previewingVideo.url.includes('drive.google.com') ? (
                 <iframe
                   src={
                     previewingVideo.url.includes('/preview')
-                      ? previewingVideo.url
-                      : `https://drive.google.com/file/d/${extractGoogleDriveFileId(previewingVideo.url)}/preview`
+                      ? (previewingVideo.url.includes('autoplay=1')
+                          ? previewingVideo.url
+                          : `${previewingVideo.url}${previewingVideo.url.includes('?') ? '&' : '?'}autoplay=1`)
+                      : `https://drive.google.com/file/d/${extractGoogleDriveFileId(previewingVideo.url)}/preview?autoplay=1`
+                  }
+                  className="absolute w-full h-[calc(100%+60px)] -top-[56px] left-0 border-0"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                />
+              ) : previewingVideo.url.includes('youtube.com') || previewingVideo.url.includes('youtu.be') ? (
+                <iframe
+                  src={
+                    previewingVideo.url.includes('/embed/')
+                      ? (previewingVideo.url.includes('autoplay=1')
+                          ? previewingVideo.url
+                          : `${previewingVideo.url}${previewingVideo.url.includes('?') ? '&' : '?'}autoplay=1&mute=1`)
+                      : `https://www.youtube-nocookie.com/embed/${previewingVideo.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i)?.[1] ?? ''}?autoplay=1&mute=1&playsinline=1`
                   }
                   className="w-full h-full border-0"
                   allow="autoplay; encrypted-media; fullscreen"
