@@ -41,7 +41,7 @@ bool _isYouTubeEmbed(String url) {
 String? _extractGoogleDriveFileId(String url) {
   if (url.isEmpty) return null;
   final regExp1 = RegExp(
-    r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)',
+    r'(?:drive|docs)\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:d\/|open\?id=)([a-zA-Z0-9_-]+)',
     caseSensitive: false,
   );
   final match1 = regExp1.firstMatch(url);
@@ -54,12 +54,7 @@ String? _extractGoogleDriveFileId(String url) {
   final match2 = regExp2.firstMatch(url);
   if (match2?.group(1) != null) return match2!.group(1);
 
-  final regExp3 = RegExp(
-    r'docs\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)',
-    caseSensitive: false,
-  );
-  final match3 = regExp3.firstMatch(url);
-  return match3?.group(1);
+  return null;
 }
 
 /// Returns true when the URL points to Google Drive.
@@ -866,10 +861,8 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   @override
   void initState() {
     super.initState();
-    final videoId = _extractYouTubeVideoId(widget.url);
-    final embedSrc = videoId != null
-        ? 'https://www.youtube.com/embed/$videoId?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1'
-        : widget.url;
+    final videoId = _extractYouTubeVideoId(widget.url) ?? '';
+    final embedSrc = 'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1';
 
     final html = '''
 <!DOCTYPE html>
@@ -879,15 +872,41 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { width: 100%; height: 100%; background: #000; overflow: hidden; }
-    iframe { width: 100%; height: 100%; border: none; }
+    #player { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <iframe 
-    src="$embedSrc" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-    allowfullscreen>
-  </iframe>
+  <div id="player"></div>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    var player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        width: '100%',
+        height: '100%',
+        videoId: '$videoId',
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          playsinline: 1,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+          origin: 'https://www.youtube-nocookie.com'
+        },
+        events: {
+          onReady: function(e) {
+            try {
+              e.target.playVideo();
+              setTimeout(function() {
+                try { e.target.unMute(); } catch(_) {}
+              }, 500);
+            } catch(_) {}
+          }
+        }
+      });
+    }
+  </script>
 </body>
 </html>
 ''';
@@ -895,9 +914,22 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
-      ..setUserAgent('Mozilla/5.0 (Linux; Android 11; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36')
+      ..setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (request) {
+            final lower = request.url.toLowerCase();
+            // Prevent Google login or consent screen redirects
+            if (lower.contains('accounts.google.com') ||
+                lower.contains('accounts.youtube.com') ||
+                lower.contains('consent.youtube.com') ||
+                lower.contains('myaccount.google.com')) {
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onPageFinished: (_) {
             if (mounted) setState(() => _loading = false);
           },
@@ -909,7 +941,7 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
           },
         ),
       )
-      ..loadHtmlString(html, baseUrl: 'https://www.youtube.com');
+      ..loadHtmlString(html, baseUrl: 'https://www.youtube-nocookie.com');
   }
 
   @override
@@ -1008,12 +1040,25 @@ class _GoogleDriveEmbedState extends State<_GoogleDriveEmbed> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
       ..setUserAgent(
-        'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       )
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (request) {
+            final lower = request.url.toLowerCase();
+            // Prevent Google Drive from redirecting to Google Sign-In or Accounts
+            if (lower.contains('accounts.google.com') ||
+                lower.contains('accounts.youtube.com') ||
+                lower.contains('myaccount.google.com')) {
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onPageFinished: (_) {
-            if (mounted) setState(() => _loading = false);
+            _injectDirectPlayScript();
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) setState(() => _loading = false);
+            });
           },
           onWebResourceError: (error) {
             // Only trigger fatal state if main frame completely failed to load
@@ -1026,6 +1071,76 @@ class _GoogleDriveEmbedState extends State<_GoogleDriveEmbed> {
         ),
       )
       ..loadRequest(Uri.parse(previewSrc));
+  }
+
+  void _injectDirectPlayScript() {
+    // 1. Completely hide Google Drive top toolstrip, sign-in button, download button, and popout
+    // 2. Automatically play the HTML5 video or click the play button
+    const script = '''
+      (function() {
+        try {
+          const style = document.createElement('style');
+          style.innerHTML = `
+            .drive-viewer-toolstrip,
+            .drive-viewer-header,
+            .ndfHFb-c4YZDc-Wrql6b,
+            .ndfHFb-c4YZDc-b8rEjd,
+            .ndfHFb-c4YZDc-to915-LgbsSe,
+            [role="banner"],
+            a[href*="accounts.google.com"],
+            .drive-viewer-toolstrip-buttons {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              height: 0 !important;
+              pointer-events: none !important;
+            }
+            body, html {
+              background-color: #000000 !important;
+              overflow: hidden !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
+              height: 100% !important;
+            }
+          `;
+          document.head.appendChild(style);
+
+          function attemptPlay() {
+            const video = document.querySelector('video');
+            if (video) {
+              video.muted = false;
+              const p = video.play();
+              if (p !== undefined) {
+                p.catch(function() {
+                  video.muted = true;
+                  video.play().catch(function() {});
+                });
+              }
+              return true;
+            }
+            const playBtn = document.querySelector(
+              '[aria-label*="Play" i], [aria-label*="Phát" i], .ndfHFb-c4YZDc-LgbsSe, [role="button"][data-tooltip*="Play" i], .flip-entry'
+            );
+            if (playBtn) {
+              playBtn.click();
+              return true;
+            }
+            return false;
+          }
+
+          attemptPlay();
+          let count = 0;
+          const interval = setInterval(function() {
+            count++;
+            if (attemptPlay() || count > 20) {
+              clearInterval(interval);
+            }
+          }, 350);
+        } catch(e) {}
+      })();
+    ''';
+    _controller.runJavaScript(script);
   }
 
   @override

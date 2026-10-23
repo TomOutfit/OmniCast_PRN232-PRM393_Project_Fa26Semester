@@ -355,7 +355,10 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   // ─── Google Drive Cloud Video Import ───────────────────────
   String? _extractGoogleDriveId(String url) {
     if (url.isEmpty) return null;
-    final r1 = RegExp(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)', caseSensitive: false);
+    final r1 = RegExp(
+      r'(?:drive|docs)\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:d\/|open\?id=)([a-zA-Z0-9_-]+)',
+      caseSensitive: false,
+    );
     final m1 = r1.firstMatch(url);
     if (m1?.group(1) != null) return m1!.group(1);
     final r2 = RegExp(r'[?&]id=([a-zA-Z0-9_-]+)', caseSensitive: false);
