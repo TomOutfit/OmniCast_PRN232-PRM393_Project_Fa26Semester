@@ -19,6 +19,9 @@ export interface LiveEventInteractionSnapshot {
     slug: string;
     name: string;
     logoUrl?: string | null;
+    category?: string | null;
+    subcategory?: string | null;
+    bannerColor?: string | null;
   } | null;
   comments: LiveComment[];
   reactions: Record<string, number>;
