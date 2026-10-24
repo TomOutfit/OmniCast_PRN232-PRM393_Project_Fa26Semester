@@ -57,16 +57,6 @@ String? _extractGoogleDriveFileId(String url) {
   return null;
 }
 
-/// Returns true when the URL points to Google Drive.
-/// Google Drive download links frequently fail with HTTP 403 / bandwidth quota
-/// exceeded on direct MP4 fetch. Routing to a preview embed WebView utilizes
-/// Google's internal streaming engine without bandwidth/virus check limits.
-bool _isGoogleDriveUrl(String url) {
-  if (url.isEmpty) return false;
-  return _extractGoogleDriveFileId(url) != null ||
-      url.contains('drive.google.com') ||
-      url.contains('docs.google.com/file');
-}
 
 class OmniPlayer extends StatefulWidget {
   final String url;
@@ -122,9 +112,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
   @override
   void initState() {
     super.initState();
-    // YouTube & Google Drive embeds are handled exclusively by WebViews.
-    // Do NOT initialize native VideoPlayerController on these URLs.
-    if (_isYouTubeEmbed(widget.url) || _isGoogleDriveUrl(widget.url)) {
+    // YouTube embeds are handled by WebView.
+    // Google Drive videos stream directly in native player with live fallback.
+    if (_isYouTubeEmbed(widget.url)) {
       return;
     }
     if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
@@ -139,7 +129,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       _disposeController();
       _hasError = false;
       _usedFallback = false;
-      if (_isYouTubeEmbed(widget.url) || _isGoogleDriveUrl(widget.url)) {
+      if (_isYouTubeEmbed(widget.url)) {
         return;
       }
       if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
@@ -160,6 +150,13 @@ class _OmniPlayerState extends State<OmniPlayer> {
   static String _resolveAbsoluteUrl(String url) {
     if (url.isEmpty) return _kFallbackStream;
     final lower = url.toLowerCase();
+
+    // Google Drive direct media stream resolution
+    final gDriveId = _extractGoogleDriveFileId(url);
+    if (gDriveId != null) {
+      return 'https://drive.usercontent.google.com/download?id=$gDriveId&export=download&confirm=t';
+    }
+
     // Browser memory blob URLs cannot be decoded by native video_player
     if (lower.startsWith('blob:')) {
       return _kFallbackStream;
@@ -460,15 +457,6 @@ class _OmniPlayerState extends State<OmniPlayer> {
     // 2. YouTube embed — render in WebView (free, no native YouTube SDK)
     if (_isYouTubeEmbed(widget.url)) {
       return _YouTubeEmbed(
-        url: widget.url,
-        posterUrl: widget.posterUrl,
-        channelName: widget.channelName,
-      );
-    }
-
-    // 2b. Google Drive embed — render in preview WebView to bypass bandwidth quotas
-    if (_isGoogleDriveUrl(widget.url)) {
-      return _GoogleDriveEmbed(
         url: widget.url,
         posterUrl: widget.posterUrl,
         channelName: widget.channelName,
@@ -1004,223 +992,6 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   }
 }
 
-// ============================================================
-// Google Drive Embed Widget (WebView based)
-// ============================================================
-// Google Drive download links frequently fail with HTTP 403 or quota limits
-// on direct video_player fetch. Rendering the official Google Drive Preview
-// inside a WebView uses Google's CDN streaming engine without download quotas.
-class _GoogleDriveEmbed extends StatefulWidget {
-  final String url;
-  final String? posterUrl;
-  final String? channelName;
-
-  const _GoogleDriveEmbed({
-    required this.url,
-    this.posterUrl,
-    this.channelName,
-  });
-
-  @override
-  State<_GoogleDriveEmbed> createState() => _GoogleDriveEmbedState();
 }
 
-class _GoogleDriveEmbedState extends State<_GoogleDriveEmbed> {
-  late final WebViewController _controller;
-  bool _loading = true;
-  bool _failed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final fileId = _extractGoogleDriveFileId(widget.url) ?? '';
-    final previewSrc = 'https://drive.google.com/file/d/$fileId/preview';
-
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black)
-      ..setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      )
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) {
-            final lower = request.url.toLowerCase();
-            // Prevent Google Drive from redirecting to Google Sign-In or Accounts
-            if (lower.contains('accounts.google.com') ||
-                lower.contains('accounts.youtube.com') ||
-                lower.contains('myaccount.google.com')) {
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-          onPageFinished: (_) {
-            _injectDirectPlayScript();
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) setState(() => _loading = false);
-            });
-          },
-          onWebResourceError: (error) {
-            // Only trigger fatal state if main frame completely failed to load
-            if (error.isForMainFrame == true &&
-                error.errorCode != -1 &&
-                error.description.isNotEmpty) {
-              if (mounted) setState(() => _failed = true);
-            }
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(previewSrc));
-  }
-
-  void _injectDirectPlayScript() {
-    // 1. Completely hide Google Drive top toolstrip, sign-in button, download button, and popout
-    // 2. Automatically play the HTML5 video or click the play button
-    const script = '''
-      (function() {
-        try {
-          const style = document.createElement('style');
-          style.innerHTML = `
-            .drive-viewer-toolstrip,
-            .drive-viewer-header,
-            .ndfHFb-c4YZDc-Wrql6b,
-            .ndfHFb-c4YZDc-b8rEjd,
-            .ndfHFb-c4YZDc-to915-LgbsSe,
-            [role="banner"],
-            a[href*="accounts.google.com"],
-            .drive-viewer-toolstrip-buttons {
-              display: none !important;
-              visibility: hidden !important;
-              opacity: 0 !important;
-              height: 0 !important;
-              pointer-events: none !important;
-            }
-            body, html {
-              background-color: #000000 !important;
-              overflow: hidden !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100% !important;
-              height: 100% !important;
-            }
-          `;
-          document.head.appendChild(style);
-
-          function attemptPlay() {
-            const video = document.querySelector('video');
-            if (video) {
-              video.muted = false;
-              const p = video.play();
-              if (p !== undefined) {
-                p.catch(function() {
-                  video.muted = true;
-                  video.play().catch(function() {});
-                });
-              }
-              return true;
-            }
-            const playBtn = document.querySelector(
-              '[aria-label*="Play" i], [aria-label*="Phát" i], .ndfHFb-c4YZDc-LgbsSe, [role="button"][data-tooltip*="Play" i], .flip-entry'
-            );
-            if (playBtn) {
-              playBtn.click();
-              return true;
-            }
-            return false;
-          }
-
-          attemptPlay();
-          let count = 0;
-          const interval = setInterval(function() {
-            count++;
-            if (attemptPlay() || count > 20) {
-              clearInterval(interval);
-            }
-          }, 350);
-        } catch(e) {}
-      })();
-    ''';
-    _controller.runJavaScript(script);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (widget.posterUrl != null && widget.posterUrl!.isNotEmpty)
-            Image.network(
-              widget.posterUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: Colors.black),
-            )
-          else
-            Container(color: const Color(0xFF070B14)),
-          WebViewWidget(controller: _controller),
-          if (_loading)
-            Container(
-              color: Colors.black.withValues(alpha: 0.55),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Color(0xFF00E5FF)),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Đang kết nối Google Drive...',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      '⚡ Bypassing Bandwidth Quota',
-                      style: TextStyle(
-                        color: Color(0xFF00E5FF),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (_failed)
-            Container(
-              color: Colors.black.withValues(alpha: 0.8),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.cloud_off_rounded,
-                      color: Color(0xFFEF4444), size: 36),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.channelName ?? 'Không tải được video Google Drive',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Kiểm tra quyền truy cập công khai của liên kết Drive',
-                    style: TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
 
