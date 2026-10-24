@@ -3099,17 +3099,12 @@ export default function WebLiveStudioPage() {
             {/* Modal Video Player */}
             <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
               {extractGoogleDriveFileId(previewingVideo.url) || previewingVideo.url.includes('drive.google.com') ? (
-                <iframe
-                  src={
-                    previewingVideo.url.includes('/preview')
-                      ? (previewingVideo.url.includes('autoplay=1')
-                          ? previewingVideo.url
-                          : `${previewingVideo.url}${previewingVideo.url.includes('?') ? '&' : '?'}autoplay=1`)
-                      : `https://drive.google.com/file/d/${extractGoogleDriveFileId(previewingVideo.url)}/preview?autoplay=1`
-                  }
-                  className="absolute w-full h-[calc(100%+60px)] -top-[56px] left-0 border-0"
-                  allow="autoplay; encrypted-media; fullscreen"
-                  allowFullScreen
+                <video
+                  src={`https://drive.usercontent.google.com/download?id=${extractGoogleDriveFileId(previewingVideo.url)}&export=download&confirm=t`}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain"
                 />
               ) : previewingVideo.url.includes('youtube.com') || previewingVideo.url.includes('youtu.be') ? (
                 <iframe
