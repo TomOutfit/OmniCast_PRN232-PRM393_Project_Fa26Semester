@@ -417,4 +417,28 @@
   .tilt-elevate-30 {
     transform: translateZ(30px);
   }
+
+  /* Floating Reaction Particles */
+  @keyframes floatBurst {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(0.6);
+    }
+    15% {
+      opacity: 1;
+      transform: translateY(-20px) scale(1.15);
+    }
+    50% {
+      opacity: 0.95;
+      transform: translateY(-80px) scale(1.3) rotate(-8deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-180px) scale(1.5) rotate(12deg);
+    }
+  }
+
+  .animate-float-burst {
+    animation: floatBurst 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 }
