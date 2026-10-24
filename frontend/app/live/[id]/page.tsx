@@ -408,6 +408,8 @@ export default function LiveWatchPage() {
           title: pc.title,
           streamUrl: pc.streamUrl,
           description: pc.description || prev.description,
+          startedAt: new Date().toISOString(),
+          status: 'LIVE',
         };
       });
       toast.info(`Chương trình đã chuyển sang: "${pc.title}"`, {
@@ -433,6 +435,9 @@ export default function LiveWatchPage() {
           title: recording.title,
           streamUrl: recording.videoUrl || prev.streamUrl,
           description: recording.description || prev.description,
+          startedAt: new Date().toISOString(),
+          status: 'LIVE',
+          duration: recording.duration || prev.duration,
         };
       });
       toast.success('Đã chuyển phát tiếp thành công!', {
@@ -450,9 +455,13 @@ export default function LiveWatchPage() {
     if (!snapshot?.startedAt) return 0;
     const startTime = new Date(snapshot.startedAt).getTime();
     if (isNaN(startTime)) return 0;
-    return Math.max(0, Math.floor((Date.now() - startTime) / 1000));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshot?.eventId, snapshot?.startedAt]);
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+    const dur = Number(snapshot.duration) || 0;
+    if (dur > 0) {
+      return elapsedSeconds % dur;
+    }
+    return Math.min(elapsedSeconds, 180);
+  }, [snapshot?.eventId, snapshot?.startedAt, snapshot?.duration]);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {

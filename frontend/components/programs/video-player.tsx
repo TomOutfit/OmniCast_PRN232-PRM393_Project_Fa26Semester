@@ -238,14 +238,22 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video || initialSeekAppliedRef.current || initialSeekSecondsRef.current <= 0) return;
     try {
-      if (video.duration && initialSeekSecondsRef.current < video.duration) {
-        video.currentTime = initialSeekSecondsRef.current;
+      const dur = video.duration;
+      if (dur && Number.isFinite(dur) && dur > 0) {
+        const rawSeek = initialSeekSecondsRef.current;
+        const targetSeek = Math.max(0, Math.min(rawSeek % Math.floor(dur), Math.floor(dur) - 1));
+        video.currentTime = targetSeek;
         initialSeekAppliedRef.current = true;
         setSeekDone(true);
       } else if (video.seekable && video.seekable.length > 0) {
-        video.currentTime = initialSeekSecondsRef.current;
-        initialSeekAppliedRef.current = true;
-        setSeekDone(true);
+        const end = video.seekable.end(video.seekable.length - 1);
+        if (end > 0) {
+          const rawSeek = initialSeekSecondsRef.current;
+          const targetSeek = Math.max(0, Math.min(rawSeek % Math.floor(end), Math.floor(end) - 1));
+          video.currentTime = targetSeek;
+          initialSeekAppliedRef.current = true;
+          setSeekDone(true);
+        }
       }
     } catch { /* ignore seek failures */ }
   }, []);
@@ -257,6 +265,7 @@ export function VideoPlayer({
       setActiveIdx(next);
       setError(null);
       setLoading(true);
+      initialSeekSecondsRef.current = 0;
       retryCountRef.current = 0;
       setHlsRetryLeft(0);
       setIsRetrying(false);
@@ -331,10 +340,14 @@ export function VideoPlayer({
 
       const onCanPlay = () => {
         if (!initialSeekAppliedRef.current && initialSeekSecondsRef.current > 0) {
-          initialSeekAppliedRef.current = true;
           try {
-            if (video.duration && initialSeekSecondsRef.current < video.duration) {
-              video.currentTime = initialSeekSecondsRef.current;
+            const dur = video.duration;
+            if (dur && Number.isFinite(dur) && dur > 0) {
+              const rawSeek = initialSeekSecondsRef.current;
+              const targetSeek = Math.max(0, Math.min(rawSeek % Math.floor(dur), Math.floor(dur) - 1));
+              video.currentTime = targetSeek;
+              initialSeekAppliedRef.current = true;
+              setSeekDone(true);
             }
           } catch { /* ignore */ }
         }
@@ -779,6 +792,7 @@ function detectType(url: string): NonNullable<VideoPlayerProps['type']> {
   if (
     lower.includes('drive.google.com') ||
     lower.includes('docs.google.com') ||
+    lower.includes('drive.usercontent.google.com') ||
     Boolean(extractGoogleDriveFileId(url))
   )
     return 'mp4';
