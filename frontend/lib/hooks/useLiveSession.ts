@@ -23,6 +23,15 @@ export interface BroadcasterAnnouncement {
   timestamp: string;
 }
 
+export interface ProgramChangePayload {
+  eventId: string;
+  title: string;
+  streamUrl: string;
+  recordingId: string;
+  description?: string;
+  timestamp: string;
+}
+
 export interface UseLiveSessionReturn {
   isConnected: boolean;
   viewerCount: number;
@@ -30,6 +39,7 @@ export interface UseLiveSessionReturn {
   reactions: Record<string, number>;
   latestReaction: string | null;
   broadcastMessage: BroadcasterAnnouncement | null;
+  programChange: ProgramChangePayload | null;
   isStopped: boolean;
   sendMessage: (content: string, parentId?: string) => void;
   sendReaction: (type: string) => void;
@@ -59,6 +69,7 @@ export function useLiveSession(
   const [latestReaction, setLatestReaction] = useState<string | null>(null);
   const [broadcastMessage, setBroadcastMessage] =
     useState<BroadcasterAnnouncement | null>(null);
+  const [programChange, setProgramChange] = useState<ProgramChangePayload | null>(null);
   const [isStopped, setIsStopped] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
@@ -201,6 +212,12 @@ export function useLiveSession(
       }
     });
 
+    socket.on('live:program:changed', (payload: ProgramChangePayload) => {
+      if (payload.eventId === eventId) {
+        setProgramChange(payload);
+      }
+    });
+
     // Periodic background sync fallback (only runs if socket is disconnected or every 10s)
     const pollInterval = setInterval(async () => {
       if (socketRef.current?.connected) return; // Skip polling when realtime WebSocket is active
@@ -338,6 +355,7 @@ export function useLiveSession(
     reactions,
     latestReaction,
     broadcastMessage,
+    programChange,
     isStopped,
     sendMessage,
     sendReaction,

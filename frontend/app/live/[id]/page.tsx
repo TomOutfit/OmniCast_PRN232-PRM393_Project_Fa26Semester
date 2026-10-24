@@ -32,15 +32,18 @@ import {
   Volume2,
   Maximize2,
   Eye,
+  Shield,
 } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 import { VideoPlayer } from '@/components/programs/video-player';
 import { JoinLobbyCard } from '@/components/live/join-lobby-card';
 import { LiveChatPanel } from '@/components/live/live-chat-panel';
-import { fetchLiveInteraction, LiveEventInteractionSnapshot } from '@/lib/api/live';
+import { fetchLiveInteraction, LiveEventInteractionSnapshot, switchLiveEventProgram } from '@/lib/api/live';
 import { fetchLiveNow, fetchRecordings } from '@/lib/api/programs';
 import { useLiveSession } from '@/lib/hooks/useLiveSession';
+import { useAuth } from '@/lib/auth-context';
 import type { LiveEvent, Recording } from '@/types';
 
 // ── Room Genre Theme Profiles ──────────────────────────────────────────────
@@ -291,6 +294,10 @@ export default function LiveWatchPage() {
   const [activeTab, setActiveTab] = useState<'chat' | 'lineup' | 'specs'>('chat');
   const [floatingParticles, setFloatingParticles] = useState<FloatingParticle[]>([]);
   const [isCinemaMode, setIsCinemaMode] = useState(false);
+  const [isSwitchingProgram, setIsSwitchingProgram] = useState(false);
+
+  const { user } = useAuth();
+  const isStaffOrAdmin = user?.role === 'STAFF' || user?.role === 'ADMIN';
 
   // Load primary event interaction
   useEffect(() => {
@@ -389,6 +396,54 @@ export default function LiveWatchPage() {
     },
     [liveSession, spawnParticle],
   );
+
+  // Listen for real-time program change (triggered by Admin/Staff switching the episode)
+  useEffect(() => {
+    if (liveSession.programChange) {
+      const pc = liveSession.programChange;
+      setSnapshot((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          title: pc.title,
+          streamUrl: pc.streamUrl,
+          description: pc.description || prev.description,
+        };
+      });
+      toast.info(`Chương trình đã chuyển sang: "${pc.title}"`, {
+        description: 'Đài phát sóng vừa cập nhật tập phát sóng tiếp theo.',
+        icon: '📺',
+      });
+    }
+  }, [liveSession.programChange]);
+
+  // Admin / Staff switches the active program on the fly
+  const handleSwitchProgram = async (recording: Recording) => {
+    if (!isStaffOrAdmin) {
+      toast.error('Bạn không có quyền chuyển chương trình. Chỉ Admin/Staff mới có thể điều phối.');
+      return;
+    }
+    try {
+      setIsSwitchingProgram(true);
+      await switchLiveEventProgram(eventId, recording.id);
+      setSnapshot((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          title: recording.title,
+          streamUrl: recording.videoUrl || prev.streamUrl,
+          description: recording.description || prev.description,
+        };
+      });
+      toast.success('Đã chuyển phát tiếp thành công!', {
+        description: `Đang phát "${recording.title}" trên kênh ${snapshot?.channel?.name || ''}.`,
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể chuyển chương trình.');
+    } finally {
+      setIsSwitchingProgram(false);
+    }
+  };
 
   // Memoize initial seek strictly per event to prevent any playback rewinds
   const initialSeekSeconds = useMemo(() => {
@@ -526,6 +581,17 @@ export default function LiveWatchPage() {
               <span className="font-bold text-white">{liveSession.viewerCount}</span>
               <span className="hidden sm:inline">khán giả</span>
             </div>
+
+            {isStaffOrAdmin && (
+              <Link
+                href={`/studio/live?channel=${snapshot.channel?.slug || ''}`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-950/60 px-3 py-1.5 text-xs font-bold text-purple-300 hover:bg-purple-500 hover:text-black transition shadow-sm"
+                title="Mở Studio để điều phối hoặc phát file từ máy"
+              >
+                <Radio className="h-3.5 w-3.5 text-purple-400 animate-pulse" />
+                <span className="hidden sm:inline">Live Studio</span>
+              </Link>
+            )}
 
             <button
               onClick={() => setIsCinemaMode((prev) => !prev)}
@@ -816,9 +882,46 @@ export default function LiveWatchPage() {
                 </div>
 
                 <div className="pt-2">
-                  <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Các tập & Chương trình nối tiếp
-                  </h5>
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Các tập & Chương trình nối tiếp
+                    </h5>
+                    {isStaffOrAdmin && (
+                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">
+                        Chế độ Điều Phối (Admin/Staff)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Role-based Guidance Box */}
+                  {isStaffOrAdmin ? (
+                    <div className="mb-3 rounded-xl border border-purple-500/40 bg-purple-950/30 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-purple-400" />
+                          <span className="text-xs font-black text-purple-200 uppercase tracking-wide">
+                            QUYỀN ĐIỀU PHỐI HOST / ADMIN
+                          </span>
+                        </div>
+                        <Link
+                          href={`/studio/live?channel=${snapshot.channel?.slug || ''}`}
+                          className="inline-flex items-center gap-1 rounded bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold text-purple-300 hover:bg-purple-500 hover:text-black transition"
+                          title="Vào Studio phát sóng"
+                        >
+                          <Radio className="h-3 w-3" />
+                          <span>Live Studio ↗</span>
+                        </Link>
+                      </div>
+                      <p className="mt-1 text-[11px] text-purple-300/80 leading-relaxed">
+                        Bạn có quyền chọn ngay chương trình tiếp theo bên dưới để phát sóng lập tức cho toàn bộ người xem trong phòng.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mb-3 rounded-xl border border-slate-800 bg-slate-950/50 p-2.5 text-[11px] text-slate-400 flex items-center gap-2">
+                      <Info className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                      <span>Chế độ Khán giả: Thưởng thức chương trình nối tiếp 24/7 và tương tác bình luận, thả cảm xúc cùng cộng đồng.</span>
+                    </div>
+                  )}
 
                   {channelLineup.length === 0 ? (
                     <div className="py-8 text-center text-xs text-slate-500">
@@ -826,27 +929,59 @@ export default function LiveWatchPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {channelLineup.map((item, idx) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-950/50 p-2.5 transition hover:border-slate-700"
-                        >
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-400">
-                            #{idx + 1}
+                      {channelLineup.map((item, idx) => {
+                        const isCurrentPlaying =
+                          item.title === snapshot.title ||
+                          item.videoUrl === snapshot.streamUrl;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center gap-3 rounded-xl border p-2.5 transition ${
+                              isCurrentPlaying
+                                ? 'border-cyan-500/50 bg-cyan-950/30'
+                                : 'border-slate-800/80 bg-slate-950/50 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-400">
+                              #{idx + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h6 className="text-xs font-semibold text-white truncate">
+                                {item.title}
+                              </h6>
+                              <span className="text-[11px] text-slate-500">
+                                {item.duration ? `${Math.round(item.duration / 60)} phút` : 'Tập tiếp theo'}
+                              </span>
+                            </div>
+
+                            {isCurrentPlaying ? (
+                              <span className="shrink-0 rounded bg-cyan-500/20 px-2 py-0.5 text-[10px] font-black text-cyan-300 ring-1 ring-cyan-400/40 flex items-center gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                ĐANG PHÁT
+                              </span>
+                            ) : isStaffOrAdmin ? (
+                              <button
+                                onClick={() => handleSwitchProgram(item)}
+                                disabled={isSwitchingProgram}
+                                className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1 text-[11px] font-bold transition shadow-sm disabled:opacity-50 cursor-pointer"
+                                title="Chuyển phát ngay chương trình này"
+                              >
+                                {isSwitchingProgram ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Play className="h-3 w-3 fill-current" />
+                                )}
+                                <span>Phát tiếp ngay</span>
+                              </button>
+                            ) : (
+                              <span className="shrink-0 rounded bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                                Nối tiếp
+                              </span>
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h6 className="text-xs font-semibold text-white truncate">
-                              {item.title}
-                            </h6>
-                            <span className="text-[11px] text-slate-500">
-                              {item.duration ? `${Math.round(item.duration / 60)} phút` : 'Tập tiếp theo'}
-                            </span>
-                          </div>
-                          <span className="shrink-0 rounded bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-400">
-                            Nối tiếp
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

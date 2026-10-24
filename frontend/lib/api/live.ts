@@ -94,3 +94,14 @@ export async function postLiveEventReaction(
 export async function deleteLiveEventComment(commentId: string): Promise<void> {
   await apiClient.delete(`/comments/${commentId}`);
 }
+
+export async function switchLiveEventProgram(
+  eventId: string,
+  recordingId: string,
+): Promise<{ success: boolean; message: string; event: any }> {
+  const res = await apiClient.post(
+    `/programs/studio/events/${eventId}/switch-program`,
+    { recordingId },
+  );
+  return res.data;
+}
