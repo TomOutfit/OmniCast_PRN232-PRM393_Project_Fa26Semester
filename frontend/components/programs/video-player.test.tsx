@@ -52,13 +52,16 @@ function detectType(url: string): PlayerType {
   if (lower.includes('.mp4')) return 'mp4';
   if (lower.includes('.webm')) return 'webm';
   if (
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    Boolean(extractGoogleDriveFileId(url))
+  )
+    return 'mp4';
+  if (
     lower.includes('youtube.com') ||
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
-    lower.includes('drive.google.com') ||
-    lower.includes('docs.google.com') ||
-    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
   )
     return 'iframe';
@@ -84,7 +87,7 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
+    return `https://drive.usercontent.google.com/download?id=${gDriveId}&export=download&confirm=t`;
   }
   return url;
 }
@@ -156,10 +159,10 @@ describe('detectType', () => {
     expect(detectType('https://vimeo.com/123456789')).toBe('iframe');
   });
 
-  it('returns iframe for Google Drive URLs', () => {
-    expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('iframe');
-    expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('iframe');
-    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.google.com/file/d/1B2C3D4E5F6G/preview?autoplay=1');
+  it('returns mp4 for Google Drive URLs', () => {
+    expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('mp4');
+    expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('mp4');
+    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.usercontent.google.com/download?id=1B2C3D4E5F6G&export=download&confirm=t');
   });
 
   it('defaults to hls for unknown URL patterns', () => {

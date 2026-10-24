@@ -727,7 +727,7 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
+    return `https://drive.usercontent.google.com/download?id=${gDriveId}&export=download&confirm=t`;
   }
   return url;
 }
@@ -737,14 +737,18 @@ function detectType(url: string): NonNullable<VideoPlayerProps['type']> {
   if (lower.includes('.m3u8')) return 'hls';
   if (lower.includes('.mp4')) return 'mp4';
   if (lower.includes('.webm')) return 'webm';
+  // Google Drive videos stream directly via native MP4 container with auto-fallback
+  if (
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    Boolean(extractGoogleDriveFileId(url))
+  )
+    return 'mp4';
   if (
     lower.includes('youtube.com') ||
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
-    lower.includes('drive.google.com') ||
-    lower.includes('docs.google.com') ||
-    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
   )
     return 'iframe';
