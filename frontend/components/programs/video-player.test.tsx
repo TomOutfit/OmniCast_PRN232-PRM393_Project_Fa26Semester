@@ -39,34 +39,35 @@ type PlayerType = 'hls' | 'mp4' | 'webm' | 'iframe';
 
 function extractGoogleDriveFileId(url: string): string | null {
   if (!url) return null;
-  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  const fileMatch = url.match(/(?:drive|docs)\.google\.com\/(?:file\/)?(?:u\/\d+\/)?(?:d\/|open\?id=)([a-zA-Z0-9_-]+)/i);
   if (fileMatch && fileMatch[1]) return fileMatch[1];
   const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
   if (idMatch && idMatch[1]) return idMatch[1];
+  const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/i);
+  if (dMatch && dMatch[1]) return dMatch[1];
   return null;
 }
 
 function detectType(url: string): PlayerType {
   const lower = url.toLowerCase();
-  if (lower.includes('.m3u8')) return 'hls';
-  if (lower.includes('.mp4')) return 'mp4';
-  if (lower.includes('.webm')) return 'webm';
-  if (
-    lower.includes('drive.google.com') ||
-    lower.includes('docs.google.com') ||
-    Boolean(extractGoogleDriveFileId(url))
-  )
-    return 'mp4';
   if (
     lower.includes('youtube.com') ||
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    lower.includes('drive.usercontent.google.com') ||
+    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
-  )
+  ) {
     return 'iframe';
+  }
+  if (lower.includes('.m3u8')) return 'hls';
+  if (lower.includes('.mp4')) return 'mp4';
+  if (lower.includes('.webm')) return 'webm';
   if (lower.startsWith('blob:') || lower.startsWith('file:')) return 'mp4';
-  return 'hls'; // default to HLS for unknown URLs
+  return 'mp4';
 }
 
 function getEmbedUrl(url: string): string {
@@ -87,7 +88,7 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.usercontent.google.com/download?id=${gDriveId}&export=download&confirm=t`;
+    return `https://drive.google.com/file/d/${gDriveId}/preview`;
   }
   return url;
 }
@@ -159,16 +160,16 @@ describe('detectType', () => {
     expect(detectType('https://vimeo.com/123456789')).toBe('iframe');
   });
 
-  it('returns mp4 for Google Drive URLs', () => {
-    expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('mp4');
-    expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('mp4');
-    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.usercontent.google.com/download?id=1B2C3D4E5F6G&export=download&confirm=t');
+  it('returns iframe for Google Drive URLs with preview embed', () => {
+    expect(detectType('https://drive.google.com/file/d/1B2C3D4E5F6G/view?usp=sharing')).toBe('iframe');
+    expect(detectType('https://drive.google.com/open?id=1B2C3D4E5F6G')).toBe('iframe');
+    expect(getEmbedUrl('https://drive.google.com/file/d/1B2C3D4E5F6G/view')).toBe('https://drive.google.com/file/d/1B2C3D4E5F6G/preview');
   });
 
-  it('defaults to hls for unknown URL patterns', () => {
-    expect(detectType('https://cdn.example.com/live')).toBe('hls');
-    expect(detectType('rtmp://stream.example.com/live')).toBe('hls');
-    expect(detectType('')).toBe('hls');
+  it('defaults to mp4 for unknown URL patterns', () => {
+    expect(detectType('https://cdn.example.com/live')).toBe('mp4');
+    expect(detectType('rtmp://stream.example.com/live')).toBe('mp4');
+    expect(detectType('')).toBe('mp4');
   });
 
   it('returns mp4 for blob: URLs from local file uploads', () => {

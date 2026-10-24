@@ -185,12 +185,9 @@ export function VideoPlayer({
     const fallback = resolveStreamUrl(fallbackSrc);
     if (fallback && !list.includes(fallback)) list.push(fallback);
 
-    // Guaranteed resilient fallbacks — always HTTP 200 OK, CORS enabled
-    if (!list.includes(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4)) {
+    // Guaranteed fallback ONLY if no source is provided at all
+    if (list.length === 0) {
       list.push(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4);
-    }
-    if (!list.includes(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS)) {
-      list.push(VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS);
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -722,7 +719,6 @@ export function VideoPlayer({
         muted={autoPlay}
         playsInline
         preload="metadata"
-        crossOrigin="anonymous"
         className="w-full h-full bg-black object-contain"
         onLoadedMetadata={() => {
           if (initialSeekSeconds > 0) applySeek();
@@ -757,6 +753,8 @@ export function extractGoogleDriveFileId(url: string): string | null {
   if (fileMatch && fileMatch[1]) return fileMatch[1];
   const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
   if (idMatch && idMatch[1]) return idMatch[1];
+  const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/i);
+  if (dMatch && dMatch[1]) return dMatch[1];
   return null;
 }
 
@@ -778,35 +776,33 @@ function getEmbedUrl(url: string): string {
   }
   const gDriveId = extractGoogleDriveFileId(url);
   if (gDriveId) {
-    return `https://drive.usercontent.google.com/download?id=${gDriveId}&export=download&confirm=t`;
+    return `https://drive.google.com/file/d/${gDriveId}/preview`;
   }
   return url;
 }
 
 function detectType(url: string): NonNullable<VideoPlayerProps['type']> {
   const lower = url.toLowerCase();
-  if (lower.includes('.m3u8')) return 'hls';
-  if (lower.includes('.mp4')) return 'mp4';
-  if (lower.includes('.webm')) return 'webm';
-  // Google Drive videos stream directly via native MP4 container with auto-fallback
-  if (
-    lower.includes('drive.google.com') ||
-    lower.includes('docs.google.com') ||
-    lower.includes('drive.usercontent.google.com') ||
-    Boolean(extractGoogleDriveFileId(url))
-  )
-    return 'mp4';
+  // 1. Web video platforms and cloud drive embeds MUST use iframe for 100% reliable, CORS-free playback
   if (
     lower.includes('youtube.com') ||
     lower.includes('youtu.be') ||
     lower.includes('vimeo.com') ||
     lower.includes('twitch.tv') ||
+    lower.includes('drive.google.com') ||
+    lower.includes('docs.google.com') ||
+    lower.includes('drive.usercontent.google.com') ||
+    Boolean(extractGoogleDriveFileId(url)) ||
     lower.includes('<iframe')
-  )
+  ) {
     return 'iframe';
+  }
+  if (lower.includes('.m3u8')) return 'hls';
+  if (lower.includes('.mp4')) return 'mp4';
+  if (lower.includes('.webm')) return 'webm';
   // Handle blob: and file: URLs from local uploads / browser File objects.
   // These are always playable MP4 (or WebM) — treat as mp4 so the plain
   // <video> element handles them without needing hls.js.
   if (lower.startsWith('blob:') || lower.startsWith('file:')) return 'mp4';
-  return 'hls';
+  return 'mp4';
 }
