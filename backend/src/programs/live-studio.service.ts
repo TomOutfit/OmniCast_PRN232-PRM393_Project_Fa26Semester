@@ -855,6 +855,106 @@ export class LiveStudioService {
   }
 
   /**
+   * Switch the active program playing in a live event to another recording.
+   * Only Staff or Admin can execute this.
+   */
+  async switchLiveProgram(eventId: string, recordingId: string, userId: string) {
+    if (!eventId || !recordingId) {
+      throw new BadRequestException('eventId and recordingId are required.');
+    }
+
+    const event = await this.prisma.liveEvent.findUnique({
+      where: { id: eventId },
+      include: {
+        channel: {
+          select: { id: true, slug: true, name: true, category: true },
+        },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException(`Live event not found: ${eventId}`);
+    }
+
+    if (event.status !== EventStatus.LIVE) {
+      throw new BadRequestException(`Event ${eventId} is not currently LIVE.`);
+    }
+
+    const recording = await this.prisma.recording.findUnique({
+      where: { id: recordingId },
+    });
+
+    if (!recording) {
+      throw new NotFoundException(`Recording not found: ${recordingId}`);
+    }
+
+    if (!recording.videoUrl) {
+      throw new BadRequestException(`Recording ${recordingId} has no playable stream URL.`);
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.liveEvent.update({
+      where: { id: eventId },
+      data: {
+        title: recording.title,
+        description: recording.description || event.description,
+        thumbnailUrl: recording.thumbnailUrl || event.thumbnailUrl,
+        streamUrl: recording.videoUrl,
+        streamSource: recording.contentSource,
+        startedAt: now,
+        duration: recording.duration || event.duration,
+      },
+      include: {
+        channel: {
+          select: { id: true, slug: true, name: true, category: true },
+        },
+      },
+    });
+
+    await this.auditLogger.log({
+      userId,
+      action: 'STUDIO_SWITCH_PROGRAM',
+      entityType: 'LiveEvent',
+      entityId: event.id,
+      newValues: {
+        recordingId: recording.id,
+        recordingTitle: recording.title,
+        streamUrl: recording.videoUrl,
+      },
+    });
+
+    // Notify all viewers in the event room that the program has changed
+    try {
+      this.wsGateway.notifyProgramChanged(eventId, {
+        title: recording.title,
+        streamUrl: recording.videoUrl,
+        recordingId: recording.id,
+        description: recording.description || undefined,
+      });
+
+      // Also notify channel listeners
+      if (event.channel?.slug) {
+        this.wsGateway.notifyLiveStarted(event.channel.slug, {
+          eventId: event.id,
+          title: recording.title,
+          streamUrl: recording.videoUrl,
+          thumbnailUrl: recording.thumbnailUrl || undefined,
+          startedAt: now.toISOString(),
+          duration: recording.duration || undefined,
+        });
+      }
+    } catch (wsErr) {
+      this.logger.warn(`Failed to broadcast program change: ${(wsErr as Error).message}`);
+    }
+
+    return {
+      success: true,
+      message: `Đã chuyển sang phát chương trình: "${recording.title}"`,
+      event: updated,
+    };
+  }
+
+  /**
    * Upload a self-recorded video (mobile camera capture) and
    * optionally mark it as LIVE NOW.
    *

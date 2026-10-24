@@ -593,6 +593,27 @@ export class LiveStreamGateway
     this.logger.log(`Broadcasted chat:deleted to ${roomName} (commentId: ${commentId})`);
   }
 
+  notifyProgramChanged(
+    eventId: string,
+    payload: {
+      title: string;
+      streamUrl: string;
+      recordingId: string;
+      description?: string;
+    },
+  ) {
+    const roomName = `event:${eventId}`;
+    const broadcastData = {
+      eventId,
+      ...payload,
+      timestamp: new Date().toISOString(),
+    };
+    this.server?.to(roomName).emit('live:program:changed', broadcastData);
+    this.logger.log(
+      `Broadcasted live:program:changed to ${roomName} - "${payload.title}"`,
+    );
+  }
+
   // ============================================================
   // Helper Methods
   // ============================================================

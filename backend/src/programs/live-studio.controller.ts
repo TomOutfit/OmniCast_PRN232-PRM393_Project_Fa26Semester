@@ -434,6 +434,29 @@ export class LiveStudioController {
   }
 
   // ============================================================
+  // 3b. Switch Live Program (Admin / Staff đổi chương trình đang phát)
+  // ============================================================
+
+  @Post('events/:eventId/switch-program')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Admin / Staff switches the active program playing in a live broadcast to another recording.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Program switched' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Event not live or invalid recording' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event or recording missing' })
+  async switchLiveProgram(
+    @Param('eventId') eventId: string,
+    @Body() dto: { recordingId: string },
+    @Request() req: any,
+  ) {
+    return this.studioService.switchLiveProgram(eventId, dto.recordingId, req.user.sub);
+  }
+
+  // ============================================================
   // 4. Add to library (mở rộng kho nội dung từ URL bất kỳ)
   // ============================================================
 
