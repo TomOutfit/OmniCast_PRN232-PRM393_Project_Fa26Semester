@@ -850,7 +850,6 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   void initState() {
     super.initState();
     final videoId = _extractYouTubeVideoId(widget.url) ?? '';
-    final embedSrc = 'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1';
 
     final html = '''
 <!DOCTYPE html>
@@ -990,8 +989,6 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
       ),
     );
   }
-}
-
 }
 
 
