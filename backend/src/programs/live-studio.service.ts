@@ -876,10 +876,6 @@ export class LiveStudioService {
       throw new NotFoundException(`Live event not found: ${eventId}`);
     }
 
-    if (event.status !== EventStatus.LIVE) {
-      throw new BadRequestException(`Event ${eventId} is not currently LIVE.`);
-    }
-
     const recording = await this.prisma.recording.findUnique({
       where: { id: recordingId },
     });
@@ -896,12 +892,14 @@ export class LiveStudioService {
     const updated = await this.prisma.liveEvent.update({
       where: { id: eventId },
       data: {
+        status: EventStatus.LIVE,
         title: recording.title,
         description: recording.description || event.description,
         thumbnailUrl: recording.thumbnailUrl || event.thumbnailUrl,
         streamUrl: recording.videoUrl,
         streamSource: recording.contentSource,
         startedAt: now,
+        endedAt: null,
         duration: recording.duration || event.duration,
       },
       include: {
