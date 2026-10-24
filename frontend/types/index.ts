@@ -108,6 +108,7 @@ export interface LiveEvent {
     name: string;
     slug: string;
     logoUrl?: string;
+    category?: LiveCategory;
   };
 }
 

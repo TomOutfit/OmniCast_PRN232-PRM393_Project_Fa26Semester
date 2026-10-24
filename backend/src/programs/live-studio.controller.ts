@@ -296,7 +296,15 @@ export class LiveStudioController {
           startedAt: true,
           duration: true,
           channel: {
-            select: { id: true, slug: true, name: true, logoUrl: true },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              logoUrl: true,
+              category: true,
+              subcategory: true,
+              bannerColor: true,
+            },
           },
         },
       }).catch(() => null),
