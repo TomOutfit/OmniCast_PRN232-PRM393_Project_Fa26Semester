@@ -198,6 +198,7 @@ export function VideoPlayer({
 
   // Reset on new src
   useEffect(() => {
+    initialSeekAppliedRef.current = false;
     setActiveIdx(0);
     setError(null);
     setRecoveryToastShown(false);
@@ -229,19 +230,25 @@ export function VideoPlayer({
     type ?? detectType(resolvedSrc);
 
   // ── Apply initial seek ────────────────────────────────────────────────────
+  const initialSeekSecondsRef = useRef(initialSeekSeconds);
+  initialSeekSecondsRef.current = initialSeekSeconds;
+  const initialSeekAppliedRef = useRef(false);
+
   const applySeek = useCallback(() => {
     const video = videoRef.current;
-    if (!video || seekDone || initialSeekSeconds <= 0) return;
+    if (!video || initialSeekAppliedRef.current || initialSeekSecondsRef.current <= 0) return;
     try {
-      if (video.duration && initialSeekSeconds < video.duration) {
-        video.currentTime = initialSeekSeconds;
+      if (video.duration && initialSeekSecondsRef.current < video.duration) {
+        video.currentTime = initialSeekSecondsRef.current;
+        initialSeekAppliedRef.current = true;
         setSeekDone(true);
       } else if (video.seekable && video.seekable.length > 0) {
-        video.currentTime = initialSeekSeconds;
+        video.currentTime = initialSeekSecondsRef.current;
+        initialSeekAppliedRef.current = true;
         setSeekDone(true);
       }
     } catch { /* ignore seek failures */ }
-  }, [seekDone, initialSeekSeconds]);
+  }, []);
 
   // ── Advance to next URL in chain ─────────────────────────────────────────
   const advanceToFallback = useCallback(() => {
@@ -307,16 +314,48 @@ export function VideoPlayer({
 
     // ── MP4 / WebM path ────────────────────────────────────────────────────
     if (resolvedType !== 'hls') {
-      video.src = resolvedSrc;
-      video.load();
-      if (playing || autoPlay) video.play().catch(() => {});
-      return;
+      const isSameSrc =
+        video.src === resolvedSrc ||
+        video.currentSrc === resolvedSrc ||
+        (video.src && video.src.endsWith(resolvedSrc));
+
+      if (!isSameSrc) {
+        video.src = resolvedSrc;
+        video.load();
+        if (playing || autoPlay) video.play().catch(() => {});
+      } else {
+        if (autoPlay && video.paused) {
+          video.play().catch(() => {});
+        }
+      }
+
+      const onCanPlay = () => {
+        if (!initialSeekAppliedRef.current && initialSeekSecondsRef.current > 0) {
+          initialSeekAppliedRef.current = true;
+          try {
+            if (video.duration && initialSeekSecondsRef.current < video.duration) {
+              video.currentTime = initialSeekSecondsRef.current;
+            }
+          } catch { /* ignore */ }
+        }
+      };
+
+      video.addEventListener('canplay', onCanPlay, { once: true });
+      return () => {
+        video.removeEventListener('canplay', onCanPlay);
+      };
     }
 
     // ── HLS path ────────────────────────────────────────────────────────────
     const canNative = video.canPlayType('application/vnd.apple.mpegurl');
     if (canNative) {
-      video.src = resolvedSrc;
+      const isSameSrc =
+        video.src === resolvedSrc ||
+        video.currentSrc === resolvedSrc ||
+        (video.src && video.src.endsWith(resolvedSrc));
+      if (!isSameSrc) {
+        video.src = resolvedSrc;
+      }
       return;
     }
 
@@ -431,7 +470,6 @@ export function VideoPlayer({
     applySeek,
     retryHls,
     onError,
-    initialSeekSeconds,
   ]);
 
   // ── Demo VIP activation ───────────────────────────────────────────────────
