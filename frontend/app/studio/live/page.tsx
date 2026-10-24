@@ -528,10 +528,10 @@ export default function WebLiveStudioPage() {
     // Strip wrapping quotes or angle brackets
     url = url.replace(/^["'<]+|["'>]+$/g, '').trim();
 
-    // Google Drive share / view link -> preview embed link (bypasses download quota & virus scan blocks)
+    // Google Drive share / view link -> direct media stream (bypasses Google Sign-In)
     const gDriveId = extractGoogleDriveFileId(url);
     if (gDriveId) {
-      return `https://drive.google.com/file/d/${gDriveId}/preview?autoplay=1`;
+      return `https://drive.usercontent.google.com/download?id=${gDriveId}&export=download&confirm=t`;
     }
 
     // YouTube share / watch link -> embed link with autoplay=1 & mute=1
