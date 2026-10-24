@@ -18,6 +18,8 @@ import {
   Settings,
   Shield,
   Loader2,
+  Radio,
+  Tv,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
@@ -167,6 +169,17 @@ export function CompactUserMenu({
                 {user.email}
               </p>
             </div>
+
+            <Link
+              href="/channels"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs text-rose-300 hover:text-white hover:bg-rose-950/40 rounded-lg transition-colors font-bold"
+            >
+              <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+              Xem các phòng phát trực tiếp
+            </Link>
+            <div className="my-1 border-t border-[#1a273b]" />
 
             <Link
               href="/profile"

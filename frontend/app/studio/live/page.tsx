@@ -40,6 +40,7 @@ import {
   Trash2,
   MessageSquare,
   Send,
+  ExternalLink,
 } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -1406,6 +1407,17 @@ export default function WebLiveStudioPage() {
                   <span>Live Studio</span>
                 </button>
               </div>
+              {activeLiveForChannel && (
+                <Link
+                  href={`/live/${activeLiveForChannel.id}`}
+                  target="_blank"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500 hover:text-black font-bold text-xs transition shadow-sm"
+                  title="Mở phòng xem trực tiếp trên tab mới"
+                >
+                  <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                  <span>Vào xem phòng Live ↗</span>
+                </Link>
+              )}
               <CompactUserMenu variant="cyan" />
             </div>
           </div>
@@ -1456,6 +1468,16 @@ export default function WebLiveStudioPage() {
                     {activeLiveForChannel.viewerCount || 0} Viewer
                   </p>
                 </div>
+
+                <Link
+                  href={`/live/${activeLiveForChannel.id}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md transition"
+                  title="Mở link xem phòng trực tiếp"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Xem phòng trực tiếp ↗</span>
+                </Link>
 
                 <Button
                   variant="outline"

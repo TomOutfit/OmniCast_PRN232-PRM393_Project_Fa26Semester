@@ -127,10 +127,10 @@ export function NowPlayingBar() {
   if (isHidden) {
     return (
       <div
-        className="relative z-10 w-full border-t border-[#121c2d] bg-[#05080e]/90 backdrop-blur-md transition-all duration-300"
+        className="relative z-10 w-full border-t border-[#121c2d] bg-[#05080e]/95 backdrop-blur-md transition-all duration-300"
         aria-label="Thanh kênh đang phát (đã ẩn)"
       >
-        <div className="max-w-[1720px] mx-auto px-3 sm:px-4 lg:px-6 py-1 flex items-center justify-between text-[11px]">
+        <div className="max-w-[1720px] mx-auto px-3 sm:px-4 lg:px-6 py-2 min-h-[36px] flex items-center justify-between text-[11px]">
           <button
             type="button"
             onClick={toggleHidden}
