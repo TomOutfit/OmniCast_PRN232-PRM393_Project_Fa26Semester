@@ -520,8 +520,7 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   Future<void> _saveGoogleDriveToLibrary(String rawUrl, String title, int duration) async {
     try {
       _toast('Đang lưu video Google Drive vào kho...', accent: _accent);
-      final fileId = _extractGoogleDriveId(rawUrl) ?? '';
-      final directUrl = 'https://drive.google.com/file/d/$fileId/preview';
+      final directUrl = 'https://drive.usercontent.google.com/download?id=$fileId&export=download&confirm=t';
 
       await _repo.addToLibrary(
         channelId: _selected!.id,
