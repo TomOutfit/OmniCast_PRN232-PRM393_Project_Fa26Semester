@@ -905,12 +905,12 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _gold.withOpacity(0.6),
+            color: _gold.withValues(alpha: 0.6),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: _gold.withOpacity(0.12),
+              color: _gold.withValues(alpha: 0.12),
               blurRadius: 10,
               spreadRadius: 1,
             ),
@@ -920,9 +920,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_gold, const Color(0xFFEF4444)],
+                  colors: [_gold, Color(0xFFEF4444)],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -933,7 +933,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -946,8 +946,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                       letterSpacing: 0.6,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  const Text(
+                  SizedBox(height: 2),
+                  Text(
                     'Gửi tin nhắn nổi bật & tiếp lửa cho phiên phát sóng',
                     style: TextStyle(
                       color: Color(0xFF94A3B8),
@@ -1004,15 +1004,15 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         try {
           LiveSocketService.instance.sendChat(
             eventId: widget.eventId,
-            content: '🎉 [SUPER CHAT ${result.amount}đ] ${result.donorName}: ${result.message}',
+            content: '🎉 [SUPER CHAT ${result.amount}đ] ${result.giftEmoji} ${result.donorName}: ${result.message}',
           );
         } catch (_) {}
 
-        _toast('🎉 Cảm ơn bạn đã ủng hộ ${result.amount}đ!', accent: _gold);
+        _toast('🎉 Cảm ơn bạn đã gửi ${result.giftEmoji} ủng hộ ${result.amount}đ!', accent: _gold);
 
-        // Auto hide super chat after 20 seconds
+        // Auto hide super chat after 25 seconds
         _superChatTimer?.cancel();
-        _superChatTimer = Timer(const Duration(seconds: 20), () {
+        _superChatTimer = Timer(const Duration(seconds: 25), () {
           if (mounted) setState(() => _latestSuperChat = null);
         });
       },
@@ -1020,6 +1020,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   }
 
   Widget _buildSuperChatCard(LiveDonationResult sc) {
+    final formattedAmount = sc.amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       padding: const EdgeInsets.all(12),
@@ -1031,7 +1036,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         border: Border.all(color: _gold, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: _gold.withOpacity(0.25),
+            color: _gold.withValues(alpha: 0.25),
             blurRadius: 14,
             spreadRadius: 1,
           ),
@@ -1042,6 +1047,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         children: [
           Row(
             children: [
+              Text(
+                sc.giftEmoji,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -1059,18 +1069,30 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  sc.donorName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sc.donorName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'qua ${sc.paymentMethod}',
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Text(
-                '${sc.amount} ₫',
+                '$formattedAmount ₫',
                 style: const TextStyle(
                   color: _gold,
                   fontSize: 14,
@@ -1078,15 +1100,36 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   fontFamily: 'JetBrainsMono',
                 ),
               ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _latestSuperChat = null);
+                },
+                child: const Icon(
+                  Icons.close,
+                  size: 16,
+                  color: Colors.white54,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            sc.message,
-            style: const TextStyle(
-              color: Color(0xFFF1F5F9),
-              fontSize: 13,
-              height: 1.4,
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Text(
+              sc.message,
+              style: const TextStyle(
+                color: Color(0xFFF1F5F9),
+                fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
