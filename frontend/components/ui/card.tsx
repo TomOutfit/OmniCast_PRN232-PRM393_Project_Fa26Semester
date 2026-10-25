@@ -15,6 +15,12 @@ const cardVariants = cva(
           'bg-gradient-to-b from-[#0d1624]/90 to-[#070b12]/95 border-[#18273d] hover:border-cyan-500/50 hover:shadow-[0_15px_35px_rgba(0,242,254,0.15)] hover:-translate-y-1 backdrop-blur-md cursor-pointer before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent hover:before:via-cyan-400/50',
         neon:
           'bg-gradient-to-b from-[#0c1829] to-[#060c16] border-cyan-500/40 shadow-[0_0_25px_rgba(0,242,254,0.2)] backdrop-blur-xl before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-cyan-500/10 before:via-cyan-400 before:to-cyan-500/10',
+        cyber3d:
+          'card-3d-surface text-white',
+        glass3d:
+          'glass-3d-panel text-white',
+        gold3d:
+          'card-3d-gold text-white',
         outline:
           'border border-dashed border-[#1f314d] bg-transparent hover:bg-[#0c1626]/40',
         ghost:

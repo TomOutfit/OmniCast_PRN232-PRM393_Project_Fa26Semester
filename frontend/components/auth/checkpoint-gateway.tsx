@@ -102,11 +102,11 @@ export function CheckpointGateway({
 
       {/* ── 3. Main Center Auth Card ──────────────────────────────────── */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="relative w-full max-w-lg my-auto">
-          <div className="rounded-3xl bg-[#0c1220]/90 border border-white/[0.1] shadow-2xl p-6 sm:p-8 md:p-9 backdrop-blur-xl">
+        <div className="relative w-full max-w-lg my-auto" style={{ perspective: '1200px' }}>
+          <div className="rounded-3xl card-3d-surface border border-primary-500/30 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(0,242,254,0.18)] p-6 sm:p-8 md:p-9 backdrop-blur-2xl transition-transform duration-300">
             {/* Header with Clean Logo */}
             <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#131c30] to-[#0c1220] border border-cyan-500/30 p-2.5 flex items-center justify-center shadow-lg mb-3">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#131c30] to-[#0c1220] border border-cyan-500/40 p-2.5 flex items-center justify-center shadow-[0_0_20px_rgba(0,242,254,0.3)] mb-3">
                 <Image
                   src="/omnicast_logo.png"
                   alt="OmniCast Logo"
@@ -126,14 +126,14 @@ export function CheckpointGateway({
               </p>
 
               {/* Segmented Control Tabs */}
-              <div className="mt-5 w-full max-w-xs grid grid-cols-2 p-1 rounded-2xl bg-[#060a14] border border-white/[0.08]">
+              <div className="mt-5 w-full max-w-xs grid grid-cols-2 p-1.5 rounded-2xl bg-[#060a14]/90 border border-white/[0.08] shadow-inner gap-1">
                 <Link
                   href="/login"
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all',
+                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
                     isLogin
-                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'btn-3d-cyan text-white font-bold shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   )}
                 >
                   <KeyRound className="w-3.5 h-3.5" />
@@ -142,10 +142,10 @@ export function CheckpointGateway({
                 <Link
                   href="/register"
                   className={cn(
-                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all',
+                    'flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
                     isRegister
-                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'btn-3d-cyan text-white font-bold shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   )}
                 >
                   <UserPlus className="w-3.5 h-3.5" />

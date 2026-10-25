@@ -146,11 +146,11 @@ export function Navbar() {
         // The now-playing-bar handles its own horizontal overflow
         // through `overflow-x-auto` on the inner scroller.
         'sticky top-0 z-50 w-full',
-        'border-b bg-[#070b12]/95 backdrop-blur-xl',
-        'transition-shadow duration-200',
+        'border-b bg-[#070b12]/92 backdrop-blur-2xl',
+        'transition-all duration-300',
         scrolled
-          ? 'border-[#1b2b42] shadow-[0_4px_24px_rgba(0,0,0,0.4)]'
-          : 'border-[#142032]',
+          ? 'border-cyan-500/25 shadow-[0_12px_36px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.12)_inset]'
+          : 'border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.6)]',
       )}
     >
       {/* ── 1. Top Utility Bar (slim, role-aware) ──────────────────── */}

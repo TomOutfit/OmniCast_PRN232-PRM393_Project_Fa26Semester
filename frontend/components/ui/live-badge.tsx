@@ -21,8 +21,9 @@ export function LiveBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 uppercase rounded-md',
-        'bg-red-600 text-white shadow-sm',
+        'inline-flex items-center gap-1.5 uppercase rounded-lg font-black tracking-wider text-white',
+        'bg-gradient-to-r from-red-600 via-rose-500 to-red-600 border border-red-400/50',
+        'shadow-[0_0_16px_rgba(239,68,68,0.55),0_1px_0_rgba(255,255,255,0.4)_inset]',
         sizeClasses[size],
         className
       )}
@@ -30,7 +31,7 @@ export function LiveBadge({
       {showIcon && (
         <span className="relative flex h-2 w-2 items-center justify-center">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white shadow-[0_0_4px_#fff]"></span>
         </span>
       )}
       Trực tiếp
@@ -47,12 +48,13 @@ export function UpcomingBadge({ startsIn, className }: UpcomingBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium rounded-md',
-        'bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1',
+        'inline-flex items-center gap-1.5 text-xs font-bold rounded-lg',
+        'bg-amber-500/15 text-amber-300 border border-amber-400/35 px-2.5 py-1',
+        'shadow-[0_0_12px_rgba(245,158,11,0.2),0_1px_0_rgba(255,255,255,0.15)_inset] backdrop-blur-md',
         className
       )}
     >
-      <Clock className="w-3 h-3 text-amber-400" />
+      <Clock className="w-3 h-3 text-amber-300 animate-spin-slow" />
       {startsIn ? `Sắp phát: ${startsIn}` : 'Sắp diễn ra'}
     </span>
   );
@@ -66,8 +68,9 @@ export function EndedBadge({ className }: EndedBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium rounded-md',
-        'bg-slate-800/80 text-slate-400 border border-slate-700/50 px-2.5 py-1',
+        'inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg',
+        'bg-slate-900/80 text-slate-400 border border-slate-700/60 px-2.5 py-1',
+        'shadow-[0_1px_0_rgba(255,255,255,0.05)_inset] backdrop-blur-md',
         className
       )}
     >
@@ -89,9 +92,9 @@ export function ReplayBadge({
   className,
 }: ReplayBadgeProps) {
   const sizeClasses = {
-    sm: 'text-[10px] px-2 py-0.5 tracking-wider font-semibold',
-    md: 'text-xs px-2.5 py-1 tracking-wider font-semibold',
-    lg: 'text-sm px-3 py-1.5 tracking-wider font-semibold',
+    sm: 'text-[10px] px-2 py-0.5 tracking-wider font-bold',
+    md: 'text-xs px-2.5 py-1 tracking-wider font-bold',
+    lg: 'text-sm px-3 py-1.5 tracking-wider font-bold',
   };
 
   const iconSizes = {
@@ -103,8 +106,9 @@ export function ReplayBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md',
-        'bg-slate-800/90 text-slate-200 border border-slate-700/60 shadow-sm backdrop-blur-sm',
+        'inline-flex items-center gap-1.5 rounded-lg font-bold',
+        'bg-gradient-to-r from-indigo-950/80 to-slate-900/90 text-indigo-300 border border-indigo-500/40',
+        'shadow-[0_0_14px_rgba(99,102,241,0.25),0_1px_0_rgba(255,255,255,0.1)_inset] backdrop-blur-md',
         sizeClasses[size],
         className
       )}
