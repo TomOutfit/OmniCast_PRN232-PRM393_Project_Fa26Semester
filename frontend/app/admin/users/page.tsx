@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import type { UserRole } from '@/types';
+import { AdminUserAnalyticsChart } from '@/components/admin/admin-user-analytics-chart';
 
 const roleColors: Record<string, string> = {
   ADMIN: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -172,6 +173,9 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* User Growth & Demographic Analytics Telemetry */}
+        <AdminUserAnalyticsChart totalUsersCount={totalUsers} />
+
         {/* Filters */}
         <Card className="p-5 card-3d-surface mb-6 border border-primary-500/20">
           <div className="flex flex-col md:flex-row gap-4 items-center">

@@ -34,6 +34,7 @@ import { useMe, useMyStats, useMyFollows, useUpdateMe, useChangePassword } from 
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import { UserPersonalTrendsChart } from '@/components/profile/user-personal-trends-chart';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -406,6 +407,12 @@ export default function ProfilePage() {
                 </Card>
               </div>
             )}
+
+            {/* Personal Viewing & Interaction Trends Chart */}
+            <UserPersonalTrendsChart
+              totalHours={stats?.totalWatchHours}
+              totalReactions={stats?.reactionsGiven}
+            />
 
             {/* Quick Access */}
             <Card className="glass-card">
