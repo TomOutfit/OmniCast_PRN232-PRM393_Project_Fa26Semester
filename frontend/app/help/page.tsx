@@ -305,14 +305,14 @@ export default function HelpPage() {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div
             onClick={() => setSelectedCategory('viewer')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'viewer'
-                ? 'border-cyan-500/50 bg-cyan-950/30 shadow-lg shadow-cyan-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-cyan-500/60 shadow-[0_0_25px_rgba(0,242,254,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-cyan-500/30'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
+              <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-[0_0_12px_rgba(0,242,254,0.2)]">
                 <Tv className="h-5 w-5" />
               </div>
               <div>
@@ -320,7 +320,7 @@ export default function HelpPage() {
                 <span className="text-[11px] font-mono text-cyan-400">25 Kênh sóng 24/7</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Cách tra cứu lịch phát, bật âm thanh Dolby 5.1, chuyển đổi luồng phát và thêm vào
               Watchlist yêu thích.
             </p>
@@ -328,14 +328,14 @@ export default function HelpPage() {
 
           <div
             onClick={() => setSelectedCategory('tech')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'tech'
-                ? 'border-purple-500/50 bg-purple-950/30 shadow-lg shadow-purple-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-purple-500/60 shadow-[0_0_25px_rgba(168,85,247,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-purple-500/30'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
+              <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.2)]">
                 <Smartphone className="h-5 w-5" />
               </div>
               <div>
@@ -343,7 +343,7 @@ export default function HelpPage() {
                 <span className="text-[11px] font-mono text-purple-400">Android & iOS</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Bật thông báo đẩy FCM nhắc trước 15 phút, tính năng Offline Caching và vuốt xem kênh tiện
               lợi.
             </p>
@@ -351,14 +351,14 @@ export default function HelpPage() {
 
           <div
             onClick={() => setSelectedCategory('studio')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'studio'
-                ? 'border-amber-500/50 bg-amber-950/30 shadow-lg shadow-amber-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-amber-500/60 shadow-[0_0_25px_rgba(245,158,11,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-amber-500/30'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
                 <Radio className="h-5 w-5" />
               </div>
               <div>
@@ -366,7 +366,7 @@ export default function HelpPage() {
                 <span className="text-[11px] font-mono text-amber-400">Đạo diễn phát sóng</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Tải video qua Cloudinary Direct Upload, lên lịch chống trùng giờ và kiểm duyệt với AI
               Curator.
             </p>
@@ -374,14 +374,14 @@ export default function HelpPage() {
 
           <div
             onClick={() => setSelectedCategory('billing')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'billing'
-                ? 'border-emerald-500/50 bg-emerald-950/30 shadow-lg shadow-emerald-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-emerald-500/60 shadow-[0_0_25px_rgba(16,185,129,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-emerald-500/30'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+              <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
                 <Gem className="h-5 w-5" />
               </div>
               <div>
@@ -389,7 +389,7 @@ export default function HelpPage() {
                 <span className="text-[11px] font-mono text-emerald-400">Chuẩn 4K Ultra HD</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Quyền lợi tài khoản Premium, thanh toán an toàn qua Google Play Billing và quản lý chu
               kỳ gia hạn.
             </p>
@@ -397,14 +397,14 @@ export default function HelpPage() {
 
           <div
             onClick={() => setSelectedCategory('security')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'security'
-                ? 'border-rose-500/50 bg-rose-950/30 shadow-lg shadow-rose-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-rose-500/60 shadow-[0_0_25px_rgba(244,63,94,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-rose-500/30'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/20">
+              <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.2)]">
                 <Shield className="h-5 w-5" />
               </div>
               <div>
@@ -412,7 +412,7 @@ export default function HelpPage() {
                 <span className="text-[11px] font-mono text-rose-400">JWT & Argon2</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Đặt lại mật khẩu quên, phân quyền RBAC 4 vai trò và bảo vệ tài khoản với đăng xuất đa
               thiết bị.
             </p>
@@ -420,10 +420,10 @@ export default function HelpPage() {
 
           <div
             onClick={() => setSelectedCategory('all')}
-            className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 group ${
+            className={`cursor-pointer rounded-2xl p-5 transition-all duration-300 card-3d-surface group ${
               selectedCategory === 'all'
-                ? 'border-cyan-500/50 bg-cyan-950/30 shadow-lg shadow-cyan-950/40'
-                : 'border-white/[0.08] bg-slate-900/60 hover:border-white/20 hover:bg-slate-900/90'
+                ? 'border border-cyan-500/60 shadow-[0_0_25px_rgba(0,242,254,0.25)] translate-y-[-2px]'
+                : 'border border-white/10 hover:border-white/20'
             }`}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -432,10 +432,10 @@ export default function HelpPage() {
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Xem Toàn Bộ Câu Hỏi</h3>
-                <span className="text-[11px] font-mono text-slate-400">Tất cả danh mục</span>
+                <span className="text-[11px] font-mono text-dark-400">Tất cả danh mục</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-dark-300 leading-relaxed">
               Hiển thị danh sách đầy đủ tất cả câu hỏi thường gặp và tài liệu hỗ trợ nhanh trên hệ
               thống.
             </p>
@@ -503,11 +503,11 @@ export default function HelpPage() {
                 return (
                   <div
                     key={faq.id}
-                    className="rounded-2xl border border-white/[0.08] bg-slate-900/70 overflow-hidden transition-all duration-200"
+                    className="rounded-2xl border border-white/10 card-3d-surface overflow-hidden transition-all duration-200"
                   >
                     <button
                       onClick={() => setExpandedFaq(isExpanded ? null : faq.id)}
-                      className="w-full p-4 sm:p-5 text-left flex items-start justify-between gap-4 hover:bg-white/[0.02] transition"
+                      className="w-full p-4 sm:p-5 text-left flex items-start justify-between gap-4 hover:bg-white/[0.04] transition cursor-pointer"
                     >
                       <div className="flex items-start gap-3">
                         <span className="font-mono text-xs text-cyan-400 mt-0.5 font-bold">
@@ -518,20 +518,20 @@ export default function HelpPage() {
                         </span>
                       </div>
                       <ChevronDown
-                        className={`h-5 w-5 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+                        className={`h-5 w-5 text-dark-400 flex-shrink-0 transition-transform duration-200 ${
                           isExpanded ? 'rotate-180 text-cyan-300' : ''
                         }`}
                       />
                     </button>
 
                     {isExpanded && (
-                      <div className="px-5 pb-5 pt-1 border-t border-white/[0.05] text-xs sm:text-sm text-slate-300 leading-relaxed space-y-3 bg-slate-950/40">
+                      <div className="px-5 pb-5 pt-2 border-t border-white/5 text-xs sm:text-sm text-dark-300 leading-relaxed space-y-3 bg-dark-950/60">
                         <p>{faq.answer}</p>
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {faq.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.05] text-slate-400"
+                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
                             >
                               #{tag}
                             </span>
@@ -547,21 +547,21 @@ export default function HelpPage() {
         </section>
 
         {/* ── Troubleshooting & Error Matrix ────────────────────── */}
-        <section className="rounded-2xl border border-white/[0.08] bg-slate-900/70 p-6 sm:p-8 space-y-4">
-          <div className="flex items-center gap-2 text-amber-400">
-            <Zap className="h-5 w-5" />
+        <section className="rounded-2xl border border-amber-500/20 card-3d-surface p-6 sm:p-8 space-y-4 shadow-xl">
+          <div className="flex items-center gap-2.5 text-amber-400">
+            <Zap className="h-5 w-5 animate-pulse" />
             <h2 className="text-lg sm:text-xl font-bold text-white">
               Bảng Tra Cứu Sự Cố & Mã Lỗi Nhanh
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+          <p className="text-xs sm:text-sm text-dark-300 leading-relaxed">
             Nếu bạn gặp thông báo lỗi hiển thị trên màn hình phát sóng hoặc khi gửi yêu cầu API, đối
             chiếu các mã lỗi thường gặp sau:
           </p>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-800/40">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="border-b border-slate-700 bg-slate-800/80 font-mono uppercase text-slate-400 text-[11px]">
+          <div className="overflow-x-auto rounded-xl border border-white/10 bg-dark-950/60">
+            <table className="w-full text-left text-xs text-dark-200">
+              <thead className="border-b border-white/10 bg-dark-900/80 font-mono uppercase text-dark-400 text-[11px]">
                 <tr>
                   <th className="px-4 py-3">Mã lỗi</th>
                   <th className="px-4 py-3">Ý nghĩa sự cố</th>

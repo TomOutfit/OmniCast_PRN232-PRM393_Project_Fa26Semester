@@ -204,17 +204,17 @@ export function LegalPageLayout({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* ── Document Hero Banner ─────────────────────────────────── */}
-        <header className="mb-8 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-slate-900/90 via-[#0d1627]/90 to-slate-900/90 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <header className="mb-8 rounded-3xl card-3d-surface border border-primary-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 px-3 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase text-cyan-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 px-3 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase text-cyan-300 shadow-[0_0_10px_rgba(0,242,254,0.2)]">
                 <FileCheck2 className="h-3 w-3" />
                 Văn Bản Pháp Lý Chính Thức · OmniCast Network
               </span>
-              <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-0.5 text-[11px] font-mono text-slate-400">
+              <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-0.5 text-[11px] font-mono text-slate-300">
                 Phiên bản {version}
               </span>
               <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-mono text-emerald-400">
@@ -222,10 +222,10 @@ export function LegalPageLayout({
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3 bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3">
               {title}
             </h1>
-            <p className="text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
               {subtitle}
             </p>
           </div>
@@ -243,16 +243,16 @@ export function LegalPageLayout({
               <Link
                 key={tab.key}
                 href={tab.href}
-                className={`relative flex items-center gap-3 p-3.5 sm:p-4 rounded-xl border transition-all duration-200 group ${
+                className={`relative flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all duration-300 card-3d-surface group ${
                   isActive
-                    ? 'border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 to-slate-900/60 shadow-lg shadow-cyan-950/30 text-white'
-                    : 'border-white/[0.06] bg-slate-900/40 text-slate-400 hover:text-slate-200 hover:border-white/20 hover:bg-slate-900/70'
+                    ? 'border-cyan-500/60 shadow-[0_0_20px_rgba(0,242,254,0.2)] text-white translate-y-[-2px]'
+                    : 'border-white/10 text-slate-400 hover:text-white hover:border-cyan-500/30'
                 }`}
               >
                 <div
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-2 rounded-xl transition-colors ${
                     isActive
-                      ? 'bg-cyan-500/20 text-cyan-300'
+                      ? 'bg-cyan-500/20 text-cyan-300 shadow-[0_0_10px_rgba(0,242,254,0.3)]'
                       : 'bg-white/[0.04] text-slate-400 group-hover:text-cyan-300 group-hover:bg-cyan-500/10'
                   }`}
                 >
@@ -262,7 +262,7 @@ export function LegalPageLayout({
                   <div className="text-xs sm:text-sm font-bold truncate">
                     {tab.label}
                   </div>
-                  <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
+                  <div className="text-[11px] text-cyan-400/80 font-mono hidden sm:block">
                     {isActive ? '● Đang xem' : 'Xem tài liệu →'}
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export function LegalPageLayout({
             {children}
 
             {/* Bottom Support / Feedback Card */}
-            <div className="mt-12 rounded-xl border border-white/10 bg-[#090f1d] p-6 text-sm text-slate-300">
+            <div className="mt-12 rounded-2xl border border-primary-500/20 card-3d-surface p-6 text-sm text-slate-300">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <h3 className="font-bold text-white flex items-center gap-2">
@@ -292,7 +292,7 @@ export function LegalPageLayout({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <a
                     href="mailto:legal@omnicast.tv"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition shadow-sm hover:shadow-[0_0_15px_rgba(0,242,254,0.3)]"
                   >
                     <Mail className="h-3.5 w-3.5" />
                     legal@omnicast.tv
@@ -312,9 +312,9 @@ export function LegalPageLayout({
           {/* Sticky Sidebar (TOC & Fast Navigation) */}
           <aside className="lg:col-span-4 space-y-5 sticky top-20">
             {/* TOC Card */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#070b14]/90 p-4 backdrop-blur-md">
-              <div className="flex items-center justify-between gap-2 pb-3 border-b border-white/[0.08] mb-3">
-                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
+            <div className="rounded-2xl border border-primary-500/20 card-3d-surface p-4 backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-2 pb-3 border-b border-white/10 mb-3">
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
                   Mục lục tài liệu ({toc.length})
                 </h2>
                 <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">

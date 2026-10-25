@@ -191,24 +191,49 @@ export default function AuditLogsPage() {
   }
 
   return (
-    <div className="min-h-[80vh]">
+    <div className="min-h-[80vh] relative">
+      {/* 3D Ambient telemetry glow */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[300px] bg-cyan-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
+
       {/* Page Header */}
-      <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Nhật ký hoạt động</h1>
-            <p className="text-dark-400">
-              Theo dõi tất cả hoạt động và xuất báo cáo kiểm toán bảo mật (gRPC Audit)
+      <div className="card-3d-surface border-b border-primary-500/20 bg-dark-900/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 rounded-md text-[11px] font-mono uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                Security Audit Engine
+              </span>
+              <span className="text-xs text-dark-400 flex items-center gap-1.5 font-mono">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                gRPC Stream Active
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+              Nhật ký kiểm toán & Hoạt động
+            </h1>
+            <p className="text-sm text-dark-400">
+              Theo dõi tất cả hành vi hệ thống và xuất báo cáo kiểm toán bảo mật (gRPC Audit Protocol)
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/admin">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-dark-700 bg-dark-800/80 hover:border-primary-500/40 text-dark-300 hover:text-white cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Về Mission Control
+              </Button>
+            </Link>
+
             {/* Xuất Excel */}
             <Button
               variant="outline"
               size="sm"
               disabled={isExporting}
               onClick={() => handleExport('excel')}
-              className="gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer shadow-sm"
+              className="gap-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
               title="Xuất bảng tính Excel (.xlsx) chuẩn định dạng"
             >
               {isExporting ? (
@@ -225,7 +250,7 @@ export default function AuditLogsPage() {
               size="sm"
               disabled={isExporting}
               onClick={() => handleExport('json')}
-              className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer shadow-sm"
+              className="gap-2 border-cyan-500/40 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
               title="Xuất dữ liệu có cấu trúc JSON"
             >
               {isExporting ? (
@@ -242,7 +267,7 @@ export default function AuditLogsPage() {
               size="sm"
               disabled={isExporting}
               onClick={() => handleExport('pdf')}
-              className="gap-2 border-rose-500/40 text-rose-400 hover:bg-rose-500/10 cursor-pointer shadow-sm"
+              className="gap-2 border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all"
               title="Xuất báo cáo PDF chuẩn kiểm toán bảo mật"
             >
               {isExporting ? (
@@ -269,64 +294,64 @@ export default function AuditLogsPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="p-4 glass-card">
+          <Card className="p-4 card-3d-surface border border-emerald-500/20 hover:border-emerald-500/40 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.2)]">
                 <CheckCircle className="w-5 h-5 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{successCount}</p>
-                <p className="text-sm text-dark-400">Thành công (trang này)</p>
+                <p className="text-2xl font-bold text-white font-mono">{successCount}</p>
+                <p className="text-xs text-dark-400">Thành công (trang này)</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 glass-card">
+          <Card className="p-4 card-3d-surface border border-amber-500/20 hover:border-amber-500/40 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                 <AlertTriangle className="w-5 h-5 text-yellow-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{warningCount}</p>
-                <p className="text-sm text-dark-400">Cảnh báo (trang này)</p>
+                <p className="text-2xl font-bold text-white font-mono">{warningCount}</p>
+                <p className="text-xs text-dark-400">Cảnh báo (trang này)</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 glass-card">
+          <Card className="p-4 card-3d-surface border border-rose-500/20 hover:border-rose-500/40 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                 <Activity className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{errorCount}</p>
-                <p className="text-sm text-dark-400">Lỗi (trang này)</p>
+                <p className="text-2xl font-bold text-white font-mono">{errorCount}</p>
+                <p className="text-xs text-dark-400">Lỗi (trang này)</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 glass-card">
+          <Card className="p-4 card-3d-surface border border-cyan-500/20 hover:border-cyan-500/40 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                 <Clock className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{total}</p>
-                <p className="text-sm text-dark-400">Tổng hoạt động</p>
+                <p className="text-2xl font-bold text-white font-mono">{total}</p>
+                <p className="text-xs text-dark-400">Tổng hoạt động</p>
               </div>
             </div>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="p-4 glass-card mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <Card className="p-5 card-3d-surface mb-6 border border-primary-500/20">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" />
               <Input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm..."
-                className="pl-10 bg-dark-900 border-dark-700"
+                placeholder="Tìm kiếm theo hành động, email, thông số..."
+                className="pl-10 bg-dark-900/90 border-dark-700/80 focus:border-primary-500/60 rounded-xl text-white shadow-inner"
               />
             </div>
 
@@ -337,7 +362,7 @@ export default function AuditLogsPage() {
                 setSelectedAction(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 bg-dark-900 border border-dark-700 rounded-lg text-white"
+              className="px-4 py-2.5 bg-dark-900/90 border border-dark-700/80 focus:border-primary-500/60 rounded-xl text-white text-sm shadow-inner cursor-pointer"
             >
               <option value="all">Tất cả hành động</option>
               {ACTION_CATEGORIES.map((cat) => (
@@ -350,39 +375,39 @@ export default function AuditLogsPage() {
         </Card>
 
         {/* Logs Table */}
-        <Card className="glass-card overflow-hidden">
+        <Card className="card-3d-surface overflow-hidden border border-primary-500/20">
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-primary-400" />
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="text-center py-16 text-dark-400">
+            <div className="text-center py-20 text-dark-400">
               Không tìm thấy bản ghi nào.
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-dark-900/50">
+                  <thead className="bg-dark-950/80 border-b border-white/5">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Thời gian
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Hành động
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Người dùng
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Chi tiết
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Trạng thái
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-dark-700">
+                  <tbody className="divide-y divide-white/5">
                     {filteredLogs.map((log) => {
                       const Icon = actionIcons[log.action] || Activity;
                       const status = getLogStatus(log.action);
@@ -454,18 +479,19 @@ export default function AuditLogsPage() {
               </div>
 
               {/* Pagination */}
-              <div className="p-4 border-t border-dark-700 flex items-center justify-between">
-                <p className="text-sm text-dark-400">
+              <div className="p-4 border-t border-white/5 flex items-center justify-between flex-wrap gap-4 bg-dark-950/40">
+                <p className="text-xs text-dark-400 font-mono">
                   Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
-                  {Math.min(currentPage * itemsPerPage, total)} của {total} bản
-                  ghi
+                  {Math.min(currentPage * itemsPerPage, total)} của{' '}
+                  <span className="text-cyan-400 font-bold">{total}</span> bản ghi
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
+                    className="cursor-pointer border-dark-700 bg-dark-800/80 hover:border-cyan-500/40"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -474,9 +500,10 @@ export default function AuditLogsPage() {
                     .map((page) => (
                       <Button
                         key={page}
-                        variant={currentPage === page ? 'default' : 'outline'}
+                        variant={currentPage === page ? 'cyber3d' : 'outline'}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
+                        className={`cursor-pointer ${currentPage === page ? 'btn-3d-cyan' : 'border-dark-700 bg-dark-800/80 hover:border-cyan-500/40'}`}
                       >
                         {page}
                       </Button>
@@ -488,6 +515,7 @@ export default function AuditLogsPage() {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
+                    className="cursor-pointer border-dark-700 bg-dark-800/80 hover:border-cyan-500/40"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>

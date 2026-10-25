@@ -139,15 +139,15 @@ export default function DocsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
         {/* ── Hero Banner ─────────────────────────────────────────── */}
-        <header className="rounded-2xl border border-white/[0.08] bg-gradient-to-r from-slate-900/90 via-[#0d1627]/90 to-slate-900/90 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <header className="rounded-3xl card-3d-surface border border-primary-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 px-3 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase text-cyan-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 px-3 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase text-cyan-300 shadow-[0_0_10px_rgba(0,242,254,0.2)]">
                 <Code2 className="h-3 w-3" />
                 OmniCast Engineering Portal · PRN232 + PRM393
               </span>
-              <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-0.5 text-[11px] font-mono text-slate-400">
+              <span className="inline-flex items-center rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-0.5 text-[11px] font-mono text-slate-300">
                 Release v2.4 (Oct 2026)
               </span>
               <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-mono text-emerald-400">
@@ -155,10 +155,10 @@ export default function DocsPage() {
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3 bg-gradient-to-r from-white via-slate-100 to-cyan-300 bg-clip-text">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3">
               Tài Liệu Kỹ Thuật & Kiến Trúc Hệ Thống
             </h1>
-            <p className="text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
               Tổng hợp kiến trúc phân tán, đặc tả microservice gRPC, quy chuẩn động cơ AI Curator,
               pipeline CDN truyền tải video và tài liệu API RESTful dành cho kỹ sư phát triển.
             </p>
@@ -169,15 +169,15 @@ export default function DocsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Sidebar Nav */}
           <aside className="lg:col-span-3 space-y-4 sticky top-20">
-            <div className="rounded-xl border border-white/[0.08] bg-[#070b14]/90 p-3.5 backdrop-blur-md">
+            <div className="rounded-2xl border border-primary-500/20 card-3d-surface p-3.5 backdrop-blur-xl">
               <div className="relative mb-3">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-primary-400" />
                 <input
                   type="text"
                   placeholder="Lọc tài liệu..."
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white/[0.03] border border-white/10 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-dark-900/90 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 shadow-inner"
                 />
               </div>
 
@@ -189,10 +189,10 @@ export default function DocsPage() {
                     <button
                       key={sec.id}
                       onClick={() => setActiveTab(sec.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-left transition ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-left transition cursor-pointer ${
                         isActive
-                          ? 'bg-cyan-500/15 text-cyan-300 font-bold border-l-2 border-cyan-400'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+                          ? 'btn-3d-cyan text-white font-bold shadow-md'
+                          : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                       }`}
                     >
                       <Icon className="h-4 w-4 flex-shrink-0" />
@@ -204,11 +204,11 @@ export default function DocsPage() {
             </div>
 
             {/* Quick Tech Specs Card */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#070b14]/60 p-4 text-xs space-y-2">
-              <h4 className="font-bold text-slate-300 uppercase tracking-wider font-mono text-[10px]">
+            <div className="rounded-2xl border border-white/10 card-3d-surface p-4 text-xs space-y-2">
+              <h4 className="font-bold text-cyan-400 uppercase tracking-wider font-mono text-[10px]">
                 Công nghệ cốt lõi
               </h4>
-              <ul className="space-y-1 text-slate-400 text-[11px] font-mono">
+              <ul className="space-y-1 text-slate-300 text-[11px] font-mono">
                 <li>• Backend: NestJS 10, TypeScript</li>
                 <li>• Frontend: Next.js 14, Tailwind</li>
                 <li>• Mobile: Flutter 3.x, BLoC</li>

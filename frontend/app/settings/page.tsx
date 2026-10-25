@@ -199,23 +199,28 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 
                 {/* Active Tier Highlights Card */}
-                <div className="p-6 rounded-3xl bg-gradient-to-br from-[#121c2e] via-[#09111e] to-[#060a12] border-2 border-cyan-500/40 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="p-6 md:p-8 rounded-3xl card-3d-surface relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-l from-cyan-500/15 to-transparent blur-3xl pointer-events-none" />
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-md flex items-center gap-1.5">
-                      <Crown className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between mb-4 relative z-10">
+                    <span className="px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)] flex items-center gap-1.5 font-mono">
+                      <Crown className="w-3.5 h-3.5 fill-black" />
                       OMNIPASS {selectedPlan.toUpperCase()}
                     </span>
-                    <span className="text-xs text-emerald-400 font-mono font-bold">ĐANG HOẠT ĐỘNG</span>
+                    <span className="text-xs text-emerald-400 font-mono font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                      ĐANG HOẠT ĐỘNG
+                    </span>
                   </div>
 
-                  <h3 className="text-xl font-black text-white mb-2">Quyền Lợi Gói Phát Sóng Cao Cấp</h3>
-                  <p className="text-xs text-slate-300 mb-6 leading-relaxed">
-                    Trải nghiệm xem toàn bộ 25 kênh truyền hình không giới hạn, đường truyền Satellite Downlink 2160p60 HEVC và xem lại Catch-up 7 ngày.
+                  <h3 className="text-xl md:text-2xl font-black text-white mb-2 font-display text-glow-cyan relative z-10">
+                    Quyền Lợi Gói Phát Sóng Cao Cấp
+                  </h3>
+                  <p className="text-xs text-slate-300/80 mb-6 leading-relaxed max-w-2xl relative z-10">
+                    Trải nghiệm xem toàn bộ 25 kênh truyền hình không giới hạn, đường truyền Satellite Downlink 2160p60 HEVC và xem lại Catch-up 7 ngày qua giao diện 3D không gian.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6 relative z-10">
                     {[
                       'Truyền dẫn 4K UHD 60FPS Low Latency',
                       'Đa góc quay Multi-Cam Spider & Player Cam',
@@ -231,14 +236,15 @@ export default function SettingsPage() {
                     ))}
                   </div>
 
-                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between relative z-10 flex-wrap gap-4">
                     <div>
-                      <div className="text-[10px] text-slate-400">Hạn gia hạn tiếp theo:</div>
+                      <div className="text-[10px] text-slate-400 font-mono">Hạn gia hạn tiếp theo:</div>
                       <div className="text-xs font-mono font-bold text-white">31/12/2026 (Thanh toán tự động)</div>
                     </div>
                     <Button
                       onClick={handleSave}
-                      className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-5 shadow-[0_0_15px_rgba(0,242,254,0.4)]"
+                      variant="cyber3d"
+                      className="px-6"
                     >
                       Gia hạn gói cước
                     </Button>
@@ -248,18 +254,18 @@ export default function SettingsPage() {
                 {/* Subscription Plans Selection Grid */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-black text-white flex items-center gap-2">
+                    <h4 className="text-sm font-black text-white flex items-center gap-2 font-display">
                       <Sparkles className="w-4 h-4 text-amber-400" />
                       Lựa Chọn Gói Cước OmniPass
                     </h4>
 
                     {/* Monthly / Yearly Billing Toggle */}
-                    <div className="flex items-center bg-[#0d1624] p-1 rounded-xl border border-[#1b2b42] text-[11px] font-bold">
+                    <div className="flex items-center bg-[#0d1624] p-1 rounded-2xl border border-white/10 text-[11px] font-bold shadow-md">
                       <button
                         onClick={() => setBillingCycle('monthly')}
                         className={cn(
-                          'px-2.5 py-1 rounded-lg transition-all',
-                          billingCycle === 'monthly' ? 'bg-cyan-500 text-black font-black' : 'text-slate-400 hover:text-white'
+                          'px-3 py-1.5 rounded-xl transition-all cursor-pointer',
+                          billingCycle === 'monthly' ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black shadow-md' : 'text-slate-400 hover:text-white'
                         )}
                       >
                         Tháng
@@ -267,31 +273,31 @@ export default function SettingsPage() {
                       <button
                         onClick={() => setBillingCycle('yearly')}
                         className={cn(
-                          'px-2.5 py-1 rounded-lg transition-all flex items-center gap-1',
-                          billingCycle === 'yearly' ? 'bg-cyan-500 text-black font-black' : 'text-slate-400 hover:text-white'
+                          'px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer',
+                          billingCycle === 'yearly' ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black shadow-md' : 'text-slate-400 hover:text-white'
                         )}
                       >
                         Năm
-                        <span className="text-[9px] bg-red-500 text-white px-1 rounded-md font-black">-20%</span>
+                        <span className="text-[9px] bg-red-500 text-white px-1 rounded-md font-black shadow-sm">-20%</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {/* Free Plan */}
                     <div
                       onClick={() => handlePlanSelect('free')}
                       className={cn(
-                        'p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between',
+                        'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between backdrop-blur-xl',
                         selectedPlan === 'free'
-                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_15px_rgba(0,242,254,0.2)]'
-                          : 'bg-[#090f1a] hover:bg-[#0f1a2c] border-[#162338]'
+                          ? 'card-3d-surface border-cyan-400 scale-102'
+                          : 'bg-[#090f1a]/80 hover:bg-[#0f1a2c] border-white/10'
                       )}
                     >
                       <div>
-                        <div className="text-xs font-bold text-slate-400 uppercase">Cơ Bản</div>
-                        <h5 className="text-base font-black text-white mt-1">OmniPass Free</h5>
-                        <div className="mt-2 text-xl font-black text-cyan-300">0 đ</div>
+                        <div className="text-xs font-mono font-bold text-slate-400 uppercase">Cơ Bản</div>
+                        <h5 className="text-base font-black text-white mt-1 font-display">OmniPass Free</h5>
+                        <div className="mt-2 text-xl font-black text-cyan-300 font-mono">0 đ</div>
                         <ul className="mt-3 space-y-1.5 text-[11px] text-slate-300">
                           <li>• 12 kênh truyền hình SD/HD</li>
                           <li>• 1 thiết bị xem cùng lúc</li>
@@ -300,10 +306,10 @@ export default function SettingsPage() {
                       </div>
                       <button
                         className={cn(
-                          'mt-4 w-full py-1.5 rounded-xl text-xs font-bold transition-all',
+                          'mt-5 w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                           selectedPlan === 'free'
-                            ? 'bg-cyan-500 text-black'
-                            : 'bg-[#121c2d] hover:bg-[#1a2b42] text-slate-300 border border-[#22354f]'
+                            ? 'btn-3d-cyan'
+                            : 'bg-[#121c2d] hover:bg-[#1a2b42] text-slate-300 border border-white/10'
                         )}
                       >
                         {selectedPlan === 'free' ? 'Đang chọn' : 'Chọn gói'}
@@ -314,16 +320,16 @@ export default function SettingsPage() {
                     <div
                       onClick={() => handlePlanSelect('pro')}
                       className={cn(
-                        'p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between',
+                        'p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between backdrop-blur-xl',
                         selectedPlan === 'pro'
-                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_15px_rgba(0,242,254,0.2)]'
-                          : 'bg-[#090f1a] hover:bg-[#0f1a2c] border-[#162338]'
+                          ? 'card-3d-surface border-cyan-400 scale-102'
+                          : 'bg-[#090f1a]/80 hover:bg-[#0f1a2c] border-white/10'
                       )}
                     >
                       <div>
-                        <div className="text-xs font-bold text-amber-400 uppercase">Tiêu Chuẩn</div>
-                        <h5 className="text-base font-black text-white mt-1">OmniPass VIP</h5>
-                        <div className="mt-2 text-xl font-black text-amber-300">
+                        <div className="text-xs font-mono font-bold text-amber-400 uppercase">Tiêu Chuẩn</div>
+                        <h5 className="text-base font-black text-white mt-1 font-display">OmniPass VIP</h5>
+                        <div className="mt-2 text-xl font-black text-amber-300 font-mono">
                           {billingCycle === 'monthly' ? '59.000 đ/tháng' : '590.000 đ/năm'}
                         </div>
                         <ul className="mt-3 space-y-1.5 text-[11px] text-slate-300">
@@ -335,10 +341,10 @@ export default function SettingsPage() {
                       </div>
                       <button
                         className={cn(
-                          'mt-4 w-full py-1.5 rounded-xl text-xs font-bold transition-all',
+                          'mt-5 w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                           selectedPlan === 'pro'
-                            ? 'bg-amber-400 text-black font-black'
-                            : 'bg-[#121c2d] hover:bg-[#1a2b42] text-slate-300 border border-[#22354f]'
+                            ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                            : 'bg-[#121c2d] hover:bg-[#1a2b42] text-slate-300 border border-white/10'
                         )}
                       >
                         {selectedPlan === 'pro' ? 'Đang chọn' : 'Nâng cấp'}
@@ -349,43 +355,42 @@ export default function SettingsPage() {
                     <div
                       onClick={() => handlePlanSelect('ultra')}
                       className={cn(
-                        'p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between relative',
+                        'p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between relative backdrop-blur-xl',
                         selectedPlan === 'ultra'
-                          ? 'bg-cyan-950/60 border-cyan-400 shadow-[0_0_20px_rgba(0,242,254,0.3)]'
-                          : 'bg-[#090f1a] hover:bg-[#0f1a2c] border-cyan-500/40'
+                          ? 'card-3d-gold scale-102'
+                          : 'bg-[#090f1a]/80 hover:bg-[#0f1a2c] border-amber-500/40'
                       )}
                     >
-                      <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-md">
+                      <span className="absolute -top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_10px_rgba(0,242,254,0.5)] font-mono">
                         BEST CHOICE
                       </span>
                       <div>
-                        <div className="text-xs font-bold text-cyan-400 uppercase flex items-center gap-1">
-                          <Crown className="w-3.5 h-3.5" />
+                        <div className="text-xs font-mono font-bold text-cyan-400 uppercase flex items-center gap-1">
+                          <Crown className="w-3.5 h-3.5 fill-cyan-400" />
                           Cao Cấp Nhất
                         </div>
-                        <h5 className="text-base font-black text-white mt-1">OmniPass Ultra VIP</h5>
-                        <div className="mt-2 text-xl font-black text-cyan-300">
+                        <h5 className="text-base font-black text-white mt-1 font-display">OmniPass Ultra VIP</h5>
+                        <div className="mt-2 text-xl font-black text-amber-300 font-mono">
                           {billingCycle === 'monthly' ? '129.000 đ/tháng' : '999.000 đ/năm'}
                         </div>
                         <ul className="mt-3 space-y-1.5 text-[11px] text-slate-300">
-                          <li>• Toàn bộ 25 kênh 4K 60FPS HDR</li>
-                          <li>• Dolby Atmos 5.1 & Multi-Cam</li>
-                          <li>• Catch-up xem lại 7 ngày đầy đủ</li>
-                          <li>• 5 thiết bị đồng thời + Cloud DVR</li>
+                          <li>• Trọn vẹn 25 kênh 4K HDR Dolby 5.1</li>
+                          <li>• Catch-up xem lại trọn 7 ngày</li>
+                          <li>• 5 thiết bị đồng thời cùng lúc</li>
+                          <li>• Đa góc quay Multi-Cam Spider</li>
                         </ul>
                       </div>
                       <button
                         className={cn(
-                          'mt-4 w-full py-1.5 rounded-xl text-xs font-bold transition-all',
+                          'mt-5 w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                           selectedPlan === 'ultra'
-                            ? 'bg-cyan-400 text-black font-black'
-                            : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold'
+                            ? 'btn-3d-cyan'
+                            : 'bg-[#121c2d] hover:bg-[#1a2b42] text-slate-300 border border-white/10'
                         )}
                       >
-                        {selectedPlan === 'ultra' ? 'Đang kích hoạt' : 'Kích hoạt ngay'}
+                        {selectedPlan === 'ultra' ? 'Đang chọn' : 'Nâng cấp 4K'}
                       </button>
                     </div>
-
                   </div>
                 </div>
 

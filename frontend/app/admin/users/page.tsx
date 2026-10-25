@@ -123,41 +123,67 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-[80vh]">
+    <div className="min-h-[80vh] relative">
+      {/* 3D Cyber Ambient background glow */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-primary-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+
       {/* Page Header */}
-      <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Quản lý người dùng</h1>
-            <p className="text-dark-400">
-              Xem và quản lý tài khoản người dùng trên hệ thống
+      <div className="card-3d-surface border-b border-primary-500/20 bg-dark-900/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 rounded-md text-[11px] font-mono uppercase tracking-wider bg-primary-500/10 text-primary-400 border border-primary-500/30">
+                Security Admin
+              </span>
+              <span className="text-xs text-dark-400 flex items-center gap-1.5 font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Directory
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+              Quản lý người dùng
+            </h1>
+            <p className="text-sm text-dark-400">
+              Xem, phân quyền và kiểm soát tài khoản người dùng trên toàn hệ thống OmniCast
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            Đăng xuất
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-dark-700 bg-dark-800/80 hover:border-primary-500/40 text-dark-300 hover:text-white cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Về Mission Control
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              Đăng xuất
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters */}
-        <Card className="p-4 glass-card mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <Card className="p-5 card-3d-surface mb-6 border border-primary-500/20">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" />
               <Input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm theo tên, email..."
-                className="pl-10 bg-dark-900 border-dark-700"
+                className="pl-10 bg-dark-900/90 border-dark-700/80 focus:border-primary-500/60 rounded-xl text-white shadow-inner"
               />
             </div>
 
@@ -168,7 +194,7 @@ export default function AdminUsersPage() {
                 setSelectedRole(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 bg-dark-900 border border-dark-700 rounded-lg text-white"
+              className="px-4 py-2.5 bg-dark-900/90 border border-dark-700/80 focus:border-primary-500/60 rounded-xl text-white text-sm shadow-inner cursor-pointer"
             >
               <option value="all">Tất cả vai trò</option>
               <option value="ADMIN">Admin</option>
@@ -181,7 +207,7 @@ export default function AdminUsersPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 bg-dark-900 border border-dark-700 rounded-lg text-white"
+              className="px-4 py-2.5 bg-dark-900/90 border border-dark-700/80 focus:border-primary-500/60 rounded-xl text-white text-sm shadow-inner cursor-pointer"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Hoạt động</option>
@@ -191,46 +217,46 @@ export default function AdminUsersPage() {
         </Card>
 
         {/* Users Table */}
-        <Card className="glass-card overflow-hidden">
+        <Card className="card-3d-surface overflow-hidden border border-primary-500/20">
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-primary-400" />
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-16 text-dark-400">
-              Không tìm thấy người dùng nào.
+            <div className="text-center py-20 text-dark-400">
+              Không tìm thấy người dùng nào phù hợp.
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-dark-900/50">
+                  <thead className="bg-dark-950/80 border-b border-white/5">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Người dùng
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Vai trò
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Trạng thái
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Xác thực
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Đăng nhập gần nhất
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-dark-400">
+                      <th className="px-5 py-3.5 text-right text-xs font-semibold text-dark-300 uppercase tracking-wider">
                         Thao tác
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-dark-700">
+                  <tbody className="divide-y divide-white/5">
                     {filteredUsers.map((user) => (
                       <tr
                         key={user.id}
-                        className="hover:bg-dark-800/50 transition-colors"
+                        className="hover:bg-primary-500/5 transition-colors group"
                       >
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
@@ -313,18 +339,19 @@ export default function AdminUsersPage() {
               </div>
 
               {/* Pagination */}
-              <div className="p-4 border-t border-dark-700 flex items-center justify-between">
-                <p className="text-sm text-dark-400">
+              <div className="p-4 border-t border-white/5 flex items-center justify-between flex-wrap gap-4 bg-dark-950/40">
+                <p className="text-xs text-dark-400 font-mono">
                   Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
                   {Math.min(currentPage * itemsPerPage, totalUsers)} của{' '}
-                  {totalUsers} người dùng
+                  <span className="text-primary-400 font-bold">{totalUsers}</span> người dùng
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
+                    className="cursor-pointer border-dark-700 bg-dark-800/80 hover:border-primary-500/40"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -333,9 +360,10 @@ export default function AdminUsersPage() {
                     .map((page) => (
                       <Button
                         key={page}
-                        variant={currentPage === page ? 'default' : 'outline'}
+                        variant={currentPage === page ? 'cyber3d' : 'outline'}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
+                        className={`cursor-pointer ${currentPage === page ? 'btn-3d-cyan' : 'border-dark-700 bg-dark-800/80 hover:border-primary-500/40'}`}
                       >
                         {page}
                       </Button>
@@ -347,6 +375,7 @@ export default function AdminUsersPage() {
                       setCurrentPage(Math.min(totalPages, currentPage + 1))
                     }
                     disabled={currentPage === totalPages}
+                    className="cursor-pointer border-dark-700 bg-dark-800/80 hover:border-primary-500/40"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>

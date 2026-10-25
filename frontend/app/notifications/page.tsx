@@ -119,57 +119,58 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-white pb-20">
+    <div className="min-h-screen bg-[#070b12]/50 backdrop-blur-[1px] text-white pb-20 selection:bg-cyan-500/30 selection:text-cyan-200">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* Navigation & Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        {/* 3D Navigation & Header */}
+        <div className="p-6 rounded-3xl card-3d-surface flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-32 bg-gradient-to-l from-cyan-500/15 to-transparent blur-3xl pointer-events-none" />
+          <div className="flex items-center gap-3 relative z-10">
             <Link
               href="/"
-              className="p-2 rounded-xl bg-[#0e1726] border border-[#1b2b42] text-slate-400 hover:text-white hover:bg-[#152339] transition-all"
+              className="p-2.5 rounded-2xl bg-[#0e1726]/90 border border-cyan-500/30 text-slate-400 hover:text-white hover:bg-[#152339] shadow-md transition-all hover:scale-105 active:scale-95"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-cyan-400" />
             </Link>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black font-outfit tracking-tight flex items-center gap-2">
-                <span>Trung tâm thông báo</span>
+              <h1 className="text-xl sm:text-2xl font-black font-display tracking-tight flex items-center gap-2.5">
+                <span>Trung Tâm Thông Báo</span>
                 {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-mono font-bold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/50 text-xs font-mono font-black shadow-[0_0_10px_rgba(239,68,68,0.3)]">
                     {unreadCount} chưa đọc
                   </span>
                 )}
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-300/80 mt-1">
                 Cập nhật hoạt động livestream, bình luận và nội dung mới từ các kênh bạn theo dõi
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative z-10">
             {unreadCount > 0 && (
               <Button
-                variant="outline"
+                variant="cyber3d"
                 size="sm"
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
-                className="border-[#1e2d44] text-xs font-semibold text-slate-300 hover:text-white hover:bg-[#142033] gap-1.5"
+                className="gap-1.5"
               >
-                <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <CheckCheck className="w-3.5 h-3.5" />
                 <span>Đánh dấu tất cả đã đọc</span>
               </Button>
             )}
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#18273c] pb-3">
+        {/* 3D Filter Tabs */}
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#080d17]/85 border border-white/[0.08] backdrop-blur-xl shadow-lg w-fit">
           <button
             onClick={() => setFilter('all')}
             className={cn(
-              'px-4 py-1.5 rounded-lg text-xs font-bold transition-all',
+              'px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
               filter === 'all'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-white',
+                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black shadow-[0_0_12px_rgba(0,242,254,0.4)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04]',
             )}
           >
             Tất cả
@@ -177,15 +178,15 @@ export default function NotificationsPage() {
           <button
             onClick={() => setFilter('unread')}
             className={cn(
-              'px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+              'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer',
               filter === 'unread'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-white',
+                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black shadow-[0_0_12px_rgba(0,242,254,0.4)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04]',
             )}
           >
             <span>Chưa đọc</span>
             {unreadCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-mono">
+              <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-mono font-black shadow-sm">
                 {unreadCount}
               </span>
             )}

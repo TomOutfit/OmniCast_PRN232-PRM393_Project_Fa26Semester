@@ -221,18 +221,19 @@ export default function ProfilePage() {
   const isStaff = user.role === 'STAFF' || user.role === 'ADMIN';
 
   return (
-    <div className="min-h-[80vh]">
-      {/* Profile Header */}
-      <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-[80vh] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D Profile Header Badge */}
+      <div className="bg-[#070b12] border-b border-white/10 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <div className="absolute top-0 right-0 w-96 h-48 bg-gradient-to-l from-cyan-500/15 via-blue-500/10 to-transparent blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 py-10 relative z-10">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-gradient-to-br from-primary-600 to-accent-cyan flex items-center justify-center text-4xl md:text-5xl font-bold text-white">
+            {/* 3D Holographic Avatar */}
+            <div className="relative group">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 border-2 border-cyan-400/50 flex items-center justify-center text-4xl md:text-5xl font-black text-slate-950 shadow-[0_0_30px_rgba(0,242,254,0.35)] transition-transform group-hover:scale-105">
                 {(user.fullName || user.email || 'U')[0].toUpperCase()}
               </div>
               <button
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center hover:bg-primary-500 transition-colors"
+                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-cyan-500 text-black flex items-center justify-center hover:bg-cyan-400 transition-all shadow-[0_0_10px_rgba(0,242,254,0.5)] cursor-pointer"
                 aria-label="Đổi ảnh đại diện"
               >
                 <Camera className="w-4 h-4" />
@@ -242,21 +243,21 @@ export default function ProfilePage() {
             {/* User Info */}
             <div className="flex-1 w-full">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-2xl md:text-3xl font-bold text-white">
+                <h1 className="text-2xl md:text-3xl font-black text-white font-display text-glow-cyan">
                   {user.fullName}
                 </h1>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${roleConfig.bg} ${roleConfig.text}`}
+                  className={`px-3 py-1 rounded-xl text-xs font-mono font-bold uppercase tracking-wider border shadow-sm ${roleConfig.bg} ${roleConfig.text} border-current/30`}
                 >
                   {roleConfig.label}
                 </span>
                 {user.emailVerified && (
-                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <CheckCircle className="w-5 h-5 text-emerald-400 drop-shadow-[0_0_6px_#34d399]" />
                 )}
               </div>
-              <div className="flex items-center gap-4 text-dark-400 mb-4 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <Mail className="w-4 h-4" />
+              <div className="flex items-center gap-4 text-xs font-mono text-slate-400 mb-4 flex-wrap">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                  <Mail className="w-3.5 h-3.5 text-cyan-400" />
                   {user.email}
                 </span>
                 {user.createdAt && (

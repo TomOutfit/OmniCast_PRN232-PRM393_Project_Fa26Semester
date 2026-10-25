@@ -97,31 +97,41 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-[80vh]">
-      {/* Page Header */}
-      <div className="bg-dark-900 border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="min-h-[80vh] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D Mission Control Header */}
+      <div className="bg-[#070b12] border-b border-white/10 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <div className="absolute top-0 right-0 w-96 h-40 bg-gradient-to-l from-cyan-500/15 via-blue-500/10 to-transparent blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-              <p className="text-dark-400">
-                Xem tổng quan hệ thống và quản lý nội dung
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00f2fe]" />
+                <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
+                  ENTERPRISE MISSION CONTROL // RBAC LEVEL 3 (ADMIN)
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white font-display text-glow-cyan tracking-tight">
+                Bảng Điều Khiển Quản Trị Hệ Thống
+              </h1>
+              <p className="text-xs text-slate-300/80 mt-1 max-w-xl">
+                Giám sát toàn diện 25 kênh phát sóng, dữ liệu telemetry, hoạt động người dùng và luồng sự kiện trực tiếp 24/7.
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button asChild variant="outline" className="gap-2">
+              <Button asChild variant="neon" size="sm" className="gap-2">
                 <Link href="/admin/audit-logs">
                   <BarChart3 className="w-4 h-4" />
-                  Nhật ký
+                  Nhật Ký Hệ Thống
                 </Link>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleLogout}
-                className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+                className="gap-2 border-red-500/40 text-red-400 hover:bg-red-500/15 hover:text-red-300 cursor-pointer shadow-sm"
               >
                 <LogOut className="w-4 h-4" />
-                Đăng xuất
+                Đăng Xuất
               </Button>
             </div>
           </div>
@@ -129,43 +139,43 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Quick Navigation */}
+        {/* Quick Navigation 3D Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             {
               href: '/admin/users',
               label: 'Quản lý người dùng',
               icon: Users,
-              color: 'from-blue-600 to-blue-800',
+              color: 'from-blue-600 to-cyan-600',
             },
             {
               href: '/admin/audit-logs',
               label: 'Nhật ký hoạt động',
               icon: Activity,
-              color: 'from-purple-600 to-purple-800',
+              color: 'from-purple-600 to-indigo-600',
             },
             {
               href: '/studio/curator',
               label: 'AI Curator Studio',
               icon: Tv,
-              color: 'from-green-600 to-green-800',
+              color: 'from-emerald-600 to-teal-600',
             },
             {
               href: '/epg',
-              label: 'Quản lý EPG',
+              label: 'Quản lý EPG 24H',
               icon: Clock,
-              color: 'from-orange-600 to-orange-800',
+              color: 'from-orange-600 to-amber-600',
             },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
-              <Card className="p-4 glass-card hover:border-primary-500/50 transition-all cursor-pointer group">
+              <div className="p-5 rounded-2xl card-3d-surface cursor-pointer group">
                 <div
-                  className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform`}
                 >
                   <item.icon className="w-5 h-5 text-white" />
                 </div>
-                <p className="font-medium text-white">{item.label}</p>
-              </Card>
+                <p className="font-bold text-white text-xs group-hover:text-cyan-300 transition-colors font-display">{item.label}</p>
+              </div>
             </Link>
           ))}
         </div>
@@ -175,20 +185,21 @@ export default function AdminDashboardPage() {
           <AdminRealtimeCharts />
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* 3D Telemetry Stat Cubes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           {stats.map((stat) => (
-            <Card key={stat.label} className="p-6 glass-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center">
+            <div key={stat.label} className="p-6 rounded-2xl card-3d-surface">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-center shadow-md">
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f2fe]" />
               </div>
-              <div className="text-3xl font-bold text-white mb-1">
+              <div className="text-3xl font-black text-white mb-1 font-mono tracking-tight text-glow-cyan">
                 {stat.value}
               </div>
-              <p className="text-sm text-dark-400">{stat.label}</p>
-            </Card>
+              <p className="text-xs font-mono uppercase tracking-wider text-slate-400">{stat.label}</p>
+            </div>
           ))}
         </div>
 
