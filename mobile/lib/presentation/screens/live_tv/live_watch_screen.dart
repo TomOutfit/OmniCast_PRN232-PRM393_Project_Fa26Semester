@@ -933,22 +933,42 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'ỦNG HỘ STREAMER (SUPER CHAT)',
-                    style: TextStyle(
-                      color: _gold,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.6,
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        'ỦNG HỘ STREAMER (SUPER CHAT)',
+                        style: TextStyle(
+                          color: _gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        ),
+                        child: const Text(
+                          'MÔ PHỎNG 0đ',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Gửi tin nhắn nổi bật & tiếp lửa cho phiên phát sóng',
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Trải nghiệm tặng quà giả lập an toàn · KHÔNG mất tiền thật',
                     style: TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 11,
@@ -1004,11 +1024,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         try {
           LiveSocketService.instance.sendChat(
             eventId: widget.eventId,
-            content: '🎉 [SUPER CHAT ${result.amount}đ] ${result.giftEmoji} ${result.donorName}: ${result.message}',
+            content: '🎉 [SUPER CHAT MÔ PHỎNG ${result.amount}đ] ${result.giftEmoji} ${result.donorName}: ${result.message}',
           );
         } catch (_) {}
 
-        _toast('🎉 Cảm ơn bạn đã gửi ${result.giftEmoji} ủng hộ ${result.amount}đ!', accent: _gold);
+        _toast('🎉 [Mô phỏng] Gửi ${result.giftEmoji} ủng hộ thành công (Chi phí thực tế 0đ)!', accent: _gold);
 
         // Auto hide super chat after 25 seconds
         _superChatTimer?.cancel();
@@ -1082,23 +1102,37 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'qua ${sc.paymentMethod}',
+                      'qua ${sc.paymentMethod} · Sandbox 0đ',
                       style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                        color: Color(0xFF34D399),
                         fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                '$formattedAmount ₫',
-                style: const TextStyle(
-                  color: _gold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'JetBrainsMono',
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$formattedAmount ₫',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                  const Text(
+                    'Mô phỏng',
+                    style: TextStyle(
+                      color: Color(0xFF34D399),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 6),
               GestureDetector(

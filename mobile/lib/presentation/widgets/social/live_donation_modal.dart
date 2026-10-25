@@ -121,28 +121,28 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     {
       'id': 'momo',
       'name': 'Ví MoMo',
-      'subtitle': 'Thanh toán tức thì',
+      'subtitle': 'Sandbox 0đ',
       'icon': Icons.account_balance_wallet_rounded,
       'color': const Color(0xFFA50064),
     },
     {
       'id': 'vnpay',
       'name': 'VNPay QR',
-      'subtitle': 'Quét mã liên ngân hàng',
+      'subtitle': 'Mô phỏng 0đ',
       'icon': Icons.qr_code_scanner_rounded,
       'color': const Color(0xFF005BAA),
     },
     {
       'id': 'zalopay',
       'name': 'ZaloPay',
-      'subtitle': 'Ví điện tử Zalo',
+      'subtitle': 'Sandbox 0đ',
       'icon': Icons.payments_rounded,
       'color': const Color(0xFF0068FF),
     },
     {
       'id': 'card',
-      'name': 'Thẻ ATM / Visa',
-      'subtitle': 'Nội địa & Quốc tế',
+      'name': 'Thẻ ATM/Visa',
+      'subtitle': 'Giả lập 0đ',
       'icon': Icons.credit_card_rounded,
       'color': const Color(0xFF10B981),
     },
@@ -315,6 +315,76 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
                   ),
                 ],
               ),
+              const SizedBox(height: 14),
+
+              // Sandbox Reassurance Notice Banner
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF064E3B).withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.verified_user_rounded,
+                        color: Colors.black,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'CHẾ ĐỘ MÔ PHỎNG (TEST SANDBOX)',
+                                style: TextStyle(
+                                  color: Color(0xFF34D399),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                '· MIỄN PHÍ 100%',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Tính năng demo đồ án học tập (Fa26Semester). Tất cả cổng MoMo, VNPay, ZaloPay, Thẻ đều là giả lập an toàn, KHÔNG trừ tiền thật từ tài khoản ngân hàng của bạn.',
+                            style: TextStyle(
+                              color: Color(0xFFCBD5E1),
+                              fontSize: 11,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 18),
 
               // Tier & Gift Grid
@@ -452,6 +522,17 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            const SizedBox(height: 1),
+                            Text(
+                              m['subtitle'] as String,
+                              style: TextStyle(
+                                color: isSel ? col : const Color(0xFF64748B),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
                       ),
@@ -537,6 +618,76 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
               ),
               const SizedBox(height: 16),
 
+              // Payment Breakdown & Zero-Cost Guarantee Card
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Mức ủng hộ hiển thị:',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        ),
+                        Text(
+                          '$_selectedGiftEmoji ${_formatVnd(_selectedAmount)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'JetBrainsMono',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.shield_rounded, color: Color(0xFF34D399), size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Chi phí thực tế bị trừ:',
+                              style: TextStyle(
+                                color: Color(0xFF34D399),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF10B981)),
+                          ),
+                          child: const Text(
+                            '0 ₫ (Không mất tiền)',
+                            style: TextStyle(
+                              color: Color(0xFF34D399),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'JetBrainsMono',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
               // Action button
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -558,14 +709,14 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                         ),
                       )
-                    : Row(
+                    : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.flash_on_rounded, size: 20),
-                          const SizedBox(width: 8),
+                          Icon(Icons.flash_on_rounded, size: 20),
+                          SizedBox(width: 8),
                           Text(
-                            'GỬI SUPER CHAT ($_selectedGiftEmoji ${_formatVnd(_selectedAmount)})',
-                            style: const TextStyle(
+                            'XÁC NHẬN GỬI MÔ PHỎNG (0đ THỰC TẾ)',
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
