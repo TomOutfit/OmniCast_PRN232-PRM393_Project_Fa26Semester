@@ -549,12 +549,12 @@ export default function LiveWatchPage() {
 
       <div className="container mx-auto px-4 py-4 md:py-6">
         {/* ── Room Header Bar ────────────────────────────────────────────── */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/70 p-3.5 backdrop-blur-md">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 card-3d-surface rounded-2xl p-4 border border-primary-500/20 backdrop-blur-xl">
           {/* Left: Back & Dedicated Room Identification */}
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => router.back()}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-dark-700 bg-dark-800 text-dark-300 transition hover:bg-dark-700 hover:text-white cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(0,242,254,0.2)]"
               title="Quay lại danh sách"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -562,7 +562,7 @@ export default function LiveWatchPage() {
 
             {/* Room Genre Badge */}
             <div
-              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-black tracking-wide transition-all shadow-sm ${theme.borderAccent} ${theme.bgAccent} ${theme.textAccent}`}
+              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-black tracking-wide transition-all shadow-md ${theme.borderAccent} ${theme.bgAccent} ${theme.textAccent}`}
             >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
@@ -574,7 +574,7 @@ export default function LiveWatchPage() {
 
             {/* Current Program Title */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+              <span className="text-xs text-dark-400 font-medium hidden sm:inline">
                 Đang phát:
               </span>
               <h1 className="text-sm md:text-base font-bold text-white line-clamp-1 max-w-xs md:max-w-md lg:max-w-xl">
@@ -585,8 +585,8 @@ export default function LiveWatchPage() {
 
           {/* Right: Live Viewers, Mode Toggles, Share */}
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-1.5 text-xs font-semibold text-slate-300">
-              <Users className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-1.5 text-xs font-semibold text-slate-300 shadow-inner">
+              <Users className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
               <span className="font-bold text-white">{liveSession.viewerCount}</span>
               <span className="hidden sm:inline">khán giả</span>
             </div>
@@ -594,7 +594,7 @@ export default function LiveWatchPage() {
             {isStaffOrAdmin && (
               <Link
                 href={`/studio/live?channel=${snapshot.channel?.slug || ''}`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-950/60 px-3 py-1.5 text-xs font-bold text-purple-300 hover:bg-purple-500 hover:text-black transition shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-950/60 px-3 py-1.5 text-xs font-bold text-purple-300 hover:bg-purple-500 hover:text-black transition shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.4)]"
                 title="Mở Studio để điều phối hoặc phát file từ máy"
               >
                 <Radio className="h-3.5 w-3.5 text-purple-400 animate-pulse" />
@@ -604,10 +604,10 @@ export default function LiveWatchPage() {
 
             <button
               onClick={() => setIsCinemaMode((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                 isCinemaMode
-                  ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300'
-                  : 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                  : 'border-dark-700 bg-dark-800 text-dark-300 hover:bg-dark-700 hover:text-white'
               }`}
               title="Chế độ rạp chiếu"
             >
@@ -619,7 +619,7 @@ export default function LiveWatchPage() {
 
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-dark-700 bg-dark-800 px-3 py-1.5 text-xs font-semibold text-dark-300 transition hover:bg-dark-700 hover:text-white cursor-pointer"
             >
               <Share2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Chia sẻ</span>
@@ -629,18 +629,18 @@ export default function LiveWatchPage() {
 
         {/* ── Continuous Broadcast Shelf (Other Active Rooms On-Air) ───────── */}
         {activeRooms.length > 0 && (
-          <div className="mb-5 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60 p-3 backdrop-blur-md">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
+          <div className="mb-5 overflow-hidden card-3d-surface rounded-2xl border border-primary-500/20 p-3.5 backdrop-blur-md">
+            <div className="mb-2.5 flex items-center justify-between px-1">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-200">
                 <Radio className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
                 <span>Các căn phòng phát sóng liên tục (On-Air)</span>
               </div>
-              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
+              <span className="text-[11px] text-dark-400 font-medium hidden sm:inline">
                 Nhấp để chuyển phòng phát tức thì
               </span>
             </div>
 
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-800">
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-dark-700">
               {activeRooms.map((room) => {
                 const isCurrent = room.id === eventId;
                 const roomCat = room.channel?.category || 'SHOW';
@@ -745,18 +745,18 @@ export default function LiveWatchPage() {
             </div>
 
             {/* Room & Channel Specifications Card */}
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-md">
+            <div className="card-3d-surface rounded-2xl border border-primary-500/20 p-5 backdrop-blur-xl">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   {snapshot.channel?.logoUrl ? (
                     <img
                       src={snapshot.channel.logoUrl}
                       alt={snapshot.channel.name}
-                      className={`h-12 w-12 rounded-full object-cover border-2 shadow-md ${theme.borderAccent}`}
+                      className={`h-12 w-12 rounded-2xl object-cover border-2 shadow-lg shadow-cyan-500/10 ${theme.borderAccent}`}
                     />
                   ) : (
                     <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-full font-bold text-base border-2 shadow-md ${theme.borderAccent} ${theme.bgAccent} ${theme.textAccent}`}
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl font-bold text-base border-2 shadow-lg ${theme.borderAccent} ${theme.bgAccent} ${theme.textAccent}`}
                     >
                       {snapshot.channel?.name?.slice(0, 1) || 'C'}
                     </div>
@@ -769,37 +769,37 @@ export default function LiveWatchPage() {
                       </h2>
                       <ShieldCheck className="h-4 w-4 text-cyan-400" />
                     </div>
-                    <p className="text-xs text-slate-400">{theme.slogan}</p>
+                    <p className="text-xs text-dark-400">{theme.slogan}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="rounded-lg border border-slate-800 bg-slate-950/80 px-2.5 py-1 text-[11px] font-mono text-slate-400">
+                  <span className="rounded-lg border border-white/10 bg-dark-900/80 px-2.5 py-1 text-[11px] font-mono text-dark-300 shadow-inner">
                     1080p 60fps
                   </span>
-                  <span className="rounded-lg border border-slate-800 bg-slate-950/80 px-2.5 py-1 text-[11px] font-mono text-slate-400">
+                  <span className="rounded-lg border border-cyan-500/30 bg-cyan-950/40 px-2.5 py-1 text-[11px] font-mono text-cyan-400 shadow-inner">
                     SPATIAL HI-FI
                   </span>
-                  <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
+                  <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
                     24/7 NON-STOP
                   </span>
                 </div>
               </div>
 
               {snapshot.description && (
-                <p className="mt-3.5 text-xs md:text-sm leading-relaxed text-slate-300/90 border-t border-slate-800/60 pt-3">
+                <p className="mt-3.5 text-xs md:text-sm leading-relaxed text-dark-300 border-t border-white/5 pt-3">
                   {snapshot.description}
                 </p>
               )}
 
               {/* Dedicated Perks Chips */}
-              <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-800/60 pt-3">
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-white/5 pt-3">
                 {theme.perks.map((perk, i) => (
                   <div
                     key={i}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800/90 bg-slate-950/50 px-2.5 py-1 text-[11px] text-slate-300"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-dark-700/80 bg-dark-900/60 px-2.5 py-1 text-[11px] text-dark-300"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
                     <span>{perk}</span>
                   </div>
                 ))}
@@ -808,15 +808,15 @@ export default function LiveWatchPage() {
           </div>
 
           {/* ── Right Column: Dedicated Multi-Tab Audience Lounge ─────── */}
-          <div className="flex flex-col h-[650px] lg:h-auto lg:min-h-[640px] rounded-2xl border border-slate-800/80 bg-slate-900/80 shadow-2xl backdrop-blur-md overflow-hidden">
+          <div className="flex flex-col h-[650px] lg:h-auto lg:min-h-[640px] rounded-2xl border border-primary-500/20 card-3d-surface shadow-2xl backdrop-blur-xl overflow-hidden">
             {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-800 bg-slate-950/70 p-1.5">
+            <div className="flex border-b border-white/5 bg-dark-950/80 p-1.5 gap-1">
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition cursor-pointer ${
                   activeTab === 'chat'
-                    ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'btn-3d-cyan text-white shadow-md'
+                    : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
                 }`}
               >
                 <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
@@ -825,10 +825,10 @@ export default function LiveWatchPage() {
 
               <button
                 onClick={() => setActiveTab('lineup')}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition cursor-pointer ${
                   activeTab === 'lineup'
-                    ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'btn-3d-cyan text-white shadow-md'
+                    : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
                 }`}
               >
                 <Layers className="h-3.5 w-3.5 text-amber-400" />
@@ -842,10 +842,10 @@ export default function LiveWatchPage() {
 
               <button
                 onClick={() => setActiveTab('specs')}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition cursor-pointer ${
                   activeTab === 'specs'
-                    ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'btn-3d-cyan text-white shadow-md'
+                    : 'text-dark-400 hover:text-white hover:bg-dark-800/50'
                 }`}
               >
                 <Info className="h-3.5 w-3.5 text-emerald-400" />

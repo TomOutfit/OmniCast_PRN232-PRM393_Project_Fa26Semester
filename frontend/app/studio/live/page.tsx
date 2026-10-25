@@ -1364,46 +1364,49 @@ export default function WebLiveStudioPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100 pb-16">
+    <div className="min-h-screen bg-[#070b12] text-slate-100 pb-16 relative">
+      {/* 3D Cyber Ambient background glow */}
+      <div className="absolute top-0 right-1/3 w-[600px] h-[350px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+
       {/* ── Studio Sub Header & Nav ────────────────────────────────────── */}
-      <div className="border-b border-[#142032] bg-[#0c1421]/90 backdrop-blur-md">
+      <div className="card-3d-surface border-b border-primary-500/20 bg-[#0c1421]/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-[0_0_20px_rgba(0,242,254,0.3)]">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-600 p-0.5 shadow-[0_0_25px_rgba(0,242,254,0.4)]">
                 <div className="w-full h-full bg-[#070b12] rounded-[14px] flex items-center justify-center">
                   <Radio className="w-6 h-6 text-cyan-400 animate-pulse" />
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-black text-white tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                     OmniCast Studio
                   </h1>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                     LIVE CONTROL CENTER
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">
-                  Trung tâm điều phối phát sóng trực tiếp và sản xuất nội dung
+                <p className="text-xs text-dark-400">
+                  Trung tâm điều phối phát sóng trực tiếp, quản lý luồng ingestion và kiểm soát luồng phát
                 </p>
               </div>
             </div>
 
             {/* Sub Nav Tabs + User Menu */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-[#05080e] p-1 rounded-xl border border-[#1b2b42]">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 bg-[#05080e]/80 p-1.5 rounded-xl border border-white/5 shadow-inner">
                 <Link
                   href="/studio/curator"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-dark-400 hover:text-white transition-colors"
                 >
                   <Bot className="w-4 h-4 text-purple-400" />
                   <span>AI Curator</span>
                 </Link>
                 <button
-                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 shadow-sm"
+                  className="btn-3d-cyan flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black text-white shadow-md cursor-pointer"
                 >
-                  <Radio className="w-4 h-4" />
+                  <Radio className="w-4 h-4 animate-pulse" />
                   <span>Live Studio</span>
                 </button>
               </div>
@@ -1411,7 +1414,7 @@ export default function WebLiveStudioPage() {
                 <Link
                   href={`/live/${activeLiveForChannel.id}`}
                   target="_blank"
-                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500 hover:text-black font-bold text-xs transition shadow-sm"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500 hover:text-black font-bold text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                   title="Mở phòng xem trực tiếp trên tab mới"
                 >
                   <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />

@@ -58,15 +58,16 @@ export default function SearchPage() {
       <div className="max-w-[1680px] mx-auto space-y-6">
         
         {/* ── Search Hero Section ───────────────────────────────────── */}
-        <div className="p-8 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl relative overflow-hidden">
-          <div className="max-w-3xl mx-auto text-center space-y-4">
+        <div className="p-8 md:p-12 rounded-3xl card-3d-surface relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-48 bg-gradient-to-l from-cyan-500/15 via-blue-500/10 to-transparent blur-3xl pointer-events-none" />
+          <div className="max-w-3xl mx-auto text-center space-y-5 relative z-10">
             
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#101b2c] border border-cyan-500/30 text-xs font-bold text-cyan-400">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>TÌM KIẾM THÔNG MINH // TOÀN BỘ 25 KÊNH & VOD</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-950/70 border border-cyan-400/40 text-xs font-black text-cyan-300 shadow-[0_0_12px_rgba(0,242,254,0.3)]">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>TÌM KIẾM THÔNG MINH // TOÀN BỘ 25 KÊNH & VOD 4K</span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight font-display text-glow-cyan">
               Tìm Kiếm Kênh, Giải Đấu & Phim 4K
             </h1>
 
@@ -78,13 +79,13 @@ export default function SearchPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Nhập tên kênh, đội bóng, giải đấu Ngoại Hạng Anh, phim chiếu rạp..."
-                className="w-full pl-12 pr-12 py-4 rounded-2xl bg-[#0b1422] border-2 border-[#1c2e47] focus:border-cyan-400 text-sm text-white placeholder:text-slate-500 shadow-[0_0_25px_rgba(0,0,0,0.6)] focus:outline-none transition-all"
+                className="w-full pl-12 pr-12 py-4 rounded-2xl bg-[#09101d]/90 border-2 border-cyan-500/35 focus:border-cyan-400 text-sm text-white placeholder:text-slate-500 shadow-[0_0_30px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.1)_inset] focus:outline-none transition-all"
                 autoFocus
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-[#18263a] text-slate-400 hover:text-white"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-[#18263a] text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -93,12 +94,12 @@ export default function SearchPage() {
 
             {/* Popular Quick Searches */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-slate-400">
-              <span className="font-bold text-slate-500">Gợi ý tìm kiếm:</span>
+              <span className="font-extrabold text-slate-400 font-mono">Gợi ý tìm kiếm:</span>
               {['Omni Sport', 'Champions League', 'Cine', 'Dune 2', 'Omni Esports', 'News 24/7'].map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setSearchQuery(tag)}
-                  className="px-2.5 py-1 rounded-lg bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-cyan-300 font-semibold transition-colors"
+                  className="px-3 py-1 rounded-xl bg-[#0e1726]/90 hover:bg-[#152339] border border-cyan-500/20 hover:border-cyan-400/50 text-cyan-300 font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
                 >
                   {tag}
                 </button>
