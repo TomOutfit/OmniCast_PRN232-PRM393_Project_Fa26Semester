@@ -86,9 +86,9 @@ function generateUsers(count: number): UserSeedTemplate[] {
   // Dedicated core Staff & Admins to guarantee leadership depth
   const coreStaff: { name: string; email: string; role: UserRole; bio: string }[] = [
     { name: 'Nguyễn Bình An (Lead Admin)', email: 'an.nb@omnicast.tv', role: UserRole.ADMIN, bio: 'System Architecture & Security Director at OmniCast' },
-    { name: 'Vũ Như Phù (Mobile Lead)', email: 'phu.vn@omnicast.tv', role: UserRole.STAFF, bio: 'Senior Flutter Mobile Engineering Lead' },
+    { name: 'Nguyễn Vĩnh Phú (Mobile Lead)', email: 'phu.vn@omnicast.tv', role: UserRole.STAFF, bio: 'Senior Flutter Mobile Engineering Lead' },
     { name: 'Trần Thanh Sơn (Audit & DevOps)', email: 'son.tt@omnicast.tv', role: UserRole.STAFF, bio: 'DevOps & Infrastructure Performance Specialist' },
-    { name: 'Lê Thanh Thắng (Full-stack AI)', email: 'thang.lt@omnicast.tv', role: UserRole.STAFF, bio: 'Full-stack Web & Realtime Analytics Architect' },
+    { name: 'Đồng Hoàng Nguyên (Full-stack AI)', email: 'nguyen.dh@omnicast.tv', role: UserRole.STAFF, bio: 'Full-stack Web & Realtime Analytics Architect' },
     { name: 'Đặng Mai Phương (Stream Director)', email: 'phuong.dm@omnicast.tv', role: UserRole.STAFF, bio: 'Live Broadcast & Multichannel Ingestion Director' },
     { name: 'Hoàng Quốc Bảo (Quality Assurance)', email: 'bao.hq@omnicast.tv', role: UserRole.STAFF, bio: 'Head of Quality Assurance & Latency Optimization' },
     { name: 'Trịnh Khánh Linh (Community Lead)', email: 'linh.tk@omnicast.tv', role: UserRole.STAFF, bio: 'Community Engagement & Super Chat Operations' },
