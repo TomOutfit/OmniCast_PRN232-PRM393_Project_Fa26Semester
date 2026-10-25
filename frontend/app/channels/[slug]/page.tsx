@@ -168,45 +168,56 @@ export default function ChannelDetailPage() {
   const bannerColor = channel.bannerColor || 'from-primary-600 to-primary-800';
 
   return (
-    <div className="min-h-[80vh]">
-      {/* Banner Header */}
-      <div className={`bg-gradient-to-r ${bannerColor} relative overflow-hidden`}>
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="max-w-7xl mx-auto px-4 py-12 relative">
+    <div className="min-h-[80vh] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D Cyber Banner Header */}
+      <div className={`bg-gradient-to-r ${bannerColor} relative overflow-hidden border-b border-white/10 shadow-[0_20px_45px_rgba(0,0,0,0.7)]`}>
+        <div className="absolute inset-0 bg-[#070b12]/80 backdrop-blur-md" />
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <ChannelLogo
-              slug={channel.slug}
-              logoUrl={channel.logoUrl}
-              name={channel.name}
-              category={channel.category}
-              size="xl"
-              className="rounded-2xl shadow-2xl"
-            />
+            <div className="p-1.5 rounded-3xl bg-gradient-to-b from-white/20 to-white/5 border border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+              <ChannelLogo
+                slug={channel.slug}
+                logoUrl={channel.logoUrl}
+                name={channel.name}
+                category={channel.category}
+                size="xl"
+                className="rounded-2xl"
+              />
+            </div>
 
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl md:text-4xl font-bold text-white">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <h1 className="text-3xl md:text-4xl font-black text-white font-display tracking-tight text-glow-cyan">
                   {channel.name}
                 </h1>
                 {channel.isVerified && (
-                  <Verified className="w-6 h-6 text-primary-400" />
+                  <Verified className="w-6 h-6 text-cyan-400" />
                 )}
                 {liveEvent && <LiveBadge size="lg" />}
               </div>
               {channel.tagline && (
-                <p className="text-lg text-white/80 mb-4">{channel.tagline}</p>
+                <p className="text-sm md:text-base text-slate-300 mb-4 max-w-2xl">{channel.tagline}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 text-sm text-white/70">
-                <span className="flex items-center gap-1">
-                  <Tv className="w-4 h-4" />
+              <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-cyan-300">
+                  <Tv className="w-3.5 h-3.5 text-cyan-400" />
                   {CATEGORY_LABELS[channel.category] || channel.category}
                 </span>
-                {channel.region && <span>{channel.region}</span>}
-                {channel.language && <span>{channel.language}</span>}
+                {channel.region && (
+                  <span className="px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                    {channel.region}
+                  </span>
+                )}
+                {channel.language && (
+                  <span className="px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                    {channel.language}
+                  </span>
+                )}
                 {channel.createdAt && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
+                  <span className="flex items-center gap-1 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                    <Calendar className="w-3.5 h-3.5" />
                     Tham gia {format(parseISO(channel.createdAt), 'MMMM yyyy', { locale: vi })}
                   </span>
                 )}
@@ -236,27 +247,27 @@ export default function ChannelDetailPage() {
                 FALLBACK_STREAM;
 
               return (
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${liveEvent ? 'bg-red-500 animate-pulse' : 'bg-emerald-400'}`} />
-                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-300 font-sans">
-                        {liveEvent ? 'Phát sóng trực tiếp' : 'Luồng tín hiệu chính thức'}
+                      <span className={`w-2.5 h-2.5 rounded-full ${liveEvent ? 'bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]' : 'bg-emerald-400 shadow-[0_0_8px_#10b981]'}`} />
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-200 font-mono">
+                        {liveEvent ? 'Phát sóng trực tiếp // 4K HDR' : 'Luồng tín hiệu chính thức // 24/7'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded-md border border-slate-700/60">
-                        1080p Full HD
+                      <span className="text-[11px] font-bold text-cyan-300 bg-cyan-950/70 px-3 py-0.5 rounded-lg border border-cyan-500/40 shadow-[0_0_10px_rgba(0,242,254,0.2)]">
+                        2160p60 HEVC
                       </span>
                       {liveEvent ? <LiveBadge size="sm" /> : <ReplayBadge size="sm" />}
                     </div>
                   </div>
-                  <div className="rounded-2xl overflow-hidden bg-black border border-dark-700 shadow-2xl relative">
+                  <div className="rounded-3xl overflow-hidden bg-black border border-cyan-500/35 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.95),0_0_40px_rgba(0,242,254,0.15)] relative group/player">
                     <VideoPlayer
                       src={activeStreamUrl}
                       poster={liveEvent?.thumbnailUrl || channel.bannerUrl || undefined}
                       autoPlay={true}
-                      className="rounded-2xl"
+                      className="rounded-3xl"
                       initialSeekSeconds={calculateLiveSeekOffset(liveEvent?.scheduledAt, liveEvent?.duration)}
                       isPremium={isChannelPremium(channel.slug)}
                       channelName={channel.name}
@@ -268,33 +279,33 @@ export default function ChannelDetailPage() {
 
             {/* Current/Live Program Info Card */}
             {liveEvent && (
-              <Card className="overflow-hidden glass-card">
-                <div className="bg-gradient-to-r from-red-600/20 to-red-900/20 p-4 border-b border-dark-700">
+              <Card variant="cyber3d" className="overflow-hidden">
+                <div className="bg-gradient-to-r from-red-600/25 to-red-950/40 p-4 border-b border-red-500/30 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-red-400">
                     <LiveBadge />
-                    <span className="text-sm font-medium">Đang phát sóng</span>
+                    <span className="text-xs font-black uppercase tracking-wider text-red-300 font-mono">ĐANG PHÁT SÓNG TRỰC TIẾP</span>
                   </div>
                 </div>
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Link href={`/programs/${liveEvent.id}`} className="group">
-                        <h3 className="text-xl font-bold text-white group-hover:text-primary-400 transition-colors mb-2">
+                        <h3 className="text-xl font-black text-white group-hover:text-cyan-400 transition-colors mb-2 font-display">
                           {liveEvent.title}
                         </h3>
                       </Link>
-                      <div className="flex items-center gap-4 text-sm text-dark-400">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
+                      <div className="flex items-center gap-4 text-xs text-slate-400 font-mono">
+                        <span className="flex items-center gap-1.5 text-cyan-300">
+                          <Clock className="w-4 h-4 text-cyan-400" />
                           {format(parseISO(liveEvent.scheduledAt), 'HH:mm')}
                           {liveEvent.endedAt &&
                             ` - ${format(parseISO(liveEvent.endedAt), 'HH:mm')}`}
                         </span>
                       </div>
                     </div>
-                    <Button asChild size="lg" className="gap-2">
+                    <Button asChild variant="cyber3d" size="lg" className="gap-2">
                       <Link href={`/programs/${liveEvent.id}`}>
-                        <Play className="w-5 h-5" />
+                        <Play className="w-5 h-5 fill-current" />
                         Xem ngay
                       </Link>
                     </Button>

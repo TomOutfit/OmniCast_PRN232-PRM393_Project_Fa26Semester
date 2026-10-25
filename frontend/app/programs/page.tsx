@@ -114,38 +114,38 @@ export default function ProgramsHubPage() {
       <div className="px-4 lg:px-6 space-y-6">
         
         {/* ── Page Header ───────────────────────────────────────────── */}
-        <div className="p-6 md:p-8 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="p-6 md:p-8 rounded-3xl card-3d-surface flex flex-wrap items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-40 bg-gradient-to-l from-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00f2fe]" />
               <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
                 OMNICAST BROADCAST HUB // LIVE EVENTS & PROGRAMMES
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight font-display">
               Trung Tâm Chương Trình & Sự Kiện Phát Sóng
             </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Theo dõi toàn bộ các trận cầu tâm điểm, phim chiếu rạp và talkshow trực tiếp đang lên sóng trên hệ thống 25 kênh OmniCast.
+            <p className="text-xs text-slate-300/80 mt-1 max-w-xl leading-relaxed">
+              Theo dõi toàn bộ các trận cầu tâm điểm, phim chiếu rạp và talkshow trực tiếp đang lên sóng trên hệ thống 25 kênh OmniCast qua hiển thị 3D tương tác.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 relative z-10">
+          <div className="flex items-center gap-3 relative z-10 flex-wrap">
             <Link
               href="/epg"
-              className="px-4 py-2.5 rounded-xl bg-[#0e1726] hover:bg-[#152339] border border-[#1b2b42] text-cyan-300 text-xs font-bold flex items-center gap-2 transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-[#0e1726]/90 hover:bg-[#152339] border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-2 shadow-[0_4px_14px_rgba(0,0,0,0.5)] transition-all hover:scale-105 active:scale-95"
             >
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
               Lịch Phát Sóng EPG
             </Link>
             <Link
               href="/recordings"
-              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black flex items-center gap-2 shadow-[0_0_12px_rgba(0,242,254,0.3)] transition-transform hover:scale-102"
+              className="btn-3d-cyan px-4 py-2.5 text-xs flex items-center gap-2"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              Kho Phim VOD
+              Kho Phim VOD 4K
             </Link>
           </div>
         </div>

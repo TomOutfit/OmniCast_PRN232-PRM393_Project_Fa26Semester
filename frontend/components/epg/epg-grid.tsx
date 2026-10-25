@@ -214,7 +214,7 @@ export function EPGGrid() {
     <div className="w-full space-y-6 text-slate-100">
       
       {/* ── 1. Top EPG Header & 7-Day Date Carousel Bar ─────────────── */}
-      <div className="p-5 md:p-6 rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl space-y-5">
+      <div className="p-5 md:p-6 rounded-3xl card-3d-surface space-y-5">
         
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-[#142236] pb-4">
           <div>
@@ -360,7 +360,7 @@ export function EPGGrid() {
 
       {/* ── 2. VIEW MODE 1: CONTINUOUS 24-HOUR TIMELINE GRID (VTVGo Style) ────────── */}
       {viewMode === 'timeline' && (
-        <div className="rounded-3xl bg-[#090f1a] border border-[#16253c] shadow-2xl overflow-hidden">
+        <div className="rounded-3xl card-3d-surface overflow-hidden">
           
           {/* Subheader bar with legend & live clock */}
           <div className="px-4 py-3 bg-[#070b13] border-b border-[#142236] flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">

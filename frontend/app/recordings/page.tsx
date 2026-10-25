@@ -120,10 +120,11 @@ export default function RecordingsPage() {
         )}
 
         {/* ── Page Header ───────────────────────────────────────────── */}
-        <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+        <div className="p-6 md:p-8 rounded-3xl card-3d-surface flex flex-wrap items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-40 bg-gradient-to-l from-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00f2fe]" />
               <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
                 CLOUD VOD & ON-DEMAND ARCHIVE // 4K MASTER
               </span>
@@ -131,26 +132,26 @@ export default function RecordingsPage() {
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight font-display">
               Kho Video & Bản Ghi Sự Kiện
             </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Thư viện lưu trữ không giới hạn các trận cầu kinh điển, phim điện ảnh bản quyền và talkshow với chất lượng 4K HDR Dolby Atmos.
+            <p className="text-xs text-slate-300/80 mt-1 max-w-xl leading-relaxed">
+              Thư viện lưu trữ không giới hạn các trận cầu kinh điển, phim điện ảnh bản quyền và talkshow với chất lượng 4K HDR Dolby Atmos trên giao diện 3D không gian.
             </p>
           </div>
 
           {/* Quick Search */}
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <div className="relative w-full sm:w-80 z-10">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm kiếm phim, video VOD..."
-              className="w-full pl-10 pr-4 py-2.5 bg-[#0e1726] border border-[#1d2f4a] focus:border-cyan-400 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none shadow-inner"
+              className="w-full pl-10 pr-4 py-3 bg-[#0a111e]/90 border border-cyan-500/30 focus:border-cyan-400 rounded-2xl text-xs text-white placeholder:text-slate-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.1)_inset] transition-all"
             />
           </div>
         </div>
 
         {/* ── Category Filter Bar ────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#080d17] border border-[#142033]">
+        <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-[#080d17]/85 border border-white/[0.08] backdrop-blur-xl shadow-lg">
           {categories.map((cat) => (
             <button
               key={cat.key}
@@ -158,8 +159,8 @@ export default function RecordingsPage() {
               className={cn(
                 'px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                 selectedCategory === cat.key
-                  ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)] font-black'
-                  : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
+                  ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,242,254,0.45)] font-black scale-105'
+                  : 'bg-[#0e1625]/90 hover:bg-[#152338] text-slate-300 border border-[#1b2b42] hover:border-cyan-500/30'
               )}
             >
               {cat.label}

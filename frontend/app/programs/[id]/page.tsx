@@ -205,28 +205,31 @@ function LiveEventView({ program }: { program: any }) {
   }
 
   return (
-    <div className="min-h-[80vh]">
-      {/* Video Player Section */}
-      <div className="bg-black">
-        <div className="max-w-7xl mx-auto px-0 md:px-4">
-          <VideoPlayer
-            src={
-              program.streamUrl ||
-              (program.externalPlatform === 'YOUTUBE' && program.externalId
-                ? `https://www.youtube.com/watch?v=${program.externalId}`
-                : null) ||
-              program.embedCode ||
-              program.externalUrl ||
-              (program.channel?.slug ? DEFAULT_PROGRAM_STREAMS[program.channel.slug] : undefined) ||
-              FALLBACK_STREAM
-            }
-            poster={program.thumbnailUrl || undefined}
-            autoPlay={true}
-            className="rounded-none md:rounded-xl"
-            initialSeekSeconds={calculateLiveSeekOffset(program.scheduledAt, program.duration)}
-            isPremium={isChannelPremium(program.channel?.slug)}
-            channelName={program.channel?.name || program.title}
-          />
+    <div className="min-h-[80vh] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D Cyber Video Player Stage */}
+      <div className="bg-[#070b12] py-4 md:py-8 border-b border-white/10 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-transparent pointer-events-none blur-2xl" />
+        <div className="max-w-7xl mx-auto px-2 md:px-4 relative z-10">
+          <div className="rounded-2xl md:rounded-3xl overflow-hidden border border-cyan-500/40 shadow-[0_25px_65px_-15px_rgba(0,0,0,0.95),0_0_40px_rgba(0,242,254,0.18)] relative group/player">
+            <VideoPlayer
+              src={
+                program.streamUrl ||
+                (program.externalPlatform === 'YOUTUBE' && program.externalId
+                  ? `https://www.youtube.com/watch?v=${program.externalId}`
+                  : null) ||
+                program.embedCode ||
+                program.externalUrl ||
+                (program.channel?.slug ? DEFAULT_PROGRAM_STREAMS[program.channel.slug] : undefined) ||
+                FALLBACK_STREAM
+              }
+              poster={program.thumbnailUrl || undefined}
+              autoPlay={true}
+              className="rounded-2xl md:rounded-3xl"
+              initialSeekSeconds={calculateLiveSeekOffset(program.scheduledAt, program.duration)}
+              isPremium={isChannelPremium(program.channel?.slug)}
+              channelName={program.channel?.name || program.title}
+            />
+          </div>
         </div>
       </div>
 
@@ -313,25 +316,25 @@ function LiveEventView({ program }: { program: any }) {
               </div>
             </div>
 
-            <Card className="p-6 glass-card">
-              <h2 className="text-lg font-bold text-white mb-3">Thả cảm xúc</h2>
+            <Card variant="cyber3d" className="p-6">
+              <h2 className="text-lg font-black text-white mb-3 font-display">Thả Cảm Xúc 3D</h2>
               <ReactionsBar targetId={program.id} kind="liveEvent" />
             </Card>
 
-            <Card className="p-6 glass-card">
-              <h2 className="text-lg font-bold text-white mb-3">Mô tả</h2>
-              <p className="text-dark-300 leading-relaxed">
+            <Card variant="cyber3d" className="p-6">
+              <h2 className="text-lg font-black text-white mb-3 font-display">Mô Tả Chương Trình</h2>
+              <p className="text-slate-300 leading-relaxed text-sm">
                 {program.description || 'Chưa có mô tả.'}
               </p>
 
               {program.tags && program.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-dark-700">
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
                   {program.tags.map((tag: string) => (
                     <span
                       key={tag}
-                      className="px-3 py-1 rounded-full bg-dark-700 text-dark-300 text-sm hover:bg-dark-600 cursor-pointer transition-colors"
+                      className="px-3 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold hover:bg-cyan-900/60 cursor-pointer transition-colors shadow-sm"
                     >
-                      {tag}
+                      #{tag}
                     </span>
                   ))}
                 </div>
@@ -341,28 +344,28 @@ function LiveEventView({ program }: { program: any }) {
             <CommentsSection targetId={program.id} kind="liveEvent" />
 
             {program.channel && (
-              <Card className="p-4 glass-card">
+              <Card variant="cyber3d" className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-lg font-bold text-white">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 flex items-center justify-center text-lg font-black text-cyan-300 shadow-[0_0_15px_rgba(0,242,254,0.25)]">
                       {program.channel.name[0]}
                     </div>
                     <div>
                       <Link
                         href={`/channels/${program.channel.slug}`}
-                        className="font-semibold text-white hover:text-primary-400 transition-colors"
+                        className="font-bold text-white hover:text-cyan-400 transition-colors"
                       >
                         {program.channel.name}
                       </Link>
-                      <p className="text-sm text-dark-400">
+                      <p className="text-xs text-slate-400 font-mono">
                         {program.status === 'LIVE'
                           ? `Đang phát sóng • ${program.viewerCount.toLocaleString()} đang xem`
                           : 'Kênh truyền hình'}
                       </p>
                     </div>
                   </div>
-                  <Button asChild>
-                    <Link href={`/channels/${program.channel.slug}`}>Xem kênh</Link>
+                  <Button asChild variant="neon" size="sm">
+                    <Link href={`/channels/${program.channel.slug}`}>Xem Kênh</Link>
                   </Button>
                 </div>
               </Card>

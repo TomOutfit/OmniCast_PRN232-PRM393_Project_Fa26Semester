@@ -140,46 +140,47 @@ export default function ChannelsPage() {
       <div className="max-w-[1680px] mx-auto space-y-6">
         
         {/* ── Page Header ───────────────────────────────────────────── */}
-        <div className="p-6 rounded-3xl bg-[#090f1a] border border-[#162338] shadow-2xl flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f2fe]" />
+        <div className="p-6 md:p-8 rounded-3xl card-3d-surface flex flex-wrap items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-40 bg-gradient-to-l from-cyan-500/10 to-transparent pointer-events-none blur-3xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#00f2fe]" />
               <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 font-mono">
-                BROADCAST NETWORK // 25 HIGH-BITRATE CHANNELS
+                BROADCAST NETWORK // 25 HIGH-BITRATE 4K CHANNELS
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight font-display">
               Danh Sách Kênh Truyền Hình Trực Tuyến
             </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Hệ thống kênh độc quyền phát sóng 24/7 với độ trễ siêu thấp, chuẩn nén HEVC 2160p60 và hỗ trợ xem lại Catch-up 7 ngày.
+            <p className="text-xs text-slate-300/80 mt-1.5 max-w-xl leading-relaxed">
+              Hệ thống kênh độc quyền phát sóng 24/7 với độ trễ siêu thấp, chuẩn nén HEVC 2160p60 và hỗ trợ xem lại Catch-up 7 ngày qua giao diện 3D không gian.
             </p>
           </div>
 
-          {/* Quick Search */}
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          {/* Quick Search with 3D Bevel */}
+          <div className="relative w-full sm:w-80 z-10">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm kiếm kênh hoặc chương trình..."
-              className="w-full pl-10 pr-4 py-2.5 bg-[#0e1726] border border-[#1d2f4a] focus:border-cyan-400 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none shadow-inner"
+              className="w-full pl-10 pr-4 py-3 bg-[#0a111e]/90 border border-cyan-500/30 focus:border-cyan-400 rounded-2xl text-xs text-white placeholder:text-slate-500 focus:outline-none shadow-[0_4px_20px_rgba(0,0,0,0.5),0_1px_0_rgba(255,255,255,0.1)_inset] transition-all"
             />
           </div>
         </div>
 
         {/* ── Tier & Category Filter Bar ────────────────────────────── */}
-        <div className="space-y-3">
-          {/* Tier Switcher */}
-          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#090f1d] border border-white/[0.08] w-fit">
+        <div className="space-y-3.5">
+          {/* Tier Switcher with 3D Depth */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#090f1d]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg w-fit">
             <button
               onClick={() => setTierFilter('ALL')}
               className={cn(
-                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all',
+                'px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer',
                 tierFilter === 'ALL'
-                  ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-black shadow-[0_0_15px_rgba(0,242,254,0.4)] scale-105'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               )}
             >
               TẤT CẢ (25 KÊNH)
@@ -187,10 +188,10 @@ export default function ChannelsPage() {
             <button
               onClick={() => setTierFilter('FREE')}
               className={cn(
-                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5',
+                'px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer',
                 tierFilter === 'FREE'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md'
-                  : 'text-emerald-400/80 hover:text-emerald-300'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-105'
+                  : 'text-emerald-400/80 hover:text-emerald-300 hover:bg-emerald-500/10'
               )}
             >
               <span>GÓI FREE (5 KÊNH)</span>
@@ -198,27 +199,27 @@ export default function ChannelsPage() {
             <button
               onClick={() => setTierFilter('VIP')}
               className={cn(
-                'px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5',
+                'px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer',
                 tierFilter === 'VIP'
-                  ? 'bg-amber-400 text-slate-950 shadow-md'
-                  : 'text-amber-400/80 hover:text-amber-300'
+                  ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105'
+                  : 'text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10'
               )}
             >
               <span>👑 GÓI VIP 4K (20 KÊNH)</span>
             </button>
           </div>
 
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-[#080d17] border border-[#142033]">
+          {/* Category Tabs with 3D Pills */}
+          <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-[#080d17]/80 border border-white/[0.06] backdrop-blur-xl shadow-lg">
             {categories.map((cat) => (
               <button
                 key={cat.key}
                 onClick={() => setSelectedCategory(cat.key)}
                 className={cn(
-                  'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all',
+                  'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
                   selectedCategory === cat.key
-                    ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(0,242,254,0.4)] font-black'
-                    : 'bg-[#0e1625] hover:bg-[#152338] text-slate-300 border border-[#1b2b42]'
+                    ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(0,242,254,0.45)] font-black scale-105'
+                    : 'bg-[#0e1625]/90 hover:bg-[#152338] text-slate-300 border border-[#1b2b42] hover:border-cyan-500/40'
                 )}
               >
                 {cat.label}
