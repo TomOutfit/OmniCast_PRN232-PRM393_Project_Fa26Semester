@@ -593,6 +593,31 @@ export class LiveStreamGateway
     this.logger.log(`Broadcasted chat:deleted to ${roomName} (commentId: ${commentId})`);
   }
 
+  notifyDonationReceived(donation: {
+    eventId?: string;
+    donationId: string;
+    donorName: string;
+    streamerId: string;
+    streamerName: string;
+    amount: number;
+    paymentMethod: string;
+    giftEmoji: string;
+    giftTier?: string;
+    message?: string;
+    streamerWalletBalance: number;
+    timestamp: string;
+  }) {
+    if (donation.eventId) {
+      const roomName = `event:${donation.eventId}`;
+      this.server?.to(roomName).emit('live:donation:received', donation);
+    }
+    // Also emit globally so streamer listening anywhere (e.g. Studio) receives it
+    this.server?.emit('live:donation:received', donation);
+    this.logger.log(
+      `Broadcasted live:donation:received for event ${donation.eventId} to streamer ${donation.streamerName}: ${donation.amount} VND (Balance: ${donation.streamerWalletBalance} VND)`,
+    );
+  }
+
   notifyProgramChanged(
     eventId: string,
     payload: {

@@ -19,7 +19,7 @@ Bản phát hành chính thức **OmniCast v1.2.0** đánh dấu bước chuyể
   - Bộ 4 thẻ KPI động: Đỉnh người xem đồng thời (Peak CCU), Băng thông tích lũy, Tần suất phản ứng và Tỷ lệ sẵn sàng hạ tầng.
   - Thanh phân bổ lưu lượng theo thiết bị người dùng: Web Desktop, Mobile App, Smart TV.
 
-#### 2. 💖 Luồng Ủng Hộ Live Stream & Super Chat Hoàn Thiện
+#### 2. 💖 Luồng Ủng Hộ Live Stream, Quét QR Sống Động & Nạp Tiền Trực Tiếp Vào Tài Khoản Streamer
 - **Bộ Quà Tặng Ảo 6 Cấp Độ Đa Dạng**:
   - ☕ **Cà phê sáng** (10.000 ₫)
   - 🧋 **Trà sữa trân châu** (20.000 ₫)
@@ -27,11 +27,18 @@ Bản phát hành chính thức **OmniCast v1.2.0** đánh dấu bước chuyể
   - 🎆 **Pháo hoa VIP** (100.000 ₫)
   - 🚀 **Tên lửa siêu cấp** (200.000 ₫)
   - 💎 **Kim cương vương miện** (500.000 ₫)
-- **Đa Dạng Cổng Thanh Toán Trực Tuyến Bản Địa Hóa**:
-  - Tích hợp lựa chọn phương thức: **Ví MoMo**, **VNPay QR Code**, **ZaloPay**, và **Thẻ ATM / Thẻ Quốc Tế**.
+- **Đa Dạng 4 Cổng Thanh Toán Trực Tuyến Mô Phỏng (Sandbox Mock Gateway)**:
+  - Tích hợp lựa chọn 4 phương thức bản địa hóa: **Ví MoMo**, **VNPay QR Code**, **ZaloPay**, và **Thẻ ATM / Thẻ Quốc Tế**.
+- **Màn Hình Quét Mã QR & Xác Nhận Chuyển Tiền Như Thật**:
+  - Tạo mã QR động chuẩn VietQR / MoMo / ZaloPay hiển thị đầy đủ thông tin người thụ hưởng chính là **Streamer (Người tạo ra phiên phát sóng)**: Tên chủ tài khoản, Ngân hàng thụ hưởng (MBBank), Số tài khoản, Số tiền theo gói quà, Cú pháp chuyển khoản và đồng hồ đếm ngược phiên 15:00.
+  - Người xem có thể quét hoặc bấm nút **"Xác nhận đã chuyển tiền (0đ thực tế)"** để hoàn tất đối soát tức thời.
+- **Định Tuyến Tiền Ảo Vào Tài Khoản Thật Của Streamer**:
+  - Giao dịch nguyên tử (`$transaction`) trong Supabase PostgreSQL tự động nhận diện `LiveEvent.channel.ownerId` và tăng số dư ví `User.walletBalance` cho Streamer.
+  - Khán giả người xem không bị trừ tiền thật (chi phí thực tế = 0đ) và tiền ủng hộ không bao giờ bị nạp nhầm vào tài khoản người xem.
+- **Ví Doanh Thu Streamer (Creator Sandbox Wallet)**:
+  - Tích hợp khu vực quản lý số dư và lịch sử các khoản donate đã nhận trên trang hồ sơ cá nhân (Web Profile & Mobile).
 - **Thẻ Ghim Super Chat & Hiệu Ứng Hạt Ăn Mừng (Celebration Particle FX)**:
-  - Khi người xem gửi ủng hộ thành công, màn hình phát sóng kích hoạt hiệu ứng hạt ánh sáng ăn mừng rực rỡ.
-  - Thẻ thông điệp Super Chat được ghim trang trọng trên màn hình phát với dải màu gradient tự động điều chỉnh theo giá trị ủng hộ, hiển thị rõ huy hiệu quà tặng, tên người gửi và lời nhắn.
+  - Kích hoạt sự kiện thời gian thực WebSocket `live:donation:received` ghim thông điệp Super Chat đổi màu gradient nổi bật và phát pháo hoa rực rỡ trong phòng xem live.
 
 #### 3. 🛡️ Cơ Chế Thanh Toán Mô Phỏng (Sandbox / Mock Gateway) — Cam Kết Không Mất Tiền Thật
 - **Môi trường học tập an toàn 100%**: Dự án OmniCast là đồ án capstone học tập (PRN232 + PRM393, Fa26Semester). Tất cả tính năng ủng hộ (Donation), tặng quà ảo và gửi Super Chat đều hoạt động trong môi trường **Giả lập (Mock Payment Gateway)**.
