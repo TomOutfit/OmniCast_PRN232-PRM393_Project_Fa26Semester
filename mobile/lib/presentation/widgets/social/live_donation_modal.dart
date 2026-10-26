@@ -81,8 +81,6 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
   final TextEditingController _messageCtrl =
       TextEditingController(text: 'Ủng hộ kênh phát sóng xuất sắc! 🔥');
 
-  bool _isSubmitting = false;
-
   final List<Map<String, dynamic>> _tiers = [
     {
       'amount': 10000,
