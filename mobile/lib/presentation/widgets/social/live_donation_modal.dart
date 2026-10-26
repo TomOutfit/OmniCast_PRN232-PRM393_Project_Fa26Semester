@@ -81,6 +81,8 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
   final TextEditingController _messageCtrl =
       TextEditingController(text: 'Ủng hộ kênh phát sóng xuất sắc! 🔥');
 
+  bool _isSubmitting = false;
+
   final List<Map<String, dynamic>> _tiers = [
     {
       'amount': 10000,
@@ -182,6 +184,9 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
   }
 
   Future<void> _handleDonate() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
     final name = _donorNameCtrl.text.trim().isEmpty
         ? 'Khán giả bí mật'
         : _donorNameCtrl.text.trim();
