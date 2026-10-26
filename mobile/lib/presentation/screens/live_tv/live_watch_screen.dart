@@ -1011,6 +1011,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       context,
       channelName: chName,
       eventTitle: _event?.title,
+      eventId: widget.eventId,
       onDonated: (result) {
         if (!mounted) return;
         setState(() {

@@ -181,4 +181,55 @@ class BillingService {
       return false;
     }
   }
+
+  /// Send a 100% simulated sandbox live donation.
+  /// Credits virtual funds directly to the Streamer in the database.
+  Future<Map<String, dynamic>> sendSandboxDonation({
+    required String eventId,
+    required String donorName,
+    required int amount,
+    required String paymentMethod,
+    String giftEmoji = '🎉',
+    String? giftTier,
+    String? message,
+  }) async {
+    try {
+      final client = getIt<DioClient>();
+      final response = await client.post(
+        '/billing/live-donation/sandbox',
+        data: {
+          'eventId': eventId,
+          'donorName': donorName,
+          'amount': amount,
+          'paymentMethod': paymentMethod,
+          'giftEmoji': giftEmoji,
+          'giftTier': giftTier,
+          'message': message,
+        },
+      );
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return {'success': true};
+    } catch (e) {
+      if (kDebugMode) {
+        print('[BillingService] sendSandboxDonation error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Fetch public payment & Streamer info for an event.
+  Future<Map<String, dynamic>?> getStreamerPaymentInfo(String eventId) async {
+    try {
+      final client = getIt<DioClient>();
+      final response = await client.get('/billing/event-streamer/$eventId');
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
