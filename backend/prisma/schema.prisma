@@ -25,6 +25,8 @@ model User {
   /// VIP subscription expiry. NULL = no entitlement. Owned by the
   /// billing service after a server-side receipt verification.
   premiumUntil  DateTime? @db.Timestamp(6)
+  /// Sandbox virtual wallet balance in VND for content creators / streamers
+  walletBalance BigInt?   @default(0)
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @updatedAt @db.Timestamp(6)
 
@@ -40,6 +42,8 @@ model User {
   watchHistory      WatchHistory[]
   notifications     Notification[]   @relation("NotificationRecipient")
   actorNotifications Notification[]  @relation("NotificationActor")
+  receivedDonations StreamDonation[] @relation("StreamerDonations")
+  sentDonations     StreamDonation[] @relation("DonorDonations")
 
   @@index([email], map: "idx_user_email")
   @@index([role], map: "idx_user_role")
@@ -176,6 +180,7 @@ model LiveEvent {
   reactions        Reaction[]
   watchlistItems   Watchlist[]
   comments         Comment[]         @relation("CommentLiveEvent")
+  donations        StreamDonation[]  @relation("LiveEventDonations")
 
   // ── Relation back to LiveChannel (see `001_init.sql:142`) ────────
   channel LiveChannel? @relation("LiveEventChannel", fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -650,3 +655,28 @@ model NewsletterSubscriber {
   @@index([userId], map: "idx_newsletter_user")
   @@index([unsubscribedAt], map: "idx_newsletter_unsubscribed")
 }
+
+model StreamDonation {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  eventId        String?   @db.Uuid
+  donorId        String?   @db.Uuid
+  donorName      String    @db.VarChar(255)
+  streamerId     String    @db.Uuid
+  amount         Int
+  paymentMethod  String    @db.VarChar(50)
+  giftEmoji      String    @default("🎉") @db.VarChar(10)
+  giftTier       String?   @db.VarChar(100)
+  message        String?   @db.VarChar(500)
+  qrPayload      String?   @db.VarChar(1000)
+  transferSyntax String?   @db.VarChar(100)
+  isSandbox      Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @db.Timestamp(6)
+
+  event    LiveEvent? @relation("LiveEventDonations", fields: [eventId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  donor    User?      @relation("DonorDonations", fields: [donorId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  streamer User       @relation("StreamerDonations", fields: [streamerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([streamerId], map: "idx_stream_donation_streamer")
+  @@index([eventId], map: "idx_stream_donation_event")
+}
+
