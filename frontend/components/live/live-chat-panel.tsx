@@ -10,6 +10,7 @@ import { Send, Trash2, Heart, Flame, ThumbsUp, Sparkles, MessageSquare, ShieldAl
 import { LiveComment } from '@/lib/api/live';
 import { BroadcasterAnnouncement } from '@/lib/hooks/useLiveSession';
 import { useAuth } from '@/lib/auth-context';
+import { LiveDonationDialog } from './live-donation-dialog';
 
 export interface LiveChatPanelProps {
   eventId: string;
@@ -30,23 +31,8 @@ const REACTION_BUTTONS = [
   { type: 'PARTY', label: '🎉', icon: Sparkles, color: 'text-purple-400' },
 ];
 
-const SUPER_CHAT_TIERS = [
-  { amount: 10000, emoji: '☕', label: 'Cà phê sáng', color: '#38bdf8' },
-  { amount: 20000, emoji: '🧋', label: 'Trà sữa', color: '#34d399' },
-  { amount: 50000, emoji: '🍕', label: 'Pizza tiệc tùng', color: '#fbbf24' },
-  { amount: 100000, emoji: '🎆', label: 'Pháo hoa VIP', color: '#fb923c' },
-  { amount: 200000, emoji: '🚀', label: 'Tên lửa siêu cấp', color: '#e879f9' },
-  { amount: 500000, emoji: '💎', label: 'Kim cương', color: '#f43f5e' },
-];
-
-const MOCK_PAYMENT_METHODS = [
-  { id: 'momo', name: 'Ví MoMo', tag: 'Sandbox 0đ' },
-  { id: 'vnpay', name: 'VNPay QR', tag: 'Mô phỏng 0đ' },
-  { id: 'zalopay', name: 'ZaloPay', tag: 'Sandbox 0đ' },
-  { id: 'card', name: 'Thẻ ATM/Visa', tag: 'Giả lập 0đ' },
-];
-
 export function LiveChatPanel({
+  eventId,
   messages,
   reactions,
   latestReaction,
@@ -58,10 +44,6 @@ export function LiveChatPanel({
 }: LiveChatPanelProps) {
   const [input, setInput] = useState('');
   const [isSuperChatOpen, setIsSuperChatOpen] = useState(false);
-  const [selectedTier, setSelectedTier] = useState(SUPER_CHAT_TIERS[2]);
-  const [selectedMethod, setSelectedMethod] = useState(MOCK_PAYMENT_METHODS[0].id);
-  const [scMessage, setScMessage] = useState('Ủng hộ phiên phát sóng xuất sắc! 🔥');
-  const [isSubmittingSc, setIsSubmittingSc] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
   const isStaffOrAdmin = user?.role === 'STAFF' || user?.role === 'ADMIN';
@@ -71,18 +53,6 @@ export function LiveChatPanel({
     if (!input.trim()) return;
     onSendMessage(input.trim());
     setInput('');
-  };
-
-  const handleSendSuperChat = () => {
-    setIsSubmittingSc(true);
-    setTimeout(() => {
-      const donorName = user?.fullName || 'Khán giả OmniCast';
-      const pm = MOCK_PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'Ví điện tử';
-      const finalMsg = `🎉 [SUPER CHAT MÔ PHỎNG ${selectedTier.amount.toLocaleString('vi-VN')}đ qua ${pm}] ${selectedTier.emoji} ${donorName}: ${scMessage.trim() || 'Ủng hộ luồng trực tiếp!'}`;
-      onSendMessage(finalMsg);
-      setIsSubmittingSc(false);
-      setIsSuperChatOpen(false);
-    }, 700);
   };
 
   return (
@@ -254,156 +224,17 @@ export function LiveChatPanel({
         </div>
       </form>
 
-      {/* Super Chat Sandbox Modal Overlay */}
-      {isSuperChatOpen && (
-        <div className="absolute inset-0 z-50 flex flex-col justify-end bg-slate-950/85 backdrop-blur-md rounded-xl p-3 animate-in fade-in duration-200">
-          <div className="relative rounded-2xl border border-amber-500/40 bg-slate-900 p-4 shadow-2xl shadow-black space-y-3 max-h-[95%] overflow-y-auto scrollbar-thin">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="rounded-full bg-amber-500/20 p-1.5 text-amber-400 border border-amber-500/30">
-                  <Gift className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                    Super Chat & Quà Tặng Ảo
-                  </h4>
-                  <p className="text-[10px] text-slate-400">Ghim thông điệp nổi bật lên khung chat</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSuperChatOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Reassurance Banner */}
-            <div className="flex items-start gap-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-2.5 text-xs text-emerald-300">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
-              <div className="space-y-0.5 text-[11px] leading-relaxed">
-                <p className="font-bold text-emerald-200">
-                  CHẾ ĐỘ MÔ PHỎNG (SANDBOX) · MIỄN PHÍ 100%
-                </p>
-                <p className="text-slate-300">
-                  Giao dịch giả lập an toàn đồ án (Fa26Semester). Tất cả cổng MoMo, VNPay, ZaloPay, Thẻ đều là Mock Sandbox, KHÔNG trừ tiền thật từ tài khoản ngân hàng của bạn.
-                </p>
-              </div>
-            </div>
-
-            {/* Gifts grid */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Chọn gói quà tặng
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {SUPER_CHAT_TIERS.map((tier) => {
-                  const isSel = selectedTier.amount === tier.amount;
-                  return (
-                    <button
-                      key={tier.amount}
-                      type="button"
-                      onClick={() => setSelectedTier(tier)}
-                      className={`flex flex-col items-center justify-center rounded-xl p-2 border text-center transition-all ${
-                        isSel
-                          ? 'border-amber-400 bg-amber-500/15 shadow-sm shadow-amber-500/20'
-                          : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
-                      }`}
-                    >
-                      <span className="text-xl">{tier.emoji}</span>
-                      <span className="text-[11px] font-extrabold text-white mt-1">
-                        {tier.amount.toLocaleString('vi-VN')} ₫
-                      </span>
-                      <span className="text-[9px] text-slate-400 font-medium">{tier.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Payment methods */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Cổng thanh toán giả lập
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {MOCK_PAYMENT_METHODS.map((pm) => {
-                  const isSel = selectedMethod === pm.id;
-                  return (
-                    <button
-                      key={pm.id}
-                      type="button"
-                      onClick={() => setSelectedMethod(pm.id)}
-                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs transition-all ${
-                        isSel
-                          ? 'border-cyan-400 bg-cyan-950/30 text-white font-bold'
-                          : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
-                      }`}
-                    >
-                      <span>{pm.name}</span>
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono">
-                        {pm.tag}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Message input */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Lời nhắn Super Chat
-              </p>
-              <input
-                type="text"
-                value={scMessage}
-                maxLength={120}
-                onChange={(e) => setScMessage(e.target.value)}
-                placeholder="Nhập lời chúc..."
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            {/* Breakdown card */}
-            <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs space-y-1">
-              <div className="flex justify-between text-slate-400">
-                <span>Mức ủng hộ hiển thị:</span>
-                <span className="font-bold text-white font-mono">
-                  {selectedTier.emoji} {selectedTier.amount.toLocaleString('vi-VN')} ₫
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-emerald-400 font-bold">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3.5 w-3.5" /> Chi phí thực tế bị trừ:
-                </span>
-                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-300 font-mono">
-                  0 ₫ (Không mất tiền)
-                </span>
-              </div>
-            </div>
-
-            {/* Submit button */}
-            <button
-              type="button"
-              disabled={isSubmittingSc}
-              onClick={handleSendSuperChat}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-2.5 text-xs font-black text-slate-950 transition-all hover:brightness-110 active:scale-98 disabled:opacity-50"
-            >
-              {isSubmittingSc ? (
-                <span>Đang xử lý mô phỏng...</span>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>XÁC NHẬN GỬI MÔ PHỎNG (0đ THỰC TẾ)</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Realistic Super Chat & Sandbox QR Payment Dialog */}
+      <LiveDonationDialog
+        isOpen={isSuperChatOpen}
+        onClose={() => setIsSuperChatOpen(false)}
+        eventId={eventId}
+        onDonationSuccess={(res) => {
+          const finalMsg = `🎉 [SUPER CHAT MÔ PHỎNG ${res.amount.toLocaleString('vi-VN')}đ] ${res.giftEmoji} ${res.donorName}: ${res.message || 'Ủng hộ luồng trực tiếp!'}`;
+          onSendMessage(finalMsg);
+          onSendReaction('PARTY');
+        }}
+      />
     </div>
   );
 }

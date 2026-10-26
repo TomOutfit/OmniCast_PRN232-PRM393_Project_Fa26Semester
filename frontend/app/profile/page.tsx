@@ -24,6 +24,13 @@ import {
   EyeOff,
   LogOut,
   ShieldAlert,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Gift,
+  Sparkles,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,6 +38,7 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/lib/auth-context';
 import { useMe, useMyStats, useMyFollows, useUpdateMe, useChangePassword } from '@/lib/hooks/useUsers';
+import { fetchUserWallet, type UserWalletData } from '@/lib/api/billing';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
@@ -44,6 +52,28 @@ export default function ProfilePage() {
   const { data: follows } = useMyFollows(1, 6);
   const updateMe = useUpdateMe();
   const changePassword = useChangePassword();
+
+  // Creator virtual wallet state
+  const [wallet, setWallet] = useState<UserWalletData | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+
+  const loadWallet = async () => {
+    try {
+      setLoadingWallet(true);
+      const data = await fetchUserWallet();
+      setWallet(data);
+    } catch {
+      // Non-fatal if unauthenticated
+    } finally {
+      setLoadingWallet(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadWallet();
+    }
+  }, [isAuthenticated]);
 
   // Password change modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -407,6 +437,139 @@ export default function ProfilePage() {
                 </Card>
               </div>
             )}
+
+            {/* Creator Sandbox Virtual Wallet & Donation History */}
+            <Card className="glass-card border-amber-500/30 overflow-hidden relative">
+              <div className="absolute -top-16 -right-16 h-36 w-36 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+              <div className="p-5 border-b border-dark-700/80 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 shadow-md shadow-amber-500/20">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-black text-white text-base flex items-center gap-2">
+                      VÍ DOANH THU STREAMER & NỘI DUNG
+                      <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 font-mono">
+                        SANDBOX 0đ
+                      </span>
+                    </h2>
+                    <p className="text-xs text-dark-400">
+                      Doanh thu tiền ảo nhận được từ các buổi livestream (MoMo, VNPay QR, ZaloPay, Thẻ)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={loadWallet}
+                    disabled={loadingWallet}
+                    className="h-8 gap-1.5 text-xs border-slate-700 hover:bg-slate-800"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingWallet ? 'animate-spin' : ''}`} />
+                    <span>Làm mới</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Balance & Summary KPIs */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-900 p-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 block mb-1">
+                      Số dư ví hiện tại
+                    </span>
+                    <div className="text-2xl font-black text-amber-400 font-mono">
+                      {wallet ? wallet.walletBalance.toLocaleString('vi-VN') : '0'} ₫
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      Tiền ảo mô phỏng an toàn (0đ thực tế)
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-1">
+                      Tổng nhận từ khán giả
+                    </span>
+                    <div className="text-2xl font-black text-emerald-400 font-mono">
+                      {wallet ? wallet.stats.totalReceivedVnd.toLocaleString('vi-VN') : '0'} ₫
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      Từ {wallet?.stats.receivedCount || 0} lượt ủng hộ Super Chat
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 block mb-1">
+                      Đã gửi ủng hộ kênh khác
+                    </span>
+                    <div className="text-2xl font-black text-cyan-400 font-mono">
+                      {wallet ? wallet.stats.totalSentVnd.toLocaleString('vi-VN') : '0'} ₫
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      Từ {wallet?.stats.sentCount || 0} lượt tương tác phòng Live
+                    </span>
+                  </div>
+                </div>
+
+                {/* Reassurance Note */}
+                <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs text-emerald-300">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <p className="text-[11px]">
+                    Toàn bộ luồng chuyển tiền và số dư đều là <strong className="text-emerald-200">mô phỏng học tập đồ án FA26</strong>. Tuyệt đối không trừ tiền và không phát sinh giao dịch ngân hàng thật.
+                  </p>
+                </div>
+
+                {/* Recent Received Donations Table */}
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-amber-400" />
+                    <span>Lịch sử nhận ủng hộ gần đây (Live Donations)</span>
+                  </h3>
+
+                  {wallet && wallet.receivedDonations.length > 0 ? (
+                    <div className="space-y-2">
+                      {wallet.receivedDonations.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/40 hover:border-slate-700 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{item.giftEmoji || '🎉'}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white text-xs">{item.donorName}</span>
+                                <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-mono text-cyan-400 uppercase">
+                                  {item.paymentMethod}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 italic">
+                                &ldquo;{item.message || 'Ủng hộ luồng trực tiếp!'}&rdquo;
+                              </p>
+                              <span className="text-[10px] text-slate-500 block">
+                                Buổi phát: {item.eventTitle} · {format(parseISO(item.createdAt), 'dd/MM/yyyy HH:mm')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-black text-emerald-400 font-mono block">
+                              +{item.amount.toLocaleString('vi-VN')} ₫
+                            </span>
+                            <span className="text-[9px] text-slate-500 font-mono">
+                              Sandbox 0đ
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-800 p-6 text-center text-slate-500 text-xs">
+                      Chưa có giao dịch nhận tiền nào. Khi khán giả quét mã QR và xác nhận chuyển tiền trên luồng Live của bạn, số dư sẽ lập tức được ghi có tại đây!
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
 
             {/* Personal Viewing & Interaction Trends Chart */}
             <UserPersonalTrendsChart
