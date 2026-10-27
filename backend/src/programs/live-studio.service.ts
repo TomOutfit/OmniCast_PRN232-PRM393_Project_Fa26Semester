@@ -750,11 +750,15 @@ export class LiveStudioService {
    * MediaMTX serves the multivariant manifest at `index.m3u8`
    * (NOT `live.m3u8` — that was an old nginx-style layout and is
    * what the previous hardcoded values used).
+   *
+   * The base URL MUST come from the same source as
+   * [getIngestConfig] — otherwise a deployment that only sets
+   * `MEDIAMTX_PUBLIC_HOST` (and not `MEDIAMTX_HLS_URL`) would hand
+   * every viewer `http://localhost:8888/...`, which only resolves on
+   * the broadcaster's own machine.
    */
   private buildHlsUrls(slug: string): { hlsUrl: string; hlsIndexUrl: string } {
-    const hlsBase = (
-      process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888'
-    ).replace(/\/$/, '');
+    const hlsBase = this.getIngestConfig().hlsUrl.replace(/\/$/, '');
     return {
       hlsUrl: `${hlsBase}/${slug}`,
       hlsIndexUrl: `${hlsBase}/${slug}/index.m3u8`,

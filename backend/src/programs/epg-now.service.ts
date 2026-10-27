@@ -418,6 +418,13 @@ export class EpgNowService {
    * Single Prisma query for the currently-broadcasting live event on
    * a channel. Pulled out of `findActiveLiveEvent` so the cache type
    * inference has a concrete return type to anchor on.
+   *
+   * `duration` semantics:
+   *   • `> 0`  → the event ends at `scheduledAt + duration`.
+   *   • `<= 0` → OPEN-ENDED. This is what a webcam live uses
+   *              (`duration: 0` = "runs until the broadcaster
+   *              stops it"). Treating 0 as "already ended" made
+   *              every webcam broadcast invisible in `/epg/now`.
    */
   private async rawQueryActiveLive(channelId: string, now: Date) {
     const ev = await this.prisma.liveEvent.findFirst({
@@ -431,10 +438,15 @@ export class EpgNowService {
       orderBy: { scheduledAt: 'desc' },
     });
     if (!ev) return null;
-    const endsAt = new Date(
-      ev.scheduledAt.getTime() + (ev.duration ?? 0) * 1000,
-    );
-    if (endsAt.getTime() <= now.getTime()) return null;
+
+    const durationSec = ev.duration ?? 0;
+    if (durationSec > 0) {
+      const endsAt = new Date(
+        ev.scheduledAt.getTime() + durationSec * 1000,
+      );
+      if (endsAt.getTime() <= now.getTime()) return null;
+    }
+    // duration <= 0 → open-ended: still on air until it is stopped.
     return ev;
   }
 
