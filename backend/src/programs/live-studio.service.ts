@@ -50,6 +50,8 @@ import {
   SelfRecordUploadDto,
   StopLiveDto,
   StudioSelfRecordVisibility,
+  WebcamLiveStartDto,
+  WebcamLiveStopDto,
 } from './dto/live-studio.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsPushService } from '../notifications/notifications-push.service';
@@ -665,11 +667,12 @@ export class LiveStudioService {
     // Broadcast live:started event to all connected viewers via WebSocket
     // This notifies all clients subscribed to this channel and across the app that a live stream is active
     try {
+      const { hlsIndexUrl } = this.buildHlsUrls(channel.slug);
       this.wsGateway.notifyLiveStarted(channel.slug, {
         eventId: event.id,
         title: event.title,
         streamUrl: event.streamUrl || '',
-        hlsUrl: `${process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888'}/${channel.slug}/live.m3u8`,
+        hlsUrl: hlsIndexUrl,
         thumbnailUrl: event.thumbnailUrl || undefined,
         startedAt: event.startedAt?.toISOString() || new Date().toISOString(),
         duration: event.duration || undefined,
@@ -682,88 +685,347 @@ export class LiveStudioService {
 
     // Dispatch in-app notifications and FCM push asynchronously in background
     // so Studio operators don't get blocked by external FCM/DB notification latencies.
-    (async () => {
-      try {
-        const activeUsers = await this.prisma.user.findMany({
-          where: {
-            role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
-            isActive: true,
-          },
-          select: { id: true },
-        });
-        const chunkSize = 100;
-        for (let i = 0; i < activeUsers.length; i += chunkSize) {
-          const chunk = activeUsers.slice(i, i + chunkSize);
-          await Promise.allSettled(
-            chunk.map((u) =>
-              this.notificationsService.create({
-                userId: u.id,
-                type: 'LIVE_START',
-                title: `🔴 ${channel.name} đang phát trực tiếp!`,
-                message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
-                actionUrl: `/live/${event.id}`,
-                eventId: event.id,
-                channelId: channel.id,
-              }),
-            ),
-          );
-        }
-        this.logger.log(
-          `Created in-app LIVE_START notifications for ${activeUsers.length} users`,
-        );
-      } catch (notifErr) {
-        this.logger.warn(
-          `Failed creating in-app notifications: ${(notifErr as Error).message}`,
-        );
-      }
-
-      // Send push notification via FCM to all registered active devices
-      try {
-        const deviceTokenRows = await this.prisma.deviceToken.findMany({
-          where: {
-            user: {
-              role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
-              isActive: true,
-            },
-          },
-          select: { token: true },
-        });
-        const pushTokens = Array.from(
-          new Set(
-            deviceTokenRows.map((r: any) => r.token).filter(Boolean),
-          ),
-        );
-        if (pushTokens.length > 0) {
-          await this.pushService.send({
-            tokens: pushTokens,
-            type: 'LIVE_STARTED',
-            title: `🔴 ${channel.name} đang phát trực tiếp!`,
-            body: `${event.title} - Bấm để tham gia ngay`,
-            programId: event.id,
-            data: {
-              eventId: event.id,
-              channelSlug: channel.slug,
-              actionUrl: `/live/${event.id}`,
-            },
-          });
-          this.logger.log(
-            `Sent FCM LIVE_STARTED push to ${pushTokens.length} device tokens`,
-          );
-        }
-      } catch (pushErr) {
-        this.logger.warn(
-          `Push notification send failed: ${(pushErr as Error).message}`,
-        );
-      }
-    })().catch((err) => {
-      this.logger.error(`Background notification task error: ${err.message}`);
-    });
+    void this.dispatchLiveStartNotifications(channel, event);
 
     return {
       event,
       recordings,
       message: `Đã phát sóng trực tiếp "${event.title}" trên kênh ${channel.name}.`,
     };
+  }
+
+  // ============================================================
+  // WEBCAM LIVE (WebRTC / WHIP publish)
+  // ============================================================
+
+  /**
+   * Ingest configuration for the browser broadcaster.
+   *
+   * This is the SINGLE source of truth for where media flows. The
+   * frontend must not hard-code an IP address — it reads the
+   * ingest config from this endpoint so the same build works on
+   * localhost, on a LAN address, and in production.
+   *
+   * URL shapes (MediaMTX):
+   *   WHIP publish  : {whipUrl}/{channelSlug}/whip
+   *   HLS playback  : {hlsUrl}/{channelSlug}/index.m3u8
+   *   WHEP playback : {webrtcUrl}/{channelSlug}
+   */
+  getIngestConfig() {
+    const publicHost = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
+    const hlsBase = (
+      process.env.MEDIAMTX_HLS_URL || `http://${publicHost}:8888`
+    ).replace(/\/$/, '');
+    const webrtcBase = (
+      process.env.MEDIAMTX_WEBRTC_URL || `ws://${publicHost}:8889`
+    ).replace(/\/$/, '');
+    const whipBase = (
+      process.env.MEDIAMTX_WHIP_URL || `http://${publicHost}:8889`
+    ).replace(/\/$/, '');
+    const rtmpBase = (
+      process.env.MEDIAMTX_RTMP_URL || `rtmp://${publicHost}:1935`
+    ).replace(/\/$/, '');
+
+    return {
+      publicHost,
+      hlsUrl: hlsBase,
+      hlsIndexUrlTemplate: `${hlsBase}/{slug}/index.m3u8`,
+      webrtcUrl: webrtcBase,
+      whipUrl: whipBase,
+      whipUrlTemplate: `${whipBase}/{slug}/whip`,
+      rtmpUrl: rtmpBase,
+      rtmpUrlTemplate: `${rtmpBase}/{slug}`,
+      /**
+       * Codecs MediaMTX can remux to HLS. VP8 is NOT supported by
+       * the HLS muxer, so the WHIP client must offer H264 / VP9.
+       */
+      supportedVideoCodecs: ['H264', 'VP9', 'AV1'],
+      supportedAudioCodecs: ['opus'],
+    };
+  }
+
+  /**
+   * Build the HLS URLs for a channel path.
+   *
+   * MediaMTX serves the multivariant manifest at `index.m3u8`
+   * (NOT `live.m3u8` — that was an old nginx-style layout and is
+   * what the previous hardcoded values used).
+   */
+  private buildHlsUrls(slug: string): { hlsUrl: string; hlsIndexUrl: string } {
+    const hlsBase = (
+      process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888'
+    ).replace(/\/$/, '');
+    return {
+      hlsUrl: `${hlsBase}/${slug}`,
+      hlsIndexUrl: `${hlsBase}/${slug}/index.m3u8`,
+    };
+  }
+
+  /**
+   * Start a live broadcast fed directly by the operator's browser
+   * camera over WHIP.
+   *
+   * Flow:
+   *   1. Resolve the channel (slug or UUID).
+   *   2. End any in-flight LIVE / SCHEDULED event on that channel so
+   *      we never have two concurrent broadcasts.
+   *   3. Create a real `LiveEvent` row whose `streamUrl` points at
+   *      the MediaMTX LL-HLS manifest. Because the row is a genuine
+   *      LiveEvent, chat / reactions / viewer-count / the viewer
+   *      room all work with zero extra wiring.
+   *   4. Broadcast `live:started` over WebSocket and fire the
+   *      standard LIVE_START notifications.
+   *
+   * The media bytes never touch this process — the browser pushes
+   * them straight into MediaMTX.
+   */
+  async startWebcamLive(dto: WebcamLiveStartDto, userId: string) {
+    const channel = await this.findChannel(dto.channelSlug);
+    if (!channel) {
+      throw new NotFoundException(`Channel not found: ${dto.channelSlug}`);
+    }
+
+    const now = new Date();
+
+    // End anything already running on this channel.
+    await this.prisma.liveEvent.updateMany({
+      where: {
+        channelId: channel.id,
+        status: { in: [EventStatus.LIVE, EventStatus.SCHEDULED] },
+      },
+      data: {
+        status: EventStatus.ENDED,
+        endedAt: now,
+      },
+    });
+
+    const { hlsIndexUrl } = this.buildHlsUrls(channel.slug);
+
+    const event = await this.prisma.liveEvent.create({
+      data: {
+        title:
+          dto.title?.trim() ||
+          `Trực tiếp từ camera — ${channel.name}`,
+        description:
+          dto.description?.trim() ||
+          `Buổi phát trực tiếp qua WebRTC từ camera của kênh ${channel.name}.`,
+        thumbnailUrl: channel.logoUrl || null,
+        streamSource: ContentSource.UPLOADED,
+        externalPlatform: ExternalPlatform.CUSTOM_HLS,
+        streamUrl: hlsIndexUrl,
+        status: EventStatus.LIVE,
+        scheduledAt: now,
+        startedAt: now,
+        endedAt: null,
+        // 0 = open-ended live stream (no planned end).
+        duration: 0,
+        language: 'vi',
+        quality: StreamQuality.AUTO,
+        chatEnabled: true,
+        autoRecord: true,
+        channelId: channel.id,
+        tags: ['studio-webcam-live', channel.slug],
+      },
+      include: {
+        channel: { select: { id: true, slug: true, name: true } },
+      },
+    });
+
+    await this.auditLogger.log({
+      userId,
+      action: 'STUDIO_WEBCAM_LIVE_START',
+      entityType: 'LiveEvent',
+      entityId: event.id,
+      newValues: {
+        channelId: channel.id,
+        channelSlug: channel.slug,
+        streamUrl: hlsIndexUrl,
+        ingestConfig: this.getIngestConfig(),
+      },
+    });
+
+    // Flush the Studio live cache so the next /epg/now poll sees
+    // this event immediately.
+    this.epgNow.invalidateStudioLiveCache(channel.id);
+
+    // Tell every connected viewer that a live stream started.
+    try {
+      this.wsGateway.notifyLiveStarted(channel.slug, {
+        eventId: event.id,
+        title: event.title,
+        streamUrl: hlsIndexUrl,
+        hlsUrl: hlsIndexUrl,
+        thumbnailUrl: event.thumbnailUrl || undefined,
+        startedAt: event.startedAt?.toISOString() || now.toISOString(),
+        duration: 0,
+      });
+      this.logger.log(
+        `WebSocket: notified live:started for webcam live "${channel.slug}" (event ${event.id})`,
+      );
+    } catch (wsError) {
+      this.logger.warn(
+        `WebSocket notification failed: ${(wsError as Error).message}`,
+      );
+    }
+
+    // In-app + FCM notifications (same behaviour as a curated live).
+    void this.dispatchLiveStartNotifications(channel, event);
+
+    return {
+      event,
+      eventId: event.id,
+      channelSlug: channel.slug,
+      streamUrl: hlsIndexUrl,
+      ingestConfig: this.getIngestConfig(),
+      message: `Đã bật LIVE WEBCAM trên kênh ${channel.name}.`,
+    };
+  }
+
+  /**
+   * Stop a webcam live event and mark it ENDED.
+   */
+  async stopWebcamLive(dto: WebcamLiveStopDto, userId: string) {
+    const event = await this.prisma.liveEvent.findUnique({
+      where: { id: dto.eventId },
+      select: {
+        id: true,
+        status: true,
+        title: true,
+        tags: true,
+        channel: { select: { id: true, slug: true, name: true } },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException(`Live event not found: ${dto.eventId}`);
+    }
+
+    if (event.status !== EventStatus.LIVE) {
+      throw new BadRequestException(
+        `Event "${event.title}" is not live (status=${event.status}).`,
+      );
+    }
+
+    const updated = await this.prisma.liveEvent.update({
+      where: { id: dto.eventId },
+      data: {
+        status: EventStatus.ENDED,
+        endedAt: new Date(),
+      },
+      include: {
+        channel: { select: { id: true, slug: true, name: true } },
+      },
+    });
+
+    await this.auditLogger.log({
+      userId,
+      action: 'STUDIO_WEBCAM_LIVE_STOP',
+      entityType: 'LiveEvent',
+      entityId: dto.eventId,
+      newValues: { status: EventStatus.ENDED },
+    });
+
+    if (event.channel?.id) {
+      this.epgNow.invalidateStudioLiveCache(event.channel.id);
+    }
+
+    try {
+      if (event.channel?.slug) {
+        this.wsGateway.notifyLiveStopped(event.channel.slug, {
+          eventId: dto.eventId,
+          reason: 'broadcaster_stopped',
+          stoppedAt: new Date().toISOString(),
+        });
+      }
+    } catch (wsError) {
+      this.logger.warn(
+        `WebSocket notification failed: ${(wsError as Error).message}`,
+      );
+    }
+
+    return {
+      event: updated,
+      message: `Đã dừng LIVE WEBCAM "${updated.title}".`,
+    };
+  }
+
+  /**
+   * Fire the standard "a live stream started" fan-out (in-app
+   * notifications + FCM push). Shared by the curated-live flow and
+   * the webcam-live flow so both behave identically.
+   */
+  private async dispatchLiveStartNotifications(
+    channel: { id: string; name: string },
+    event: { id: string; title: string },
+  ): Promise<void> {
+    try {
+      const activeUsers = await this.prisma.user.findMany({
+        where: {
+          role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      const chunkSize = 100;
+      for (let i = 0; i < activeUsers.length; i += chunkSize) {
+        const chunk = activeUsers.slice(i, i + chunkSize);
+        await Promise.allSettled(
+          chunk.map((u) =>
+            this.notificationsService.create({
+              userId: u.id,
+              type: 'LIVE_START',
+              title: `🔴 ${channel.name} đang phát trực tiếp!`,
+              message: `${event.title} - Bấm để tham gia xem và tương tác ngay!`,
+              actionUrl: `/live/${event.id}`,
+              eventId: event.id,
+              channelId: channel.id,
+            }),
+          ),
+        );
+      }
+      this.logger.log(
+        `Created in-app LIVE_START notifications for ${activeUsers.length} users`,
+      );
+    } catch (notifErr) {
+      this.logger.warn(
+        `Failed creating in-app notifications: ${(notifErr as Error).message}`,
+      );
+    }
+
+    try {
+      const deviceTokenRows = await this.prisma.deviceToken.findMany({
+        where: {
+          user: {
+            role: { in: [UserRole.VIEWER, UserRole.STAFF, UserRole.ADMIN] },
+            isActive: true,
+          },
+        },
+        select: { token: true },
+      });
+      const pushTokens = Array.from(
+        new Set(deviceTokenRows.map((r: any) => r.token).filter(Boolean)),
+      );
+      if (pushTokens.length > 0) {
+        await this.pushService.send({
+          tokens: pushTokens,
+          type: 'LIVE_STARTED',
+          title: `🔴 ${channel.name} đang phát trực tiếp!`,
+          body: `${event.title} - Bấm để tham gia ngay`,
+          programId: event.id,
+          data: {
+            eventId: event.id,
+            actionUrl: `/live/${event.id}`,
+          },
+        });
+        this.logger.log(
+          `Sent FCM LIVE_STARTED push to ${pushTokens.length} device tokens`,
+        );
+      }
+    } catch (pushErr) {
+      this.logger.warn(
+        `Push notification send failed: ${(pushErr as Error).message}`,
+      );
+    }
   }
 
   /**
@@ -1550,18 +1812,17 @@ export class LiveStudioService {
       orderBy: { startedAt: 'desc' },
     });
 
-    const mediaMtxHlsUrl = process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
-
     return liveEvents.map((event) => {
       const recTag = event.tags?.find((t: string) => t.startsWith('rec:'));
+      const { hlsIndexUrl } = event.channel?.slug
+        ? this.buildHlsUrls(event.channel.slug)
+        : { hlsIndexUrl: '' };
       return {
         eventId: event.id,
         title: event.title,
         description: event.description,
         streamUrl: event.streamUrl,
-        hlsUrl: event.channel?.slug
-          ? `${mediaMtxHlsUrl}/${event.channel.slug}/live.m3u8`
-          : '',
+        hlsUrl: hlsIndexUrl,
         sourceRecordingId: recTag ? recTag.replace('rec:', '') : null,
         startedAt: event.startedAt?.toISOString(),
         duration: event.duration,

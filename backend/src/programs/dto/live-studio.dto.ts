@@ -142,6 +142,57 @@ export class CurateLiveDto {
 }
 
 // ============================================================
+// 5. Webcam Live (phát trực tiếp bằng camera qua WebRTC/WHIP)
+// ============================================================
+//
+// The Studio can publish the operator's browser camera straight
+// into MediaMTX over WHIP. No file, no upload, no Cloudinary —
+// the stream is live from the moment the button is pressed.
+//
+// The backend does NOT proxy any media bytes. It only:
+//   1. hands the browser the WHIP/HLS URLs (ingest config), and
+//   2. creates / ends the `LiveEvent` row so the existing viewer
+//      pages, chat, reactions and viewer-count all keep working.
+
+export class WebcamLiveStartDto {
+  @ApiProperty({
+    description:
+      'Channel slug (preferred) or UUID that will carry the live ' +
+      'camera feed. The slug is also used as the MediaMTX path, so ' +
+      'the WHIP endpoint is `<whipUrl>/<slug>/whip`.',
+    example: 'sport-1',
+  })
+  @IsString()
+  @MaxLength(120)
+  channelSlug: string;
+
+  @ApiPropertyOptional({
+    description: 'Title of the live event shown in the viewer room.',
+    example: 'Trực tiếp từ camera Studio',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional description shown above the player.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  description?: string;
+}
+
+export class WebcamLiveStopDto {
+  @ApiProperty({
+    description: 'Id of the `LiveEvent` returned by the start call.',
+  })
+  @IsString()
+  eventId: string;
+}
+
+// ============================================================
 // 2. Stop Live (kết thúc phát sóng)
 // ============================================================
 

@@ -25,7 +25,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -51,6 +50,8 @@ import {
   AddFromCatalogDto,
   SelfRecordUploadDto,
   StopLiveDto,
+  WebcamLiveStartDto,
+  WebcamLiveStopDto,
 } from './dto/live-studio.dto';
 import { LiveStreamGateway } from '../websocket/live-stream.gateway';
 
@@ -80,7 +81,6 @@ export class LiveStudioController {
     private readonly studioService: LiveStudioService,
     private readonly catalog: StudioCatalogService,
     private readonly storage: StorageService,
-    private readonly configService: ConfigService,
     private readonly liveStreamGateway: LiveStreamGateway,
     private readonly socialService: SocialService,
     private readonly prisma: PrismaService,
@@ -103,14 +103,14 @@ export class LiveStudioController {
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   async mobilePushToLive(@Body() dto: MobilePushToLiveDto, @Request() req: any) {
     const eventId = `mobile-${Date.now()}-${dto.channelSlug}`;
-    const mediaMtxWsUrl = this.configService.get('MEDIAMTX_WS_URL', 'ws://localhost:8889');
-    
-    // Construct HLS URL for viewers
-    const mediaMtxHlsUrl = this.configService.get('MEDIAMTX_HLS_URL', 'http://localhost:8888');
-    const hlsUrl = `${mediaMtxHlsUrl}/${dto.channelSlug}/live.m3u8`;
-    
+
+    // Construct HLS URL for viewers.
+    // MediaMTX serves the multivariant manifest at `index.m3u8`.
+    const ingest = this.studioService.getIngestConfig();
+    const hlsUrl = `${ingest.hlsUrl}/${dto.channelSlug}/index.m3u8`;
+
     // Construct WebRTC URL for viewers to connect
-    const webrtcUrl = `${mediaMtxWsUrl}/${dto.channelSlug}`;
+    const webrtcUrl = `${ingest.webrtcUrl}/${dto.channelSlug}`;
 
     // Broadcast to all viewers via WebSocket
     this.liveStreamGateway.notifyLiveStarted(dto.channelSlug, {
@@ -201,6 +201,63 @@ export class LiveStudioController {
   }
 
   // ============================================================
+  // 0e. Webcam Live (WebRTC / WHIP publish)
+  // ============================================================
+  //
+  // The browser camera is published straight into MediaMTX over
+  // WHIP. These endpoints do NOT proxy media — they only hand the
+  // browser the ingest URLs and manage the `LiveEvent` row so the
+  // existing viewer room (chat / reactions / viewer count) works.
+
+  @Get('live/ingest-config')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Ingest configuration for the browser broadcaster: WHIP publish ' +
+      'URL, HLS playback URL and WebRTC playback URL. The frontend ' +
+      'reads this instead of hard-coding an IP address.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Ingest config' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
+  async getIngestConfig() {
+    return this.studioService.getIngestConfig();
+  }
+
+  @Post('live/webcam/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Start a live broadcast fed by the operator\'s browser camera ' +
+      'over WHIP. Creates a real LiveEvent so viewers can join ' +
+      '`/live/{eventId}` and interact via chat / reactions.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Live event created' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Invalid payload' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
+  async startWebcamLive(@Body() dto: WebcamLiveStartDto, @Request() req: any) {
+    return this.studioService.startWebcamLive(dto, req.user.sub);
+  }
+
+  @Post('live/webcam/stop')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Stop a webcam live event. The LiveEvent moves to ENDED and ' +
+      'viewers are notified through the WebSocket gateway.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — Live event ended' })
+  @ApiResponse({ status: 400, description: '400 Bad Request — Event not live' })
+  @ApiResponse({ status: 401, description: '401 Unauthorized' })
+  @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
+  @ApiResponse({ status: 404, description: '404 Not Found — Live event missing' })
+  async stopWebcamLive(@Body() dto: WebcamLiveStopDto, @Request() req: any) {
+    return this.studioService.stopWebcamLive(dto, req.user.sub);
+  }
+
+  // ============================================================
   // 0. Get stream URL (public - no auth required)
   // ============================================================
 
@@ -219,8 +276,8 @@ export class LiveStudioController {
   async getStreamUrl(@Param('channelSlug') channelSlug: string) {
     const liveEvent = await this.studioService.getCurrentLiveEvent(channelSlug);
 
-    const mediaMtxHlsUrl = this.configService.get('MEDIAMTX_HLS_URL', 'http://localhost:8888');
-    const channelHlsUrl = `${mediaMtxHlsUrl}/${channelSlug}/live.m3u8`;
+    const ingest = this.studioService.getIngestConfig();
+    const channelHlsUrl = `${ingest.hlsUrl}/${channelSlug}/index.m3u8`;
 
     if (liveEvent) {
       return {
@@ -295,6 +352,7 @@ export class LiveStudioController {
           commentCount: true,
           startedAt: true,
           duration: true,
+          tags: true,
           channel: {
             select: {
               id: true,
@@ -344,6 +402,7 @@ export class LiveStudioController {
       thumbnailUrl: event.thumbnailUrl,
       status: event.status,
       streamUrl: event.streamUrl,
+      tags: event.tags ?? [],
       channel: event.channel,
       startedAt: event.startedAt?.toISOString(),
       duration: event.duration,
