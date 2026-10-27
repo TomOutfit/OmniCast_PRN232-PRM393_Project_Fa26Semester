@@ -96,6 +96,78 @@ export interface AddFromCatalogInput {
   isPublished?: boolean;
 }
 
+// ============================================================
+// Webcam Live (WebRTC / WHIP publish)
+// ============================================================
+
+export interface IngestConfig {
+  /** LAN IP / hostname of the machine running MediaMTX. */
+  publicHost: string;
+  /** Base HLS URL, e.g. `http://192.168.2.74:8888`. */
+  hlsUrl: string;
+  /** Template for the multivariant manifest. */
+  hlsIndexUrlTemplate: string;
+  /** Base WebRTC URL, e.g. `ws://192.168.2.74:8889`. */
+  webrtcUrl: string;
+  /** Base WHIP URL, e.g. `http://192.168.2.74:8889`. */
+  whipUrl: string;
+  /** Template for the WHIP publish endpoint. */
+  whipUrlTemplate: string;
+  /** Base RTMP URL. */
+  rtmpUrl: string;
+  rtmpUrlTemplate: string;
+  /** Codecs MediaMTX can remux into HLS. */
+  supportedVideoCodecs: string[];
+  supportedAudioCodecs: string[];
+}
+
+export interface WebcamLiveStartInput {
+  channelSlug: string;
+  title?: string;
+  description?: string;
+}
+
+export interface WebcamLiveStartResult {
+  event: any;
+  eventId: string;
+  channelSlug: string;
+  streamUrl: string;
+  ingestConfig: IngestConfig;
+  message: string;
+}
+
+export interface WebcamLiveStopResult {
+  event: any;
+  message: string;
+}
+
+export async function fetchIngestConfig(): Promise<IngestConfig> {
+  const res = await apiClient.get('/programs/studio/live/ingest-config');
+  return res.data;
+}
+
+export async function startWebcamLive(
+  payload: WebcamLiveStartInput,
+): Promise<WebcamLiveStartResult> {
+  const res = await apiClient.post(
+    '/programs/studio/live/webcam/start',
+    payload,
+    { timeout: 30000 },
+  );
+  return res.data;
+}
+
+export async function stopWebcamLive(
+  eventId: string,
+): Promise<WebcamLiveStopResult> {
+  const res = await apiClient.post(
+    '/programs/studio/live/webcam/stop',
+    { eventId },
+    { timeout: 30000 },
+  );
+  return res.data;
+}
+
 export async function fetchBroadcastableRecordings(
   channelId: string,
   search?: string,

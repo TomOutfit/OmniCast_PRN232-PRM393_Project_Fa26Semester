@@ -14,12 +14,16 @@ import {
   uploadSelfRecord,
   broadcastLocalFile,
   addFromCatalog,
+  fetchIngestConfig,
+  startWebcamLive,
+  stopWebcamLive,
   type CurateLiveInput,
   type StopLiveInput,
   type SelfRecordUploadInput,
   type AddFromCatalogInput,
   type BroadcastLocalFileInput,
   type BroadcastLocalFileResult,
+  type WebcamLiveStartInput,
 } from '@/lib/api/live-studio';
 
 export const liveStudioKeys = {
@@ -28,6 +32,7 @@ export const liveStudioKeys = {
     [...liveStudioKeys.all, 'broadcastable', channelId, search] as const,
   catalog: (channelSlug?: string, search?: string) =>
     [...liveStudioKeys.all, 'catalog', channelSlug ?? '__all__', search ?? '__none__'] as const,
+  ingestConfig: ['live-studio', 'ingest-config'] as const,
 };
 
 export function useBroadcastableRecordings(
@@ -105,6 +110,52 @@ export function useUploadSelfRecord() {
       queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
       queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
       queryClient.invalidateQueries({ queryKey: ['programs', 'recordings'] });
+      queryClient.invalidateQueries({ queryKey: liveStudioKeys.all });
+    },
+  });
+}
+
+/**
+ * Ingest configuration (WHIP / HLS / WebRTC URLs) used by the
+ * browser broadcaster. Cached for a minute — the values only change
+ * when the operator restarts MediaMTX on a different IP.
+ */
+export function useIngestConfig() {
+  return useQuery({
+    queryKey: liveStudioKeys.ingestConfig,
+    queryFn: fetchIngestConfig,
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
+}
+
+/**
+ * Start a webcam live broadcast. The caller is responsible for the
+ * actual WHIP publish — this only creates the `LiveEvent` row and
+ * notifies the viewers.
+ */
+export function useStartWebcamLive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: WebcamLiveStartInput) => startWebcamLive(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
+      queryClient.invalidateQueries({ queryKey: liveStudioKeys.all });
+    },
+  });
+}
+
+/**
+ * Stop a webcam live broadcast.
+ */
+export function useStopWebcamLive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (eventId: string) => stopWebcamLive(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-events'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', 'live-now'] });
       queryClient.invalidateQueries({ queryKey: liveStudioKeys.all });
     },
   });

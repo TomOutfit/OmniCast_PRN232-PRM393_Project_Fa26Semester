@@ -14,6 +14,8 @@ export interface LiveEventInteractionSnapshot {
   startedAt?: string | null;
   duration?: number | null;
   viewerCount: number;
+  /** Tags of the LiveEvent — `studio-webcam-live` marks a WHIP camera stream. */
+  tags?: string[];
   channel?: {
     id: string;
     slug: string;
