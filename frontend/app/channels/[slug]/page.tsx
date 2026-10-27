@@ -268,7 +268,12 @@ export default function ChannelDetailPage() {
                       poster={liveEvent?.thumbnailUrl || channel.bannerUrl || undefined}
                       autoPlay={true}
                       className="rounded-3xl"
-                      initialSeekSeconds={calculateLiveSeekOffset(liveEvent?.scheduledAt, liveEvent?.duration)}
+                      channelSlug={channel.slug}
+                      initialSeekSeconds={
+                        liveEvent?.status === 'LIVE' || Number(liveEvent?.duration || 0) <= 0
+                          ? 0
+                          : calculateLiveSeekOffset(liveEvent?.scheduledAt, liveEvent?.duration)
+                      }
                       isPremium={isChannelPremium(channel.slug)}
                       channelName={channel.name}
                     />

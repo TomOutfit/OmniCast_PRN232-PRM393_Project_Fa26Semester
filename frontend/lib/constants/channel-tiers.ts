@@ -28,6 +28,9 @@ export function calculateLiveSeekOffset(
   durationMinutes?: number | null,
 ): number {
   if (!scheduledAt) return 0;
+  if (durationMinutes !== null && durationMinutes !== undefined && durationMinutes <= 0) {
+    return 0;
+  }
   try {
     const startTime = new Date(scheduledAt).getTime();
     const now = Date.now();

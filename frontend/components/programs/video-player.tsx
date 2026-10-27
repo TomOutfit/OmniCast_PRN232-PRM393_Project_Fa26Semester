@@ -228,7 +228,7 @@ export function VideoPlayer({
 
   // ── Apply initial seek ────────────────────────────────────────────────────
   const initialSeekSecondsRef = useRef(initialSeekSeconds);
-  initialSeekSecondsRef.current = initialSeekSeconds;
+  initialSeekSecondsRef.current = isLive || Boolean(currentLiveEvent) ? 0 : initialSeekSeconds;
   const initialSeekAppliedRef = useRef(false);
 
   const applySeek = useCallback(() => {
@@ -376,11 +376,19 @@ export function VideoPlayer({
       if (destroyed || attached) return;
       attached = true;
 
-      const hls = new Hls({} as any);
-      Object.assign(hls, {
+      // The config MUST be passed to the hls.js CONSTRUCTOR.
+      // hls.js reads its settings from `hls.config`; assigning them
+      // onto the instance (`Object.assign(hls, {...})`) silently
+      // does nothing, so the intended values (buffer limits,
+      // `lowLatencyMode`, …) were never applied.
+      const hls = new Hls({
         // ── Stability config ────────────────────────────────────────────────
         enableWorker: true,
-        lowLatencyMode: false,      // safer for VOD + mixed live/VOD
+        // MediaMTX serves LL-HLS (lowLatency variant), so the
+        // low-latency playlist handling must stay ENABLED. hls.js
+        // defaults it to true as well — we set it explicitly so a
+        // future default change cannot silently break live playback.
+        lowLatencyMode: true,
         backBufferLength: 90,       // keep 90 s of buffer for backward seek
         maxBufferLength: 30,        // cap buffer at 30 s forward
         maxMaxBufferLength: 120,    // allow up to 120 s when bandwidth is high

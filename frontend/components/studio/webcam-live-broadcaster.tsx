@@ -49,6 +49,7 @@ import {
   type WhipConnectionState,
   type WhipPublisher,
 } from '@/lib/webrtc/whip-client';
+import { stopWebcamLiveOnUnmount } from '@/lib/api/live-studio';
 import {
   useIngestConfig,
   useStartWebcamLive,
@@ -96,6 +97,15 @@ export function WebcamLiveBroadcaster({
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * Mirrors `eventId` so the unmount cleanup (which closes over the
+   * FIRST render's state) can still see the live event that was
+   * created later. Without this the LiveEvent row would stay `LIVE`
+   * forever when the operator navigates away without pressing
+   * "DỪNG LIVE" — the channel keeps advertising "LIVE NOW" for a
+   * stream that no longer exists.
+   */
+  const eventIdRef = useRef<string | null>(null);
 
   const isLive = phase === 'live';
 
@@ -109,6 +119,12 @@ export function WebcamLiveBroadcaster({
       streamRef.current?.getTracks().forEach((t) => t.stop());
       publisherRef.current = null;
       streamRef.current = null;
+
+      // Best-effort: end the LiveEvent on the backend.
+      if (eventIdRef.current) {
+        stopWebcamLiveOnUnmount(eventIdRef.current);
+        eventIdRef.current = null;
+      }
     };
   }, []);
 
@@ -223,28 +239,21 @@ export function WebcamLiveBroadcaster({
         title: defaultTitle?.trim() || undefined,
       });
 
+      eventIdRef.current = result.eventId;
       setEventId(result.eventId);
       setPhase('live');
       setStatusDetail('Đã phát trực tiếp!');
       setElapsed(0);
 
       // 4. Bitrate sampler.
-      let lastBytes = 0;
-      let lastAt = Date.now();
+      // `getStats()` already returns a bitrate (kbps) computed from
+      // the cumulative `bytesSent` counters, so the values can be
+      // used as-is.
       statsTimerRef.current = setInterval(async () => {
         const stats = await publisher.getStats().catch(() => null);
         if (!stats) return;
-        const now = Date.now();
-        const deltaSec = (now - lastAt) / 1000;
-        if (deltaSec >= 1) {
-          // `getStats` reports cumulative bytes — convert to a rate.
-          const videoKbps = Math.max(0, Math.round((stats.videoKbps - lastBytes) / deltaSec));
-          const audioKbps = Math.max(0, Math.round((stats.audioKbps - lastBytes) / deltaSec));
-          setVideoKbps(videoKbps);
-          setAudioKbps(audioKbps);
-          lastBytes = stats.videoKbps;
-          lastAt = now;
-        }
+        setVideoKbps(stats.videoKbps);
+        setAudioKbps(stats.audioKbps);
       }, 1500);
 
       elapsedTimerRef.current = setInterval(() => {
@@ -297,6 +306,9 @@ export function WebcamLiveBroadcaster({
         );
       }
     }
+
+    // The event is ended — the unmount cleanup must not try again.
+    eventIdRef.current = null;
 
     setPhase('idle');
     setStatusDetail('');
