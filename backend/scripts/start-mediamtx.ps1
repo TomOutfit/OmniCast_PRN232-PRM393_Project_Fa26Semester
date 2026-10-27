@@ -4,18 +4,31 @@
 #
 # Usage
 #   .\scripts\start-mediamtx.ps1
-#   .\scripts\start-mediamtx.ps1 -PublicHost 192.168.2.74
-#   .\scripts\start-mediamtx.ps1 -Port 8888
+#   .\scripts\start-mediamtx.ps1 -PublicHost 192.168.1.88
+#   .\scripts\start-mediamtx.ps1 -HlsPort 8888 -WebRtcPort 8889
+#   .\scripts\start-mediamtx.ps1 -SyncEnv
 #
 # What it does
 #   1. Detects the LAN IP of this machine (or uses -PublicHost).
-#   2. Writes that IP into `backend/mediamtx/mediamtx.yml`
-#      (`webrtcICEHostCandidates`) so phones on the same Wi-Fi can
-#      establish the WebRTC ICE handshake.
+#   2. Generates `backend/mediamtx/mediamtx.local.yml` from the
+#      shared `backend/mediamtx/mediamtx.yml`, injecting the LAN IP
+#      into `webrtcAdditionalHosts` and the requested ports, then
+#      launches MediaMTX with the generated file.
+#      The shared file is never modified, so the Docker branch
+#      always starts from the exact same configuration.
 #   3. Downloads `mediamtx.exe` (v1.21.3) on first run into
 #      `backend/mediamtx/`.
-#   4. Launches `mediamtx.exe mediamtx.yml` and prints the URLs
-#      you need for `backend/.env`.
+#   4. Prints the URLs you need for `backend/.env`.
+#
+# Encoding note (do not "simplify" this away)
+#   MediaMTX parses the YAML with a strict YAML->JSON decoder and
+#   REJECTS a UTF-8 BOM with:
+#       ERR json: unknown field "\ufefflogLevel"
+#   and then exits. Windows PowerShell 5.1's `Set-Content
+#   -Encoding UTF8` writes a BOM, and `Get-Content` without an
+#   explicit encoding decodes UTF-8 as the system ANSI code page
+#   (which corrupts the non-ASCII characters in the file).
+#   Hence the explicit UTF-8 (no BOM) read/write below.
 #
 # The matching env values are:
 #   MEDIAMTX_PUBLIC_HOST=<ip>
@@ -33,7 +46,9 @@ param(
   # WebRTC / WHIP port (must match MEDIAMTX_WHIP_URL).
   [int]$WebRtcPort = 8889,
   # Skip the download step even if mediamtx.exe is missing.
-  [switch]$NoDownload
+  [switch]$NoDownload,
+  # Write the detected URLs back into `backend/.env` (MEDIAMTX_* keys only).
+  [switch]$SyncEnv
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,7 +58,12 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BackendDir = Split-Path -Parent $ScriptDir
 $MediaMtxDir = Join-Path $BackendDir 'mediamtx'
 $ConfigFile = Join-Path $MediaMtxDir 'mediamtx.yml'
+$LocalConfigFile = Join-Path $MediaMtxDir 'mediamtx.local.yml'
+$EnvFile = Join-Path $BackendDir '.env'
 $ExePath = Join-Path $MediaMtxDir 'mediamtx.exe'
+
+# UTF-8 without BOM - MediaMTX refuses to start on a BOM.
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 function Write-Step($Message) {
   Write-Host "==> $Message" -ForegroundColor Cyan
@@ -55,6 +75,25 @@ function Write-Ok($Message) {
 
 function Write-Warn($Message) {
   Write-Host "    $Message" -ForegroundColor Yellow
+}
+
+# Replace a whole YAML key without touching the line terminator.
+# `[^\r\n]*` keeps a CRLF file CRLF and an LF file LF.
+function Set-YamlValue([string]$Text, [string]$Key, [string]$Value) {
+  $pattern = '(?m)^' + [regex]::Escape($Key) + ':[^\r\n]*'
+  if ($Text -notmatch $pattern) {
+    throw "Key '$Key' not found in the MediaMTX configuration."
+  }
+  return [regex]::Replace($Text, $pattern, ($Key + ': ' + $Value))
+}
+
+# Same idea for dotenv files, which use `KEY=value` instead of YAML.
+function Set-DotenvValue([string]$Text, [string]$Key, [string]$Value) {
+  $pattern = '(?m)^' + [regex]::Escape($Key) + '=[^\r\n]*'
+  if ($Text -notmatch $pattern) {
+    throw "Key '$Key' not found in the .env file."
+  }
+  return [regex]::Replace($Text, $pattern, ($Key + '=' + $Value))
 }
 
 # ── 1. Resolve the public host ──────────────────────────────────────────────
@@ -81,30 +120,21 @@ if ([string]::IsNullOrWhiteSpace($PublicHost)) {
   Write-Ok "Using provided PublicHost: $PublicHost"
 }
 
-# ── 2. Ensure the config file exists ────────────────────────────────────────
+# ── 2. Generate the runtime configuration ───────────────────────────────────
 if (-not (Test-Path $ConfigFile)) {
   throw "Config file not found: $ConfigFile"
 }
 
-# Rewrite the advertised LAN host + ports so the file always matches this run.
-$config = Get-Content -Path $ConfigFile -Raw
-$config = [regex]::Replace(
-  $config,
-  '(?m)^webrtcAdditionalHosts:.*$',
-  "webrtcAdditionalHosts: [`"$PublicHost`"]"
-)
-$config = [regex]::Replace(
-  $config,
-  '(?m)^hlsAddress:.*$',
-  "hlsAddress: :$HlsPort"
-)
-$config = [regex]::Replace(
-  $config,
-  '(?m)^webrtcAddress:.*$',
-  "webrtcAddress: :$WebRtcPort"
-)
-Set-Content -Path $ConfigFile -Value $config -Encoding UTF8
-Write-Ok "Synced $ConfigFile with PublicHost=$PublicHost"
+# ReadAllText detects and strips an existing BOM; the explicit UTF-8
+# decoder keeps the remaining characters intact.
+$config = [System.IO.File]::ReadAllText($ConfigFile, [System.Text.Encoding]::UTF8)
+
+$config = Set-YamlValue $config 'webrtcAdditionalHosts' ('["' + $PublicHost + '"]')
+$config = Set-YamlValue $config 'hlsAddress' (':' + $HlsPort)
+$config = Set-YamlValue $config 'webrtcAddress' (':' + $WebRtcPort)
+
+[System.IO.File]::WriteAllText($LocalConfigFile, $config, $Utf8NoBom)
+Write-Ok "Generated $LocalConfigFile (PublicHost=$PublicHost, HLS=$HlsPort, WebRTC=$WebRtcPort)"
 
 # ── 3. Download mediamtx.exe if needed ──────────────────────────────────────
 if (-not (Test-Path $ExePath)) {
@@ -121,7 +151,7 @@ if (-not (Test-Path $ExePath)) {
   Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing -TimeoutSec 180
 
   Write-Step 'Extracting...'
-  # Extract into a scratch folder — the release archive also ships its
+  # Extract into a scratch folder - the release archive also ships its
   # own `mediamtx.yml` and we must NOT overwrite ours with it.
   $scratch = Join-Path $env:TEMP ("mediamtx-extract-" + [Guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $scratch -Force | Out-Null
@@ -143,14 +173,32 @@ if (-not (Test-Path $ExePath)) {
   }
   Write-Ok 'mediamtx.exe ready.'
 } else {
-  Write-Ok 'mediamtx.exe already present — skipping download.'
+  Write-Ok 'mediamtx.exe already present - skipping download.'
 }
 
-# ── 4. Launch ───────────────────────────────────────────────────────────────
+# ── 4. Build the URL set ────────────────────────────────────────────────────
 $hlsUrl = "http://${PublicHost}:$HlsPort"
 $whipUrl = "http://${PublicHost}:$WebRtcPort"
 $webrtcUrl = "ws://${PublicHost}:$WebRtcPort"
+$rtmpUrl = "rtmp://${PublicHost}:1935"
 
+# ── 5. Optionally sync backend/.env ──────────────────────────────────────────
+if ($SyncEnv) {
+  if (-not (Test-Path $EnvFile)) {
+    Write-Warn "No $EnvFile found - skipping env sync."
+  } else {
+    $envText = [System.IO.File]::ReadAllText($EnvFile, [System.Text.Encoding]::UTF8)
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_PUBLIC_HOST' $PublicHost
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_HLS_URL' $hlsUrl
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_WEBRTC_URL' $webrtcUrl
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_WHIP_URL' $whipUrl
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_RTMP_URL' $rtmpUrl
+    [System.IO.File]::WriteAllText($EnvFile, $envText, $Utf8NoBom)
+    Write-Ok "Updated MEDIAMTX_* values in $EnvFile"
+  }
+}
+
+# ── 6. Launch ───────────────────────────────────────────────────────────────
 Write-Host ''
 Write-Step 'MediaMTX starting...'
 Write-Host ''
@@ -160,21 +208,24 @@ Write-Host '    WHIP publish (cam)  : ' -NoNewline -ForegroundColor Cyan
 Write-Host "$whipUrl/<channel-slug>/whip" -ForegroundColor White
 Write-Host '    WHEP playback        : ' -NoNewline -ForegroundColor Cyan
 Write-Host "$webrtcUrl/<channel-slug>" -ForegroundColor White
-Write-Host '    API / metrics        : ' -NoNewline -ForegroundColor Cyan
-Write-Host "http://${PublicHost}:9997" -ForegroundColor White
+Write-Host '    RTMP publish (OBS)   : ' -NoNewline -ForegroundColor Cyan
+Write-Host "$rtmpUrl/<channel-slug>" -ForegroundColor White
+Write-Host '    API (localhost only) : ' -NoNewline -ForegroundColor Cyan
+Write-Host 'http://127.0.0.1:9997' -ForegroundColor White
 Write-Host ''
 Write-Host '    Copy into backend/.env:' -ForegroundColor Yellow
 Write-Host "      MEDIAMTX_PUBLIC_HOST=$PublicHost"
 Write-Host "      MEDIAMTX_HLS_URL=$hlsUrl"
 Write-Host "      MEDIAMTX_WEBRTC_URL=$webrtcUrl"
 Write-Host "      MEDIAMTX_WHIP_URL=$whipUrl"
+Write-Host "      MEDIAMTX_RTMP_URL=$rtmpUrl"
 Write-Host ''
 Write-Host '    Press Ctrl+C to stop.' -ForegroundColor DarkGray
 Write-Host ''
 
 Push-Location $MediaMtxDir
 try {
-  & $ExePath $ConfigFile
+  & $ExePath $LocalConfigFile
 } finally {
   Pop-Location
 }

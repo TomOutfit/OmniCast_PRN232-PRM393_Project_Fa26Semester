@@ -2,23 +2,26 @@
 # OmniCast - MediaMTX Streaming Server
 # ============================================================
 #
-# MediaMTX is a ready-to-use, self-hosted SRT/RTMP server
-# for live streaming. This docker-compose setup provides:
+# MediaMTX is a self-hosted RTMP / HLS / WebRTC server for live
+# streaming. This docker-compose setup provides:
 #   - RTMP ingest (port 1935)
 #   - HLS output (port 8888)
-#   - WebRTC (port 8889)
-#   - Metrics (port 9997)
+#   - WebRTC (port 8889 + ICE on 8189)
+#   - API (port 9997) + metrics (port 9998)
 #
 # Usage:
-#   docker-compose -f docker-compose.yml up -d
+#   cd backend
+#   docker compose up -d
 #
-# RTMP Push URL: rtmp://localhost:1935/{stream_key}
-# HLS URL: http://localhost:8888/{stream_key}/index.m3u8
-# WHIP publish: http://localhost:8889/{stream_key}/whip
-# WebRTC: ws://localhost:8889/{stream_key}
+# RTMP Push URL: rtmp://<host>:1935/{stream_key}
+# HLS URL: http://<host>:8888/{stream_key}/index.m3u8
+# WHIP publish: http://<host>:8889/{stream_key}/whip
+# WebRTC: ws://<host>:8889/{stream_key}
+#
+# `MEDIAMTX_PUBLIC_HOST` must be the LAN IP of the machine running
+# Docker, otherwise phones on the same Wi-Fi cannot complete the
+# WebRTC ICE handshake. The value is read from `backend/.env`.
 # ============================================================
-
-version: '3.8'
 
 services:
   mediamtx:
@@ -26,9 +29,25 @@ services:
     container_name: omnicast-mtx
     restart: unless-stopped
     # Share the EXACT same config as the Windows binary branch so the
-    # two never drift. `backend/scripts/start-mediamtx.ps1` rewrites
-    # `webrtcICEHostCandidates` / ports inside that file at runtime.
-    command: ["/mediamtx", "/mediamtx.yml"]
+    # two never drift: `./mediamtx/mediamtx.yml` is the single source
+    # of truth. `backend/scripts/start-mediamtx.ps1` generates a
+    # LOCAL copy of it (`mediamtx.local.yml`) for the native branch
+    # and leaves the shared file untouched.
+    #
+    # The upstream image already has `ENTRYPOINT ["/mediamtx"]`, so
+    # `command` must contain ONLY the config path - passing
+    # ["/mediamtx", "/mediamtx.yml"] would run
+    # `/mediamtx /mediamtx /mediamtx.yml` and MediaMTX's CLI parser
+    # (kong) accepts a single positional argument, so the container
+    # would fail to start with "unexpected argument".
+    command: ["/mediamtx.yml"]
+    environment:
+      # A container only sees the Docker bridge interface, never the
+      # host's LAN adapter, so `webrtcIPsFromInterfaces` alone would
+      # advertise an unreachable address. This tells MediaMTX which
+      # extra ICE candidate to hand out to browsers.
+      # (Env vars take precedence over the YAML file in MediaMTX.)
+      MTX_WEBRTCADDITIONALHOSTS: "${MEDIAMTX_PUBLIC_HOST:-127.0.0.1}"
     ports:
       # RTMP ingest - for OBS, mobile apps
       - "1935:1935"
@@ -36,16 +55,28 @@ services:
       - "8888:8888"
       # WebRTC - for low-latency streaming (WHIP publish / WHEP playback)
       - "8889:8889"
-      # WebRTC ICE (UDP + TCP)
-      - "8189:8189"
-      # API + metrics
+      # WebRTC ICE - media flows over UDP, so the UDP mapping is the
+      # one that actually matters. Without it the browser's ICE
+      # handshake never completes and the WHIP publish times out.
+      - "8189:8189/udp"
+      # WebRTC ICE over TCP (fallback path for restrictive networks)
+      - "8189:8189/tcp"
+      # API - upstream restricts the `api` action to loopback IPs,
+      # so this is only reachable from the Docker host itself.
       - "9997:9997"
+      # Metrics (Prometheus format) - same loopback restriction.
+      - "9998:9998"
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
       - media-data:/var/media
-    
+
+    # The upstream image is built `FROM scratch` - it contains no
+    # shell and no wget/curl, so a `wget`-based healthcheck could
+    # never succeed and would permanently mark the container
+    # "unhealthy". The MediaMTX binary itself is the only executable
+    # available, and it exits 0 for `--version`, so use that.
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9997/health"]
+      test: ["CMD", "/mediamtx", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,38 +1,55 @@
 # ============================================================
-# OmniCast - MediaMTX configuration (local, no Docker)
+# OmniCast - MediaMTX configuration (shared by both branches)
 # ============================================================
 #
-# Used by `backend/scripts/start-mediamtx.ps1` (Windows) and by
-# the `mediamtx` service in `backend/docker-compose.yml` so both
-# branches share ONE source of truth.
+# Used by:
+#   (A) Windows binary - `backend/scripts/start-mediamtx.ps1`
+#       The script copies this file to `mediamtx.local.yml`,
+#       injects the detected LAN IP into `webrtcAdditionalHosts`
+#       and starts MediaMTX with that copy. This file itself
+#       therefore stays machine-independent.
+#   (B) Docker - `backend/docker-compose.yml`
+#       Mounts this file read-only and overrides
+#       `webrtcAdditionalHosts` through the
+#       `MTX_WEBRTCADDITIONALHOSTS` environment variable (a
+#       container only sees the Docker bridge, never the LAN).
 #
 # Ports
 #   1935  RTMP   (OBS / classic ingest)
-#   8888  HLS    (viewer playback — LL-HLS fMP4)
+#   8888  HLS    (viewer playback - LL-HLS fMP4)
 #   8889  WebRTC (WHIP publish :8889/<path>/whip, WHEP playback)
 #   8189  WebRTC ICE (UDP + TCP)
-#   9997  API + metrics
+#   9997  API
+#   9998  metrics
 #
-# IMPORTANT — codec rules
+# IMPORTANT - codec rules
 #   MediaMTX's HLS muxer does NOT support VP8. Only H264 / H265 /
 #   VP9 / AV1 are remux-able, and `hlsVariant: lowLatency` (fMP4)
 #   is required for VP9. The frontend WHIP client therefore forces
-#   H264 → VP9 (never VP8). See
+#   H264 -> VP9 (never VP8). See
 #   `frontend/lib/webrtc/whip-client.ts`.
-#
-# NOTE: `backend/scripts/start-mediamtx.ps1` rewrites the
-# `webrtcICEHostCandidates` / port entries below at runtime so the
-# advertised LAN IP always matches the machine it runs on.
 # ============================================================
 
 logLevel: info
 logDestinations: [stdout]
 
-# ── RTMP ingest ─────────────────────────────────────────────
+# - RTMP ingest ------------------------------------------------
 rtmp: true
 rtmpAddress: :1935
 
-# ── HLS output (LL-HLS, fMP4) ───────────────────────────────
+# - RTSP / SRT / MoQ - disabled -------------------------------
+# OmniCast only publishes over WHIP / RTMP and plays back over
+# HLS / WHEP. Each extra server also accepts anonymous publish
+# from anyone on the LAN (upstream's default `authInternalUsers`
+# grants publish / read / playback to `any`), so they stay off.
+# Static *sources* (a path with `source: rtsp://...`) are not
+# affected: those use MediaMTX's outbound client, not the
+# server, and remain available if a path is configured that way.
+rtsp: false
+srt: false
+moq: false
+
+# - HLS output (LL-HLS, fMP4) ----------------------------------
 hls: true
 hlsAddress: :8888
 hlsAllowOrigins: ["*"]
@@ -40,27 +57,53 @@ hlsVariant: lowLatency
 hlsSegmentCount: 8
 hlsSegmentDuration: 1s
 hlsPartDuration: 200ms
+# Remux as soon as a publisher is on the path, so a viewer that
+# joins mid-stream gets a playable playlist right away.
+#
+# While `hlsAlwaysRemux` is on, the muxer is created without an
+# author, and upstream only arms the close-after timer for
+# author-bound muxers - so `hlsMuxerCloseAfter` below is inert
+# and the muxer lives exactly as long as the path is ready.
 hlsAlwaysRemux: true
-hlsMuxerCloseAfter: 10s
+hlsMuxerCloseAfter: 60s
 
-# ── WebRTC (WHIP publish + WHEP playback) ───────────────────
+# - WebRTC (WHIP publish + WHEP playback) ----------------------
 webrtc: true
 webrtcAddress: :8889
 webrtcAllowOrigins: ["*"]
 webrtcLocalUDPAddress: :8189
 webrtcLocalTCPAddress: :8189
 webrtcIPsFromInterfaces: true
-webrtcAdditionalHosts: ["192.168.2.74"]
+# Extra ICE candidates advertised on top of the machine's own
+# interfaces. Native branch: filled in by start-mediamtx.ps1
+# (mediamtx.local.yml). Docker branch: supplied through the
+# MTX_WEBRTCADDITIONALHOSTS environment variable.
+webrtcAdditionalHosts: ["192.168.1.88"]
 
-# ── API + metrics ───────────────────────────────────────────
+# - API + metrics ----------------------------------------------
+# Upstream restricts the `api` and `metrics` actions to
+# 127.0.0.1 / ::1 unless `authInternalUsers` is widened, so these
+# endpoints answer 401 for LAN clients.
 api: true
 apiAddress: :9997
 metrics: true
 metricsAddress: :9998
 pprof: false
 
-# ── Recording (optional — off by default) ───────────────────
+# - Recording (optional - off by default) ----------------------
 pathDefaults:
   source: publisher
   record: false
   recordFormat: fmp4
+
+# - Paths ------------------------------------------------------
+# MediaMTX only accepts a publish on a path that is *configured*.
+# Without a `paths:` section the server has no path at all and every
+# WHIP publish (POST /{slug}/whip) is answered with
+# "404 path '<slug>' is not configured".
+#
+# `all_others` is a catch-all: any channel slug published by the
+# Studio (e.g. `sport-1`) is accepted. The `source: publisher`
+# default above means the browser / OBS is the one pushing media.
+paths:
+  all_others:
