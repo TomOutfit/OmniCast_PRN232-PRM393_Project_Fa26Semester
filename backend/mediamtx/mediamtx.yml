@@ -1,0 +1,66 @@
+# ============================================================
+# OmniCast - MediaMTX configuration (local, no Docker)
+# ============================================================
+#
+# Used by `backend/scripts/start-mediamtx.ps1` (Windows) and by
+# the `mediamtx` service in `backend/docker-compose.yml` so both
+# branches share ONE source of truth.
+#
+# Ports
+#   1935  RTMP   (OBS / classic ingest)
+#   8888  HLS    (viewer playback — LL-HLS fMP4)
+#   8889  WebRTC (WHIP publish :8889/<path>/whip, WHEP playback)
+#   8189  WebRTC ICE (UDP + TCP)
+#   9997  API + metrics
+#
+# IMPORTANT — codec rules
+#   MediaMTX's HLS muxer does NOT support VP8. Only H264 / H265 /
+#   VP9 / AV1 are remux-able, and `hlsVariant: lowLatency` (fMP4)
+#   is required for VP9. The frontend WHIP client therefore forces
+#   H264 → VP9 (never VP8). See
+#   `frontend/lib/webrtc/whip-client.ts`.
+#
+# NOTE: `backend/scripts/start-mediamtx.ps1` rewrites the
+# `webrtcICEHostCandidates` / port entries below at runtime so the
+# advertised LAN IP always matches the machine it runs on.
+# ============================================================
+
+logLevel: info
+logDestinations: [stdout]
+
+# ── RTMP ingest ─────────────────────────────────────────────
+rtmp: true
+rtmpAddress: :1935
+
+# ── HLS output (LL-HLS, fMP4) ───────────────────────────────
+hls: true
+hlsAddress: :8888
+hlsAllowOrigins: ["*"]
+hlsVariant: lowLatency
+hlsSegmentCount: 8
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsAlwaysRemux: true
+hlsMuxerCloseAfter: 10s
+
+# ── WebRTC (WHIP publish + WHEP playback) ───────────────────
+webrtc: true
+webrtcAddress: :8889
+webrtcAllowOrigins: ["*"]
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+webrtcIPsFromInterfaces: true
+webrtcAdditionalHosts: ["192.168.2.74"]
+
+# ── API + metrics ───────────────────────────────────────────
+api: true
+apiAddress: :9997
+metrics: true
+metricsAddress: :9998
+pprof: false
+
+# ── Recording (optional — off by default) ───────────────────
+pathDefaults:
+  source: publisher
+  record: false
+  recordFormat: fmp4

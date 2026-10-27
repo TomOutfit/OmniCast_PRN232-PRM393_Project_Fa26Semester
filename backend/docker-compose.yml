@@ -12,8 +12,9 @@
 # Usage:
 #   docker-compose -f docker-compose.yml up -d
 #
-# RTMP Push URL: rtmp://localhost:1935/live/{stream_key}
-# HLS URL: http://localhost:8888/{stream_key}/live.m3u8
+# RTMP Push URL: rtmp://localhost:1935/{stream_key}
+# HLS URL: http://localhost:8888/{stream_key}/index.m3u8
+# WHIP publish: http://localhost:8889/{stream_key}/whip
 # WebRTC: ws://localhost:8889/{stream_key}
 # ============================================================
 
@@ -24,57 +25,27 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: omnicast-mtx
     restart: unless-stopped
+    # Share the EXACT same config as the Windows binary branch so the
+    # two never drift. `backend/scripts/start-mediamtx.ps1` rewrites
+    # `webrtcICEHostCandidates` / ports inside that file at runtime.
+    command: ["/mediamtx", "/mediamtx.yml"]
     ports:
       # RTMP ingest - for OBS, mobile apps
       - "1935:1935"
       # HLS output - for web and mobile players
       - "8888:8888"
-      # WebRTC - for low-latency streaming
+      # WebRTC - for low-latency streaming (WHIP publish / WHEP playback)
       - "8889:8889"
-      # Metrics - for monitoring
+      # WebRTC ICE (UDP + TCP)
+      - "8189:8189"
+      # API + metrics
       - "9997:9997"
-    environment:
-      # Protocols to enable
-      MTX_PROTOCOLS: rtmp,hls,webrtc
-      
-      # HLS settings (low latency)
-      MTX_HLSDIRECTORY: /var/media/hls
-      MTX_HLSPLAYLISTLENGTH: 3
-      MTX_HLSSEGMENTDURATION: 2
-      MTX_HLSALWAYSSTARTFROMPREVIOUSSEQUENCE: true
-      
-      # RTMP settings
-      MTX_RTMPPUBLISHVALIDATEPROJECTION: false
-      MTX_RTMPCOMPATIBILITY: false
-      
-      # WebRTC settings
-      MTX_WEBRTCISSR: false
-      MTX_WEBRTCICEHOSTS: ""
-      MTX_WEBRTCICEPORTMIN: 0
-      MTX_WEBRTCICEPORTMAX: 0
-      
-      # Recording settings (optional - record streams to disk)
-      MTX_RECORD: false
-      # MTX_RECORDDIRECTORY: /var/media/recordings
-      # MTX_RECORDPATHS: ""
-      # MTX_RECORDFORMAT: ffmpeg
-      # MTX_RECORDFMTPROBE: ""
-      
-      # API and metrics
-      MTX_API: true
-      MTX_APIPORT: 9998
-      MTX_METRICS: true
-      MTX_METRICSPORTS: 9997
-      
-      # Logging
-      MTX_LOGDESTINATION: stdout
-      MTX_LOGLEVEL: info
-      
     volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
       - media-data:/var/media
     
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9998/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9997/health"]
       interval: 30s
       timeout: 10s
       retries: 3

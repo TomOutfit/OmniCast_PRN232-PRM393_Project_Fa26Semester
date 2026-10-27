@@ -1,0 +1,6 @@
+# Local MediaMTX binary / archives (downloaded by scripts/start-mediamtx.ps1)
+mediamtx.exe
+mediamtx.zip
+*.log
+*.crt
+*.key
