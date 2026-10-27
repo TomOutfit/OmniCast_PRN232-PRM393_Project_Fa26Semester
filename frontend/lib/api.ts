@@ -6,14 +6,23 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 export function getApiBaseUrl(): string {
   let url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url || url.includes('localhost')) {
-    if (typeof window !== 'undefined') {
-      if (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) {
-        url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-      } else {
-        url = 'https://omnicast-api.vercel.app/api/v1';
-      }
-    } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocalOrLan =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      /^192\.168\.\d+\.\d+$/.test(host) ||
+      /^10\.\d+\.\d+\.\d+$/.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
+
+    if (isLocalOrLan) {
+      // When accessed locally or over LAN, connect to the backend running on the same host machine
+      url = `http://${host}:3000/api/v1`;
+    } else if (!url || url.includes('localhost') || url.includes('192.168.') || url.includes('10.') || url.includes('172.')) {
+      url = 'https://omnicast-api.vercel.app/api/v1';
+    }
+  } else if (!url || url.includes('localhost')) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
       url = 'https://omnicast-api.vercel.app/api/v1';
     } else {
       url = 'http://localhost:3000/api/v1';

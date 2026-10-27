@@ -222,6 +222,12 @@ export async function publishCameraViaWhip(
   let sessionEtag: string | null = null;
   let stopped = false;
 
+  // Previous `getStats()` sample, used to turn the cumulative
+  // `bytesSent` counters into an actual bitrate.
+  let lastVideoBytes = 0;
+  let lastAudioBytes = 0;
+  let lastStatsAt = 0;
+
   const cleanup = () => {
     try {
       pc.close();
@@ -359,6 +365,16 @@ export async function publishCameraViaWhip(
         cleanup();
       },
 
+      /**
+       * Snapshot of the current outbound bitrate.
+       *
+       * `RTCPeerConnection.getStats()` reports CUMULATIVE `bytesSent`
+       * counters, so the raw values are converted into a bitrate by
+       * differencing against the previous sample. The previous
+       * counters are kept SEPARATELY for video and audio — using a
+       * single shared baseline made the audio rate wrong (it was
+       * differenced against the video byte count).
+       */
       async getStats(): Promise<WhipStats> {
         const stats: WhipStats = {
           videoKbps: 0,
@@ -395,8 +411,25 @@ export async function publishCameraViaWhip(
           /* stats unavailable — return zeros */
         }
 
-        stats.videoKbps = Math.round((videoBytes * 8) / 1000);
-        stats.audioKbps = Math.round((audioBytes * 8) / 1000);
+        // Convert cumulative bytes into a bitrate. The first sample
+        // has no baseline yet, so it reports 0 until the next one.
+        const now = Date.now();
+        const elapsedSec = lastStatsAt ? (now - lastStatsAt) / 1000 : 0;
+        if (elapsedSec > 0) {
+          stats.videoKbps = Math.max(
+            0,
+            Math.round(((videoBytes - lastVideoBytes) * 8) / 1000 / elapsedSec),
+          );
+          stats.audioKbps = Math.max(
+            0,
+            Math.round(((audioBytes - lastAudioBytes) * 8) / 1000 / elapsedSec),
+          );
+        }
+
+        lastVideoBytes = videoBytes;
+        lastAudioBytes = audioBytes;
+        lastStatsAt = now;
+
         stats.videoCodec = videoCodec || 'H264';
         stats.audioCodec = audioCodec || 'opus';
 

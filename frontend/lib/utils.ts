@@ -147,6 +147,19 @@ export function resolveStreamUrl(url: string | null | undefined): string {
     return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
   }
 
+  // Transparently rewrite localhost:8888 / 127.0.0.1:8888 MediaMTX URLs to the actual
+  // server hostname when accessed from other devices on the LAN
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    if (lower.includes('://localhost:8888/') || lower.includes('://127.0.0.1:8888/')) {
+      return trimmed.replace(/:\/\/(localhost|127\.0\.0\.1):8888\//, `://${window.location.hostname}:8888/`);
+    }
+  }
+
   if (
     lower.startsWith('http://') ||
     lower.startsWith('https://') ||

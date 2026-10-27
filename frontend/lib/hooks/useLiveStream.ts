@@ -102,13 +102,28 @@ export function useLiveStream(
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws');
+    let socketBase = 'http://localhost:3000';
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const isLocalOrLan =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        /^192\.168\.\d+\.\d+$/.test(host) ||
+        /^10\.\d+\.\d+\.\d+$/.test(host) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
 
-    debug(`Connecting to ${wsUrl}/live`);
+      if (isLocalOrLan) {
+        socketBase = `http://${host}:3000`;
+      } else {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnicast-api.vercel.app';
+        socketBase = apiUrl.replace(/\/api.*$/, '');
+      }
+    }
+
+    debug(`Connecting to ${socketBase}/live`);
 
     // Create socket connection
-    const socket = io(`${wsUrl}/live`, {
+    const socket = io(`${socketBase}/live`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,

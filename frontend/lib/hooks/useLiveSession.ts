@@ -93,13 +93,22 @@ export function useLiveSession(
   useEffect(() => {
     if (!eventId) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     let socketBase = 'http://localhost:3000';
-    try {
-      const parsed = new URL(apiUrl.startsWith('http') ? apiUrl : `http://${apiUrl}`);
-      socketBase = `${parsed.protocol}//${parsed.host}`;
-    } catch {
-      socketBase = apiUrl.replace(/\/api.*$/, '');
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const isLocalOrLan =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        /^192\.168\.\d+\.\d+$/.test(host) ||
+        /^10\.\d+\.\d+\.\d+$/.test(host) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
+
+      if (isLocalOrLan) {
+        socketBase = `http://${host}:3000`;
+      } else {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnicast-api.vercel.app';
+        socketBase = apiUrl.replace(/\/api.*$/, '');
+      }
     }
 
     const token =

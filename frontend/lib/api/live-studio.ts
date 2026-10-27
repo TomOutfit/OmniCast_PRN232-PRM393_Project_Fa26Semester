@@ -2,7 +2,7 @@
 // OmniCast - Live Studio API Client
 // ============================================================
 
-import apiClient from '@/lib/api';
+import apiClient, { getApiBaseUrl } from '@/lib/api';
 import {
   deleteCloudinaryAsset,
   signCloudinaryUpload,
@@ -166,6 +166,37 @@ export async function stopWebcamLive(
     { timeout: 30000 },
   );
   return res.data;
+}
+
+/**
+ * Best-effort "stop the live" call used when the broadcaster
+ * component is unmounted (page reload / navigation / tab close).
+ *
+ * `navigator.sendBeacon()` cannot be used here because the endpoint
+ * requires the `Authorization: Bearer` header, and sendBeacon does
+ * not support custom headers. `fetch(..., { keepalive: true })` does
+ * — and `keepalive` lets the request survive the page teardown.
+ *
+ * Failures are swallowed on purpose: this runs during unmount, so
+ * there is no UI left to report an error to.
+ */
+export function stopWebcamLiveOnUnmount(eventId: string): void {
+  if (typeof window === 'undefined' || !eventId) return;
+
+  try {
+    const token = localStorage.getItem('accessToken');
+    void fetch(`${getApiBaseUrl()}/programs/studio/live/webcam/stop`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ eventId }),
+    }).catch(() => undefined);
+  } catch {
+    /* ignore — best effort only */
+  }
 }
 
 export async function fetchBroadcastableRecordings(
