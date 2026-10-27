@@ -75,6 +75,7 @@ import {
   CloudinaryAbortError,
 } from '@/lib/api/cloudinary';
 import { LiveBroadcasterConsole } from '@/components/studio/live-broadcaster-console';
+import { WebcamLiveBroadcaster } from '@/components/studio/webcam-live-broadcaster';
 import { logError } from '@/lib/utils/safe-log';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog' | 'interaction';
@@ -1014,6 +1015,15 @@ export default function WebLiveStudioPage() {
   const [selfDesc, setSelfDesc] = useState('');
   const [visibility, setVisibility] = useState<VisibilityMode>('SCHEDULED');
   const [showLiveConfirm, setShowLiveConfirm] = useState(false);
+  /**
+   * Id of the LiveEvent created by the Webcam Live broadcaster
+   * (WebRTC / WHIP). Non-null while the camera stream is live —
+   * the record→upload surface is collapsed so the operator does
+   * not confuse the two streams.
+   */
+  const [webcamLiveEventId, setWebcamLiveEventId] = useState<string | null>(
+    null,
+  );
 
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -2159,9 +2169,48 @@ export default function WebLiveStudioPage() {
 
         {/* ── MODE 2: Self-Record & Screen Capture LiveStream ───────────── */}
         {activeTab === 'self-record' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            {/* ── Webcam Live (WebRTC / WHIP) — the "real live" path ─────── */}
+            <WebcamLiveBroadcaster
+              channel={selectedChannel}
+              defaultTitle={selfTitle}
+              onLiveChange={({ eventId, live }) => {
+                setWebcamLiveEventId(live ? eventId : null);
+                refetchLiveEvents();
+              }}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Col: WebCam / Screen Capture Recorder Surface */}
             <div className="lg:col-span-2 space-y-4">
+              {webcamLiveEventId ? (
+                /* Webcam live is running — collapse the record surface so the
+                   operator does not mistake the recorded clip for the live feed. */
+                <Card className="glass-card p-5 border border-rose-500/40 bg-rose-950/20 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+                    </span>
+                    <h2 className="text-sm font-bold text-white">
+                      Đang phát LIVE WEBCAM — luồng ghi hình được thu nhỏ
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Camera đang được phát trực tiếp qua WebRTC. Để ghi hình
+                    thành clip (VOD), hãy bấm <strong>DỪNG LIVE</strong> ở bảng
+                    LIVE WEBCAM phía trên trước.
+                  </p>
+                  <Link
+                    href={`/live/${webcamLiveEventId}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Mở phòng xem trực tiếp ↗</span>
+                  </Link>
+                </Card>
+              ) : (
               <Card className="glass-card p-5 border border-[#1e2d44] bg-[#0c1421]/60 space-y-4">
                 {/* Source Selection Buttons */}
                 <div className="flex items-center justify-between border-b border-[#1a273b] pb-3">
@@ -2462,6 +2511,7 @@ export default function WebLiveStudioPage() {
                   )
                 )}
               </Card>
+              )}
             </div>
 
             {/* Right Col: Metadata & Publish Control Panel */}
@@ -2665,6 +2715,7 @@ export default function WebLiveStudioPage() {
                   </Button>
                 </div>
               </Card>
+            </div>
             </div>
           </div>
         )}

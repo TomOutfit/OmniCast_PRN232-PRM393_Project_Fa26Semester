@@ -453,6 +453,15 @@ export default function LiveWatchPage() {
   // Memoize initial seek strictly per event to prevent any playback rewinds
   const initialSeekSeconds = useMemo(() => {
     if (!snapshot?.startedAt) return 0;
+    // A webcam live (WHIP) stream is open-ended: it has no known
+    // duration and its HLS manifest is a rolling window. Seeking into
+    // the middle of it would jump the viewer to the wrong moment —
+    // always start from the live edge instead.
+    const isWebcamLive =
+      (snapshot.tags ?? []).includes('studio-webcam-live') ||
+      Number(snapshot.duration || 0) <= 0;
+    if (isWebcamLive) return 0;
+
     const startTime = new Date(snapshot.startedAt).getTime();
     if (isNaN(startTime)) return 0;
     const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
@@ -461,7 +470,12 @@ export default function LiveWatchPage() {
       return elapsedSeconds % dur;
     }
     return Math.min(elapsedSeconds, 180);
-  }, [snapshot?.eventId, snapshot?.startedAt, snapshot?.duration]);
+  }, [
+    snapshot?.eventId,
+    snapshot?.startedAt,
+    snapshot?.duration,
+    snapshot?.tags,
+  ]);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {

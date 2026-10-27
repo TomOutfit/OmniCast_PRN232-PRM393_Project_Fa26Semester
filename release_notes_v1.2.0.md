@@ -1,6 +1,6 @@
-### 🚀 OmniCast v1.2.0 — Đồng Bộ Telemetry Dashboard Đa Kênh, Hệ Sinh Thái Live Donate / Super Chat & Báo Cáo Kỹ Thuật Dự Án
+### 🚀 OmniCast v1.2.0 — Đồng Bộ Telemetry Dashboard Đa Kênh, Hệ Sinh Thái Live Donate / Super Chat, WebRTC Live Studio & Báo Cáo Kỹ Thuật Dự Án
 
-Bản phát hành chính thức **OmniCast v1.2.0** đánh dấu bước chuyển mình toàn diện về năng lực giám sát hạ tầng thời gian thực và trải nghiệm tương tác tài chính số (Donation & Super Chat) đồng bộ liền mạch giữa **Frontend Web Studio** và **Mobile Flutter App**.
+Bản phát hành chính thức **OmniCast v1.2.0** đánh dấu bước chuyển mình toàn diện về năng lực giám sát hạ tầng thời gian thực, truyền phát trực tiếp WebRTC Live Studio (WHIP / Low-Latency HLS) và trải nghiệm tương tác tài chính số (Donation & Super Chat) đồng bộ liền mạch giữa **Frontend Web Studio** và **Mobile Flutter App**.
 
 ---
 
@@ -51,6 +51,17 @@ Bản phát hành chính thức **OmniCast v1.2.0** đánh dấu bước chuyể
 
 #### 5. 📑 Báo Cáo Kỹ Thuật Toàn Diện (Project Technical Architecture Report)
 - Đính kèm tệp tài liệu PDF chuẩn hóa quốc tế `OmniCast_Comprehensive_Project_Report.pdf` trình bày chi tiết kiến trúc vi dịch vụ (Microservices), cơ sở dữ liệu Entity-Relationship, hạ tầng phân phối video HLS/DASH/WebRTC và hệ thống phân quyền RBAC.
+
+#### 6. 🎥 Hạ Tầng Live Studio WebRTC (WHIP) & Máy Chủ Phát Sóng MediaMTX (Low-Latency HLS)
+- **Truyền Phát Trực Tiếp Qua WebRTC (WHIP RFC Standard)**:
+  - Hỗ trợ phát sóng trực tiếp từ Webcam & Microphone trình duyệt thông qua giao thức WebRTC Ingestion (WHIP) tới máy chủ MediaMTX với độ trễ siêu thấp (< 500ms).
+  - Tự động đàm phán mã hóa video H264 Baseline/Main profile tương thích hoàn hảo với bộ chuyển đổi sang Low-Latency HLS (fMP4 fragments 1s, part duration 200ms).
+- **Trạm Điều Khiển Live Studio Chuyên Nghiệp (Webcam Broadcaster Console)**:
+  - Tùy chọn đa dạng thiết bị đầu vào: Chuyển đổi camera, microphone, cấu hình độ phân giải (1080p, 720p, 480p) và băng thông phát (2.5 Mbps - 6 Mbps).
+  - Thước đo âm lượng thời gian thực (Audio Level VU Meter), đồng hồ đếm thời gian phát sóng và chỉ báo trạng thái kết nối WebRTC ICE (Connecting / Connected / Reconnecting).
+- **Máy Chủ Phân Phối Video MediaMTX & Tự Động Hóa Vận Hành**:
+  - Tích hợp dịch vụ Docker Compose và script khởi chạy PowerShell `start-mediamtx.ps1` tự động nhận diện địa chỉ LAN IP và đồng bộ cấu hình ICE Candidates.
+  - Tích hợp phòng xem trực tiếp `/live/[id]` tự động phát hiện luồng phát webcam WHIP và phát mượt mà qua trình phát HLS chuyên dụng.
 
 ---
 
