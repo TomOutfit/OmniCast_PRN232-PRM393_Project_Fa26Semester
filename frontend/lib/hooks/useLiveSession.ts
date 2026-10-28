@@ -118,10 +118,12 @@ export function useLiveSession(
           localStorage.getItem('accessToken')
         : null;
 
+    const isVercelBackend = socketBase.includes('vercel.app');
+
     const socket = io(`${socketBase}/live`, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 10,
+      transports: isVercelBackend ? ['polling'] : ['websocket', 'polling'],
+      reconnection: !isVercelBackend,
+      reconnectionAttempts: isVercelBackend ? 1 : 10,
       reconnectionDelay: 1500,
       auth: token ? { token } : {},
     });

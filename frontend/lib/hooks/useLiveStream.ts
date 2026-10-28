@@ -122,14 +122,16 @@ export function useLiveStream(
 
     debug(`Connecting to ${socketBase}/live`);
 
+    const isVercelBackend = socketBase.includes('vercel.app');
+
     // Create socket connection
     const socket = io(`${socketBase}/live`, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
+      transports: isVercelBackend ? ['polling'] : ['websocket', 'polling'],
+      reconnection: !isVercelBackend,
+      reconnectionAttempts: isVercelBackend ? 1 : 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000,
+      timeout: 10000,
     });
 
     // Connection events

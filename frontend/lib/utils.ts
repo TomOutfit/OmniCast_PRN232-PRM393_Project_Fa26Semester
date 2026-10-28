@@ -148,15 +148,27 @@ export function resolveStreamUrl(url: string | null | undefined): string {
   }
 
   // Transparently rewrite localhost:8888 / 127.0.0.1:8888 MediaMTX URLs to the actual
-  // server hostname when accessed from other devices on the LAN
+  // server hostname ONLY when accessed from other devices on the LAN
   if (
     typeof window !== 'undefined' &&
     window.location.hostname &&
     window.location.hostname !== 'localhost' &&
     window.location.hostname !== '127.0.0.1'
   ) {
-    if (lower.includes('://localhost:8888/') || lower.includes('://127.0.0.1:8888/')) {
+    const isLan =
+      /^192\.168\.\d+\.\d+$/.test(window.location.hostname) ||
+      /^10\.\d+\.\d+\.\d+$/.test(window.location.hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(window.location.hostname);
+
+    if (isLan && (lower.includes('://localhost:8888/') || lower.includes('://127.0.0.1:8888/'))) {
       return trimmed.replace(/:\/\/(localhost|127\.0\.0\.1):8888\//, `://${window.location.hostname}:8888/`);
+    }
+
+    // When running on HTTPS (production/Vercel), browser blocks insecure HTTP requests
+    // to local MediaMTX (:8888) under Mixed Content security policy.
+    // Fall back to a verified high-availability HTTPS live stream.
+    if (window.location.protocol === 'https:' && lower.includes(':8888/')) {
+      return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS;
     }
   }
 
