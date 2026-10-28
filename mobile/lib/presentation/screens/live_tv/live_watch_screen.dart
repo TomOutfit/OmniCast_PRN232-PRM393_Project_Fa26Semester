@@ -745,7 +745,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         ? ev.streamUrl!
         : (ev.externalUrl?.isNotEmpty == true
             ? ev.externalUrl!
-            : 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
+            : '');
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Stack(
@@ -758,6 +758,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             showControls: true,
             isPremium: ev.isPrivate,
             channelName: ev.channel?.name,
+            allowFallback: false,
+            isLive: true,
           ),
 
           // Floating reactions layer

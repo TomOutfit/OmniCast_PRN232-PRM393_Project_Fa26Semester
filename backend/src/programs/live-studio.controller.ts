@@ -102,43 +102,20 @@ export class LiveStudioController {
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   async mobilePushToLive(@Body() dto: MobilePushToLiveDto, @Request() req: any) {
-    const eventId = `mobile-${Date.now()}-${dto.channelSlug}`;
-
-    // Construct HLS URL for viewers.
-    // MediaMTX serves the multivariant manifest at `index.m3u8`.
+    const result = await this.studioService.startWebcamLive(
+      { channelSlug: dto.channelSlug, title: dto.title },
+      req.user.sub,
+    );
     const ingest = this.studioService.getIngestConfig();
-    const hlsUrl = `${ingest.hlsUrl}/${dto.channelSlug}/index.m3u8`;
-
-    // Construct WebRTC URL for viewers to connect
-    const webrtcUrl = `${ingest.webrtcUrl}/${dto.channelSlug}`;
-
-    // Broadcast to all viewers via WebSocket
-    this.liveStreamGateway.notifyLiveStarted(dto.channelSlug, {
-      eventId,
-      title: dto.title,
-      streamUrl: webrtcUrl,
-      hlsUrl: hlsUrl,
-      thumbnailUrl: dto.thumbnailUrl,
-      startedAt: new Date().toISOString(),
-      duration: 0, // Live has no scheduled end
-    });
-
-    // Also log to audit
-    await this.studioService.logLiveEvent({
-      eventType: 'LIVE_STARTED',
-      channelSlug: dto.channelSlug,
-      eventId,
-      userId: req.user.sub,
-      metadata: { title: dto.title, source: 'mobile' },
-    });
+    const channelSlug = result.event.channel?.slug ?? dto.channelSlug;
 
     return {
       success: true,
-      eventId,
-      channelSlug: dto.channelSlug,
-      hlsUrl,
-      webrtcUrl,
-      message: 'Live stream started. Viewers are being notified.',
+      eventId: result.event.id,
+      channelSlug,
+      hlsUrl: `${ingest.hlsUrl}/${channelSlug}/index.m3u8`,
+      webrtcUrl: `${ingest.webrtcUrl}/${channelSlug}`,
+      message: result.message,
     };
   }
 
@@ -158,26 +135,20 @@ export class LiveStudioController {
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   async mobileStopLive(@Body() dto: MobileStopLiveDto, @Request() req: any) {
-    // Broadcast to all viewers via WebSocket
-    this.liveStreamGateway.notifyLiveStopped(dto.channelSlug, {
-      eventId: dto.eventId || 'unknown',
-      reason: 'broadcaster_ended',
-      stoppedAt: new Date().toISOString(),
-    });
+    if (!dto.eventId) {
+      throw new BadRequestException('eventId is required to stop a live stream.');
+    }
 
-    // Also log to audit
-    await this.studioService.logLiveEvent({
-      eventType: 'LIVE_STOPPED',
-      channelSlug: dto.channelSlug,
-      eventId: dto.eventId,
-      userId: req.user.sub,
-      metadata: { source: 'mobile' },
-    });
+    const result = await this.studioService.stopWebcamLive(
+      { eventId: dto.eventId },
+      req.user.sub,
+    );
 
     return {
       success: true,
       channelSlug: dto.channelSlug,
-      message: 'Live stream stopped. Viewers are being notified.',
+      eventId: dto.eventId,
+      message: result.message,
     };
   }
 

@@ -33,6 +33,7 @@ import '../../../data/services/webrtc_publisher_service.dart';
 import '../../../data/services/live_studio_api_service.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/token_storage_helper.dart';
 import '../../widgets/channel_logo.dart';
 
 // ============================================================
@@ -361,10 +362,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       WebRTCPublisherConfig(
         serverUrl: whipUrl,
         streamKey: widget.channel?.slug ?? 'default',
-        videoConstraints: const VideoConstraints(
+        videoConstraints: VideoConstraints(
           width: 1280,
           height: 720,
           frameRate: 30,
+          facingMode:
+              _cameraCtrl?.description.lensDirection == CameraLensDirection.back
+                  ? 'environment'
+                  : 'user',
         ),
         debug: true,
       ),
@@ -383,49 +388,65 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       }
     };
 
-    _webrtcPublisher!.onBroadcastStatusChanged = (isLive) {
-      if (mounted) {
-        setState(() => _isLiveStreaming = isLive);
-        if (isLive) {
-          _notifyBackendLiveStarted();
-        } else {
-          _notifyBackendLiveStopped();
-        }
-      }
-    };
-
     // Start broadcasting
     final success = await _webrtcPublisher!.startBroadcast();
 
-    if (mounted) {
-      // Regardless of external WHIP server connectivity, enter active Live Broadcasting
-      // with backend notifications and on-air timer running so mobile streamer experience is solid
-      setState(() {
-        _isRecording = true;
-        _isLiveStreaming = true;
-        _broadcastState = BroadcastState.broadcasting;
-      });
+    if (!success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể kết nối máy chủ phát trực tiếp. Vui lòng kiểm tra camera và máy chủ.'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
+    }
 
-      _recordTimer?.cancel();
+    if (!mounted) {
+      await _webrtcPublisher?.stopBroadcast();
+      return;
+    }
+
+    final backendStarted = await _notifyBackendLiveStarted();
+    if (!backendStarted) {
+      await _webrtcPublisher?.stopBroadcast();
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _isLiveStreaming = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể đăng ký phiên LIVE với máy chủ. Vui lòng thử lại.'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isRecording = true;
+      _isLiveStreaming = true;
+      _broadcastState = BroadcastState.broadcasting;
       _recordedSeconds = 0;
       _recordedFrames = 0;
-      _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-        if (!mounted) return;
-        setState(() {
-          _recordedSeconds++;
-          _recordedFrames += 30;
-        });
+    });
+
+    _recordTimer?.cancel();
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      setState(() {
+        _recordedSeconds++;
+        _recordedFrames += 30;
       });
+    });
 
-      _notifyBackendLiveStarted();
-
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Đang phát trực tiếp! Khán giả có thể theo dõi ngay.'
-                : '🔴 Đang phát sóng trực tiếp (Chế độ trường quay On-Air)!',
-          ),
+        const SnackBar(
+          content: Text('Đang phát trực tiếp! Khán giả có thể theo dõi ngay.'),
           backgroundColor: _green,
         ),
       );
@@ -435,38 +456,48 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _stopLiveStreaming() async {
     HapticFeedback.heavyImpact();
     await _webrtcPublisher?.stopBroadcast();
-    setState(() {
-      _isRecording = false;
-      _isLiveStreaming = false;
-    });
+    await _notifyBackendLiveStopped();
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _isLiveStreaming = false;
+      });
+    }
   }
 
-  void _notifyBackendLiveStarted() async {
-    // TODO: Get auth token from auth service
-    // _liveApiService?.setAuthToken(authToken);
-    
+  Future<bool> _notifyBackendLiveStarted() async {
+    final token = await TokenStorageHelper().getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      _liveApiService?.setAuthToken(token);
+    }
+
     final response = await _liveApiService?.pushToLive(
       channelSlug: widget.channel?.slug ?? 'default',
       title: widget.initialTopic ?? 'Live from Mobile Studio',
       streamKey: widget.channel?.slug ?? 'default',
     );
-    
-    if (response != null && response.success) {
+
+    if (response != null && response.success && response.eventId.isNotEmpty) {
       _currentEventId = response.eventId;
       debugPrint('[Studio] Backend notified - Event ID: ${response.eventId}');
       debugPrint('[Studio] HLS URL: ${response.hlsUrl}');
       debugPrint('[Studio] WebRTC URL: ${response.webrtcUrl}');
+      return true;
     } else {
       debugPrint('[Studio] Failed to notify backend of live start');
+      return false;
     }
   }
 
-  void _notifyBackendLiveStopped() async {
+  Future<void> _notifyBackendLiveStopped() async {
+    final eventId = _currentEventId;
+    if (eventId == null) return;
+
     final success = await _liveApiService?.stopLive(
       channelSlug: widget.channel?.slug ?? 'default',
-      eventId: _currentEventId,
+      eventId: eventId,
     );
-    
+
     if (success == true) {
       debugPrint('[Studio] Backend notified - Live stopped');
     } else {

@@ -86,11 +86,13 @@ class VideoConstraints {
   final int width;
   final int height;
   final int frameRate;
+  final String facingMode;
 
   const VideoConstraints({
     this.width = 1280,
     this.height = 720,
     this.frameRate = 30,
+    this.facingMode = 'user',
   });
 
   Map<String, dynamic> toMediaConstraints() {
@@ -103,7 +105,7 @@ class VideoConstraints {
         'minFrameRate': '15',
         'maxFrameRate': frameRate.toString(),
       },
-      'facingMode': 'user',
+      'facingMode': facingMode,
       'optional': [],
     };
   }
@@ -384,7 +386,7 @@ class WebRTCPublisherService {
 
     try {
       // WHIP endpoint URL
-      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}';
+      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}/whip';
 
       debugPrint('[WebRTCPublisher] Sending WHIP offer to: $whipUrl');
 
@@ -418,7 +420,7 @@ class WebRTCPublisherService {
     if (_config == null) return;
 
     try {
-      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}';
+      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}/whip';
 
       await _httpDelete(whipUrl);
 

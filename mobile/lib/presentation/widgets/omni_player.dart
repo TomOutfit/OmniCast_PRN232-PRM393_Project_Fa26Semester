@@ -2,6 +2,7 @@
 // Native video_player based player with Client-Side Live Seek & VIP Paywall Overlay.
 // Includes: retry on error, fallback stream URL, clean UX error state.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -80,6 +81,14 @@ class OmniPlayer extends StatefulWidget {
   /// for parents that want to render it as a static caption.
   final String? sourceAttribution;
 
+  /// Disable fallback media when showing a specific live source.
+  final bool allowFallback;
+
+  /// When true or when the stream URL points to a live stream, the player
+  /// operates in live broadcast mode: zero cartoon fallbacks, proactive auto-retry,
+  /// and a dedicated live connecting / standby state.
+  final bool isLive;
+
   const OmniPlayer({
     super.key,
     required this.url,
@@ -92,6 +101,8 @@ class OmniPlayer extends StatefulWidget {
     this.channelName,
     this.fallbackSrc,
     this.sourceAttribution,
+    this.allowFallback = true,
+    this.isLive = false,
   });
 
   @override
@@ -108,6 +119,18 @@ class _OmniPlayerState extends State<OmniPlayer> {
   int _lastTickSec = -1;
   bool? _lastBuffering;
   bool? _lastPlaying;
+
+  // Live broadcast reconnection state
+  int _retryCount = 0;
+  static const int _maxLiveRetries = 10;
+  Timer? _liveRetryTimer;
+  bool _isLiveRetrying = false;
+
+  bool get _isLiveStream =>
+      widget.isLive ||
+      widget.url.toLowerCase().contains(':8888/') ||
+      widget.url.toLowerCase().contains('/live/') ||
+      widget.url.toLowerCase().contains('.m3u8');
 
   @override
   void initState() {
@@ -127,8 +150,11 @@ class _OmniPlayerState extends State<OmniPlayer> {
     super.didUpdateWidget(oldWidget);
     if (widget.url != oldWidget.url) {
       _disposeController();
+      _liveRetryTimer?.cancel();
       _hasError = false;
       _usedFallback = false;
+      _retryCount = 0;
+      _isLiveRetrying = false;
       if (_isYouTubeEmbed(widget.url)) {
         return;
       }
@@ -147,8 +173,13 @@ class _OmniPlayerState extends State<OmniPlayer> {
   /// have no host. Older rows in the DB still carry the relative
   /// form, so we transparently prefix them with the API origin
   /// here. Absolute URLs (the common case) pass through untouched.
-  static String _resolveAbsoluteUrl(String url) {
-    if (url.isEmpty) return _kFallbackStream;
+  static String _resolveAbsoluteUrl(
+    String url, {
+    required bool allowFallback,
+  }) {
+    String fallbackOrUrl() => allowFallback ? _kFallbackStream : url;
+
+    if (url.isEmpty) return fallbackOrUrl();
     final lower = url.toLowerCase();
 
     // Google Drive direct media stream resolution
@@ -159,16 +190,19 @@ class _OmniPlayerState extends State<OmniPlayer> {
 
     // Browser memory blob URLs cannot be decoded by native video_player
     if (lower.startsWith('blob:')) {
-      return _kFallbackStream;
+      return fallbackOrUrl();
     }
     // Blocked googleapis bucket
     if (lower.contains('commondatastorage.googleapis.com')) {
-      return _kFallbackStream;
+      return fallbackOrUrl();
     }
     // Broken vercel serverless uploads
     if (lower.contains('omnicast-api.vercel.app/uploads/')) {
-      return _kFallbackStream;
+      return fallbackOrUrl();
     }
+    // MediaMTX live stream resolution for mobile devices:
+    // If the stream is hosted on MediaMTX (:8888), resolve localhost/127.0.0.1/vercel.app
+    // to the actual server LAN IP so mobile can reach the machine running MediaMTX
     // MediaMTX live stream resolution for mobile devices:
     // If the stream is hosted on MediaMTX (:8888), resolve localhost/127.0.0.1/vercel.app
     // to the actual server LAN IP so mobile can reach the machine running MediaMTX
@@ -182,7 +216,12 @@ class _OmniPlayerState extends State<OmniPlayer> {
           apiUri.host != '127.0.0.1') {
         host = apiUri.host;
       }
-      return url.replaceFirst(RegExp(r'https?://[^/]+:8888/'), 'http://$host:8888/');
+      var target = url.replaceFirst(RegExp(r'https?://[^/]+:8888/'), 'http://$host:8888/');
+      // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
+      if (!target.contains('cookieCheck=')) {
+        target = target.contains('?') ? '$target&cookieCheck=1' : '$target?cookieCheck=1';
+      }
+      return target;
     }
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
       return url;
@@ -200,7 +239,10 @@ class _OmniPlayerState extends State<OmniPlayer> {
   }
 
   Future<void> _initialize(String videoUrl) async {
-    final absoluteUrl = _resolveAbsoluteUrl(videoUrl);
+    final absoluteUrl = _resolveAbsoluteUrl(
+      videoUrl,
+      allowFallback: widget.allowFallback && !_isLiveStream,
+    );
     final controller = VideoPlayerController.networkUrl(
       Uri.parse(absoluteUrl),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
@@ -227,6 +269,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
         setState(() {
           _initialized = true;
           _hasError = false;
+          _isLiveRetrying = false;
+          _retryCount = 0;
         });
       }
     } catch (_) {
@@ -234,12 +278,45 @@ class _OmniPlayerState extends State<OmniPlayer> {
       await controller.dispose();
       _controller = null;
 
-      // Smart fallback chain (Catalog v2.1):
+      // ── Live Stream Reconnection Flow ─────────────────────────
+      // Live camera broadcasts must NEVER swap to Big Buck Bunny cartoon!
+      // They retry with backoff to give MediaMTX time to remux the first chunk.
+      if (_isLiveStream) {
+        if (_retryCount < _maxLiveRetries) {
+          _retryCount++;
+          if (mounted) {
+            setState(() {
+              _isLiveRetrying = true;
+              _hasError = false;
+              _initialized = false;
+            });
+          }
+          _liveRetryTimer?.cancel();
+          _liveRetryTimer = Timer(const Duration(seconds: 2), () {
+            if (mounted) {
+              _initialize(videoUrl);
+            }
+          });
+          return;
+        }
+
+        // Retries exhausted for live camera stream
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _isLiveRetrying = false;
+            _initialized = false;
+          });
+        }
+        return;
+      }
+
+      // ── Non-Live (VOD / Recording) Fallback Chain ───────────────
       //   primary  -> configured [fallbackSrc] (Bunny keeps the
       //                upstream URL around for exactly this case)
       //           -> hard-coded Big Buck Bunny demo stream
       //   failure  -> _hasError overlay
-      if (!_usedFallback) {
+      if (widget.allowFallback && !_usedFallback) {
         _usedFallback = true;
 
         // Try the configured upstream fallback first.
@@ -254,7 +331,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
           return;
         }
 
-        // Then the demo stream as the last resort.
+        // Then the demo stream as the last resort for catalog/VOD only.
         if (videoUrl != _kFallbackStream) {
           if (mounted) {
             _showFallbackToast('🔁 Đang kết nối stream dự phòng…');
@@ -268,6 +345,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
         setState(() {
           _hasError = true;
           _initialized = false;
+          _isLiveRetrying = false;
         });
       }
     }
@@ -299,6 +377,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
 
   @override
   void dispose() {
+    _liveRetryTimer?.cancel();
     _disposeController();
     super.dispose();
   }
@@ -333,9 +412,13 @@ class _OmniPlayerState extends State<OmniPlayer> {
   }
 
   void _retry() {
+    _disposeController();
+    _liveRetryTimer?.cancel();
     setState(() {
       _hasError = false;
       _usedFallback = false;
+      _retryCount = 0;
+      _isLiveRetrying = false;
     });
     _initialize(widget.url);
   }
@@ -486,7 +569,26 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 4. Error state with Retry button
+    // 4. Live Broadcast Specialized States
+    if (_isLiveStream) {
+      if (_hasError) {
+        return _LiveStandbyState(
+          posterUrl: widget.posterUrl,
+          channelName: widget.channelName,
+          onRetry: _retry,
+        );
+      }
+      if (_isLiveRetrying || _controller == null || !_initialized) {
+        return _LiveConnectingState(
+          retryCount: _retryCount == 0 ? 1 : _retryCount,
+          maxRetries: _maxLiveRetries,
+          channelName: widget.channelName,
+          onRetry: _retry,
+        );
+      }
+    }
+
+    // 5. General Error state with Retry button (non-live)
     if (_hasError) {
       return _ErrorState(
         posterUrl: widget.posterUrl,
@@ -494,7 +596,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
       );
     }
 
-    // 5. Loading / Buffering
+    // 6. Loading / Buffering (non-live)
     final controller = _controller;
     if (controller == null || !_initialized) {
       return AspectRatio(
@@ -1006,4 +1108,241 @@ class _YouTubeEmbedState extends State<_YouTubeEmbed> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Broadcast Connecting State (Studio camera sync)
+// ─────────────────────────────────────────────────────────────────────────────
+class _LiveConnectingState extends StatelessWidget {
+  final int retryCount;
+  final int maxRetries;
+  final String? channelName;
+  final VoidCallback onRetry;
+
+  const _LiveConnectingState({
+    required this.retryCount,
+    required this.maxRetries,
+    this.channelName,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.9,
+            colors: [
+              Color(0xFF0C1929),
+              Color(0xFF070B12),
+              Colors.black,
+            ],
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 54,
+                      height: 54,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.videocam_rounded,
+                      color: Color(0xFF00E5FF),
+                      size: 26,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Đang đồng bộ camera trực tiếp…',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  channelName != null
+                      ? '$channelName • Đang nhận luồng hình ảnh Studio ($retryCount/$maxRetries)'
+                      : 'Đang kết nối luồng camera ($retryCount/$maxRetries)…',
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: onRetry,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.refresh_rounded, color: Color(0xFF00E5FF), size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          'Thử lại ngay',
+                          style: TextStyle(
+                            color: Color(0xFF00E5FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Broadcast Standby State (No active broadcast)
+// ─────────────────────────────────────────────────────────────────────────────
+class _LiveStandbyState extends StatelessWidget {
+  final String? posterUrl;
+  final String? channelName;
+  final VoidCallback onRetry;
+
+  const _LiveStandbyState({
+    this.posterUrl,
+    this.channelName,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (posterUrl != null && posterUrl!.isNotEmpty)
+            Opacity(
+              opacity: 0.2,
+              child: Image.network(
+                posterUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.black),
+              ),
+            )
+          else
+            Container(color: const Color(0xFF0A0F1D)),
+          Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 0.85,
+                colors: [
+                  const Color(0xFFFF2A55).withValues(alpha: 0.08),
+                  Colors.black.withValues(alpha: 0.85),
+                ],
+              ),
+            ),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: const Color(0xFFFF2A55).withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.videocam_off_rounded,
+                      color: Color(0xFFFF2A55),
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Chưa nhận được tín hiệu camera từ Studio',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    channelName != null
+                        ? 'Studio $channelName chưa bật camera hoặc buổi phát đã kết thúc.'
+                        : 'Vui lòng kiểm tra màn hình Studio đang bật camera và thử lại.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E5FF),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text(
+                      'KẾT NỐI LẠI VỚI STUDIO',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
