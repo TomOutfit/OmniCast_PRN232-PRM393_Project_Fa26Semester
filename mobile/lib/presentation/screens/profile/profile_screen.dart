@@ -703,12 +703,12 @@ class ProfileScreen extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFF59E0B).withOpacity(0.5),
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF59E0B).withOpacity(0.12),
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
             blurRadius: 14,
             spreadRadius: 1,
           ),
@@ -725,7 +725,7 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withOpacity(0.2),
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(

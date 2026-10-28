@@ -390,8 +390,8 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
               borderRadius: BorderRadius.circular(20),
               side: const BorderSide(color: Color(0x3300E5FF)),
             ),
-            title: Row(
-              children: const [
+            title: const Row(
+              children: [
                 Icon(Icons.add_to_drive_rounded, color: Color(0xFFF59E0B), size: 22),
                 SizedBox(width: 10),
                 Text(
@@ -443,9 +443,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E).withOpacity(0.12),
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
+                        border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -1299,10 +1299,10 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
             ),
           )
         else if (_recordings.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(40),
+          const Padding(
+            padding: EdgeInsets.all(40),
             child: Column(
-              children: const [
+              children: [
                 Icon(Icons.video_library_outlined, color: Color(0xFF475569), size: 48),
                 SizedBox(height: 12),
                 Text(
@@ -1546,10 +1546,10 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                   child: const Icon(Icons.videocam, color: _danger, size: 22),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'STUDIO GHI HÌNH CHUYÊN NGHIỆP',
                         style: TextStyle(
@@ -1859,12 +1859,12 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       );
     }
     if (_catalogStreams.isEmpty) {
-      return Center(
+      return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               Icon(Icons.collections_bookmark_outlined,
                   color: Color(0xFF475569), size: 48),
               SizedBox(height: 12),
@@ -2118,9 +2118,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
                   SizedBox(width: 8),
                   Expanded(
@@ -2538,17 +2538,17 @@ class _AntiPiracyNote extends StatelessWidget {
           width: 0.8,
         ),
       ),
-      child: Row(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B), size: 18),
-          const SizedBox(width: 10),
+          Icon(Icons.shield_outlined, color: Color(0xFFF59E0B), size: 18),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               'Studio chỉ phát nguồn nội bộ hoặc do Studio tự ghi. '
               'Nội dung từ YouTube/Twitch/Vimeo sẽ bị hệ thống chặn tự động để '
               'tuân thủ bản quyền.',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFFCBD5E1),
                 fontSize: 11,
                 height: 1.5,
@@ -2907,7 +2907,7 @@ class _ChannelSelectorBottomSheetState
     final set = <String>{'ALL'};
     for (final c in widget.channels) {
       final cat = c.category;
-      if (cat != null && cat.trim().isNotEmpty) {
+      if (cat.trim().isNotEmpty) {
         set.add(cat.trim().toUpperCase());
       }
     }
@@ -3087,10 +3087,10 @@ class _ChannelSelectorBottomSheetState
           // Channels list
           Expanded(
             child: filtered.isEmpty
-                ? Center(
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.search_off_rounded, color: Color(0xFF475569), size: 40),
                         SizedBox(height: 8),
                         Text(
@@ -3155,7 +3155,7 @@ class _ChannelSelectorBottomSheetState
                                     const SizedBox(height: 2),
                                     Row(
                                       children: [
-                                        if (c.category != null && c.category!.isNotEmpty) ...[
+                                        if (c.category.isNotEmpty) ...[
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                                             decoration: BoxDecoration(
@@ -3163,7 +3163,7 @@ class _ChannelSelectorBottomSheetState
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Text(
-                                              c.category!.toUpperCase(),
+                                              c.category.toUpperCase(),
                                               style: const TextStyle(
                                                 color: Color(0xFF00E5FF),
                                                 fontSize: 9,

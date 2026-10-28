@@ -122,7 +122,6 @@ class SupabaseRealtimeService {
         callback: (payload) {
           try {
             final row = payload.newRecord;
-            if (row == null) return;
             final c = _commentFromRow(row);
             if (c != null) {
               _emit(commentController: recordingId, event: RealtimeCommentEvent.insert(recordingId, c));
@@ -144,7 +143,6 @@ class SupabaseRealtimeService {
         callback: (payload) {
           try {
             final row = payload.newRecord;
-            if (row == null) return;
             final c = _commentFromRow(row);
             if (c != null) {
               _emit(commentController: recordingId, event: RealtimeCommentEvent.update(recordingId, c));
@@ -159,7 +157,7 @@ class SupabaseRealtimeService {
         callback: (payload) {
           try {
             final old = payload.oldRecord;
-            if (old == null || old['id'] == null) return;
+            if (old['id'] == null) return;
             _emit(
               commentController: recordingId,
               event: RealtimeCommentEvent.delete(recordingId, old['id'].toString()),
@@ -191,9 +189,7 @@ class SupabaseRealtimeService {
           try {
             if (payload.eventType == sb.PostgresChangeEvent.delete) {
               final old = payload.oldRecord;
-              final key = old != null
-                  ? '${old['userId']}_${old['type']}'
-                  : 'unknown';
+              final key = '${old['userId']}_${old['type']}';
               _emit(
                 reactionController: recordingId,
                 event: RealtimeReactionEvent.delete(recordingId, key),
@@ -201,7 +197,6 @@ class SupabaseRealtimeService {
               return;
             }
             final row = payload.newRecord;
-            if (row == null) return;
             final r = _reactionFromRow(row);
             if (r != null) {
               _emit(

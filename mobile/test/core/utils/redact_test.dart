@@ -61,7 +61,7 @@ void main() {
     });
 
     test('redacts nested object fields like password, token, apiKey', () {
-      final blob = '{"name":"ok","password":"hunter2","nested":{"token":"abc.def.ghi"},"arr":[{"apiKey":"sk-12345"}]}';
+      const blob = '{"name":"ok","password":"hunter2","nested":{"token":"abc.def.ghi"},"arr":[{"apiKey":"sk-12345"}]}';
       final out = redactSecrets(blob);
       expect(out.contains('hunter2'), isFalse);
       expect(out.contains('abc.def.ghi'), isFalse);

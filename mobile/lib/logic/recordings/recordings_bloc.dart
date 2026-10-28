@@ -384,7 +384,7 @@ class RecordingsBloc extends Bloc<RecordingsEvent, RecordingsState> {
     LoadRecordingDetails event,
     Emitter<RecordingsState> emit,
   ) async {
-    emit(RecordingsLoading(previous: const []));
+    emit(const RecordingsLoading(previous: []));
     try {
       final recording = await _repository.getRecordingById(event.recordingId);
       emit(RecordingDetailsLoaded(recording: recording));

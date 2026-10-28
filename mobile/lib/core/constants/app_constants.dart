@@ -20,11 +20,9 @@ class AppConstants {
   static const String cdnBaseUrl = 'https://omnicast.tv';
   static const Duration apiTimeout = Duration(seconds: 12);
 
-  /**
-   * Resolve an asset path (like `/Channel_Logos/01-omni-sport-1-icon.svg`)
-   * to a fully-qualified URL the CachedNetworkImage can load.
-   * If the path is already absolute (http(s)://) we use it verbatim.
-   */
+  /// Resolve an asset path (like `/Channel_Logos/01-omni-sport-1-icon.svg`)
+  /// to a fully-qualified URL the CachedNetworkImage can load.
+  /// If the path is already absolute (http(s)://) we use it verbatim.
   static String resolveAssetUrl(String? maybeRelativePath) {
     if (maybeRelativePath == null || maybeRelativePath.isEmpty) return '';
     if (maybeRelativePath.startsWith('http://') ||

@@ -169,6 +169,21 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains('omnicast-api.vercel.app/uploads/')) {
       return _kFallbackStream;
     }
+    // MediaMTX live stream resolution for mobile devices:
+    // If the stream is hosted on MediaMTX (:8888), resolve localhost/127.0.0.1/vercel.app
+    // to the actual server LAN IP so mobile can reach the machine running MediaMTX
+    if (lower.contains(':8888/')) {
+      final apiUri = Uri.tryParse(AppConstants.baseUrl);
+      String host = '10.12.2.162';
+      if (apiUri != null &&
+          apiUri.host.isNotEmpty &&
+          !apiUri.host.contains('vercel.app') &&
+          apiUri.host != 'localhost' &&
+          apiUri.host != '127.0.0.1') {
+        host = apiUri.host;
+      }
+      return url.replaceFirst(RegExp(r'https?://[^/]+:8888/'), 'http://$host:8888/');
+    }
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
       return url;
     }

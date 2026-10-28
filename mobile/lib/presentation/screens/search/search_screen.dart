@@ -23,7 +23,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   String? _activeCategory;
-  List<Map<String, dynamic>> _categories = [{'key': 'ALL', 'label': 'Tất cả'}];
+  final List<Map<String, dynamic>> _categories = [{'key': 'ALL', 'label': 'Tất cả'}];
 
   static const _trendingSearches = [
     'V-League 2026',

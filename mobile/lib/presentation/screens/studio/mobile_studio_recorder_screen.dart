@@ -105,10 +105,10 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   // Viewfinder Studio HUD tools
   bool _showGrid = true;
   bool _showSafeArea = true;
-  bool _showCenterTarget = true;
+  final bool _showCenterTarget = true;
   bool _showLowerThird = true;
   bool _showTeleprompter = false;
-  bool _showTelemetry = true;
+  final bool _showTelemetry = true;
   bool _isTorchOn = false;
   double _currentZoom = 1.0;
   double _maxZoom = 4.0;
@@ -124,7 +124,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   final ScrollController _prompterScroll = ScrollController();
   Timer? _prompterAutoScrollTimer;
   bool _prompterScrolling = false;
-  double _prompterSpeed = 1.0;
+  final double _prompterSpeed = 1.0;
 
   // Review stage
   _StudioStage _stage = _StudioStage.viewfinder;
@@ -325,12 +325,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         });
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Không thể bắt đầu ghi hình: $e'),
-          backgroundColor: _danger,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể bắt đầu ghi hình: $e'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
     }
   }
 
@@ -342,10 +344,15 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     HapticFeedback.heavyImpact();
 
     // Dynamic WebRTC / MediaMTX server endpoint derived from configured API baseUrl
-    final apiUri = Uri.parse(AppConstants.baseUrl);
-    final host = (apiUri.host.isEmpty || apiUri.host == 'localhost')
-        ? 'localhost'
-        : apiUri.host;
+    final apiUri = Uri.tryParse(AppConstants.baseUrl);
+    String host = '10.12.2.162';
+    if (apiUri != null &&
+        apiUri.host.isNotEmpty &&
+        !apiUri.host.contains('vercel.app') &&
+        apiUri.host != 'localhost' &&
+        apiUri.host != '127.0.0.1') {
+      host = apiUri.host;
+    }
     final whipUrl = 'http://$host:8889';
 
     // Configure WebRTC publisher
@@ -493,7 +500,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     // Handle live streaming mode
     if (_broadcastMode == BroadcastMode.pushToLive && _isLiveStreaming) {
       await _stopLiveStreaming();
-      Navigator.of(context).pop(_capturedFile);
+      if (mounted) {
+        Navigator.of(context).pop(_capturedFile);
+      }
       return;
     }
 
@@ -698,12 +707,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: _danger.withOpacity(0.4 + 0.6 * glow),
+                        color: _danger.withValues(alpha: 0.4 + 0.6 * glow),
                         width: 4,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: _danger.withOpacity(0.35 * glow),
+                          color: _danger.withValues(alpha: 0.35 * glow),
                           blurRadius: 16,
                           spreadRadius: 2,
                         ),
@@ -801,13 +810,13 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1320).withOpacity(0.9),
+                  color: const Color(0xFF0B1320).withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _accent.withOpacity(0.5)),
+                  border: Border.all(color: _accent.withValues(alpha: 0.5)),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.sensors, color: _accent, size: 16),
                     SizedBox(width: 8),
                     Text(
@@ -866,7 +875,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.white.withOpacity(0.35), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -899,7 +908,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -919,9 +928,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                     topRight: Radius.circular(8),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.radio_button_checked, size: 10, color: Colors.white),
                     SizedBox(width: 4),
                     Text(
@@ -941,14 +950,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF050B14).withOpacity(0.92),
+                  color: const Color(0xFF050B14).withValues(alpha: 0.92),
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(10),
                     bottomLeft: Radius.circular(10),
                     bottomRight: Radius.circular(10),
                   ),
                   border: Border.all(
-                    color: _accent.withOpacity(0.4),
+                    color: _accent.withValues(alpha: 0.4),
                     width: 1,
                   ),
                 ),
@@ -1003,9 +1012,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.65),
+            color: Colors.black.withValues(alpha: 0.65),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1049,12 +1058,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         height: 180,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.85),
+          color: Colors.black.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _accent.withOpacity(0.6), width: 1.2),
+          border: Border.all(color: _accent.withValues(alpha: 0.6), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: _accent.withOpacity(0.2),
+              color: _accent.withValues(alpha: 0.2),
               blurRadius: 16,
             ),
           ],
@@ -1136,7 +1145,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withOpacity(0.9),
+            Colors.black.withValues(alpha: 0.9),
             Colors.transparent,
           ],
         ),
@@ -1154,7 +1163,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             },
             icon: const Icon(Icons.close, color: Colors.white, size: 22),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withOpacity(0.5),
+              backgroundColor: Colors.black.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(width: 8),
@@ -1167,13 +1176,13 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _broadcastMode == BroadcastMode.pushToLive
-                      ? _green.withOpacity(0.2)
-                      : const Color(0xFF0F172A).withOpacity(0.8),
+                      ? _green.withValues(alpha: 0.2)
+                      : const Color(0xFF0F172A).withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _broadcastMode == BroadcastMode.pushToLive
                         ? _green
-                        : _accent.withOpacity(0.6),
+                        : _accent.withValues(alpha: 0.6),
                     width: 1,
                   ),
                 ),
@@ -1213,10 +1222,10 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _isRecording ? _danger : const Color(0xFF0F172A).withOpacity(0.8),
+              color: _isRecording ? _danger : const Color(0xFF0F172A).withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _isRecording ? Colors.white : _accent.withOpacity(0.6),
+                color: _isRecording ? Colors.white : _accent.withValues(alpha: 0.6),
                 width: 1,
               ),
             ),
@@ -1262,9 +1271,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
+              color: Colors.black.withValues(alpha: 0.75),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: Text(
               timecode,
@@ -1364,9 +1373,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               shape: BoxShape.circle,
-              border: Border.all(color: _accent.withOpacity(0.6)),
+              border: Border.all(color: _accent.withValues(alpha: 0.6)),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -1397,11 +1406,11 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         height: 38,
         decoration: BoxDecoration(
           color: active
-              ? _accent.withOpacity(0.2)
-              : Colors.black.withOpacity(0.55),
+              ? _accent.withValues(alpha: 0.2)
+              : Colors.black.withValues(alpha: 0.55),
           shape: BoxShape.circle,
           border: Border.all(
-            color: active ? _accent : Colors.white.withOpacity(0.2),
+            color: active ? _accent : Colors.white.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -1428,8 +1437,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            Colors.black.withOpacity(0.95),
-            Colors.black.withOpacity(0.6),
+            Colors.black.withValues(alpha: 0.95),
+            Colors.black.withValues(alpha: 0.6),
             Colors.transparent,
           ],
         ),
@@ -1476,7 +1485,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (_isRecording ? _danger : _accent).withOpacity(0.4),
+                        color: (_isRecording ? _danger : _accent).withValues(alpha: 0.4),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -1534,9 +1543,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320).withOpacity(0.85),
+        color: const Color(0xFF0B1320).withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -1623,8 +1632,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: _retakeVideo,
         ),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.verified, color: _green, size: 18),
             SizedBox(width: 8),
             Text(
@@ -1646,9 +1655,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           Expanded(
             child: Center(
               child: !isReady
-                  ? Column(
+                  ? const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         CircularProgressIndicator(color: _accent),
                         SizedBox(height: 16),
                         Text(
@@ -1685,10 +1694,10 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                                   ? Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
+                                        color: Colors.black.withValues(alpha: 0.6),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: _accent.withOpacity(0.6),
+                                          color: _accent.withValues(alpha: 0.6),
                                           width: 1.5,
                                         ),
                                       ),
@@ -1984,7 +1993,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : const Color(0xFF1E293B),
+          color: isSelected ? color.withValues(alpha: 0.15) : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
@@ -1997,7 +2006,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),
@@ -2074,7 +2083,7 @@ class _RuleOfThirdsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.18)
+      ..color = Colors.white.withValues(alpha: 0.18)
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
@@ -2098,12 +2107,12 @@ class _SafeAreaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final actionPaint = Paint()
-      ..color = const Color(0xFF00E5FF).withOpacity(0.2)
+      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.2)
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
     final titlePaint = Paint()
-      ..color = const Color(0xFFF59E0B).withOpacity(0.2)
+      ..color = const Color(0xFFF59E0B).withValues(alpha: 0.2)
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 

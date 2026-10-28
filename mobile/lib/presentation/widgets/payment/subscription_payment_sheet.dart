@@ -293,17 +293,17 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _gold.withOpacity(0.15),
+            color: _gold.withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: _gold.withOpacity(0.4)),
+            border: Border.all(color: _gold.withValues(alpha: 0.4)),
           ),
           child: const Icon(Icons.stars_rounded, color: _gold, size: 24),
         ),
         const SizedBox(width: 14),
-        Expanded(
+        const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'THANH TOÁN & NẠP TIỀN',
                 style: TextStyle(
@@ -377,7 +377,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? _accent.withOpacity(0.18) : Colors.transparent,
+          color: isSelected ? _accent.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? _accent : Colors.transparent,
@@ -448,8 +448,8 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? _gold.withOpacity(0.12)
-              : const Color(0xFF0F172A).withOpacity(0.6),
+              ? _gold.withValues(alpha: 0.12)
+              : const Color(0xFF0F172A).withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? _gold : Colors.white12,
@@ -536,7 +536,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSel ? _accent.withOpacity(0.15) : const Color(0xFF0F172A),
+                  color: isSel ? _accent.withValues(alpha: 0.15) : const Color(0xFF0F172A),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSel ? _accent : Colors.white12,
@@ -622,7 +622,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.18) : const Color(0xFF0F172A),
+          color: isSelected ? color.withValues(alpha: 0.18) : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.white10,
@@ -653,7 +653,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
     final isMomo = _provider == PaymentProvider.momo;
     final bankName = isMomo ? 'Ví Điện Tử MoMo' : 'Ngân hàng Quân Đội (MBBank)';
     final accountNo = isMomo ? '0988899988' : '888899996666';
-    final accountName = 'OMNICAST MEDIA DIGITAL CORP';
+    const accountName = 'OMNICAST MEDIA DIGITAL CORP';
     final syntax = _transferSyntax;
     final mins = (_countdownSeconds ~/ 60).toString().padLeft(2, '0');
     final secs = (_countdownSeconds % 60).toString().padLeft(2, '0');
@@ -664,7 +664,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
         color: const Color(0xFF060B13),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: (isMomo ? const Color(0xFFD82D8B) : _accent).withOpacity(0.3),
+          color: (isMomo ? const Color(0xFFD82D8B) : _accent).withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -724,7 +724,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: (isMomo ? const Color(0xFFD82D8B) : _accent).withOpacity(0.2),
+                    color: (isMomo ? const Color(0xFFD82D8B) : _accent).withValues(alpha: 0.2),
                     blurRadius: 18,
                     spreadRadius: 2,
                   ),
@@ -744,10 +744,10 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
                   // Center branding icon
                   Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black26,
                           blurRadius: 6,
@@ -852,13 +852,13 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 20),
               SizedBox(width: 8),
               Text(
@@ -970,7 +970,7 @@ class _SubscriptionPaymentSheetState extends State<SubscriptionPaymentSheet> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _green.withOpacity(0.18),
+              color: _green.withValues(alpha: 0.18),
               shape: BoxShape.circle,
               border: Border.all(color: _green, width: 2),
             ),

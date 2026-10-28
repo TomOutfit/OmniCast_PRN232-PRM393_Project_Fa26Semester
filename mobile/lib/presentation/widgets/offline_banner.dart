@@ -306,7 +306,7 @@ class ConnectionStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<List<ConnectivityResult>>(
       stream: Connectivity().onConnectivityChanged,
-      initialData: [ConnectivityResult.none],
+      initialData: const [ConnectivityResult.none],
       builder: (context, snapshot) {
         final isOffline = snapshot.data?.contains(ConnectivityResult.none) ?? true;
 

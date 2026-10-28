@@ -16,7 +16,6 @@
 // getIt (the screen resolves both in initState), then drive the screen
 // from a BlocProvider<AuthBloc> in the appropriate Authenticated state.
 
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

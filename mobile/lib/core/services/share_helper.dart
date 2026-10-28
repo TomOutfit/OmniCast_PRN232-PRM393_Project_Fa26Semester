@@ -10,7 +10,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../data/models/channel_model.dart';
 import '../../data/models/program_model.dart';
 import '../../data/models/recording_model.dart';
-import '../constants/app_constants.dart';
 import 'notification_service.dart';
 
 class ShareHelper {

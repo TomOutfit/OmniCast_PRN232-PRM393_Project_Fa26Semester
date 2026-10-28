@@ -293,7 +293,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           children: [
             Text(
               appT(context, 'curator.pageTitle'),
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -302,8 +302,8 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             ),
             Text(
               appT(context, 'curator.pageSubtitle'),
-              style: TextStyle(
-                color: Color(0xFF00E5FF),
+              style: const TextStyle(
+                color: const Color(0xFF00E5FF),
                 fontSize: 9,
                 fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w700,
@@ -416,7 +416,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.schedule_rounded,
                 size: 56,
                 color: AppColors.textMuted,
@@ -424,7 +424,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
               const SizedBox(height: 16),
               Text(
                 appT(context, 'curator.emptyApply'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textFaint,
                   fontSize: 14,
                 ),
@@ -433,7 +433,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
               const SizedBox(height: 12),
               Text(
                 appT(context, 'curator.emptyApplyHint'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 12,
                 ),
@@ -482,7 +482,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                     Expanded(
                       child: Text(
                         appT(context, 'curator.runAnalysisFirst'),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textFaint,
                           fontSize: 12,
                         ),
@@ -497,11 +497,11 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             // Program selector
             Text(
               appT(context, 'curator.selectProgram'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11,
                 fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF00E5FF),
+                color: Color(0xFF00E5FF),
                 letterSpacing: 1.1,
               ),
             ),
@@ -518,7 +518,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 value: _selectedProgram,
                 hint: Text(
                   appT(context, 'curator.selectProgramHint'),
-                  style: TextStyle(color: AppColors.textFaint),
+                  style: const TextStyle(color: AppColors.textFaint),
                 ),
                 isExpanded: true,
                 underline: const SizedBox(),
@@ -626,7 +626,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.auto_awesome_outlined,
                         size: 56,
                         color: AppColors.textMuted,
@@ -638,7 +638,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                           'curator.emptyCurateExisting',
                           'Chưa có chương trình nào đang chờ phân tích',
                         ),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textFaint,
                           fontSize: 14,
                         ),
@@ -651,7 +651,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                           'curator.emptyCurateExistingHint',
                           'Các chương trình ở trạng thái SCHEDULED sẽ xuất hiện tại đây.',
                         ),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 12,
                         ),
@@ -759,7 +759,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                   const SizedBox(height: 2),
                   Text(
                     p.channelName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textFaint,
                       fontSize: 11,
                     ),
@@ -932,11 +932,11 @@ class _AICuratorScreenState extends State<AICuratorScreen>
       children: [
         Text(
           label.toUpperCase(),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11,
             fontFamily: 'JetBrainsMono',
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF00E5FF),
+            color: Color(0xFF00E5FF),
             letterSpacing: 1.1,
           ),
         ),
@@ -948,18 +948,18 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 14),
+            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
             filled: true,
             fillColor: const Color(0xFF0B1320),
-            counterStyle: TextStyle(color: AppColors.textMuted, fontSize: 10),
+            counterStyle: const TextStyle(color: AppColors.textMuted, fontSize: 10),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: const Color(0x1F00E5FF),
+              borderSide: const BorderSide(
+                color: Color(0x1F00E5FF),
                 width: 0.8,
               ),
             ),
@@ -1188,10 +1188,10 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0x3300E5FF),
-            const Color(0x1100E5FF),
+            Color(0x3300E5FF),
+            Color(0x1100E5FF),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -1232,7 +1232,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                     ),
                     Text(
                       '${r.aiModelVersion} · ${r.processingTimeMs}ms',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
                         fontFamily: 'JetBrainsMono',
@@ -1301,7 +1301,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
               'curator.recommendedSlot',
               {'slot': r.suggestedTimeSlot},
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textFaint,
               fontSize: 12,
             ),
@@ -1561,8 +1561,8 @@ class _AICuratorScreenState extends State<AICuratorScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.description_rounded, color: Color(0xFF00E5FF), size: 16),
               SizedBox(width: 8),
               Text(
@@ -1745,8 +1745,8 @@ class _AICuratorScreenState extends State<AICuratorScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.layers_rounded, color: Color(0xFF00E5FF), size: 16),
               SizedBox(width: 8),
               Text(
@@ -2025,7 +2025,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                         'curator.slotWithValue',
                         {'slot': r.suggestedTimeSlot},
                       ),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textFaint,
                         fontSize: 12,
                       ),
@@ -2054,7 +2054,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                       'curator.audienceWithValue',
                       {'audience': r.targetAudienceVibe},
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textFaint,
                       fontSize: 12,
                     ),
@@ -2215,7 +2215,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                       ),
                     },
                   ),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textFaint,
                     fontSize: 12,
                   ),
@@ -2240,7 +2240,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                   ),
                   child: Text(
                     flag,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.warning,
                       fontSize: 11,
                       fontFamily: 'JetBrainsMono',
@@ -2291,7 +2291,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 const SizedBox(height: 4),
                 Text(
                   r.riskWarnings,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textFaint,
                     fontSize: 12,
                     height: 1.4,
@@ -2309,10 +2309,10 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0x33FF2A55),
-            const Color(0x1100E5FF),
+            Color(0x33FF2A55),
+            Color(0x1100E5FF),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -2354,7 +2354,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 'title': _selectedProgram?.title ?? '',
               },
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textFaint,
               fontSize: 12,
               height: 1.4,
@@ -2452,7 +2452,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
           appT(context, 'curator.emptyHistory'),
-          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
         ),
       );
     }
@@ -2515,7 +2515,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 const SizedBox(height: 2),
                 Text(
                   '${h.aiModelVersion} · ${h.processingTimeMs}ms · ${h.tokenUsed ?? 0} tokens',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 10,
                     fontFamily: 'JetBrainsMono',
@@ -2525,7 +2525,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(h.createdAt!),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 10,
                       fontFamily: 'JetBrainsMono',

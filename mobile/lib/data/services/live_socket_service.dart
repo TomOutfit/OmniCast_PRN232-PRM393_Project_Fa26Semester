@@ -64,12 +64,20 @@ class LiveSocketService {
     }
 
     try {
+      final isVercel = baseUrl.contains('vercel.app');
       final opts = IO.OptionBuilder()
-          .setTransports(['websocket', 'polling'])
-          .enableAutoConnect()
-          .enableReconnection()
+          .setTransports(isVercel ? ['polling'] : ['websocket', 'polling'])
+          .enableAutoConnect();
+
+      if (!isVercel) {
+        opts.enableReconnection();
+      } else {
+        opts.disableReconnection();
+      }
+
+      opts
           .setReconnectionDelay(1500)
-          .setReconnectionAttempts(10);
+          .setReconnectionAttempts(isVercel ? 1 : 10);
 
       if (token != null && token.isNotEmpty) {
         opts.setAuth({'token': token});

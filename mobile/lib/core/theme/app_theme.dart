@@ -157,7 +157,7 @@ class AppColors {
 
   /* ── Elevation tokens (BoxShadow) ────────────────────────────────────── */
   static List<BoxShadow> get glowLive => [
-        BoxShadow(
+        const BoxShadow(
           color: liveGlow,
           blurRadius: 24,
           spreadRadius: -4,

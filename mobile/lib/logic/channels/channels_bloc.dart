@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 
 import '../../../data/repositories/channels_repository.dart';
 import '../../../data/models/channel_model.dart';
-import 'package:flutter/material.dart';
 
 // Events
 abstract class ChannelsEvent extends Equatable {

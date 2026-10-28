@@ -85,8 +85,8 @@ class ActiveLiveStream {
       thumbnailUrl: json['thumbnailUrl'],
       streamUrl: json['streamUrl'] ?? '',
       hlsUrl: json['hlsUrl'] ?? '',
-      startedAt: json['startedAt'] != null 
-          ? DateTime.tryParse(json['startedAt']) 
+      startedAt: json['startedAt'] != null
+          ? DateTime.tryParse(json['startedAt'])
           : null,
       duration: json['duration'],
       channelId: channel['id'] ?? '',
@@ -129,8 +129,8 @@ class StreamUrlResponse {
       eventId: json['eventId'],
       title: json['title'],
       thumbnailUrl: json['thumbnailUrl'],
-      startedAt: json['startedAt'] != null 
-          ? DateTime.tryParse(json['startedAt']) 
+      startedAt: json['startedAt'] != null
+          ? DateTime.tryParse(json['startedAt'])
           : null,
       viewerCount: json['viewerCount'] ?? 0,
       message: json['message'],
@@ -142,29 +142,31 @@ class StreamUrlResponse {
 class LiveStudioApiService {
   final Dio _dio;
   final String _baseUrl;
-  
+
   // Socket.IO for real-time updates
   io.Socket? _socket;
   bool _isConnected = false;
-  
+
   // Stream controllers for real-time events
   final _liveStartedController = StreamController<ActiveLiveStream>.broadcast();
-  final _liveStoppedController = StreamController<String>.broadcast(); // eventId
+  final _liveStoppedController =
+      StreamController<String>.broadcast(); // eventId
   final _viewerCountController = StreamController<int>.broadcast();
   final _connectionStatusController = StreamController<bool>.broadcast();
 
   /// Stream of live started events
   Stream<ActiveLiveStream> get onLiveStarted => _liveStartedController.stream;
-  
+
   /// Stream of live stopped events (eventId)
   Stream<String> get onLiveStopped => _liveStoppedController.stream;
-  
+
   /// Stream of viewer count updates
   Stream<int> get onViewerCountUpdated => _viewerCountController.stream;
-  
+
   /// Stream of WebSocket connection status
-  Stream<bool> get onConnectionStatusChanged => _connectionStatusController.stream;
-  
+  Stream<bool> get onConnectionStatusChanged =>
+      _connectionStatusController.stream;
+
   /// Current connection status
   bool get isConnected => _isConnected;
 
@@ -172,14 +174,15 @@ class LiveStudioApiService {
     required String baseUrl,
     Dio? dio,
   })  : _baseUrl = baseUrl,
-        _dio = dio ?? Dio(BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ));
+        _dio = dio ??
+            Dio(BaseOptions(
+              baseUrl: baseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            ));
 
   /// Set auth token for authenticated requests
   void setAuthToken(String token) {
@@ -190,10 +193,8 @@ class LiveStudioApiService {
   // HTTP API Methods
   // ============================================================
 
-  /**
-   * Notify backend that mobile is starting a live stream.
-   * Backend will broadcast to all connected viewers.
-   */
+  /// Notify backend that mobile is starting a live stream.
+  /// Backend will broadcast to all connected viewers.
   Future<PushToLiveResponse?> pushToLive({
     required String channelSlug,
     required String title,
@@ -214,7 +215,7 @@ class LiveStudioApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return PushToLiveResponse.fromJson(response.data);
       }
-      
+
       debugPrint('[LiveStudioApi] pushToLive failed: ${response.statusCode}');
       return null;
     } on DioException catch (e) {
@@ -223,10 +224,8 @@ class LiveStudioApiService {
     }
   }
 
-  /**
-   * Notify backend that mobile is stopping the live stream.
-   * Backend will broadcast to all connected viewers.
-   */
+  /// Notify backend that mobile is stopping the live stream.
+  /// Backend will broadcast to all connected viewers.
   Future<bool> stopLive({
     required String channelSlug,
     String? eventId,
@@ -247,10 +246,8 @@ class LiveStudioApiService {
     }
   }
 
-  /**
-   * Get all currently active live streams.
-   * Used by viewer app to show "LIVE NOW" indicators.
-   */
+  /// Get all currently active live streams.
+  /// Used by viewer app to show "LIVE NOW" indicators.
   Future<List<ActiveLiveStream>> getActiveLiveStreams() async {
     try {
       final response = await _dio.get('/v1/programs/studio/live/active');
@@ -258,11 +255,9 @@ class LiveStudioApiService {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final streams = (data['streams'] as List?) ?? [];
-        return streams
-            .map((s) => ActiveLiveStream.fromJson(s))
-            .toList();
+        return streams.map((s) => ActiveLiveStream.fromJson(s)).toList();
       }
-      
+
       return [];
     } on DioException catch (e) {
       debugPrint('[LiveStudioApi] getActiveLiveStreams error: ${e.message}');
@@ -270,10 +265,8 @@ class LiveStudioApiService {
     }
   }
 
-  /**
-   * Get stream URL for a specific channel.
-   * Returns live URL if channel is live, null otherwise.
-   */
+  /// Get stream URL for a specific channel.
+  /// Returns live URL if channel is live, null otherwise.
   Future<StreamUrlResponse?> getStreamUrl(String channelSlug) async {
     try {
       final response = await _dio.get(
@@ -283,7 +276,7 @@ class LiveStudioApiService {
       if (response.statusCode == 200) {
         return StreamUrlResponse.fromJson(response.data);
       }
-      
+
       return null;
     } on DioException catch (e) {
       debugPrint('[LiveStudioApi] getStreamUrl error: ${e.message}');
@@ -295,13 +288,11 @@ class LiveStudioApiService {
   // Socket.IO Methods for Real-time Updates
   // ============================================================
 
-  /**
-   * Connect to Socket.IO for real-time live stream updates.
-   * Listens for:
-   *   - live:started - when a live stream begins
-   *   - live:stopped - when a live stream ends
-   *   - live:viewerCount - periodic viewer count updates
-   */
+  /// Connect to Socket.IO for real-time live stream updates.
+  /// Listens for:
+  ///   - live:started - when a live stream begins
+  ///   - live:stopped - when a live stream ends
+  ///   - live:viewerCount - periodic viewer count updates
   Future<bool> connectSocketIO({
     String? token,
     String? channelSlug,
@@ -315,17 +306,18 @@ class LiveStudioApiService {
 
       debugPrint('[LiveStudioApi] Connecting to Socket.IO: $socketUrl/live');
 
+      final isVercel = socketUrl.contains('vercel.app');
       // Create Socket.IO connection
       _socket = io.io(
         '$socketUrl/live',
         io.OptionBuilder()
-            .setTransports(['websocket', 'polling'])
+            .setTransports(isVercel ? ['polling'] : ['websocket', 'polling'])
             .enableAutoConnect()
             .enableReconnection()
-            .setReconnectionAttempts(5)
+            .setReconnectionAttempts(isVercel ? 1 : 5)
             .setReconnectionDelay(1000)
             .setReconnectionDelayMax(5000)
-            .setTimeout(20000)
+            .setTimeout(10000)
             .build(),
       );
 
@@ -397,9 +389,7 @@ class LiveStudioApiService {
     }
   }
 
-  /**
-   * Disconnect from Socket.IO.
-   */
+  /// Disconnect from Socket.IO.
   void disconnectSocketIO() {
     _socket?.disconnect();
     _socket?.dispose();
@@ -408,30 +398,25 @@ class LiveStudioApiService {
     _connectionStatusController.add(false);
   }
 
-  /**
-   * Subscribe to a specific channel for live updates.
-   */
+  /// Subscribe to a specific channel for live updates.
   void subscribeToChannel(String channelSlug) {
     if (_socket != null && _isConnected) {
       _socket!.emit('subscribe:channel', channelSlug);
     }
   }
 
-  /**
-   * Unsubscribe from a channel.
-   */
+  /// Unsubscribe from a channel.
   void unsubscribeFromChannel(String channelSlug) {
     if (_socket != null && _isConnected) {
       _socket!.emit('unsubscribe:channel', channelSlug);
     }
   }
 
-  /**
-   * Send heartbeat ping to keep connection alive.
-   */
+  /// Send heartbeat ping to keep connection alive.
   void sendPing() {
     if (_isConnected) {
-      _socket?.emit('ping', {'timestamp': DateTime.now().millisecondsSinceEpoch});
+      _socket
+          ?.emit('ping', {'timestamp': DateTime.now().millisecondsSinceEpoch});
     }
   }
 
@@ -439,9 +424,7 @@ class LiveStudioApiService {
   // Cleanup
   // ============================================================
 
-  /**
-   * Dispose all resources and close streams.
-   */
+  /// Dispose all resources and close streams.
   void dispose() {
     disconnectSocketIO();
     _liveStartedController.close();

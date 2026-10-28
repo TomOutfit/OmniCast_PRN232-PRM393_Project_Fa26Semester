@@ -73,7 +73,7 @@ Future<void> initDependencies() async {
   getIt<DioClient>().setTokenRefresher(() async {
     try {
       await getIt<AuthRepository>().refreshToken();
-      return getIt<FlutterSecureStorage>()
+      return await getIt<FlutterSecureStorage>()
           .read(key: AppConstants.accessTokenKey);
     } catch (_) {
       return null;

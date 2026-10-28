@@ -193,10 +193,10 @@ class _FeaturedCard extends StatelessWidget {
 
               // Live Badge
               if (item.isLive)
-                Positioned(
+                const Positioned(
                   top: 12,
                   left: 12,
-                  child: const LiveBadge(),
+                  child: LiveBadge(),
                 ),
 
               // Featured Badge

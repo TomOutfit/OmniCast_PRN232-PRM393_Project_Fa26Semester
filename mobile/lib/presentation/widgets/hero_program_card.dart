@@ -248,7 +248,7 @@ class _HeroProgramCardState extends State<HeroProgramCard> {
                 decoration: BoxDecoration(
                   color: isLive ? AppColors.live : AppColors.primary,
                   boxShadow: isLive
-                      ? [BoxShadow(color: AppColors.liveGlow, blurRadius: 6)]
+                      ? [const BoxShadow(color: AppColors.liveGlow, blurRadius: 6)]
                       : null,
                 ),
               ),

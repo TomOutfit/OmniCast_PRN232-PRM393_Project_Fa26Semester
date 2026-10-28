@@ -209,7 +209,7 @@ class NotificationService {
       ),
     );
 
-    final iosDetails = DarwinNotificationDetails(
+    const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -361,15 +361,15 @@ class NotificationService {
       item.programId.hashCode,
       item.programTitle,
       'Sẽ nhắc lại lúc ${_formatTime(next)}',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
+      const NotificationDetails(
+        android: const AndroidNotificationDetails(
           'omnicast_reminders',
           'Program Reminders',
           channelDescription: 'Notifications for upcoming programs',
           importance: Importance.high,
           priority: Priority.high,
         ),
-        iOS: const DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(),
       ),
       payload: 'program:${item.programId}',
     );

@@ -225,7 +225,7 @@ class LiveStreamBloc extends Bloc<LiveStreamEvent, LiveStreamState> {
     _currentChannelSlug = event.channelSlug;
 
     // Build WebSocket URL
-    final apiUrl = _defaultApiUrl; // In production, get from config
+    const apiUrl = _defaultApiUrl; // In production, get from config
     final wsUrl = apiUrl.replaceAll(RegExp(r'^http'), 'ws');
 
     _socket = io.io(

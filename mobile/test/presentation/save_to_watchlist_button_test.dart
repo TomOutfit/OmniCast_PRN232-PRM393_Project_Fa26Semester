@@ -105,7 +105,7 @@ void main() {
     );
     // Fallback for `bloc.add(any())` — mocktail requires a concrete
     // WatchlistEvent instance to satisfy the type checker.
-    registerFallbackValue(RemoveFromWatchlist('fb'));
+    registerFallbackValue(const RemoveFromWatchlist('fb'));
   });
 
   testWidgets('shows "Lưu" label when the program is not saved', (tester) async {
