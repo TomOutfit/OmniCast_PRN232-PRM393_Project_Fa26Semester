@@ -77,7 +77,8 @@ async function bootstrap() {
       // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
       const isLocalOrLan = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin);
-      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || isLocalOrLan) {
+      const isVercel = /^https:\/\/[a-zA-Z0-9_.-]*\.vercel\.app$/.test(origin);
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || isLocalOrLan || isVercel) {
         return callback(null, true);
       }
       return callback(new Error('CORS: Origin not allowed'), false);

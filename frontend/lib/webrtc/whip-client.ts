@@ -266,13 +266,27 @@ export async function publishCameraViaWhip(
     onState?.('publishing');
 
     // 4. POST the SDP offer to the WHIP endpoint.
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/sdp',
-      },
-      body: pc.localDescription?.sdp ?? offer.sdp ?? '',
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/sdp',
+        },
+        body: pc.localDescription?.sdp ?? offer.sdp ?? '',
+      });
+    } catch (fetchErr) {
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const isHttpTarget = url.startsWith('http://');
+      if (isHttps && isHttpTarget) {
+        throw new Error(
+          `Trình duyệt chặn kết nối MediaMTX (${url}) do Mixed Content: Trang web tải qua HTTPS nhưng máy chủ phát sóng sử dụng HTTP. Để dùng WebRTC WHIP, hãy chạy qua localhost hoặc cấu hình SSL cho MediaMTX.`,
+        );
+      }
+      throw new Error(
+        `Không thể kết nối máy chủ MediaMTX WHIP (${url}). Vui lòng đảm bảo MediaMTX đã khởi chạy.`,
+      );
+    }
 
     if (response.status !== 201 && response.status !== 200) {
       const body = await response.text().catch(() => '');

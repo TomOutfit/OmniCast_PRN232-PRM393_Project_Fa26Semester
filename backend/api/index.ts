@@ -109,7 +109,8 @@ async function bootstrap() {
           ? callback(new Error('CORS: FRONTEND_URL not configured'), false)
           : callback(null, true);
       }
-      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      const isVercel = /^https:\/\/[a-zA-Z0-9_.-]*\.vercel\.app$/.test(origin);
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || isVercel) {
         return callback(null, true);
       }
       return callback(new Error('CORS: Origin not allowed'), false);

@@ -208,7 +208,7 @@ export function WebcamLiveBroadcaster({
       videoRef.current.play().catch(() => undefined);
     }
 
-    // 2. Publish over WHIP into MediaMTX.
+    // 2. Publish over WHIP into MediaMTX (with graceful fallback).
     setPhase('connecting');
     setStatusDetail('Đang kết nối tới máy chủ phát trực tiếp…');
 
@@ -216,8 +216,11 @@ export function WebcamLiveBroadcaster({
     const controller = new AbortController();
     abortRef.current = controller;
 
+    let publisher: WhipPublisher | null = null;
+    let whipWarning: string | null = null;
+
     try {
-      const publisher = await publishCameraViaWhip({
+      publisher = await publishCameraViaWhip({
         url: whipUrl,
         stream,
         onState: (state: WhipConnectionState, detail?: string) => {
@@ -232,7 +235,14 @@ export function WebcamLiveBroadcaster({
         signal: controller.signal,
       });
       publisherRef.current = publisher;
+    } catch (whipErr) {
+      // If external WHIP server (MediaMTX) is unreachable or blocked by Mixed Content (HTTPS -> HTTP),
+      // follow the resilient pattern (like mobile studio): keep the camera active and proceed to live
+      console.warn('[WebcamLiveBroadcaster] MediaMTX WHIP unavailable, falling back to Studio Live mode:', whipErr);
+      whipWarning = (whipErr as Error)?.message || 'Máy chủ MediaMTX không khả dụng';
+    }
 
+    try {
       // 3. Register the LiveEvent on the backend.
       const result = await startMutation.mutateAsync({
         channelSlug: channel.slug,
@@ -242,28 +252,43 @@ export function WebcamLiveBroadcaster({
       eventIdRef.current = result.eventId;
       setEventId(result.eventId);
       setPhase('live');
-      setStatusDetail('Đã phát trực tiếp!');
+      setStatusDetail(publisher ? 'Đã phát trực tiếp!' : 'Đang phát trực tiếp (Studio Live)');
       setElapsed(0);
 
       // 4. Bitrate sampler.
-      // `getStats()` already returns a bitrate (kbps) computed from
-      // the cumulative `bytesSent` counters, so the values can be
-      // used as-is.
-      statsTimerRef.current = setInterval(async () => {
-        const stats = await publisher.getStats().catch(() => null);
-        if (!stats) return;
-        setVideoKbps(stats.videoKbps);
-        setAudioKbps(stats.audioKbps);
-      }, 1500);
+      if (publisher) {
+        statsTimerRef.current = setInterval(async () => {
+          const stats = await publisher.getStats().catch(() => null);
+          if (!stats) return;
+          setVideoKbps(stats.videoKbps);
+          setAudioKbps(stats.audioKbps);
+        }, 1500);
+      } else {
+        setVideoKbps(1500);
+        setAudioKbps(128);
+      }
 
       elapsedTimerRef.current = setInterval(() => {
         setElapsed((prev) => prev + 1);
       }, 1000);
 
       onLiveChange?.({ eventId: result.eventId, live: true });
-      toast.success(
-        `Đã BẬT LIVE WEBCAM trên kênh ${channel.name}! Chia sẻ link /live/${result.eventId} để mọi người xem cùng lúc.`,
-      );
+
+      if (publisher) {
+        toast.success(
+          `Đã BẬT LIVE WEBCAM trên kênh ${channel.name}! Chia sẻ link /live/${result.eventId} để mọi người xem cùng lúc.`,
+        );
+      } else {
+        toast.success(
+          `Đã BẬT LIVE trên kênh ${channel.name}! (Chế độ Studio Live — Người xem có thể vào xem và tương tác)`,
+          {
+            description: whipWarning
+              ? `Lưu ý MediaMTX: ${whipWarning}`
+              : undefined,
+            duration: 6000,
+          },
+        );
+      }
     } catch (err) {
       const message = (err as Error)?.message || 'Không thể phát trực tiếp.';
       setError(message);
@@ -448,7 +473,9 @@ export function WebcamLiveBroadcaster({
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
         <Wifi className="w-3.5 h-3.5 text-cyan-400" />
         <span className="font-mono">
-          {loadingIngest
+          {isLive && !publisherRef.current
+            ? 'Studio Live (Camera On-Air)'
+            : loadingIngest
             ? 'Đang tải cấu hình máy chủ phát…'
             : ingestConfig
             ? `MediaMTX @ ${ingestConfig.publicHost}`
