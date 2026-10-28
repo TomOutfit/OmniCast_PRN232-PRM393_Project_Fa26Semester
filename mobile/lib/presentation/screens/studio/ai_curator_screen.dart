@@ -303,7 +303,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             Text(
               appT(context, 'curator.pageSubtitle'),
               style: const TextStyle(
-                color: const Color(0xFF00E5FF),
+                color: Color(0xFF00E5FF),
                 fontSize: 9,
                 fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w700,

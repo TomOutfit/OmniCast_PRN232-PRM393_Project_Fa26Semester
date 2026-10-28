@@ -362,7 +362,7 @@ class NotificationService {
       item.programTitle,
       'Sẽ nhắc lại lúc ${_formatTime(next)}',
       const NotificationDetails(
-        android: const AndroidNotificationDetails(
+        android: AndroidNotificationDetails(
           'omnicast_reminders',
           'Program Reminders',
           channelDescription: 'Notifications for upcoming programs',

@@ -434,11 +434,11 @@ class _BrandHeader extends StatelessWidget {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const _LivePulseDot(color: AppColors.stitchPrimaryContainer),
+                _LivePulseDot(color: AppColors.stitchPrimaryContainer),
                 SizedBox(width: 6),
-                const Text(
+                Text(
                   'BROADCAST PORTAL // PHIÊN BẢO MẬT',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9.5,
                     fontFamily: AppFonts.mono,
                     fontWeight: FontWeight.w700,
@@ -624,11 +624,11 @@ class _TelemetryCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const _LivePulseDot(color: AppColors.stitchError),
+                _LivePulseDot(color: AppColors.stitchError),
                 SizedBox(width: 8),
-                const Text(
+                Text(
                   'LIVE FEED // SECURE AUTH',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontFamily: AppFonts.mono,
                     fontWeight: FontWeight.w700,
@@ -637,9 +637,9 @@ class _TelemetryCard extends StatelessWidget {
                   ),
                 ),
                 Spacer(),
-                const Text(
+                Text(
                   'TLS 1.3 · OWASP',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontFamily: AppFonts.mono,
                     color: AppColors.stitchOnSurfaceVariant,
@@ -823,11 +823,11 @@ class _FormCard extends StatelessWidget {
               // Secure-channel strip
               const Row(
                 children: [
-                  const _LivePulseDot(color: AppColors.stitchPrimaryContainer),
+                  _LivePulseDot(color: AppColors.stitchPrimaryContainer),
                   SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'SECURE CHANNEL',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontFamily: AppFonts.mono,
                       fontWeight: FontWeight.w700,
@@ -836,12 +836,12 @@ class _FormCard extends StatelessWidget {
                     ),
                   ),
                   Spacer(),
-                  const Icon(Icons.account_circle_outlined,
+                  Icon(Icons.account_circle_outlined,
                       size: 12, color: AppColors.stitchOnSurfaceVariant),
                   SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'CREDENTIAL · JWT',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontFamily: AppFonts.mono,
                       color: AppColors.stitchOnSurfaceVariant,
@@ -895,9 +895,9 @@ class _FormCard extends StatelessWidget {
                       Icon(Icons.warning_amber_rounded,
                           color: AppColors.warning, size: 14),
                       SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'PHÍM CAPS LOCK ĐANG BẬT',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.warning,
                           fontSize: 10,
                           fontFamily: AppFonts.mono,
@@ -943,7 +943,7 @@ class _FormCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             const Text(
                               'GHI NHỚ EMAIL',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.stitchOnSurfaceVariant,
                                 fontSize: 10,
                                 fontFamily: AppFonts.mono,
@@ -968,7 +968,7 @@ class _FormCard extends StatelessWidget {
                     ),
                     child: const Text(
                       'QUÊN MẬT KHẨU?',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontFamily: AppFonts.mono,
                         fontWeight: FontWeight.w700,
@@ -1144,9 +1144,9 @@ class _PasswordField extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 6),
-          child: const Text(
+          child: Text(
             'MẬT KHẨU',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontFamily: AppFonts.mono,
               fontWeight: FontWeight.w700,
@@ -1338,7 +1338,7 @@ class _SignUpRow extends StatelessWidget {
       children: [
         const Text(
           'Chưa có tài khoản? ',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.stitchOnSurfaceVariant,
             fontSize: 13,
             fontFamily: AppFonts.body,
@@ -1353,7 +1353,7 @@ class _SignUpRow extends StatelessWidget {
           ),
           child: const Text(
             'ĐĂNG KÝ MIỄN PHÍ',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontFamily: AppFonts.mono,
               fontWeight: FontWeight.w800,
@@ -1378,13 +1378,13 @@ class _SocialRow extends StatelessWidget {
       children: [
         const Row(
           children: [
-            const Expanded(
-                child: const Divider(color: AppColors.stitchOutlineVariant)),
+            Expanded(
+                child: Divider(color: AppColors.stitchOutlineVariant)),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
-              child: const Text(
+              child: Text(
                 'HOẶC TIẾP TỤC VỚI',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.stitchOnSurfaceVariant,
                   fontSize: 10,
                   fontFamily: AppFonts.mono,
@@ -1393,8 +1393,8 @@ class _SocialRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Expanded(
-                child: const Divider(color: AppColors.stitchOutlineVariant)),
+            Expanded(
+                child: Divider(color: AppColors.stitchOutlineVariant)),
           ],
         ),
         const SizedBox(height: 12),
@@ -1525,15 +1525,15 @@ class _GuestButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.explore_outlined,
                   color: AppColors.stitchPrimaryContainer,
                   size: 18,
                 ),
                 SizedBox(width: 8),
-                const Text(
+                Text(
                   'TRẢI NGHIỆM KHÁCH // GUEST MODE',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.stitchPrimaryContainer,
                     fontSize: 11,
                     fontFamily: AppFonts.mono,
@@ -1584,15 +1584,15 @@ class _DemoAccountsCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.verified_user_outlined,
                 color: AppColors.stitchPrimaryContainer,
                 size: 16,
               ),
               SizedBox(width: 8),
-              const Text(
+              Text(
                 'TÀI KHOẢN TRẢI NGHIỆM (RBAC 4 CẤP)',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.stitchOnSurface,
                   fontSize: 11,
                   fontFamily: AppFonts.mono,
@@ -1745,15 +1745,15 @@ class _LegalFooter extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           text: 'Bằng việc đăng nhập, bạn đồng ý với ',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.stitchOnSurfaceVariant,
             fontSize: 11,
             fontFamily: AppFonts.body,
           ),
           children: [
-            const TextSpan(
+            TextSpan(
               text: 'Điều khoản',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.stitchPrimaryContainer,
                 fontWeight: FontWeight.w700,
                 fontFamily: AppFonts.mono,
@@ -1762,9 +1762,9 @@ class _LegalFooter extends StatelessWidget {
               ),
             ),
             TextSpan(text: ' và '),
-            const TextSpan(
+            TextSpan(
               text: 'Chính sách bảo mật',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.stitchPrimaryContainer,
                 fontWeight: FontWeight.w700,
                 fontFamily: AppFonts.mono,

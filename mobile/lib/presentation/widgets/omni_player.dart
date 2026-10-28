@@ -58,7 +58,6 @@ String? _extractGoogleDriveFileId(String url) {
   return null;
 }
 
-
 class OmniPlayer extends StatefulWidget {
   final String url;
   final String? posterUrl;
@@ -200,26 +199,13 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains('omnicast-api.vercel.app/uploads/')) {
       return fallbackOrUrl();
     }
-    // MediaMTX live stream resolution for mobile devices:
-    // If the stream is hosted on MediaMTX (:8888), resolve localhost/127.0.0.1/vercel.app
-    // to the actual server LAN IP so mobile can reach the machine running MediaMTX
-    // MediaMTX live stream resolution for mobile devices:
-    // If the stream is hosted on MediaMTX (:8888), resolve localhost/127.0.0.1/vercel.app
-    // to the actual server LAN IP so mobile can reach the machine running MediaMTX
     if (lower.contains(':8888/')) {
-      final apiUri = Uri.tryParse(AppConstants.baseUrl);
-      String host = '10.12.2.162';
-      if (apiUri != null &&
-          apiUri.host.isNotEmpty &&
-          !apiUri.host.contains('vercel.app') &&
-          apiUri.host != 'localhost' &&
-          apiUri.host != '127.0.0.1') {
-        host = apiUri.host;
-      }
-      var target = url.replaceFirst(RegExp(r'https?://[^/]+:8888/'), 'http://$host:8888/');
+      var target = url;
       // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
       if (!target.contains('cookieCheck=')) {
-        target = target.contains('?') ? '$target&cookieCheck=1' : '$target?cookieCheck=1';
+        target = target.contains('?')
+            ? '$target&cookieCheck=1'
+            : '$target?cookieCheck=1';
       }
       return target;
     }
@@ -429,7 +415,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('👑 Đã kích hoạt OmniPass VIP Demo! Mở khóa toàn bộ kênh.'),
+        content:
+            Text('👑 Đã kích hoạt OmniPass VIP Demo! Mở khóa toàn bộ kênh.'),
         backgroundColor: Color(0xFFD97706),
       ),
     );
@@ -465,14 +452,16 @@ class _OmniPlayerState extends State<OmniPlayer> {
                 ),
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          color:
+                              const Color(0xFFF59E0B).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -607,10 +596,13 @@ class _OmniPlayerState extends State<OmniPlayer> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: AppColors.stitchPrimaryContainer),
+              const CircularProgressIndicator(
+                  color: AppColors.stitchPrimaryContainer),
               const SizedBox(height: 12),
               Text(
-                _usedFallback ? 'Đang kết nối stream dự phòng...' : 'Đang tải luồng phát sóng...',
+                _usedFallback
+                    ? 'Đang kết nối stream dự phòng...'
+                    : 'Đang tải luồng phát sóng...',
                 style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
@@ -625,7 +617,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
         controller.value.size.isEmpty;
 
     return AspectRatio(
-      aspectRatio: controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio,
+      aspectRatio: controller.value.aspectRatio == 0
+          ? 16 / 9
+          : controller.value.aspectRatio,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -727,7 +721,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -738,7 +733,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.graphic_eq_rounded, color: Color(0xFF00E5FF), size: 14),
+                      Icon(Icons.graphic_eq_rounded,
+                          color: Color(0xFF00E5FF), size: 14),
                       SizedBox(width: 6),
                       Text(
                         'LUỒNG PHÁT THANH / RADIO',
@@ -787,7 +783,8 @@ class _ErrorState extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (posterUrl != null && posterUrl!.isNotEmpty)
-            Image.network(posterUrl!, fit: BoxFit.cover,
+            Image.network(posterUrl!,
+                fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: Colors.black))
           else
             Container(color: const Color(0xFF0A0F1D)),
@@ -796,8 +793,10 @@ class _ErrorState extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
-                    color: Color(0xFFEF4444), size: 44),
+                const Icon(
+                    Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 44),
                 const SizedBox(height: 10),
                 const Text(
                   'Không thể kết nối luồng phát sóng',
@@ -817,7 +816,8 @@ class _ErrorState extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00E5FF),
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -826,7 +826,8 @@ class _ErrorState extends StatelessWidget {
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text(
                     'THỬ LẠI',
-                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900, letterSpacing: 0.5),
                   ),
                 ),
               ],
@@ -867,7 +868,8 @@ class _PosterOnly extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.live_tv_rounded, color: Colors.white70, size: 40),
+                const Icon(Icons.live_tv_rounded,
+                    color: Colors.white70, size: 40),
                 const SizedBox(height: 8),
                 Text(
                   message,
@@ -1191,7 +1193,8 @@ class _LiveConnectingState extends StatelessWidget {
                   onTap: onRetry,
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
@@ -1202,7 +1205,8 @@ class _LiveConnectingState extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.refresh_rounded, color: Color(0xFF00E5FF), size: 14),
+                        Icon(Icons.refresh_rounded,
+                            color: Color(0xFF00E5FF), size: 14),
                         SizedBox(width: 6),
                         Text(
                           'Thử lại ngay',
@@ -1319,7 +1323,8 @@ class _LiveStandbyState extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00E5FF),
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 10),
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -1345,4 +1350,3 @@ class _LiveStandbyState extends StatelessWidget {
     );
   }
 }
-

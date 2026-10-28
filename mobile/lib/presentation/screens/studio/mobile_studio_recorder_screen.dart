@@ -27,7 +27,6 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/services/webrtc_publisher_service.dart';
 import '../../../data/services/live_studio_api_service.dart';
@@ -93,7 +92,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   WebRTCPublisherService? _webrtcPublisher;
   bool _isLiveStreaming = false;
   BroadcastState _broadcastState = BroadcastState.idle;
-  
+
   // Live Studio API service
   LiveStudioApiService? _liveApiService;
   String? _currentEventId;
@@ -117,7 +116,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   // Teleprompter
   final TextEditingController _prompterCtrl = TextEditingController(
-    text: 'Chào mừng quý khán giả đang theo dõi bản tin trực tiếp của OmniCast Studio.\n'
+    text:
+        'Chào mừng quý khán giả đang theo dõi bản tin trực tiếp của OmniCast Studio.\n'
         '• Điểm tin công nghệ phát thanh truyền hình số thế hệ mới.\n'
         '• Hệ thống phân phối đa nền tảng đạt chuẩn bản quyền quốc tế.\n'
         '• Kết nối dữ liệu trường quay trực tiếp từ thiết bị di động.',
@@ -151,7 +151,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     _initLiveApiService();
     _startVuMeterSimulation();
   }
-  
+
   /// Initialize Live Studio API service
   void _initLiveApiService() {
     _liveApiService = LiveStudioApiService(
@@ -344,17 +344,19 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _startLiveStreaming() async {
     HapticFeedback.heavyImpact();
 
-    // Dynamic WebRTC / MediaMTX server endpoint derived from configured API baseUrl
-    final apiUri = Uri.tryParse(AppConstants.baseUrl);
-    String host = '10.12.2.162';
-    if (apiUri != null &&
-        apiUri.host.isNotEmpty &&
-        !apiUri.host.contains('vercel.app') &&
-        apiUri.host != 'localhost' &&
-        apiUri.host != '127.0.0.1') {
-      host = apiUri.host;
+    final whipUrl = await _liveApiService?.getWhipUrl();
+    if (whipUrl == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Không thể tải cấu hình máy chủ phát trực tiếp. Vui lòng thử lại.'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
     }
-    final whipUrl = 'http://$host:8889';
 
     // Configure WebRTC publisher
     _webrtcPublisher = WebRTCPublisherService();
@@ -395,7 +397,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không thể kết nối máy chủ phát trực tiếp. Vui lòng kiểm tra camera và máy chủ.'),
+            content: Text(
+                'Không thể kết nối máy chủ phát trực tiếp. Vui lòng kiểm tra camera và máy chủ.'),
             backgroundColor: _danger,
           ),
         );
@@ -418,7 +421,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không thể đăng ký phiên LIVE với máy chủ. Vui lòng thử lại.'),
+            content: Text(
+                'Không thể đăng ký phiên LIVE với máy chủ. Vui lòng thử lại.'),
             backgroundColor: _danger,
           ),
         );
@@ -617,7 +621,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _prepareSimulatedReviewPlayer() async {
     try {
       final ctrl = VideoPlayerController.networkUrl(
-        Uri.parse('https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4'),
+        Uri.parse(
+            'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4'),
       );
       await ctrl.initialize();
       await ctrl.setLooping(true);
@@ -839,7 +844,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0B1320).withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
@@ -906,7 +912,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35), width: 1),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -927,7 +934,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   // ─── Lower Third & Channel Bug ────────────────────────────────
   Widget _buildLowerThirdOverlay() {
     final chName = widget.channel?.name ?? 'OMNICAST 1 HD';
-    final topic = widget.initialTopic ?? 'BẢN TIN PHÁT THANH TRUYỀN HÌNH TRỰC TIẾP';
+    final topic =
+        widget.initialTopic ?? 'BẢN TIN PHÁT THANH TRUYỀN HÌNH TRỰC TIẾP';
 
     return Positioned(
       left: 16,
@@ -951,7 +959,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             children: [
               // Top badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: const BoxDecoration(
                   color: _danger,
                   borderRadius: BorderRadius.only(
@@ -962,7 +971,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.radio_button_checked, size: 10, color: Colors.white),
+                    Icon(Icons.radio_button_checked,
+                        size: 10, color: Colors.white),
                     SizedBox(width: 4),
                     Text(
                       'TRỰC TIẾP TỪ HIỆN TRƯỜNG',
@@ -979,7 +989,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
               ),
               // Main Lower Third Banner
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF050B14).withValues(alpha: 0.92),
                   borderRadius: const BorderRadius.only(
@@ -1119,9 +1130,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 GestureDetector(
                   onTap: _togglePrompterScroll,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _prompterScrolling ? _danger : const Color(0xFF1E293B),
+                      color: _prompterScrolling
+                          ? _danger
+                          : const Color(0xFF1E293B),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -1170,7 +1184,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   // ─── Top Studio Bar ───────────────────────────────────────────
   Widget _buildTopStudioBar(String timecode) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 6, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+          16, MediaQuery.of(context).padding.top + 6, 16, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -1253,10 +1268,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _isRecording ? _danger : const Color(0xFF0F172A).withValues(alpha: 0.8),
+              color: _isRecording
+                  ? _danger
+                  : const Color(0xFF0F172A).withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _isRecording ? Colors.white : _accent.withValues(alpha: 0.6),
+                color: _isRecording
+                    ? Colors.white
+                    : _accent.withValues(alpha: 0.6),
                 width: 1,
               ),
             ),
@@ -1516,7 +1535,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (_isRecording ? _danger : _accent).withValues(alpha: 0.4),
+                        color: (_isRecording ? _danger : _accent)
+                            .withValues(alpha: 0.4),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -1529,7 +1549,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                       height: _isRecording ? 28 : 58,
                       decoration: BoxDecoration(
                         color: _danger,
-                        borderRadius: BorderRadius.circular(_isRecording ? 6 : 30),
+                        borderRadius:
+                            BorderRadius.circular(_isRecording ? 6 : 30),
                       ),
                     ),
                   ),
@@ -1725,7 +1746,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                                   ? Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
+                                        color:
+                                            Colors.black.withValues(alpha: 0.6),
                                         shape: BoxShape.circle,
                                         border: Border.all(
                                           color: _accent.withValues(alpha: 0.6),
@@ -1817,7 +1839,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
             ),
             decoration: const BoxDecoration(
               color: Color(0xFF0B1320),
-              border: Border(top: BorderSide(color: Color(0x3300E5FF), width: 0.8)),
+              border:
+                  Border(top: BorderSide(color: Color(0x3300E5FF), width: 0.8)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2024,7 +2047,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : const Color(0xFF1E293B),
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
@@ -2067,8 +2092,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color, size: 24),
+            if (isSelected) Icon(Icons.check_circle, color: color, size: 24),
           ],
         ),
       ),
@@ -2091,7 +2115,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tiếp tục quay', style: TextStyle(color: _accent)),
+            child:
+                const Text('Tiếp tục quay', style: TextStyle(color: _accent)),
           ),
           TextButton(
             onPressed: () {

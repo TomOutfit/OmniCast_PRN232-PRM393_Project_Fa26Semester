@@ -362,11 +362,11 @@ class _Header extends StatelessWidget {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const _LivePulseDot(color: AppColors.stitchPrimaryContainer),
+                _LivePulseDot(color: AppColors.stitchPrimaryContainer),
                 SizedBox(width: 6),
-                const Text(
+                Text(
                   'TIER 01 // WELCOME',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontFamily: AppFonts.mono,
                     fontWeight: FontWeight.w700,
@@ -381,7 +381,7 @@ class _Header extends StatelessWidget {
           const Text(
             'Mở khoá 524 kênh trực tiếp, kho VOD 4K HDR và AI Curator cá nhân hoá.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontFamily: AppFonts.body,
               color: AppColors.stitchOnSurfaceVariant,
@@ -652,7 +652,7 @@ class _FormCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Text(
                     'SECURE CHANNEL',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontFamily: AppFonts.mono,
                       fontWeight: FontWeight.w700,
@@ -809,7 +809,7 @@ class _FormCard extends StatelessWidget {
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.verified_user_outlined,
                         color: AppColors.stitchPrimaryContainer,
                         size: 16,
@@ -820,7 +820,7 @@ class _FormCard extends StatelessWidget {
                           TextSpan(
                             text:
                                 'Bằng việc tạo tài khoản, bạn đồng ý với ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.stitchOnSurfaceVariant,
                               fontSize: 12,
                               fontFamily: AppFonts.body,
@@ -1008,7 +1008,7 @@ class _PasswordChecklist extends StatelessWidget {
             children: [
               const Text(
                 'PASSWORD CHECKLIST',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontFamily: AppFonts.mono,
                   fontWeight: FontWeight.w800,
@@ -1193,7 +1193,7 @@ class _PrimaryButton extends StatelessWidget {
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: const CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               strokeWidth: 2.4,
                               color: AppColors.stitchOnPrimaryContainer,
                             ),
@@ -1294,7 +1294,7 @@ class _SignInRow extends StatelessWidget {
       children: [
         const Text(
           'Đã có tài khoản? ',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.stitchOnSurfaceVariant,
             fontSize: 13,
             fontFamily: AppFonts.body,
@@ -1309,7 +1309,7 @@ class _SignInRow extends StatelessWidget {
           ),
           child: const Text(
             'ĐĂNG NHẬP',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontFamily: AppFonts.mono,
               fontWeight: FontWeight.w800,

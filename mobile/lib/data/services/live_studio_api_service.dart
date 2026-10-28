@@ -224,6 +224,26 @@ class LiveStudioApiService {
     }
   }
 
+  /// Get the MediaMTX publish endpoint configured by the backend.
+  Future<String?> getWhipUrl() async {
+    try {
+      final response = await _dio.get('/v1/programs/studio/live/ingest-config');
+      final data = response.data;
+      final whipUrl = data is Map ? data['whipUrl'] : null;
+      if (response.statusCode == 200 &&
+          whipUrl is String &&
+          whipUrl.isNotEmpty) {
+        return whipUrl.replaceFirst(RegExp(r'/+$'), '');
+      }
+
+      debugPrint('[LiveStudioApi] Invalid WHIP ingest configuration');
+      return null;
+    } on DioException catch (e) {
+      debugPrint('[LiveStudioApi] getWhipUrl error: ${e.message}');
+      return null;
+    }
+  }
+
   /// Notify backend that mobile is stopping the live stream.
   /// Backend will broadcast to all connected viewers.
   Future<bool> stopLive({
