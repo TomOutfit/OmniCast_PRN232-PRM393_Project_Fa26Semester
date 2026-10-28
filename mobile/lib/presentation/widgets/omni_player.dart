@@ -176,10 +176,11 @@ class _OmniPlayerState extends State<OmniPlayer> {
     String url, {
     required bool allowFallback,
   }) {
-    String fallbackOrUrl() => allowFallback ? _kFallbackStream : url;
+    final trimmed = url.trim();
+    String fallbackOrUrl() => allowFallback ? _kFallbackStream : trimmed;
 
-    if (url.isEmpty) return fallbackOrUrl();
-    final lower = url.toLowerCase();
+    if (trimmed.isEmpty) return fallbackOrUrl();
+    final lower = trimmed.toLowerCase();
 
     // Google Drive direct media stream resolution
     final gDriveId = _extractGoogleDriveFileId(url);
@@ -199,8 +200,18 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains('omnicast-api.vercel.app/uploads/')) {
       return fallbackOrUrl();
     }
-    if (lower.contains(':8888/')) {
-      var target = url;
+    if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
+      final host = AppConstants.mediaHost;
+      var target = trimmed;
+      if (lower.contains(':8888/')) {
+        target = target.replaceFirst(
+          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
+          'http://$host:8888/',
+        );
+      } else {
+        final cleanPath = target.startsWith('/') ? target.substring(1) : target;
+        target = 'http://$host:8888/$cleanPath';
+      }
       // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
       if (!target.contains('cookieCheck=')) {
         target = target.contains('?')
@@ -1188,37 +1199,82 @@ class _LiveConnectingState extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: onRetry,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                const SizedBox(height: 2),
+                Text(
+                  'Đích: http://${AppConstants.mediaHost}:8888',
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10,
+                    fontFamily: 'JetBrainsMono',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: onRetry,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.refresh_rounded,
-                            color: Color(0xFF00E5FF), size: 14),
-                        SizedBox(width: 6),
-                        Text(
-                          'Thử lại ngay',
-                          style: TextStyle(
-                            color: Color(0xFF00E5FF),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
                           ),
                         ),
-                      ],
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh_rounded,
+                                color: Color(0xFF00E5FF), size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Thử lại ngay',
+                              style: TextStyle(
+                                color: Color(0xFF00E5FF),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => showMediaHostConfigDialog(context, onSaved: onRetry),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.tune_rounded, color: Colors.white70, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'Đổi IP',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1318,28 +1374,65 @@ class _LiveStandbyState extends StatelessWidget {
                       fontSize: 11,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E5FF),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Đích kết nối: http://${AppConstants.mediaHost}:8888',
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 10,
+                      fontFamily: 'JetBrainsMono',
                     ),
-                    onPressed: onRetry,
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text(
-                      'KẾT NỐI LẠI VỚI STUDIO',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        letterSpacing: 0.6,
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00E5FF),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: const Text(
+                          'KẾT NỐI LẠI',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF00E5FF),
+                          side: const BorderSide(color: Color(0xFF00E5FF)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () =>
+                            showMediaHostConfigDialog(context, onSaved: onRetry),
+                        icon: const Icon(Icons.tune_rounded, size: 16),
+                        label: const Text(
+                          'ĐỔI IP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1349,4 +1442,92 @@ class _LiveStandbyState extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MediaMTX Server IP Configuration Dialog
+// ─────────────────────────────────────────────────────────────────────────────
+void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
+  final ctrl = TextEditingController(text: AppConstants.mediaHost);
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: const Color(0xFF0F172A),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Row(
+        children: [
+          Icon(Icons.settings_ethernet_rounded,
+              color: Color(0xFF00E5FF), size: 22),
+          SizedBox(width: 8),
+          Text(
+            'IP Máy Chủ Studio',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Nhập địa chỉ IP Wi-Fi của máy tính đang chạy Studio (MediaMTX) để điện thoại kết nối trực tiếp:',
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFF1E293B),
+              hintText: 'Ví dụ: 192.168.1.88',
+              hintStyle: const TextStyle(color: Colors.white38),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child:
+              const Text('Hủy', style: TextStyle(color: Color(0xFF64748B))),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00E5FF),
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () {
+            final newHost = ctrl.text.trim();
+            if (newHost.isNotEmpty) {
+              AppConstants.setCustomMediaHost(newHost);
+              Navigator.pop(ctx);
+              onSaved?.call();
+            }
+          },
+          child: const Text('Lưu & Kết nối lại',
+              style: TextStyle(fontWeight: FontWeight.w800)),
+        ),
+      ],
+    ),
+  );
 }

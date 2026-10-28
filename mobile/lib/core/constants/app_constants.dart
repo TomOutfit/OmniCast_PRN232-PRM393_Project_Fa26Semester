@@ -6,15 +6,33 @@ class AppConstants {
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
   static const String _envSocketUrl = String.fromEnvironment('SOCKET_BASE_URL');
   static String _customBaseUrl = '';
+  static String _customMediaHost = '';
 
   static void setCustomBaseUrl(String url) {
-    _customBaseUrl = url;
+    _customBaseUrl = url.trim();
+  }
+
+  static void setCustomMediaHost(String host) {
+    _customMediaHost = host.trim();
   }
 
   static String get baseUrl {
     if (_customBaseUrl.isNotEmpty) return _customBaseUrl;
     if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
     return _defaultBaseUrl;
+  }
+
+  static String get mediaHost {
+    if (_customMediaHost.isNotEmpty) return _customMediaHost;
+    final apiUri = Uri.tryParse(baseUrl);
+    if (apiUri != null &&
+        apiUri.host.isNotEmpty &&
+        !apiUri.host.contains('vercel.app') &&
+        apiUri.host != 'localhost' &&
+        apiUri.host != '127.0.0.1') {
+      return apiUri.host;
+    }
+    return '192.168.1.88';
   }
 
   static const String cdnBaseUrl = 'https://omnicast.tv';

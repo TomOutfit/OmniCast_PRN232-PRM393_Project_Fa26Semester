@@ -344,18 +344,14 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _startLiveStreaming() async {
     HapticFeedback.heavyImpact();
 
-    final whipUrl = await _liveApiService?.getWhipUrl();
-    if (whipUrl == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Không thể tải cấu hình máy chủ phát trực tiếp. Vui lòng thử lại.'),
-            backgroundColor: _danger,
-          ),
-        );
-      }
-      return;
+    var whipUrl = await _liveApiService?.getWhipUrl();
+    if (whipUrl != null && whipUrl.isNotEmpty) {
+      whipUrl = whipUrl.replaceFirst(
+        RegExp(r'^(?:https?:\/\/)?([^\/:]+):8889'),
+        'http://${AppConstants.mediaHost}:8889',
+      );
+    } else {
+      whipUrl = 'http://${AppConstants.mediaHost}:8889';
     }
 
     // Configure WebRTC publisher

@@ -714,8 +714,20 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       ),
       actions: [
         IconButton(
+          tooltip: 'Cấu hình IP MediaMTX',
+          icon: const Icon(Icons.tune_rounded, color: Color(0xFF00E5FF)),
+          onPressed: () => showMediaHostConfigDialog(
+            context,
+            onSaved: () {
+              if (mounted) {
+                _loadEvent();
+              }
+            },
+          ),
+        ),
+        IconButton(
           tooltip: 'Làm mới',
-          icon: const Icon(Icons.refresh, color: _accent),
+          icon: const Icon(Icons.refresh, color: Colors.white70),
           onPressed: () => _loadEvent(),
         ),
         IconButton(

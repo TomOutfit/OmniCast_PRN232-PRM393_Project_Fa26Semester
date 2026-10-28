@@ -906,6 +906,8 @@ class _VideoPlayerState extends State<_VideoPlayer> {
         initialSeekSeconds: offset,
         isPremium: isPremium,
         channelName: widget.program.channel?.name ?? widget.program.title,
+        isLive: widget.program.isLive,
+        allowFallback: !widget.program.isLive,
       );
     }
 
