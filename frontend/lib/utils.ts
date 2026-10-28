@@ -147,6 +147,11 @@ export function resolveStreamUrl(url: string | null | undefined): string {
     return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
   }
 
+  // Normalize any mismapped vercel.app:8888 back to localhost:8888
+  if (lower.includes('.vercel.app:8888/')) {
+    return trimmed.replace(/:\/\/[^/]+:8888\//, '://localhost:8888/');
+  }
+
   // Transparently rewrite localhost:8888 / 127.0.0.1:8888 MediaMTX URLs to the actual
   // server hostname ONLY when accessed from other devices on the LAN
   if (
@@ -162,13 +167,6 @@ export function resolveStreamUrl(url: string | null | undefined): string {
 
     if (isLan && (lower.includes('://localhost:8888/') || lower.includes('://127.0.0.1:8888/'))) {
       return trimmed.replace(/:\/\/(localhost|127\.0\.0\.1):8888\//, `://${window.location.hostname}:8888/`);
-    }
-
-    // When running on HTTPS (production/Vercel), browser blocks insecure HTTP requests
-    // to local MediaMTX (:8888) under Mixed Content security policy.
-    // Fall back to a verified high-availability HTTPS live stream.
-    if (window.location.protocol === 'https:' && lower.includes(':8888/')) {
-      return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_HLS;
     }
   }
 
