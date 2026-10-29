@@ -232,4 +232,38 @@ class BillingService {
       return null;
     }
   }
+
+  /// Fetch virtual wallet info for the current authenticated user.
+  Future<Map<String, dynamic>?> getUserWallet() async {
+    try {
+      final client = getIt<DioClient>();
+      final response = await client.get('/billing/wallet');
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Top up sandbox funds into current user's virtual wallet.
+  Future<Map<String, dynamic>?> topupSandbox(int amount) async {
+    try {
+      final client = getIt<DioClient>();
+      final response = await client.post(
+        '/billing/wallet/topup-sandbox',
+        data: {'amount': amount},
+      );
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('[BillingService] topupSandbox error: $e');
+      }
+      rethrow;
+    }
+  }
 }

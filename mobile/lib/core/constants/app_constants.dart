@@ -43,7 +43,7 @@ class AppConstants {
     }
     if (_discoveredMediaHost.isNotEmpty) return _discoveredMediaHost;
     // Dynamic default: auto-updated by LanDiscoveryService on Wi-Fi connect
-    return '10.12.2.162';
+    return '172.9.8.239';
   }
 
   static const String cdnBaseUrl = 'https://omnicast.tv';

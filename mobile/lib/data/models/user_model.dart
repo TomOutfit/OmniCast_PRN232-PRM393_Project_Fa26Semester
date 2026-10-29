@@ -9,6 +9,7 @@ class UserModel {
   final String role;
   final bool isActive;
   final bool emailVerified;
+  final int walletBalance;
   final DateTime? lastLoginAt;
   final DateTime createdAt;
 
@@ -21,6 +22,7 @@ class UserModel {
     required this.role,
     required this.isActive,
     required this.emailVerified,
+    this.walletBalance = 0,
     this.lastLoginAt,
     required this.createdAt,
   });
@@ -35,6 +37,7 @@ class UserModel {
       role: _normalizeRole(json['role']),
       isActive: json['isActive'] as bool? ?? true,
       emailVerified: json['emailVerified'] as bool? ?? false,
+      walletBalance: (json['walletBalance'] as num?)?.toInt() ?? 0,
       lastLoginAt: json['lastLoginAt'] != null
           ? DateTime.parse(json['lastLoginAt'] as String)
           : null,
@@ -62,9 +65,38 @@ class UserModel {
       'role': role,
       'isActive': isActive,
       'emailVerified': emailVerified,
+      'walletBalance': walletBalance,
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? fullName,
+    String? avatarUrl,
+    String? bio,
+    String? role,
+    bool? isActive,
+    bool? emailVerified,
+    int? walletBalance,
+    DateTime? lastLoginAt,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bio: bio ?? this.bio,
+      role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
+      emailVerified: emailVerified ?? this.emailVerified,
+      walletBalance: walletBalance ?? this.walletBalance,
+      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 
   bool get isAdmin => role == 'ADMIN';

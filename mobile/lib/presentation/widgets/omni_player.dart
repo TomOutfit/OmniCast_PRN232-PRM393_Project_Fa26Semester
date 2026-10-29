@@ -205,12 +205,15 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
       var target = trimmed;
 
-      // Wi-Fi Stream Optimization: If URL contains a LAN IP (10.*, 192.168.*, 172.16-31.*),
+      // Wi-Fi Stream Optimization: If URL contains a valid non-loopback IP,
       // auto-adopt it as discovered host if no custom host is configured.
-      final ipMatch = RegExp(r'^(?:https?:\/\/)?(10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(?:1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+):8888\/').firstMatch(target);
+      final ipMatch = RegExp(r'^(?:https?:\/\/)?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):8888\/').firstMatch(target);
       if (ipMatch != null) {
         final discoveredLanIp = ipMatch.group(1);
-        if (discoveredLanIp != null && !AppConstants.hasCustomMediaHost) {
+        if (discoveredLanIp != null &&
+            discoveredLanIp != '127.0.0.1' &&
+            !discoveredLanIp.startsWith('169.254.') &&
+            !AppConstants.hasCustomMediaHost) {
           AppConstants.setDiscoveredMediaHost(discoveredLanIp);
         }
       }

@@ -1,3 +1,4 @@
+import '../../../../core/services/billing_service.dart';
 // ============================================================
 // OmniCast - Live Watch Screen (Viewer)
 //
@@ -88,6 +89,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   // Super Chat & Donate state
   LiveDonationResult? _latestSuperChat;
   Timer? _superChatTimer;
+  int _streamerBalance = 0;
+  int _myBalance = 0;
 
   @override
   void initState() {
@@ -162,6 +165,18 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   // ============================================================
 
   Future<void> _bootstrap() async {
+    // Fetch initial wallet & streamer payment info
+    BillingService.instance.getStreamerPaymentInfo(widget.eventId).then((sInfo) {
+      if (mounted && sInfo != null && sInfo['walletBalance'] != null) {
+        setState(() => _streamerBalance = (sInfo['walletBalance'] as num).toInt());
+      }
+    }).catchError((_) {});
+    BillingService.instance.getUserWallet().then((uWallet) {
+      if (mounted && uWallet != null && uWallet['walletBalance'] != null) {
+        setState(() => _myBalance = (uWallet['walletBalance'] as num).toInt());
+      }
+    }).catchError((_) {});
+
     _initSocket();
     await _loadEvent();
     _loadOtherLive();
