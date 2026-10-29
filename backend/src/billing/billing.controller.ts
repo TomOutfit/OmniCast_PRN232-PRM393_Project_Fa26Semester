@@ -64,8 +64,28 @@ export class BillingController {
     @Body() dto: CreateSandboxDonationDto,
   ) {
     // If request contains an authenticated user, link their user ID as donor
-    const donorUserId = req.user?.sub || undefined;
+    let donorUserId = req.user?.sub || undefined;
+    if (!donorUserId && req.headers?.authorization) {
+      try {
+        const token = req.headers.authorization.replace(/^Bearer\s+/i, '');
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+          if (payload?.sub) donorUserId = payload.sub;
+        }
+      } catch (_) {}
+    }
     return this.billing.processSandboxDonation(dto, donorUserId);
+  }
+
+  @Post('wallet/topup-sandbox')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Top up virtual VND into user wallet for testing sandbox donations and purchases.',
+  })
+  async topupSandbox(@Request() req: any, @Body() dto: { amount?: number }) {
+    return this.billing.topupUserWallet(req.user.sub, dto.amount || 100000);
   }
 
   @Get('wallet')

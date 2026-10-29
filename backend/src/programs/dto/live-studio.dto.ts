@@ -108,6 +108,20 @@ export class CurateLiveDto {
   description?: string;
 
   @ApiPropertyOptional({
+    description: 'Custom media host or full stream URL (for WAN / tunnel / LAN custom host)',
+  })
+  @IsOptional()
+  @IsString()
+  streamUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom MediaMTX host (IP or domain)',
+  })
+  @IsOptional()
+  @IsString()
+  mediaHost?: string;
+
+  @ApiPropertyOptional({
     description:
       'Thumbnail override. Defaults to the first recording\'s thumbnail.',
   })
@@ -182,6 +196,20 @@ export class WebcamLiveStartDto {
   @IsString()
   @MaxLength(3000)
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom media host or full stream URL (for WAN / tunnel / LAN custom host)',
+  })
+  @IsOptional()
+  @IsString()
+  streamUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Custom MediaMTX host (IP or domain)',
+  })
+  @IsOptional()
+  @IsString()
+  mediaHost?: string;
 }
 
 export class WebcamLiveStopDto {

@@ -417,6 +417,7 @@ export function detectLanIpv4(): string {
 
       for (const iface of list) {
         if (iface.family === 'IPv4' && !iface.internal) {
+          if (iface.address.startsWith('169.254.') || iface.address === '127.0.0.1') continue;
           if (
             lowerName.includes('wi-fi') ||
             lowerName.includes('wifi') ||
@@ -441,7 +442,9 @@ export function detectLanIpv4(): string {
       if (!list) continue;
       for (const iface of list) {
         if (iface.family === 'IPv4' && !iface.internal) {
-          return iface.address;
+          if (!iface.address.startsWith('169.254.') && iface.address !== '127.0.0.1') {
+            return iface.address;
+          }
         }
       }
     }
@@ -782,7 +785,18 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
     // Broadcast live:started event to all connected viewers via WebSocket
     // This notifies all clients subscribed to this channel and across the app that a live stream is active
     try {
-      const { hlsIndexUrl } = this.buildHlsUrls(channel.slug);
+      let hlsIndexUrl: string;
+    if (dto.streamUrl && dto.streamUrl.trim().length > 0) {
+      hlsIndexUrl = dto.streamUrl.trim();
+    } else if (dto.mediaHost && dto.mediaHost.trim().length > 0) {
+      const cleanHost = dto.mediaHost.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const scheme = dto.mediaHost.startsWith('https') ? 'https' : 'http';
+      const hasPort = cleanHost.includes(':');
+      const hostWithPort = hasPort ? cleanHost : `${cleanHost}:8888`;
+      hlsIndexUrl = `${scheme}://${hostWithPort}/${channel.slug}/index.m3u8`;
+    } else {
+      hlsIndexUrl = this.buildHlsUrls(channel.slug).hlsIndexUrl;
+    }
       this.wsGateway.notifyLiveStarted(channel.slug, {
         eventId: event.id,
         title: event.title,
@@ -931,7 +945,18 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    const { hlsIndexUrl } = this.buildHlsUrls(channel.slug);
+    let hlsIndexUrl: string;
+    if (dto.streamUrl && dto.streamUrl.trim().length > 0) {
+      hlsIndexUrl = dto.streamUrl.trim();
+    } else if (dto.mediaHost && dto.mediaHost.trim().length > 0) {
+      const cleanHost = dto.mediaHost.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const scheme = dto.mediaHost.startsWith('https') ? 'https' : 'http';
+      const hasPort = cleanHost.includes(':');
+      const hostWithPort = hasPort ? cleanHost : `${cleanHost}:8888`;
+      hlsIndexUrl = `${scheme}://${hostWithPort}/${channel.slug}/index.m3u8`;
+    } else {
+      hlsIndexUrl = this.buildHlsUrls(channel.slug).hlsIndexUrl;
+    }
 
     const event = await this.prisma.liveEvent.create({
       data: {

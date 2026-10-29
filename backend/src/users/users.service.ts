@@ -41,6 +41,8 @@ export class UsersService {
         isActive: true,
         emailVerified: true,
         lastLoginAt: true,
+        walletBalance: true,
+        premiumUntil: true,
         createdAt: true,
       },
     });
@@ -49,7 +51,10 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      walletBalance: Number((user as any).walletBalance ?? 0),
+    };
   }
 
   async findByEmail(email: string) {

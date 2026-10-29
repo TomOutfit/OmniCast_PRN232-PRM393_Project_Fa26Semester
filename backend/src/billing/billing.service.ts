@@ -55,6 +55,7 @@ export interface StreamerPaymentInfo {
   zaloPayAccount: string;
   transferSyntax: string;
   isSandbox: boolean;
+  walletBalance: number;
 }
 
 @Injectable()
@@ -132,6 +133,7 @@ export class BillingService {
                 avatarUrl: true,
                 bio: true,
                 email: true,
+                walletBalance: true,
               },
             },
           },
@@ -154,6 +156,7 @@ export class BillingService {
           avatarUrl: true,
           bio: true,
           email: true,
+          walletBalance: true,
         },
       });
     }
@@ -184,6 +187,7 @@ export class BillingService {
       zaloPayAccount: cleanStreamerName,
       transferSyntax,
       isSandbox: true,
+      walletBalance: Number((streamer as any)?.walletBalance ?? 0),
     };
   }
 
@@ -235,6 +239,16 @@ export class BillingService {
     const shortId = dto.eventId.replace(/-/g, '').slice(0, 6).toUpperCase();
     const transferSyntax = `OMNICAST ${shortId} ${Date.now().toString().slice(-4)}`;
     const qrPayload = `00020101021238540010A000000727012400069704220112190368889990208QRIBFTTA5303704540${dto.amount}5802VN62${transferSyntax.length}${transferSyntax}6304MOCK`;
+
+    let donorUser: any = null;
+    if (donorUserId) {
+      try {
+        donorUser = await (this.prisma as any).user.findUnique({
+          where: { id: donorUserId },
+          select: { id: true, fullName: true, walletBalance: true },
+        });
+      } catch (_) {}
+    }
 
     // Execute atomic transaction: Credit streamer's wallet + record donation
     const [updatedStreamer, donation] = await (this.prisma as any).$transaction([
@@ -315,6 +329,8 @@ export class BillingService {
         giftTier: donation.giftTier || undefined,
         message: donation.message || undefined,
         streamerWalletBalance: streamerBalanceNumber,
+        donorId: donorUserId || undefined,
+        donorWalletBalance: donorUser ? Number(donorUser.walletBalance ?? 0) : undefined,
         timestamp: donation.createdAt.toISOString(),
       });
     } catch (wsErr) {
@@ -341,6 +357,11 @@ export class BillingService {
         avatarUrl: updatedStreamer.avatarUrl,
         walletBalance: streamerBalanceNumber,
       },
+      donor: donorUser ? {
+        id: donorUser.id,
+        fullName: donorUser.fullName,
+        walletBalance: Number(donorUser.walletBalance ?? 0),
+      } : null,
       notification: `Đã nạp thành công ${donation.amount.toLocaleString('vi-VN')} ₫ mô phỏng vào tài khoản của Streamer ${updatedStreamer.fullName}! (Chi phí thực tế = 0 ₫)`,
     };
   }
@@ -441,6 +462,53 @@ export class BillingService {
         isSandbox: d.isSandbox,
         createdAt: d.createdAt.toISOString(),
       })),
+    };
+  }
+
+  /**
+   * Top-up virtual balance into user's wallet for test/sandbox donations.
+   */
+  async topupUserWallet(userId: string, amount: number) {
+    if (amount <= 0 || amount > 50000000) {
+      throw new BadRequestException('Số tiền nạp không hợp lệ (10.000đ - 50.000.000đ)');
+    }
+
+    const updated = await (this.prisma as any).user.update({
+      where: { id: userId },
+      data: {
+        walletBalance: {
+          increment: BigInt(amount),
+        },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        walletBalance: true,
+      },
+    });
+
+    const newBalance = Number(updated.walletBalance ?? 0);
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'SANDBOX_WALLET_TOPUP',
+          entityType: 'USER_WALLET',
+          entityId: userId,
+          newValues: {
+            amount,
+            newBalance,
+            isSandbox: true,
+          },
+        },
+      });
+    } catch (_) {}
+
+    return {
+      success: true,
+      message: 'Đã nạp thành công ' + amount.toLocaleString('vi-VN') + ' ₫ mô phỏng vào ví của bạn!',
+      walletBalance: newBalance,
     };
   }
 }

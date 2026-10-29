@@ -596,6 +596,7 @@ export class LiveStreamGateway
   notifyDonationReceived(donation: {
     eventId?: string;
     donationId: string;
+    donorId?: string;
     donorName: string;
     streamerId: string;
     streamerName: string;
@@ -605,6 +606,7 @@ export class LiveStreamGateway
     giftTier?: string;
     message?: string;
     streamerWalletBalance: number;
+    donorWalletBalance?: number;
     timestamp: string;
   }) {
     if (donation.eventId) {
