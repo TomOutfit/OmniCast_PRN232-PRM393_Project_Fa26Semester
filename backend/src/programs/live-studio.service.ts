@@ -454,6 +454,22 @@ export function detectLanIpv4(): string {
   return 'localhost';
 }
 
+export function isIpOnThisMachine(ip: string): boolean {
+  if (!ip || ip === 'localhost' || ip === '127.0.0.1') return true;
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const list of Object.values(interfaces)) {
+      if (!list) continue;
+      for (const iface of list) {
+        if (iface.address === ip) return true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 @Injectable()
 export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveStudioService.name);
@@ -842,24 +858,22 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    */
   getIngestConfig() {
     const lanIp = detectLanIpv4();
-    const publicHost =
-      process.env.MEDIAMTX_PUBLIC_HOST &&
-      process.env.MEDIAMTX_PUBLIC_HOST !== 'localhost' &&
-      process.env.MEDIAMTX_PUBLIC_HOST !== '127.0.0.1'
-        ? process.env.MEDIAMTX_PUBLIC_HOST
-        : lanIp;
-    const hlsBase = (
-      process.env.MEDIAMTX_HLS_URL || `http://${publicHost}:8888`
-    ).replace(/\/$/, '');
-    const webrtcBase = (
-      process.env.MEDIAMTX_WEBRTC_URL || `ws://${publicHost}:8889`
-    ).replace(/\/$/, '');
-    const whipBase = (
-      process.env.MEDIAMTX_WHIP_URL || `http://${publicHost}:8889`
-    ).replace(/\/$/, '');
-    const rtmpBase = (
-      process.env.MEDIAMTX_RTMP_URL || `rtmp://${publicHost}:1935`
-    ).replace(/\/$/, '');
+    const envHost = process.env.MEDIAMTX_PUBLIC_HOST;
+    const isValidEnvHost =
+      envHost &&
+      envHost !== 'localhost' &&
+      envHost !== '127.0.0.1' &&
+      isIpOnThisMachine(envHost);
+
+    const publicHost = isValidEnvHost ? envHost : lanIp;
+    const rawHls = isValidEnvHost ? process.env.MEDIAMTX_HLS_URL : undefined;
+    const hlsBase = (rawHls || `http://${publicHost}:8888`).replace(/\/$/, '');
+    const rawWebrtc = isValidEnvHost ? process.env.MEDIAMTX_WEBRTC_URL : undefined;
+    const webrtcBase = (rawWebrtc || `ws://${publicHost}:8889`).replace(/\/$/, '');
+    const rawWhip = isValidEnvHost ? process.env.MEDIAMTX_WHIP_URL : undefined;
+    const whipBase = (rawWhip || `http://${publicHost}:8889`).replace(/\/$/, '');
+    const rawRtmp = isValidEnvHost ? process.env.MEDIAMTX_RTMP_URL : undefined;
+    const rtmpBase = (rawRtmp || `rtmp://${publicHost}:1935`).replace(/\/$/, '');
 
     return {
       publicHost,
