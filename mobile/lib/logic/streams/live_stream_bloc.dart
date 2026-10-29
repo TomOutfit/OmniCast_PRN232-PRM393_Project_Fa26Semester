@@ -22,6 +22,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import '../../core/constants/app_constants.dart';
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 abstract class LiveStreamEvent extends Equatable {
@@ -224,9 +226,8 @@ class LiveStreamBloc extends Bloc<LiveStreamEvent, LiveStreamState> {
 
     _currentChannelSlug = event.channelSlug;
 
-    // Build WebSocket URL
-    const apiUrl = _defaultApiUrl; // In production, get from config
-    final wsUrl = apiUrl.replaceAll(RegExp(r'^http'), 'ws');
+    // Build WebSocket URL from AppConstants
+    final wsUrl = AppConstants.socketUrl;
 
     _socket = io.io(
       '$wsUrl/live',

@@ -26,6 +26,11 @@ class DioClient {
   final FlutterSecureStorage _secureStorage;
   TokenRefresher? _tokenRefresher;
 
+  void updateBaseUrl([String? newUrl]) {
+    final url = newUrl ?? AppConstants.baseUrl;
+    _dio.options.baseUrl = url;
+  }
+
   DioClient({FlutterSecureStorage? secureStorage})
       : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(

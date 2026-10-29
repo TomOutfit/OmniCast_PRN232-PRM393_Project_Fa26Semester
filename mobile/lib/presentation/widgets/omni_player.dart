@@ -9,6 +9,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/lan_discovery_service.dart';
+import '../../../core/utils/token_storage_helper.dart';
 import 'payment/subscription_payment_sheet.dart';
 
 // Demo fallback stream. Big Buck Bunny — Creative Commons MP4 hosted
@@ -204,25 +205,23 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
       var target = trimmed;
 
-      // Wi-Fi Stream Optimization: If URL already contains an active LAN IP (10.*, 192.168.*),
-      // preserve it and auto-adopt it as the verified mediaHost!
+      // Wi-Fi Stream Optimization: If URL contains a LAN IP (10.*, 192.168.*, 172.16-31.*),
+      // auto-adopt it as discovered host if no custom host is configured.
       final ipMatch = RegExp(r'^(?:https?:\/\/)?(10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(?:1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+):8888\/').firstMatch(target);
       if (ipMatch != null) {
         final discoveredLanIp = ipMatch.group(1);
         if (discoveredLanIp != null && !AppConstants.hasCustomMediaHost) {
-          AppConstants.setCustomMediaHost(discoveredLanIp);
+          AppConstants.setDiscoveredMediaHost(discoveredLanIp);
         }
       }
 
       final host = AppConstants.mediaHost;
       if (lower.contains(':8888/')) {
-        // Rewrite localhost / 127.0.0.1 or stale IP to the active Wi-Fi mediaHost
-        if (lower.contains('localhost:8888/') || lower.contains('127.0.0.1:8888/')) {
-          target = target.replaceFirst(
-            RegExp(r'^(?:https?:\/\/)?(localhost|127\.0\.0\.1):8888\/'),
-            'http://$host:8888/',
-          );
-        }
+        // Rewrite ANY scheme://[old_host]:8888/ to http://$host:8888/
+        target = target.replaceFirst(
+          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
+          'http://$host:8888/',
+        );
       } else {
         final cleanPath = target.startsWith('/') ? target.substring(1) : target;
         target = 'http://$host:8888/$cleanPath';
@@ -1618,11 +1617,11 @@ void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: () {
+            onPressed: () async {
               final newHost = ctrl.text.trim();
               if (newHost.isNotEmpty) {
-                AppConstants.setCustomMediaHost(newHost);
-                Navigator.pop(ctx);
+                await TokenStorageHelper().saveCustomMediaHost(newHost);
+                if (ctx.mounted) Navigator.pop(ctx);
                 onSaved?.call();
               }
             },

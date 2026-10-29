@@ -2,13 +2,19 @@
 // Theme / language / notifications / data saver / account security.
 // Re-designed with Cyber-Dark Broadcast System aesthetics.
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/i18n/app_locale.dart';
 import '../../../core/i18n/strings.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../core/services/lan_discovery_service.dart';
 import '../../../core/utils/token_storage_helper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/datasources/local/database_helper.dart';
@@ -426,6 +432,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 20),
+
+                // ── Server & Camera Stream Config Section ──────────────
+                const _SectionTitle(
+                  icon: Icons.dns_rounded,
+                  title: 'MÁY CHỦ & LUỒNG PHÁT CAMERA',
+                ),
+                const _ServerConfigCard(),
 
                 const SizedBox(height: 20),
 
@@ -1378,5 +1393,469 @@ class _TopicRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ============================================================
+// SERVER & MEDIA HOST CONFIG CARD
+// ------------------------------------------------------------
+// Enables users to configure custom API Base URL and MediaMTX
+// Stream Host (IP / Domain) when watching Camera streams away
+// from home (Coffee Shop, University, 4G, WAN).
+// ============================================================
+
+class _ServerConfigCard extends StatefulWidget {
+  const _ServerConfigCard();
+
+  @override
+  State<_ServerConfigCard> createState() => _ServerConfigCardState();
+}
+
+class _ServerConfigCardState extends State<_ServerConfigCard> {
+  bool _testingConnection = false;
+  String? _pingResult;
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _testingConnection = true;
+      _pingResult = 'Đang kiểm tra kết nối tới Server…';
+    });
+
+    final stopwatch = Stopwatch()..start();
+    bool apiOk = false;
+    bool mediaOk = false;
+    int statusCode = 0;
+
+    try {
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
+
+      // 1. Test API Base URL
+      try {
+        final apiUri = Uri.parse(AppConstants.baseUrl);
+        final req = await client.getUrl(apiUri).timeout(const Duration(seconds: 4));
+        final res = await req.close().timeout(const Duration(seconds: 4));
+        statusCode = res.statusCode;
+        apiOk = (statusCode >= 200 && statusCode < 500);
+      } catch (_) {
+        apiOk = false;
+      }
+
+      // 2. Test MediaMTX Stream Host
+      try {
+        final mediaHost = AppConstants.mediaHost;
+        final mediaUri = Uri.parse('http://$mediaHost:8888/');
+        final req = await client.getUrl(mediaUri).timeout(const Duration(seconds: 4));
+        final res = await req.close().timeout(const Duration(seconds: 4));
+        mediaOk = (res.statusCode >= 200 && res.statusCode < 500);
+      } catch (_) {
+        mediaOk = false;
+      }
+
+      stopwatch.stop();
+
+      if (mounted) {
+        setState(() {
+          _testingConnection = false;
+          final timeMs = stopwatch.elapsedMilliseconds;
+          if (apiOk && mediaOk) {
+            _pingResult = '🟢 Kết nối Hoàn Hảo! API: $statusCode OK ($timeMs ms) · MediaMTX: Hoạt động';
+          } else if (apiOk) {
+            _pingResult = '🟡 API: Đã kết nối ($timeMs ms) · MediaMTX (8888): Không phản hồi';
+          } else if (mediaOk) {
+            _pingResult = '🟡 MediaMTX: Đã kết nối ($timeMs ms) · API Base URL: Không phản hồi';
+          } else {
+            _pingResult = '🔴 Không thể kết nối tới Server hoặc MediaMTX ($timeMs ms). Hãy kiểm tra lại IP/Domain.';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _testingConnection = false;
+          _pingResult = '🔴 Lỗi kết nối: ${e.toString()}';
+        });
+      }
+    }
+  }
+
+  void _showConfigDialog(BuildContext context) {
+    final baseUrlCtrl = TextEditingController(text: AppConstants.baseUrl);
+    final mediaHostCtrl = TextEditingController(text: AppConstants.mediaHost);
+    bool isScanning = false;
+    String? scanStatus;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0x3300E5FF)),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.tune_rounded, color: Color(0xFF00E5FF), size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cấu Hình Máy Chủ & Stream',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cấu hình IP/Domain khi kết nối từ xa (Quán Cafe, Trường học, 4G) hoặc mạng nội bộ:',
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+
+                // API Base URL Field
+                const Text(
+                  '1. Địa chỉ API Backend (Base URL):',
+                  style: TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: baseUrlCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'JetBrainsMono'),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFF1E293B),
+                    hintText: 'https://my-backend.ngrok-free.app/api hoặc http://192.168.1.88:3000/api',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // MediaMTX Host Field
+                const Text(
+                  '2. Host Máy Chủ Stream Camera (MediaMTX):',
+                  style: TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: mediaHostCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'JetBrainsMono'),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFF1E293B),
+                    hintText: 'my-backend.ngrok-free.app hoặc 10.12.2.162 hoặc 192.168.1.88',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Auto Scan Button inside dialog
+                InkWell(
+                  onTap: isScanning
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isScanning = true;
+                            scanStatus = 'Đang quét mạng Wi-Fi…';
+                          });
+                          final res = await LanDiscoveryService().autoDiscoverMediaHost();
+                          setDialogState(() {
+                            isScanning = false;
+                            if (res.success && res.host != null) {
+                              mediaHostCtrl.text = res.host!;
+                              scanStatus = '✓ Đã tìm thấy máy chủ: ${res.host}';
+                            } else {
+                              scanStatus = 'Chưa tìm thấy máy chủ Wi-Fi tự động.';
+                            }
+                          });
+                        },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0x1A00E5FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0x3300E5FF)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isScanning)
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+                          )
+                        else
+                          const Icon(Icons.bolt_rounded, color: Color(0xFF00E5FF), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          isScanning ? 'Đang quét Wi-Fi…' : '⚡ Auto-Scan Wi-Fi Nội Bị',
+                          style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (scanStatus != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    scanStatus!,
+                    style: TextStyle(
+                      color: scanStatus!.startsWith('✓') ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await TokenStorageHelper().clearCustomNetworkConfig();
+                getIt<DioClient>().updateBaseUrl();
+                if (ctx.mounted) Navigator.pop(ctx);
+                setState(() {});
+              },
+              child: const Text('Mặc định', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy', style: TextStyle(color: Color(0xFF64748B))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00E5FF),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                final newBaseUrl = baseUrlCtrl.text.trim();
+                final newMediaHost = mediaHostCtrl.text.trim();
+
+                if (newBaseUrl.isNotEmpty) {
+                  await TokenStorageHelper().saveCustomBaseUrl(newBaseUrl);
+                  getIt<DioClient>().updateBaseUrl(newBaseUrl);
+                }
+                if (newMediaHost.isNotEmpty) {
+                  await TokenStorageHelper().saveCustomMediaHost(newMediaHost);
+                }
+
+                if (ctx.mounted) Navigator.pop(ctx);
+                setState(() {});
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã lưu cấu hình máy chủ & luồng phát!'),
+                      backgroundColor: Color(0xFF091424),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Lưu & Áp dụng', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _CyberCard(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Cấu hình Kết nối Máy Chủ',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(width: 8),
+                      if (AppConstants.hasCustomBaseUrl || AppConstants.hasCustomMediaHost)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0x2600E5FF),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFF00E5FF), width: 0.8),
+                          ),
+                          child: const Text(
+                            'CUSTOM HOST',
+                            style: TextStyle(color: Color(0xFF00E5FF), fontSize: 9, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Tùy chỉnh IP/Domain để xem Camera khi ở ngoài trường/cafe',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => _showConfigDialog(context),
+              icon: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF00E5FF), size: 22),
+              tooltip: 'Cấu hình Server IP',
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Info Box: Current Settings
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF091424),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0x1F00E5FF)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.dns_rounded, size: 14, color: Color(0xFF00E5FF)),
+                  const SizedBox(width: 6),
+                  const Text('API Base URL: ', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                  Expanded(
+                    child: Text(
+                      AppConstants.baseUrl,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'JetBrainsMono', fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.videocam_rounded, size: 14, color: Color(0xFF00E5FF)),
+                  const SizedBox(width: 6),
+                  const Text('MediaMTX Host: ', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                  Expanded(
+                    child: Text(
+                      'http://${AppConstants.mediaHost}:8888',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'JetBrainsMono', fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        if (_pingResult != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _pingResult!.startsWith('🟢')
+                  ? const Color(0x1A10B981)
+                  : (_pingResult!.startsWith('🟡') ? const Color(0x1AF59E0B) : const Color(0x1AEF4444)),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _pingResult!.startsWith('🟢')
+                    ? const Color(0x4D10B981)
+                    : (_pingResult!.startsWith('🟡') ? const Color(0x4DF59E0B) : const Color(0x4DEF4444)),
+              ),
+            ),
+            child: Text(
+              _pingResult!,
+              style: TextStyle(
+                color: _pingResult!.startsWith('🟢')
+                    ? const Color(0xFF10B981)
+                    : (_pingResult!.startsWith('🟡') ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00E5FF),
+                  side: const BorderSide(color: Color(0x4D00E5FF)),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: _testingConnection ? null : _testConnection,
+                icon: _testingConnection
+                    ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)))
+                    : const Icon(Icons.network_ping_rounded, size: 14),
+                label: Text(
+                  _testingConnection ? 'Đang thử…' : 'Kiểm Tra Kết Nối',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00E5FF),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => _showConfigDialog(context),
+                icon: const Icon(Icons.edit_note_rounded, size: 16),
+                label: const Text(
+                  'Cấu Hình Server',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
   }
 }

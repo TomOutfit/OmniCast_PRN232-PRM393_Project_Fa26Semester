@@ -226,7 +226,7 @@ class LanDiscoveryService {
 
   void _applyDiscoveredHost(String host) {
     _lastDiscoveredHost = host;
-    AppConstants.setCustomMediaHost(host);
+    AppConstants.setDiscoveredMediaHost(host);
     debugPrint('[LanDiscovery] ⚡ Successfully auto-connected to MediaMTX at $host:8888 (Wi-Fi Auto-Discovery)');
   }
 

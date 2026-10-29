@@ -7,6 +7,9 @@ class AppConstants {
   static const String _envSocketUrl = String.fromEnvironment('SOCKET_BASE_URL');
   static String _customBaseUrl = '';
   static String _customMediaHost = '';
+  static String _discoveredMediaHost = '';
+
+  static bool get hasCustomBaseUrl => _customBaseUrl.isNotEmpty;
 
   static void setCustomBaseUrl(String url) {
     _customBaseUrl = url.trim();
@@ -16,6 +19,10 @@ class AppConstants {
 
   static void setCustomMediaHost(String host) {
     _customMediaHost = host.trim();
+  }
+
+  static void setDiscoveredMediaHost(String host) {
+    _discoveredMediaHost = host.trim();
   }
 
   static String get baseUrl {
@@ -34,6 +41,7 @@ class AppConstants {
         apiUri.host != '127.0.0.1') {
       return apiUri.host;
     }
+    if (_discoveredMediaHost.isNotEmpty) return _discoveredMediaHost;
     // Dynamic default: auto-updated by LanDiscoveryService on Wi-Fi connect
     return '10.12.2.162';
   }
@@ -66,6 +74,8 @@ class AppConstants {
   static const String localeKey = 'app_locale';
   static const String notificationPrefsKey = 'app_notification_prefs';
   static const String dataSaverKey = 'app_data_saver';
+  static const String customBaseUrlKey = 'custom_base_url';
+  static const String customMediaHostKey = 'custom_media_host';
 
   /// Derive WebSocket base URL from baseUrl (e.g. https://... -> wss://...)
   static String get socketUrl {

@@ -116,6 +116,36 @@ class TokenStorageHelper {
     ]);
   }
 
+  // Custom Network & Media Server Configuration
+  Future<void> saveCustomBaseUrl(String url) async {
+    final cleanUrl = url.trim();
+    await _storage.write(key: AppConstants.customBaseUrlKey, value: cleanUrl);
+    AppConstants.setCustomBaseUrl(cleanUrl);
+  }
+
+  Future<String?> getCustomBaseUrl() async {
+    return await _storage.read(key: AppConstants.customBaseUrlKey);
+  }
+
+  Future<void> saveCustomMediaHost(String host) async {
+    final cleanHost = host.trim();
+    await _storage.write(key: AppConstants.customMediaHostKey, value: cleanHost);
+    AppConstants.setCustomMediaHost(cleanHost);
+  }
+
+  Future<String?> getCustomMediaHost() async {
+    return await _storage.read(key: AppConstants.customMediaHostKey);
+  }
+
+  Future<void> clearCustomNetworkConfig() async {
+    await Future.wait([
+      _storage.delete(key: AppConstants.customBaseUrlKey),
+      _storage.delete(key: AppConstants.customMediaHostKey),
+    ]);
+    AppConstants.setCustomBaseUrl('');
+    AppConstants.setCustomMediaHost('');
+  }
+
   // Onboarding
   Future<void> setOnboardingComplete() async {
     await _storage.write(key: AppConstants.onboardingKey, value: 'true');

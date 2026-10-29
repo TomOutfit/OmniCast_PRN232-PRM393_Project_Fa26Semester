@@ -58,11 +58,22 @@ void main() async {
   FcmService.instance.navigatorKey = AppRouter.rootNavigatorKey;
   await FcmService.instance.initialise(navigatorKey: AppRouter.rootNavigatorKey);
   await BillingService.instance.initialise();
+  // Hydrate custom API Base URL & Media Host from secure storage
+  final storage = TokenStorageHelper();
+  final customBaseUrl = await storage.getCustomBaseUrl();
+  if (customBaseUrl != null && customBaseUrl.isNotEmpty) {
+    AppConstants.setCustomBaseUrl(customBaseUrl);
+    getIt<DioClient>().updateBaseUrl();
+  }
+  final customMediaHost = await storage.getCustomMediaHost();
+  if (customMediaHost != null && customMediaHost.isNotEmpty) {
+    AppConstants.setCustomMediaHost(customMediaHost);
+  }
+
   // Zero-Config: Auto-discover local MediaMTX streaming server on the same Wi-Fi
   unawaited(LanDiscoveryService().autoDiscoverMediaHost());
 
   // Hydrate theme + locale from secure storage
-  final storage = TokenStorageHelper();
   final themeModeRaw = await storage.getThemeMode();
   final themeMode = _themeModeFromString(themeModeRaw);
   final localeRaw = await storage.getLocale();
