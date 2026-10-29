@@ -1,0 +1,103 @@
+% ============================================================
+% PRN232 - Section 9: Conclusion (Vietnamese & English)
+% ============================================================
+\section{\bi{Kết luận và hướng phát triển}{Conclusion and Future Work}}
+\label{sec:concl}
+
+\subsection{\bi{Kết luận}{Conclusion}}
+
+\bi{
+Bài báo đã trình bày OmniCast --- một hệ thống lịch phát, truyền phát trực tiếp (LiveStream) và phân phối
+nội dung số đa nền tảng được thực hiện bởi nhóm 4 sinh viên (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} dưới sự hướng dẫn của giảng viên \textbf{Thầy Huỳnh Vang}. Bốn đóng góp công
+nghệ chính được chứng minh bằng mã nguồn và kiểm thử thực tế: (1) kiến trúc LiveStream \& Live Studio hai chiều kết hợp WebRTC WHIP/WHEP, MediaMTX HLS và Socket.IO \texttt{/live}; (2) thuật
+toán phát hiện xung đột lịch phát bằng một truy vấn SQL thô tính
+thời điểm kết thúc hiệu lực; (3) cơ chế điền lịch EPG 24/7 với lựa chọn
+ngẫu nhiên có hạt giống bảo đảm tính tái lập; và (4) quy trình biên tập
+AI gọi mô hình một lần duy nhất, kiểm tra schema bằng Zod, có đường
+dự phòng heuristic và dấu vết phiên bản đầy đủ.
+
+Toàn bộ hệ thống --- 19 module NestJS, hơn 140 endpoint REST, 21 model
+Prisma, cổng web Next.js 15 với 33 route, ứng dụng di động Flutter 31 màn hình và microservice ghi nhật ký
+kiểm toán gRPC --- đã được triển khai trên Vercel, kiểm thử bằng 482 kiểm
+thử tự động trong quy trình tích hợp liên tục (đạt 100\%), và vận hành ổn định trên môi trường sản xuất.
+}{
+This paper has presented OmniCast, a multi-platform digital broadcast
+scheduling, real-time LiveStream and delivery system developed by the four-member engineering team (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} under the mentorship of \textbf{Mr. Huỳnh Vang}. Its four principal
+technical contributions are demonstrated through the source code and
+real test runs: (1) a bi-directional LiveStream and Live Studio architecture combining WebRTC WHIP/WHEP, MediaMTX HLS and Socket.IO \texttt{/live}; (2) a broadcast-conflict algorithm implemented as a single
+raw SQL query that computes the effective end time; (3) a 24/7 EPG filler
+whose seeded selection guarantees reproducibility; and (4) an AI
+curation pipeline that issues a single consolidated model call,
+validates the output against a Zod schema, offers a heuristic fallback
+and records full version provenance.
+
+The complete system --- 19 NestJS modules, 140+ REST endpoints, 21
+Prisma models, a Next.js 15 portal with 33 routes, a 31-screen Flutter mobile app and a gRPC audit
+microservice --- has been deployed on Vercel, validated by 482
+automated tests (100\% pass rate) inside a continuous-integration pipeline, and operates
+reliably in production.
+}
+
+\subsection{\bi{Hạn chế đã biết}{Known Limitations}}
+
+\bi{
+Ba hạn chế đã biết cần được nêu rõ. Thứ nhất, mức độ phủ kiểm thử
+E2E trình duyệt cần mở rộng thêm cho các kịch bản đẩy luồng phần cứng WHIP cần máy chủ MediaMTX chuyên dụng. Thứ hai, lớp
+ingest hiện hỗ trợ YouTube, Twitch và RSS theo chu kỳ cron. Thứ ba, thuật toán điền lịch chọn theo thể
+loại và theo hạt giống, chưa tối ưu cá nhân hoá theo hành vi người xem thực tế.
+}{
+Three known limitations should be stated. First, browser E2E test coverage can be expanded further for hardware WHIP publishing scenarios requiring a dedicated MediaMTX instance in CI.
+Second, the external ingestion layer currently polls YouTube, Twitch and RSS on cron intervals. Third, the filler algorithm selects by
+category and by seed rather than by individualised viewer history.
+}
+
+\subsection{\bi{Hướng phát triển}{Future Work}}
+
+\bi{
+Bốn hướng phát triển được ưu tiên cho các phiên bản tiếp theo:
+}{
+Four directions are prioritised for subsequent iterations:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Cá nhân hoá lịch phát bằng học máy.} Thay vì
+  chọn theo thể loại, thuật toán điền lịch có thể dùng lịch sử xem
+  và dữ liệu tương tác để đề xuất nội dung cho từng kênh, đồng thời
+  giữ nguyên tính chất xác định để có thể kiểm thử.}{
+  \textbf{Recommender-driven scheduling.} Instead of selecting by
+  category, the filler algorithm could use watch history and
+  interaction data to propose content per channel while preserving
+  determinism so the result remains testable.}
+
+  \item \bi{\textbf{Mở rộng kiểm thử E2E MediaMTX.} Xây dựng môi trường
+  MediaMTX trong CI để kiểm thử tự động luồng WHIP phát và HLS phát
+  lại, đồng thời bổ sung kiểm thử trình duyệt cho vai trò STAFF và
+  ADMIN.}{
+  \textbf{Scaling MediaMTX end-to-end testing.} Provision a MediaMTX instance
+  in CI to test the WHIP publish and HLS playback paths
+  automatically, and add browser scenarios for the STAFF and ADMIN
+  roles.}
+
+  \item \bi{\textbf{Cải thiện trợ lý AI.} Bổ sung đánh giá nhiều mô
+  hình, kiểm duyệt đầu ra bằng mô hình thứ hai và xếp hạng các báo
+  cáo AI theo phản hồi của biên tập viên để tinh chỉnh prompt theo
+  vòng lặp.}{
+  \textbf{Improving the AI assistant.} Add multi-model evaluation,
+  second-model output verification, and ranking of AI reports by
+  editor feedback so the prompt can be tuned iteratively.}
+
+  \item \bi{\textbf{Tách lớp truy cập dữ liệu.} Đưa truy vấn EPG vào
+  một kho phân tích chỉ đọc với các chỉ mục bao phủ để tách tải
+  đọc khỏi tải ghi trên cùng một cơ sở dữ liệu.}{
+  \textbf{Separating the data-access tier.} Move EPG queries into a
+  read-only analytical store with covering indexes to separate read
+  load from write load on the same database.}
+\end{enumerate}
+
+\subsection{\bi{Lời cảm ơn và Tính tái lập}{Acknowledgements and Reproducibility Statement}}
+
+\bi{
+Nhóm tác giả (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) xin bày tỏ lòng biết ơn sâu sắc tới giảng viên hướng dẫn \textbf{Thầy Huỳnh Vang} cùng tập thể giảng viên tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} đã tận tình định hướng kiến trúc, góp ý chuyên môn và đồng hành cùng nhóm trong suốt học kỳ Fall 2026. Toàn bộ mã nguồn và kịch bản kiểm thử được công bố tại kho lưu trữ \texttt{TomOutfit/OmniCast\_PRN232-PRM393\_Project\_Fa26Semester}.
+}{
+The authors (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) express their sincere gratitude to Mentor \textbf{Mr. Huỳnh Vang} and the faculty at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} for their architectural guidance and mentorship throughout the Fall 2026 semester. All source code and automated test suites are publicly reproducible in \texttt{TomOutfit/OmniCast\_PRN232-PRM393\_Project\_Fa26Semester}.
+}

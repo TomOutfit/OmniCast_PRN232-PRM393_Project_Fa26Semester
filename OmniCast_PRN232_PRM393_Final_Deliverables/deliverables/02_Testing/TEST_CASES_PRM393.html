@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - Danh Mục Test Cases Môn PRM393 - OmniCast</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">
+      FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS
+    </div>
+    <div class="fptu-tag">FU CAHATA • PRN232 &amp; PRM393</div>
+  </div>
+
+  <div class="content">
+<h1 id="omnicast-danh-mục-test-cases-môn-prm393">📱 OmniCast — Danh Mục
+Test Cases Môn PRM393</h1>
+<h2
+id="phân-hệ-ứng-dụng-di-động-flutter-clean-architecture-bloc-sqlite-offline-first-omniplayer">Phân
+Hệ: Ứng Dụng Di Động Flutter (Clean Architecture, BLoC, SQLite
+Offline-First, OmniPlayer)</h2>
+<p><strong>Học viện Công nghệ FPT Quy Nhơn — FPTU Quy Nhon AI Campus -
+FU Cahata</strong><br />
+<em>Dự án: OmniCast — Nền tảng Truyền thông &amp; Trí tuệ Phát thanh
+Truyền hình Đa Phương tiện</em></p>
+<hr />
+<h3 id="thông-tin-dự-án-hội-đồng-kiểm-thử">Thông Tin Dự Án &amp; Hội
+Đồng Kiểm Thử</h3>
+<ul>
+<li><strong>Đơn vị đào tạo:</strong> Đại học FPT Quy Nhơn (FPTU Quy Nhon
+AI Campus)</li>
+<li><strong>Tổ chức / Câu lạc bộ:</strong> FU Cahata</li>
+<li><strong>Môn học:</strong> PRM393 (Mobile Applications
+Development)</li>
+<li><strong>Học kỳ:</strong> Fall 2026 (Fa26)</li>
+<li><strong>Giảng viên hướng dẫn (Mentor):</strong> Thầy <strong>Huỳnh
+Vang</strong></li>
+<li><strong>Nhóm sinh viên thực hiện (4 thành viên):</strong>
+<ol type="1">
+<li><strong>Nguyễn Bình An</strong> (<code>TomOutfit</code> — Trưởng
+nhóm / Tech Lead)</li>
+<li><strong>Trần Thanh Sơn</strong> (<code>TranThanhSonQE170080</code> —
+MSSV: <code>QE170080</code>)</li>
+<li><strong>Nguyễn Vĩnh Phú</strong> (<code>phunvqe180136</code> — MSSV:
+<code>QE180136</code> — Mobile Lead Developer)</li>
+<li><strong>Đồng Hoàng Nguyên</strong> (<code>teng122</code>)</li>
+</ol></li>
+<li><strong>Tổng số ca kiểm thử:</strong> 28 Test Cases chức năng / Tích
+hợp + 91 Automated Tests (Flutter Unit &amp; Widget Tests)</li>
+<li><strong>Tỷ lệ thực thi:</strong> 100% ĐẠT (PASS)</li>
+</ul>
+<hr />
+<h3 id="danh-mục-test-cases-chi-tiết">Danh Mục Test Cases Chi Tiết</h3>
+<h4 id="quản-lý-trạng-thái-phiên-bảo-mật-token-authbloc">1. Quản lý
+Trạng thái Phiên &amp; Bảo mật Token (AuthBloc)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-01</strong></td>
+<td style="text-align: left;">Đăng nhập tài khoản trên thiết bị di
+động</td>
+<td style="text-align: left;">Điền email/mật khẩu tại
+<code>LoginScreen</code>, bấm Đăng nhập</td>
+<td style="text-align: left;"><code>AuthBloc</code> phát trạng thái
+<code>AuthLoading</code> -&gt; <code>Authenticated</code>. Lưu
+access/refresh token vào <code>flutter_secure_storage</code>.</td>
+<td style="text-align: left;">Đăng nhập thành công, chuyển hướng về
+Trang chủ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-02</strong></td>
+<td style="text-align: left;">Tự động làm mới phiên đăng nhập (Silent
+Token Refresh)</td>
+<td style="text-align: left;">Khi Access Token hết hạn (401), gửi
+request ngầm</td>
+<td style="text-align: left;"><code>AuthInterceptor</code> tạm khóa hàng
+đợi, gọi <code>/auth/refresh</code> bằng refresh token và phát lại
+request mà không văng ra màn hình đăng nhập.</td>
+<td style="text-align: left;">Tự động làm mới mượt mà</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-03</strong></td>
+<td style="text-align: left;">Đăng xuất an toàn</td>
+<td style="text-align: left;">Bấm Đăng xuất tại
+<code>ProfileScreen</code></td>
+<td style="text-align: left;">Xóa dữ liệu phiên trong SecureStorage, xóa
+bộ đệm cá nhân hóa, chuyển hướng về màn hình Đăng nhập.</td>
+<td style="text-align: left;">Trạng thái đăng xuất sạch sẽ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4
+id="cơ-chế-hoạt-động-ngoại-tuyến-đồng-bộ-danh-sách-xem-watchlistbloc-sqlite">2.
+Cơ chế Hoạt động Ngoại tuyến &amp; Đồng bộ Danh sách Xem (WatchlistBloc
+&amp; SQLite)</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: left;">Trạng thái</th>
+<th style="text-align: center;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-04</strong></td>
+<td style="text-align: left;">Thêm chương trình vào Watchlist khi có
+mạng (Online)</td>
+<td style="text-align: left;">Bấm nút Lưu vào Watchlist tại trang chi
+tiết chương trình</td>
+<td style="text-align: left;">Giao diện cập nhật ngay lập tức
+(Optimistic UI), ghi nhận vào SQLite <code>watchlist</code> và gửi
+<code>POST /me/watchlist</code> lên máy chủ.</td>
+<td style="text-align: left;">Trạng thái đồng bộ tức thì</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-05</strong></td>
+<td style="text-align: left;">Thêm chương trình vào Watchlist khi MẤT
+MẠNG (Offline)</td>
+<td style="text-align: left;">Bật chế độ máy bay (Airplane mode), bấm
+Lưu vào Watchlist</td>
+<td style="text-align: left;">Lưu vào bảng SQLite <code>watchlist</code>
+với cờ <code>dirty = 1</code>, ghi bản ghi thêm vào bảng
+<code>pending_ops</code>. Không hiện lỗi mạng.</td>
+<td style="text-align: left;">Lưu ngoại tuyến thành công</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-06</strong></td>
+<td style="text-align: left;">Xóa chương trình khỏi Watchlist khi MẤT
+MẠNG</td>
+<td style="text-align: left;">Tiếp tục ở chế độ ngoại tuyến, bấm Bỏ lưu
+chương trình</td>
+<td style="text-align: left;">Xóa khỏi danh sách hiển thị, ghi nhận thao
+tác xóa vào hàng đợi <code>pending_ops</code>.</td>
+<td style="text-align: left;">Ghi nhận thao tác xóa vào SQLite</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-07</strong></td>
+<td style="text-align: left;">Tự động phát lại thao tác (Replay) khi có
+mạng trở lại</td>
+<td style="text-align: left;">Tắt chế độ máy bay (kết nối Wi-Fi/4G phục
+hồi)</td>
+<td style="text-align: left;">Dịch vụ <code>WatchlistSyncService</code>
+tự động duyệt các thao tác trong <code>pending_ops</code>, gửi lên
+NestJS API và làm sạch hàng đợi.</td>
+<td style="text-align: left;">Đồng bộ hoàn tất, cờ dirty = 0</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-08</strong></td>
+<td style="text-align: left;">Hiển thị thống kê bộ nhớ đệm
+(CacheStats)</td>
+<td style="text-align: left;">Truy cập mục Cài đặt -&gt; Quản lý dữ liệu
+cục bộ</td>
+<td style="text-align: left;">Hiển thị chính xác số kênh, số chương
+trình, số mục watchlist và kích thước tệp <code>omnicast_local.db</code>
+(KB/MB).</td>
+<td style="text-align: left;">Thông số bộ nhớ đệm hiển thị chính
+xác</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+<h4 id="lên-lịch-thông-báo-nhắc-lịch-cục-bộ-trước-15-phút">3. Lên Lịch
+Thông Báo Nhắc Lịch Cục Bộ Trước 15 Phút</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-09</strong></td>
+<td style="text-align: left;">Đặt lịch nhắc tự động cho sự kiện sắp
+tới</td>
+<td style="text-align: left;">Lưu chương trình phát sóng lúc 19:00 vào
+Watchlist</td>
+<td style="text-align: left;">Tự động tính mốc <code>18:45</code> (19:00
+- 15 phút), gọi <code>zonedSchedule</code> với chế độ
+<code>exactAllowWhileIdle</code>.</td>
+<td style="text-align: left;">Thông báo được lên lịch chính xác</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-10</strong></td>
+<td style="text-align: left;">Hủy lịch nhắc khi xóa chương trình</td>
+<td style="text-align: left;">Xóa chương trình đã lưu khỏi
+Watchlist</td>
+<td style="text-align: left;">Tự động hủy thông báo cục bộ tương ứng qua
+<code>notificationsPlugin.cancel(id)</code>.</td>
+<td style="text-align: left;">Lịch nhắc bị hủy bỏ thành công</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="trình-phát-đa-phương-tiện-omniplayer-tương-tác-trực-tiếp">4.
+Trình Phát Đa Phương Tiện OmniPlayer &amp; Tương Tác Trực Tiếp</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-11</strong></td>
+<td style="text-align: left;">Phát luồng trực tiếp MediaMTX trên mạng
+cục bộ</td>
+<td style="text-align: left;">Mở một kênh đang trực tiếp trên thiết bị
+thật</td>
+<td style="text-align: left;"><code>OmniPlayer</code> tự động thay thế
+<code>localhost</code> bằng IP máy chủ LAN, khởi tạo trình phát
+HLS/WebRTC mượt mà.</td>
+<td style="text-align: left;">Video phát ổn định &lt; 1s độ trễ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-12</strong></td>
+<td style="text-align: left;">Tự động phục hồi khi mất kết nối luồng
+phát</td>
+<td style="text-align: left;">Giả lập rớt gói mạng trong 3 giây khi đang
+xem</td>
+<td style="text-align: left;">Trình phát hiển thị vòng tròn chờ tải lại
+nhẹ, tự kích hoạt retry theo Exponential Backoff mà không crash ứng
+dụng.</td>
+<td style="text-align: left;">Tự động kết nối lại khi có luồng</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-13</strong></td>
+<td style="text-align: left;">Gửi và nhận tin nhắn Live Chat thời gian
+thực</td>
+<td style="text-align: left;">Nhập bình luận tại thanh chat trên màn
+hình Live</td>
+<td style="text-align: left;">Gửi qua WebSocket <code>/live</code>, tin
+nhắn xuất hiện tức thì trong danh sách chat bán trong suốt của tất cả
+người xem.</td>
+<td style="text-align: left;">Tin nhắn hiển thị tức thời</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-14</strong></td>
+<td style="text-align: left;">Thả cảm xúc hoạt họa nổi (Floating
+Reactions)</td>
+<td style="text-align: left;">Bấm liên tục biểu tượng Trái tim và
+Lửa</td>
+<td style="text-align: left;">Biểu tượng cảm xúc bay lên màn hình với
+chuyển động cong mượt mà, phát tán qua WebSocket tới các máy khác.</td>
+<td style="text-align: left;">Hiệu ứng CustomPainter mượt 60fps</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-15</strong></td>
+<td style="text-align: left;">Quyên góp ủng hộ trực tiếp (Live Donation
+Sheet)</td>
+<td style="text-align: left;">Mở modal quyên góp, chọn mức 20.000đ và
+gửi lời nhắn</td>
+<td style="text-align: left;">Xác thực giao dịch thành công, hiển thị
+banner vinh danh người ủng hộ trên luồng phát.</td>
+<td style="text-align: left;">Quyên góp được ghi nhận thành công</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-16</strong></td>
+<td style="text-align: left;">Xem và bỏ phiếu Live Polls trên thiết bị
+di động</td>
+<td style="text-align: left;">Moderator khởi tạo cuộc bình chọn</td>
+<td style="text-align: left;">Hiển thị phiếu bầu dạng popup nhẹ, chọn
+đáp án và xem tỷ lệ phần trăm nhảy số tức thời.</td>
+<td style="text-align: left;">Bình chọn trực quan</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-17</strong></td>
+<td style="text-align: left;">Xem câu hỏi Q&amp;A được ghim nổi trên
+video</td>
+<td style="text-align: left;">Host ghim câu hỏi khán giả lên màn
+hình</td>
+<td style="text-align: left;">Một banner câu hỏi trong suốt hiển thị ở
+góc trên video của người xem di động.</td>
+<td style="text-align: left;">Câu hỏi ghim rõ ràng</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-18</strong></td>
+<td style="text-align: left;">Nhấn mua sản phẩm Live Commerce được
+ghim</td>
+<td style="text-align: left;">Host ghim thẻ sản phẩm</td>
+<td style="text-align: left;">Thẻ sản phẩm nổi bật có nút
+<code>Mua ngay</code>, chạm vào sẽ mở liên kết chi tiết hoặc modal đặt
+hàng.</td>
+<td style="text-align: left;">Tương tác thương mại mượt mà</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4
+id="màn-hình-studio-phát-sóng-di-động-livestudioscreen-mobilestudiorecorderscreen">5.
+Màn Hình Studio Phát Sóng Di Động (LiveStudioScreen &amp;
+MobileStudioRecorderScreen)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-19</strong></td>
+<td style="text-align: left;">Bàn điều khiển Studio di động 4 Tab</td>
+<td style="text-align: left;">Mở <code>LiveStudioScreen</code>, chuyển
+giữa 4 tab Chat, Poll, Q&amp;A, Goods</td>
+<td style="text-align: left;">Các chức năng quản trị luồng phát thực
+hiện mượt mà trên giao diện cảm ứng di động.</td>
+<td style="text-align: left;">4 tab hoạt động hoàn hảo</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-20</strong></td>
+<td style="text-align: left;">Phát sóng trực tiếp bằng Camera qua WebRTC
+WHIP</td>
+<td style="text-align: left;">Mở
+<code>MobileStudioRecorderScreen</code>, cấp quyền camera/micro</td>
+<td style="text-align: left;">Ứng dụng nạp camera, thiết lập kết nối
+WHIP tới MediaMTX, truyền hình ảnh Full HD thời gian thực.</td>
+<td style="text-align: left;">Phát sóng WebRTC thành công</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-21</strong></td>
+<td style="text-align: left;">Lật gương camera và chuyển đổi camera
+trước/sau</td>
+<td style="text-align: left;">Bấm nút chuyển đổi camera khi đang
+live</td>
+<td style="text-align: left;">Chuyển đổi camera mượt mà không làm đứt
+phiên kết nối WebRTC tới máy chủ.</td>
+<td style="text-align: left;">Chuyển đổi camera ổn định</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-22</strong></td>
+<td style="text-align: left;">Xem trước hình ảnh trong hình (PiP Stream
+Preview)</td>
+<td style="text-align: left;">Thu nhỏ màn hình studio khi đang live</td>
+<td style="text-align: left;">Khung phát sóng thu nhỏ thành cửa sổ PiP
+nổi cho phép điều khiển song song.</td>
+<td style="text-align: left;">PiP hiển thị mượt mà</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="điều-hướng-gorouter-giao-diện-người-dùng">6. Điều Hướng GoRouter
+&amp; Giao Diện Người Dùng</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: left;">Trạng thái</th>
+<th style="text-align: center;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-23</strong></td>
+<td style="text-align: left;">Chuyển tab giữ nguyên trạng thái
+(StatefulShellRoute)</td>
+<td style="text-align: left;">Cuộn trang Kênh đến vị trí giữa, chuyển
+sang tab EPG rồi quay lại tab Kênh</td>
+<td style="text-align: left;">Vị trí cuộn và danh mục đã chọn của tab
+Kênh vẫn giữ nguyên vẹn, không bị khởi tạo lại từ đầu.</td>
+<td style="text-align: left;">Giữ trạng thái cuộn mượt mà</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-24</strong></td>
+<td style="text-align: left;">Bảo vệ tuyến đường cá nhân (Auth
+Guard)</td>
+<td style="text-align: left;">Đăng xuất tài khoản, thử mở URL liên kết
+sâu <code>/watchlist</code></td>
+<td style="text-align: left;"><code>GoRouter</code> phát hiện trạng thái
+chưa xác thực, tự động điều hướng sang
+<code>/login?from=/watchlist</code>.</td>
+<td style="text-align: left;">Chuyển hướng an toàn</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-25</strong></td>
+<td style="text-align: left;">Đồng bộ thời gian thực Watch-Party
+Sync</td>
+<td style="text-align: left;">Hai thiết bị cùng xem một sự kiện phát
+sóng</td>
+<td style="text-align: left;"><code>OmniPlayer</code> tự động so khớp
+mốc thời gian luồng HLS, hiệu chỉnh độ lệch nếu vượt quá 3 giây.</td>
+<td style="text-align: left;">Đồng bộ xem chung chính xác</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-26</strong></td>
+<td style="text-align: left;">Chế độ xoay màn hình tự động (Landscape
+Player)</td>
+<td style="text-align: left;">Xoay ngang điện thoại khi đang xem
+video</td>
+<td style="text-align: left;">Tự động chuyển sang chế độ toàn màn hình,
+ẩn System Bars và hiển thị thanh điều khiển tối ưu.</td>
+<td style="text-align: left;">Chuyển chế độ toàn màn hình mượt</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-27</strong></td>
+<td style="text-align: left;">Tìm kiếm chống rung (Debounce Search)</td>
+<td style="text-align: left;">Gõ nhanh từng ký tự trong ô tìm kiếm</td>
+<td style="text-align: left;"><code>SearchBloc</code> áp dụng
+concurrency transformer <code>restartable</code> + debounce 300ms, chỉ
+gửi 1 request cuối cùng.</td>
+<td style="text-align: left;">Tiết kiệm băng thông tối đa</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRM-28</strong></td>
+<td style="text-align: left;">Tương thích Onboarding cho người dùng
+mới</td>
+<td style="text-align: left;">Cài đặt ứng dụng lần đầu và khởi chạy</td>
+<td style="text-align: left;">Hiển thị 3 màn hình Onboarding giới thiệu
+tính năng, lưu cờ đã xem vào SharedPreferences.</td>
+<td style="text-align: left;">Onboarding trực quan</td>
+<td style="text-align: left;"><strong>PASS</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+
+  </div>
+
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Enterprise Broadcast Intelligence Ecosystem</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

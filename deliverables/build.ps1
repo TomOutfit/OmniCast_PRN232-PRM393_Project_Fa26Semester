@@ -20,7 +20,7 @@ if (Test-Path $PandocBin) {
 
 $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "") {
+function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "", [string]$LatexNamedFile = "") {
     Write-Host "==> Compiling $File in $Dir..." -ForegroundColor Cyan
     Push-Location $Dir
     try {
@@ -34,12 +34,17 @@ function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "") {
         }
         Write-Host "==> Successfully compiled $File" -ForegroundColor Green
 
+        $pdfName = [System.IO.Path]::ChangeExtension($File, ".pdf")
         if ($OutputFile -ne "") {
-            $pdfName = [System.IO.Path]::ChangeExtension($File, ".pdf")
             $parentDir = Split-Path $Dir -Parent
             $targetPdf = Join-Path $parentDir $OutputFile
             Copy-Item -Path $pdfName -Destination $targetPdf -Force
             Write-Host "==> Copied $pdfName to $targetPdf" -ForegroundColor Green
+        }
+        if ($LatexNamedFile -ne "") {
+            $namedPdf = Join-Path $Dir $LatexNamedFile
+            Copy-Item -Path $pdfName -Destination $namedPdf -Force
+            Write-Host "==> Copied $pdfName to $namedPdf" -ForegroundColor Green
         }
     }
     finally {
@@ -56,16 +61,16 @@ switch ($Target) {
         Compile-Tex $slidesDir "presentation.tex"
     }
     "prn232-vi" {
-        Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf"
+        Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf"
     }
     "prn232-en" {
-        Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf"
+        Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf" "OmniCast_Report_Latex PRN232 Version_English.pdf"
     }
     "prm393-vi" {
-        Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf"
+        Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf"
     }
     "prm393-en" {
-        Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf"
+        Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf" "OmniCast_Report_Latex PRM393 Version_English.pdf"
     }
     "tables" {
         Write-Host "==> Regenerating LaTeX tables from codebase..." -ForegroundColor Cyan
@@ -98,10 +103,10 @@ switch ($Target) {
         Write-Host "==> Archive created successfully: $($item.FullName) ($([math]::Round($item.Length / 1MB, 2)) MB)" -ForegroundColor Green
     }
     "all" {
-        if (Test-Path (Join-Path $prn232Dir "main-vi.tex")) { Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf" }
-        if (Test-Path (Join-Path $prn232Dir "main-en.tex")) { Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf" }
-        if (Test-Path (Join-Path $prm393Dir "main-vi.tex")) { Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf" }
-        if (Test-Path (Join-Path $prm393Dir "main-en.tex")) { Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf" }
+        if (Test-Path (Join-Path $prn232Dir "main-vi.tex")) { Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf" }
+        if (Test-Path (Join-Path $prn232Dir "main-en.tex")) { Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf" "OmniCast_Report_Latex PRN232 Version_English.pdf" }
+        if (Test-Path (Join-Path $prm393Dir "main-vi.tex")) { Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf" }
+        if (Test-Path (Join-Path $prm393Dir "main-en.tex")) { Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf" "OmniCast_Report_Latex PRM393 Version_English.pdf" }
         if (Test-Path (Join-Path $slidesDir "presentation.tex")) { Compile-Tex $slidesDir "presentation.tex" }
     }
     default {

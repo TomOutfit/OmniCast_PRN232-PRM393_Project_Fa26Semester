@@ -1,0 +1,103 @@
+% ============================================================
+% PRM393 - OmniCast Mobile project report (English version)
+%
+% Compile with:
+%   xelatex main-en.tex
+%   xelatex main-en.tex
+% ============================================================
+\documentclass[conference,a4paper]{IEEEtran}
+
+\input{preamble}
+\omniENtrue
+
+% English caption labels
+\renewcommand{\figName}{Figure}
+\renewcommand{\tabName}{Table}
+\renewcommand{\lstlistname}{Listing}
+
+\input{figures}
+
+\begin{document}
+
+\input{cover}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+\title{\bi{Phát triển ứng dụng di động đa nền tảng: Ứng dụng phát thanh truyền hình và phân phối nội dung số OmniCast Mobile}{Cross-Platform Mobile Application Development: The OmniCast Mobile Broadcast and Digital Content Delivery Client}}
+
+\author{\IEEEauthorblockN{\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn} (\texttt{QE170080}), \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}), \textbf{Đồng Hoàng Nguyên}}\\
+\IEEEauthorblockA{\bi{Giảng viên hướng dẫn (Mentor): \textbf{Thầy Huỳnh Vang}}{Mentor / Supervisor: \textbf{Mr. Huỳnh Vang}}\\
+\textbf{FPTU Quy Nhon AI Campus --- FU Cahata}, \bi{Khoa Công nghệ Thông tin, Trường Đại học FPT}{Faculty of Information Technology, FPT University}\\
+\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester} $\cdot$ \bi{Bản cài đặt APK}{Release APK}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/tag/v1.2.0}}}
+\date{}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\bi{
+OmniCast Mobile là ứng dụng di động phân phối nội dung số và phát thanh truyền
+hình trực tiếp (LiveStream) đa nền tảng được xây dựng tại FPTU Quy Nhon AI Campus --- FU Cahata cho môn học PRM393 dưới sự hướng dẫn của thầy Huỳnh Vang bằng Flutter 3.x
+và ngôn ngữ Dart. Ứng dụng tích hợp kiến trúc phân tầng Clean Architecture 4 lớp kết
+hợp mô hình quản lý trạng thái luồng phản ứng BLoC với 12 module nghiệp vụ và 31 màn hình chuyên biệt. Bốn
+đóng góp kỹ thuật trọng tâm bao gồm: (1) trình
+phát đa năng \texttt{OmniPlayer} tích hợp luồng phát trực tiếp độ trễ thấp WebRTC/HLS
+từ MediaMTX, phân giải luồng trực tiếp Google Drive, tự động khám phá máy chủ nội bộ qua Wi-Fi (\texttt{LanDiscoveryService})
+và phòng xem tương tác thời gian thực hai chiều (\texttt{LiveWatchScreen}: Live Chat phân nhánh, biểu cảm hạt nổi xúc giác 0ms, quyên góp Super Chat 6 mệnh giá, thông báo ghim từ Host và chuyển chương trình tức thời); (2) bàn điều khiển \texttt{LiveStudioScreen} 4 tab cùng máy quay tác nghiệp hiện trường \texttt{MobileStudioRecorderScreen} hỗ trợ đẩy sóng WebRTC WHIP trực tiếp, mã thời gian SMPTE, đồng hồ âm lượng Stereo VU Meter và máy nhắc chữ Teleprompter HUD; (3) động cơ ngoại tuyến (offline-first) trên
+nền cơ sở dữ liệu SQLite cục bộ với hàng đợi phát lại thao tác bất đồng bộ
+(\texttt{pending\_ops}) và thông báo nhắc lịch chính xác trước 15 phút; cùng (4) hệ thống điều hướng tập trung GoRouter quản lý 31 màn
+hình với cơ chế bảo vệ phiên đăng nhập chặt chẽ. Hệ thống đã được kiểm chứng
+thông qua 91 ca kiểm thử tự động đạt tỷ lệ vượt qua 100\% trong quy trình CI/CD
+GitHub Actions.
+}{
+OmniCast Mobile is an enterprise cross-platform digital broadcast, LiveStream and
+multimedia streaming client engineered at FPTU Quy Nhon AI Campus --- FU Cahata for the PRM393 course under the supervision of Mentor Mr. Huỳnh Vang utilizing
+Flutter 3.x and Dart. The client adheres to a 4-tier Clean Architecture
+coupled with reactive stream-based BLoC state management spanning 12 business
+modules and 31 screens. Four core technological contributions are presented: (1) the multi-engine
+\texttt{OmniPlayer} uniting ultra-low-latency WebRTC/HLS streams via MediaMTX, direct Google Drive stream resolution, dynamic Wi-Fi
+LAN host discovery (\texttt{LanDiscoveryService}), and bi-directional real-time interactive live rooms (\texttt{LiveWatchScreen}: threaded Live
+Chat, 0ms haptic Floating Reactions, 6-tier Super Chat Donations, pinned broadcaster banners and zero-downtime program switching); (2) a 4-tab \texttt{LiveStudioScreen} and professional field-reporter camera viewfinder (\texttt{MobileStudioRecorderScreen}) featuring Push-to-Live WebRTC WHIP publishing, SMPTE timecode, Stereo VU audio meters and an auto-scrolling Teleprompter HUD; (3) an
+offline-first engine driven by local SQLite storage featuring an asynchronous
+mutation replay queue (\texttt{pending\_ops}) and exact 15-minute advance local alarms; and (4) a declarative GoRouter topology
+governing 31 screens with strict session-guarded route protection. The software
+architecture is verified by 91 automated unit and widget tests achieving a
+100\% pass rate on GitHub Actions CI runners.
+}
+\end{abstract}
+
+\begin{IEEEkeywords}
+\bi{Flutter, Dart, BLoC, LiveStream, Live Studio, WebRTC WHIP, SQLite, offline-first, MediaMTX, HLS, GoRouter, FPTU Quy Nhon AI Campus, FU Cahata.}{Flutter, Dart, BLoC, LiveStream, Live Studio, WebRTC WHIP, SQLite, offline-first, MediaMTX, HLS, GoRouter, FPTU Quy Nhon AI Campus, FU Cahata.}
+\end{IEEEkeywords}
+
+\input{sec-intro}
+\input{sec-arch}
+\input{sec-bloc}
+\input{sec-offline}
+\input{sec-streaming}
+\input{sec-ui}
+\input{sec-test}
+\input{sec-concl}
+
+\begin{thebibliography}{99}
+\bibitem{flutter} Google LLC, \emph{Flutter: Build apps for any screen}, \url{https://flutter.dev/}, accessed Oct.\ 2026.
+\bibitem{dart} Google LLC, \emph{The Dart Programming Language}, \url{https://dart.dev/}, accessed Oct.\ 2026.
+\bibitem{bloc} S. Lapan and F. Harvy, ``BLoC: (State Management) Library for Flutter,'' in \emph{Proc.\ 1st Int.\ Workshop on Flutter}, 2020, pp.\ 1--5.
+\bibitem{dio} FlutterChina, \emph{Dio: A powerful HTTP client for Dart and Flutter}, \url{https://pub.dev/packages/dio}, 2024.
+\bibitem{sqflite} Tekartik, \emph{Sqflite: SQLite plugin for Flutter}, \url{https://pub.dev/packages/sqflite}, 2024.
+\bibitem{gorouter} Flutter Team, \emph{go\_router: A declarative routing package for Flutter}, \url{https://pub.dev/packages/go_router}, 2024.
+\bibitem{mediamtx} Bluenviron, \emph{MediaMTX: Live video server for WebRTC, HLS and RTMP}, \url{https://github.com/bluenviron/mediamtx}, 2024.
+\bibitem{webrtc} W3C / IETF, \emph{WebRTC 1.0: Real-Time Communication Between Browsers and Devices}, \url{https://www.w3.org/TR/webrtc/}, 2021.
+\bibitem{supabase} Supabase Inc., \emph{Supabase Realtime: Broadcast, Presence, and Postgres CDC}, \url{https://supabase.com/docs/guides/realtime}, 2024.
+\bibitem{firebase} Google LLC, \emph{Firebase Cloud Messaging}, \url{https://firebase.google.com/docs/cloud-messaging}, 2024.
+\bibitem{jwt} M. Jones, J. Bradley, and N. Sakimura, ``JSON Web Token (JWT),'' RFC 7519, IETF, 2015.
+\bibitem{getit} B. Thomas, \emph{get\_it: Simple Service Locator for Dart and Flutter}, \url{https://pub.dev/packages/get_it}, 2024.
+\bibitem{fluttertest} Flutter Team, \emph{An introduction to unit and widget testing in Flutter}, \url{https://docs.flutter.dev/testing/overview}, 2024.
+\bibitem{offlinefirst} N. Preguica, M. Shapiro, and C. Baquero, ``Conflict-free Replicated Data Types (CRDTs) and Local-First Software,'' \emph{ACM Computing Surveys}, vol.\ 53, no.\ 3, pp.\ 1--37, 2020.
+\end{thebibliography}
+
+\input{appendix}
+
+\end{document}

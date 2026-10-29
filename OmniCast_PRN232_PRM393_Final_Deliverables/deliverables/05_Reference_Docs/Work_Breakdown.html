@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - Work_Breakdown</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS</div>
+    <div class="fptu-tag">FU CAHATA • REFERENCE DOCS</div>
+  </div>
+  <div class="content">
+<h1 id="omnicast-work-breakdown-structure-wbs-chi-tiết">📺 OmniCast —
+Work Breakdown Structure (WBS) Chi Tiết</h1>
+<h1
+id="kế-hoạch-triển-khai-kỹ-thuật-chi-tiết-cho-từng-môn-học-prn232-prm393">Kế
+Hoạch Triển Khai Kỹ Thuật Chi Tiết Cho Từng Môn Học (PRN232 &amp;
+PRM393)</h1>
+<h1 id="tuần-2-đợt-review-tiến-độ-kịch-bản-4-thành-viên">(8 - 10 Tuần —
+2 Đợt Review Tiến Độ — Kịch Bản 4 Thành Viên)</h1>
+<h1
+id="kiến-trúc-hiện-đại-nestjs-11-backend-web-api-next.js-15-frontend-web-flutter-3.x-mobile-supabase-database-storage-vercel-cloud">Kiến
+Trúc Hiện Đại: NestJS 11 (Backend Web API) + Next.js 15 (Frontend Web) +
+Flutter 3.x (Mobile) + Supabase (Database &amp; Storage) + Vercel
+Cloud</h1>
+<p><strong>Tên Dự Án:</strong> OmniCast Enterprise Media &amp; Broadcast
+Intelligence Network<br />
+<strong>Mã Dự Án:</strong> OMNI<br />
+<strong>Quy Mô Nhân Sự:</strong> <strong>4 Thành Viên (Team of
+4)</strong><br />
+<strong>Phân Định Theo 2 Môn Học &amp; Khung Công Nghệ:</strong> - 💻🌐
+<strong>Môn PRN232 (Modern Web API Core &amp; Web Application):</strong>
+- <strong>Backend Web API:</strong> <strong>NestJS 11+
+(TypeScript)</strong> kiến trúc Modular Enterprise, Prisma ORM,
+Swagger/OpenAPI (<code>@nestjs/swagger</code>), JWT &amp; Argon2/PBKDF2
+RBAC, gRPC Server/Client, Supabase PostgreSQL, Deploy Serverless / Cloud
+API trên <strong>Vercel</strong>
+(<code>https://omnicast-api.vercel.app/swagger</code>). - <strong>AI
+Intelligence &amp; Audit Logger:</strong> Tích hợp OpenAI GPT-4o &amp;
+TMDB API thẩm định phát sóng 3 Agent, gRPC AuditLogger Microservice ghi
+vết kiểm toán Supabase. - <strong>Frontend Web Portal:</strong>
+<strong>Next.js 15 (App Router, React 19, TypeScript, Tailwind CSS
+Cinema Dark)</strong> Deploy CI/CD trên <strong>Vercel</strong>
+(<code>https://omnicast-fe.vercel.app</code>). - 📱 <strong>Môn PRM393
+(Mobile App Development with Flutter):</strong> - <strong>Front-End
+Mobile App:</strong> <strong>Flutter 3.x / Dart 3.x</strong> kiến trúc
+BLoC State Management, Offline-First SQLite Local Storage
+(<code>omnicast_local.db</code>), Native Scheduled Local Notifications
+trước 15 phút, Build bản cài đặt chính thức <code>app-release.apk</code>
+cho Android &amp; hỗ trợ iOS.</p>
+<hr />
+<h2 id="nguyên-tắc-phân-bổ-nhân-lực-4-thành-viên-đặc-thù-môn-học">🎯
+Nguyên Tắc Phân Bổ Nhân Lực 4 Thành Viên (Đặc Thù Môn Học)</h2>
+<blockquote>
+<p>💡 <strong>Quy Tắc Phân Công Đặc Thù:</strong> - <strong>Thành viên
+1, 2, 3 (P1, P2, P3):</strong> Đang học cả 2 môn <strong>PRN232 &amp;
+PRM393</strong> ➔ Đảm nhận cân bằng khối lượng Web/Backend và chia đều 3
+module chính trên Mobile Flutter (~33.3% Mobile/người). - <strong>Thành
+viên 4 (P4):</strong> <strong>ĐÃ QUA MÔN PRM393</strong> ➔
+<strong>Chuyên trách toàn bộ PRN232</strong> (~95-100% khối lượng tập
+trung vào gRPC AuditLogger Microservice, Cloud Vercel CI/CD Deployment,
+Seeding Data toàn diện, Rate Limiting Security, Stress Testing và QA).
+Hỗ trợ kiểm thử Smoke Test API Contract với Mobile Team.</p>
+</blockquote>
+<hr />
+<h2 id="lộ-trình-2-đợt-review-tiến-độ-chuẩn">🗓️ Lộ Trình 2 Đợt Review
+Tiến Độ Chuẩn</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode mermaid"><code class="sourceCode mermaid"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">timeline</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">title</span><span class="vs"> OmniCast — Lộ Trình 2 Đợt Review Dự Án</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Tuần 1 - 3 : </span><span class="vs">Thiết Kế &amp; MVP </span><span class="dt">: </span><span class="vs">Đặc Tả PRD v4.0 </span><span class="dt">: </span><span class="vs">Setup NestJS &amp; Next.js </span><span class="dt">: </span><span class="vs">Auth JWT/RBAC &amp; Seed Data </span><span class="dt">: </span><span class="vs">CRUD EPG &amp; Anti-Conflict </span><span class="dt">: </span><span class="vs">Flutter Timeline LIVE NOW </span><span class="dt">: </span><span class="vs">Deploy Vercel Live </span><span class="dt">: </span><span class="vs">[🚩 REVIEW 1 - THIẾT KẾ &amp; MVP]</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Tuần 4 - 8 : </span><span class="vs">Nâng Cao &amp; Đóng Gói </span><span class="dt">: </span><span class="vs">Dynamic Search &amp; Filter </span><span class="dt">: </span><span class="vs">AI Curator &amp; gRPC Audit </span><span class="dt">: </span><span class="vs">SQLite Offline Watchlist </span><span class="dt">: </span><span class="vs">Native Push 15p </span><span class="dt">: </span><span class="vs">Stress Test k6 </span><span class="dt">: </span><span class="vs">Build APK Release </span><span class="dt">: </span><span class="vs">[🚩 REVIEW 2 - SẢN PHẨM HOÀN CHỈNH]</span></span></code></pre></div>
+<ol type="1">
+<li><strong>🚩 REVIEW 1 (Tuần 3): THIẾT KẾ &amp; MVP (BẮT ĐẦU
+CODE)</strong>
+<ul>
+<li>Hoàn thiện tài liệu PRD, WBS phân công 3 người, thiết kế cơ sở dữ
+liệu Prisma Supabase (6 Models), Wireframes UI Cinema Dark, Protobuf
+specs gRPC, 52 Test Cases và kế hoạch nghiệm thu QA.</li>
+<li>Khởi tạo source code, Migrate DB Supabase, Auth JWT/Argon2/RBAC,
+Seed Data toàn diện, CRUD Kênh &amp; Chương trình + Thuật toán chống
+trùng lịch phát sóng, Giao diện Web EPG Grid 24h, Ứng dụng Flutter EPG
+Timeline cuộn 2 chiều hiển thị <code>LIVE NOW</code>, Video Trailer HD,
+Deploy Backend API &amp; Frontend Web lên Vercel Live.</li>
+</ul></li>
+<li><strong>🚩 REVIEW 2 (Tuần 8): SẢN PHẨM HOÀN CHỈNH &amp; BẢO VỆ ĐỒ ÁN
+(FINAL RELEASE)</strong>
+<ul>
+<li>Dynamic Search &amp; Filter Engine, AI Curator thẩm định phát sóng,
+gRPC AuditLogger Dashboard, SQLite Offline-First
+(<code>omnicast_local.db</code>), Native Local Notification hẹn giờ 15
+phút, Rate Limiting, Stress Test k6, Đóng gói file cài đặt
+<code>app-release.apk</code> và bảo vệ trước Hội đồng Giảng viên.</li>
+</ul></li>
+</ol>
+<hr />
+<h2
+id="bảng-phân-bổ-nhân-lực-theo-môn-học-overview-matrix-4-thành-viên">📊
+Bảng Phân Bổ Nhân Lực Theo Môn Học (Overview Matrix — 4 Thành Viên)</h2>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Thành Viên</th>
+<th style="text-align: left;">Trọng Trách Kỹ Thuật Chính</th>
+<th style="text-align: center;">💻🌐 Môn PRN232 (NestJS API + Next.js
+Web)</th>
+<th style="text-align: center;">📱 Môn PRM393 (Flutter Mobile App)</th>
+<th style="text-align: center;">Tổng Số Tasks</th>
+<th style="text-align: center;">Tỷ Trọng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>👤 Member 1 (P1) —
+<code>@TomOutfit</code></strong><br>Tech Lead &amp; Search Engine</td>
+<td style="text-align: left;">• NestJS Architecture Setup, Prisma Schema
+Supabase (6 Models)<br>• Auth Module JWT, PBKDF2/Argon2 &amp; RBAC
+Guards (1, 2, 3)<br>• Advanced Search &amp; Filter Engine
+(<code>$filter</code>, <code>$orderby</code>)<br>• Next.js Base Auth +
+Trang Search UI (<code>app/search</code>)</td>
+<td style="text-align: center;">• Flutter BLoC Architecture Setup &amp;
+Theme Cinema Dark<br>• Flutter BLoC Auth (Login, Register, Splash)<br>•
+Mobile Advanced Search Engine &amp; Filter Chips<br>• Secure Token
+Storage Mobile</td>
+<td style="text-align: center;"><strong>50 tasks</strong><br><em>(25 PRN
+/ 25 PRM)</em></td>
+<td style="text-align: center;"><strong>25%</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>👤 Member 2 (P2) —
+<code>@phunvqe180136</code></strong><br>Broadcast Content &amp;
+Notifications</td>
+<td style="text-align: left;">• NestJS CRUD Kênh &amp; Chương trình
+(<code>ChannelsModule</code>, <code>ProgramsModule</code>)<br>•
+<strong>Thuật toán chống trùng lịch phát sóng</strong>
+(<code>ConflictException</code>)<br>• Swagger Decorators &amp;
+Validation DTOs<br>• Next.js EPG Grid 24h, Modal CRUD &amp; Trailer
+Player</td>
+<td style="text-align: center;">• Flutter EPG Timeline
+<code>LIVE NOW</code> (Horizontal &amp; Vertical)<br>• Featured Carousel
+&amp; Pull-to-Refresh Feed<br>• <strong>Native Local Notification hẹn
+giờ trước 15p</strong><br>• Hero Animation &amp; Video Player
+Trailer</td>
+<td style="text-align: center;"><strong>50 tasks</strong><br><em>(25 PRN
+/ 25 PRM)</em></td>
+<td style="text-align: center;"><strong>25%</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>👤 Member 3 (P3) —
+<code>@teng122</code></strong><br>AI Integration &amp; Mobile Offline
+Storage</td>
+<td style="text-align: left;">• NestJS <code>AiCuratorModule</code> (kết
+nối OpenAI/TMDB &amp; lưu Supabase Transaction)<br>• Next.js AI Curator
+Studio (<code>app/studio/curator</code>)<br>• Next.js Profile page &amp;
+Status Badges (<code>AiBadge.tsx</code>)<br>• gRPC AuditLogger
+Microservice &amp; Dashboard</td>
+<td style="text-align: center;">• Flutter AI Curator Studio
+(<code>StaffCuratorScreen</code>)<br>• <strong>SQLite Local Storage
+(<code>omnicast_local.db</code>)</strong><br>• Offline Watchlist BLoC
+&amp; Offline Banner Alert<br>• <strong>Đóng gói bản cài đặt APK Release
+(<code>app-release.apk</code>)</strong></td>
+<td style="text-align: center;"><strong>50 tasks</strong><br><em>(25 PRN
+/ 25 PRM)</em></td>
+<td style="text-align: center;"><strong>25%</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>👤 Member 4 (P4) —
+<code>@TranThanhSonQE170080</code></strong><br>gRPC, DevOps Vercel, Data
+Seed &amp; Security<br><em>(Chuyên trách PRN232 — Đã qua
+PRM393)</em></td>
+<td style="text-align: left;">• <strong>gRPC AuditLogger Microservice
+&amp; <code>audit_logger.proto</code></strong><br>• <code>seed.ts</code>
+nạp dữ liệu toàn diện (Admin, Kênh, Chương trình)<br>• Next.js Admin
+Logs Viewer (<code>app/admin/audit-logs</code>)<br>• <strong>Cấu hình
+Vercel CI/CD cho Backend API &amp; Frontend Web</strong><br>• Rate
+Limiting Throttler, Helmet, Stress Test (k6) &amp; Unit Tests</td>
+<td style="text-align: center;">• Cấu hình Base URL API Live Vercel cho
+Mobile<br>• Hỗ trợ Smoke Test API Contract với Mobile Team</td>
+<td style="text-align: center;"><strong>50 tasks</strong><br><em>(48 PRN
+/ 2 PRM)</em></td>
+<td style="text-align: center;"><strong>25%</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>TỔNG CỘNG TOÀN BỘ DỰ
+ÁN</strong></td>
+<td style="text-align: left;"></td>
+<td style="text-align: center;"><strong>123 tasks</strong></td>
+<td style="text-align: center;"><strong>77 tasks</strong></td>
+<td style="text-align: center;"><strong>200 TASKS</strong></td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2
+id="bảng-quy-định-mã-số-role-chuẩn-toàn-hệ-thống-system-roles-specification">🛡️
+BẢNG QUY ĐỊNH MÃ SỐ ROLE CHUẨN TOÀN HỆ THỐNG (SYSTEM ROLES
+SPECIFICATION)</h2>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã Số Role (<code>int</code>)</th>
+<th style="text-align: left;">Định Danh Role</th>
+<th style="text-align: left;">Tên Vai Trò Thực Tế</th>
+<th style="text-align: left;">Phạm Vi Quyền Hạn Kỹ Thuật</th>
+<th style="text-align: left;">Điểm Đến Sau Đăng Nhập</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 1</code></strong></td>
+<td style="text-align: left;"><strong><code>Staff</code></strong></td>
+<td style="text-align: left;"><strong>Biên Tập Viên Phát Sóng
+(Curator)</strong></td>
+<td style="text-align: left;">- CRUD Kênh truyền hình
+(<code>BroadcastChannels</code>)<br>- CRUD Chương trình &amp; Lập lịch
+EPG (<code>BroadcastPrograms</code>)<br>- <strong>Kích hoạt thẩm định AI
+nội dung</strong><br>- Xuất bản lịch phát sóng</td>
+<td style="text-align: left;"><strong>Web:</strong>
+<code>/studio/curator</code><br><strong>Mobile:</strong>
+<code>StaffCuratorScreen</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 2</code></strong></td>
+<td style="text-align: left;"><strong><code>Viewer</code></strong></td>
+<td style="text-align: left;"><strong>Khán Giả Đăng Ký
+(Audience)</strong></td>
+<td style="text-align: left;">- Xem EPG thời gian thực
+(<code>LIVE NOW</code>)<br>- Lọc và tìm kiếm nâng cao, xem Trailer
+HD<br>- <strong>Lưu Watchlist ngoại tuyến (SQLite)</strong><br>-
+<strong>Hẹn giờ Native Push trước 15 phút</strong></td>
+<td style="text-align: left;"><strong>Web:</strong>
+<code>/epg</code><br><strong>Mobile:</strong>
+<code>HomeScreen</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 3</code></strong></td>
+<td style="text-align: left;"><strong><code>Admin</code></strong></td>
+<td style="text-align: left;"><strong>Quản Trị Viên (System
+Admin)</strong></td>
+<td style="text-align: left;">- Quản trị tài khoản
+(<code>UserAccounts</code> CRUD)<br>- Cấp quyền/Đổi vai trò giữa Staff
+(1) và Viewer (2)<br>- <strong>Giám sát vết kiểm toán gRPC
+(<code>AuditLogs</code>)</strong></td>
+<td style="text-align: left;"><strong>Web:</strong>
+<code>/admin/dashboard</code><br><strong>Mobile:</strong>
+<code>AdminHubScreen</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 0</code></strong></td>
+<td style="text-align: left;"><strong><code>Guest</code></strong></td>
+<td style="text-align: left;"><strong>Khách Vãng Lai</strong></td>
+<td style="text-align: left;">- Xem EPG và trailer công khai
+(Read-Only)</td>
+<td style="text-align: left;"><strong>Web:</strong>
+<code>/</code><br><strong>Mobile:</strong> <code>LoginScreen</code> /
+<code>GuestFeed</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2
+id="danh-sách-đầu-việc-kỹ-thuật-theo-2-đợt-review-review-milestones-4-thành-viên">🗓️
+Danh Sách Đầu Việc Kỹ Thuật Theo 2 Đợt Review (Review Milestones — 4
+Thành Viên)</h2>
+<hr />
+<h3 id="đợt-review-1-tuần-3-thiết-kế-mvp-bắt-đầu-code">🚩 ĐỢT REVIEW 1
+(Tuần 3): THIẾT KẾ &amp; MVP (BẮT ĐẦU CODE)</h3>
+<p><em>Trọng tâm:</em> <strong>Thẩm định và chốt toàn bộ yêu cầu dự
+án</strong>, thiết kế cơ sở dữ liệu 6 Models Prisma Supabase, thiết kế
+kiến trúc Modular NestJS &amp; BLoC Flutter, Wireframes UI/UX Cinema
+Dark, đặc tả Protobuf gRPC, xây dựng bộ 52 Test Cases và kế hoạch nghiệm
+thu. <strong>Bắt đầu triển khai code từ Tuần 3.</strong></p>
+<h4 id="member-1-p1-tech-lead-auth">👤 Member 1 (P1) — Tech Lead &amp;
+Auth</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Hoàn thiện tài liệu Đặc tả Kiến trúc Backend NestJS 11
+Modular và Luồng dữ liệu Auth JWT/Argon2/PBKDF2.</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế chi tiết Prisma Schema
+(<code>schema.prisma</code>): Khai báo đủ 6 Models
+(<code>UserAccount</code>, <code>BroadcastChannel</code>,
+<code>BroadcastProgram</code>, <code>ProductionTag</code>,
+<code>BroadcastAiReport</code>, <code>AuditLog</code>) với đầy đủ quan
+hệ 1-N, N-N, 1-1 và Unique Indexes.</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế bảng đặc tả DTOs và Validation Rules cho Auth
+(<code>RegisterDto</code>, <code>LoginDto</code>,
+<code>RefreshTokenDto</code>) và RBAC Guards (Roles 1, 2,
+3).</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế luồng điều hướng Frontend Web Next.js theo
+Role và đặc tả giao diện Cinema Dark Theme
+(<code>#0F1016</code>).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Thiết kế kiến trúc thư mục chuẩn Flutter BLoC Pattern
+(<code>core/</code>, <code>data/</code>, <code>logic/</code>,
+<code>presentation/</code>).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Thiết kế Wireframe/UI Mockups cho màn hình Splash,
+Login, Register trên Mobile.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Đặc tả kỹ thuật quản lý State <code>AuthBloc</code> và
+giải pháp lưu trữ an toàn
+<code>flutter_secure_storage</code>.</label></li>
+</ul>
+<h4 id="member-2-p2-broadcast-content-developer">👤 Member 2 (P2) —
+Broadcast Content Developer</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Đặc tả luồng nghiệp vụ quản lý Kênh
+(<code>BroadcastChannels</code>) và Chương trình phát sóng
+(<code>BroadcastPrograms</code>).</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> <strong>Thiết kế thuật toán chống xung đột lịch phát
+sóng:</strong> Đặc tả logic toán học kiểm tra giao thoa khoảng thời gian
+<code>[airDateTime, airDateTime + durationMinutes]</code> trên cùng kênh
+chiếu.</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế Wireframe giao diện Lưới lịch phát sóng EPG
+Grid Schedule 24h và Modal thêm/sửa chương trình trên Web
+Next.js.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Thiết kế Wireframe giao diện EPG Timeline cuộn 2 chiều
+(Kênh ngang + Lịch dọc) và Video Trailer Player trên
+Flutter.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Thiết kế đặc tả kỹ thuật tính năng Thông báo đẩy Native
+hẹn giờ xem trước 15 phút
+(<code>flutter_local_notifications</code>).</label></li>
+</ul>
+<h4 id="member-3-p3-ai-integration-mobile-offline-storage">👤 Member 3
+(P3) — AI Integration &amp; Mobile Offline Storage</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Đặc tả quy trình Thẩm định phát sóng AI (3 Agent:
+Sentiment Analyst, Compliance Auditor, Editorial Director) kết hợp
+OpenAI GPT-4o &amp; TMDB Reviews.</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế Wireframe giao diện Studio Biên tập AI
+(<code>/studio/curator</code>) dành riêng cho Staff trên Web
+Next.js.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Thiết kế cấu trúc cơ sở dữ liệu SQLite cục bộ
+<code>omnicast_local.db</code> gồm 2 bảng <code>LocalWatchlist</code> và
+<code>EpgCache</code>.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Design]</strong> Đặc tả kỹ thuật cơ chế Offline-First và hiển thị
+Offline Banner khi mất kết nối mạng.</label></li>
+</ul>
+<h4
+id="member-4-p4-grpc-devops-vercel-data-seed-security-chuyên-trách-prn232">👤
+Member 4 (P4) — gRPC, DevOps Vercel, Data Seed &amp; Security
+<em>(Chuyên trách PRN232)</em></h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế file đặc tả Protobuf gRPC
+<code>audit_logger.proto</code> cho microservice ghi vết kiểm toán
+Supabase.</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế kịch bản dữ liệu mẫu toàn diện
+<code>seed.ts</code> (Admin, Staff, Viewer accounts, 5 Kênh truyền hình
+thực tế, bộ thẻ tags, 15 chương trình mẫu có video trailer
+HD).</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Thiết kế kiến trúc triển khai Cloud Vercel CI/CD cho cả
+Backend Web API (<code>https://omnicast-api.vercel.app</code>) và
+Frontend Web Portal
+(<code>https://omnicast-fe.vercel.app</code>).</label></li>
+<li><label><input type="checkbox" />📄 <strong>[PRN232 -
+Design]</strong> Xây dựng bộ tài liệu 52 Test Cases
+(<code>TEST_CASES.md</code>) và Kế hoạch kiểm thử nghiệm thu QA
+(<code>Testing_Guide.md</code>).</label></li>
+</ul>
+<hr />
+<h3
+id="đợt-review-2-tuần-8-sản-phẩm-hoàn-chỉnh-bảo-vệ-đồ-án-final-release">🚩
+ĐỢT REVIEW 2 (Tuần 8): SẢN PHẨM HOÀN CHỈNH &amp; BẢO VỆ ĐỒ ÁN (FINAL
+RELEASE)</h3>
+<p><em>Trọng tâm:</em> Hoàn thiện toàn bộ tính năng nâng cao: Dynamic
+Search &amp; Filter Engine, AI Curator thẩm định phát sóng, gRPC
+AuditLogger Microservice &amp; Admin Dashboard, <strong>SQLite
+Offline-First Watchlist</strong>, <strong>Native Local Notification hẹn
+giờ trước 15 phút</strong>, Rate Limiting Throttler, Helmet Security,
+<strong>Stress Test k6</strong>, <strong>Đóng gói
+<code>app-release.apk</code></strong>, nghiệm thu toàn diện và bảo vệ
+trước Hội đồng.</p>
+<h4 id="member-1-p1-tech-lead-auth-1">👤 Member 1 (P1) — Tech Lead &amp;
+Auth</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Khởi tạo dự án NestJS 11+ (<code>backend/</code>) với
+TypeScript, cấu hình <code>tsconfig.json</code> và cài đặt packages cốt
+lõi.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement <code>prisma/schema.prisma</code> 6 Models,
+chạy migration <code>init_schema</code> cập nhật lên Supabase Cloud
+PostgreSQL.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement <code>PrismaService.ts</code>,
+<code>AuthModule</code>: <code>AuthService.ts</code>,
+<code>AuthController.ts</code>, <code>JwtStrategy.ts</code>,
+<code>RolesGuard.ts</code>, <code>@Roles()</code>
+Decorator.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Cấu hình Swagger OpenAPI UI trong <code>main.ts</code>
+với nút <code>Authorize</code> Bearer JWT
+(<code>https://omnicast-api.vercel.app/swagger</code>).</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Khởi tạo ứng dụng Next.js 15 (<code>frontend/</code>),
+cấu hình Cinema Dark Theme, implement <code>app/login/page.tsx</code>,
+<code>app/register/page.tsx</code> và
+<code>AuthContext.tsx</code>.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement <code>api-client.ts</code> Axios instance tự
+động đính kèm Token và xử lý interceptor 401.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement Navbar và Sidebar responsive chuyển đổi phân
+luồng quyền.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Khởi tạo Flutter 3.x project <code>mobile/</code>, cấu
+hình dependencies BLoC, Dio, SecureStorage, Google Fonts.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>AppTheme.dart</code>,
+<code>TokenStorageHelper.dart</code>, <code>DioClient.dart</code> kèm
+<code>AuthInterceptor.dart</code> trỏ tới API Live trên
+Vercel.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>AuthBloc.dart</code>,
+<code>SplashScreen.dart</code>, <code>LoginScreen.dart</code>,
+<code>RegisterScreen.dart</code> trên Mobile.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement Reusable Widgets:
+<code>CustomTextField.dart</code>,
+<code>PrimaryGradientButton.dart</code>.</label></li>
+</ul>
+<h4
+id="member-2-p2-broadcast-content-developer-chủ-trì-module-kênh-lịch-epg">👤
+Member 2 (P2) — Broadcast Content Developer (Chủ trì Module Kênh &amp;
+Lịch EPG)</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement <code>ChannelsModule</code> và
+<code>ProgramsModule</code> (Controllers, Services,
+Repositories).</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement DTOs có Swagger Decorators &amp; Validation:
+<code>CreateChannelDto</code>, <code>CreateProgramDto</code>,
+<code>UpdateProgramDto</code>,
+<code>ProgramFilterDto</code>.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Triển khai thuật toán chống xung đột lịch phát
+sóng:</strong> Kiểm tra giao thoa khung giờ chiếu trên cùng kênh ➔ Từ
+chối lưu và ném <code>ConflictException</code> (HTTP 409).</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Gắn Roles Guard <code>@Roles('Staff', 'Admin')</code>
+bảo vệ các endpoint tạo/sửa/xóa Channels và Programs.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang <code>app/epg/page.tsx</code>: Bảng
+lịch EPG Grid Schedule 24h đa kênh.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement <code>ProgramModal.tsx</code> cho Staff
+thêm/sửa chương trình kèm DateTimePicker và validation chống trùng
+giờ.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement <code>LiveBadge.tsx</code> nhấp nháy đỏ cho
+chương trình đang chiếu <code>LIVE NOW</code>.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang
+<code>app/programs/[id]/page.tsx</code> phát trailer video HD
+nhúng.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>ChannelBloc.dart</code>,
+<code>ProgramBloc.dart</code> và Data Models
+(<code>ChannelModel.dart</code>,
+<code>ProgramModel.dart</code>).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>EpgTimelineScreen.dart</code>: Thanh
+chọn kênh cuộn ngang và danh sách lịch chiếu cuộn dọc.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>ProgramDetailScreen.dart</code> phát
+trailer YouTube nhúng và widget
+<code>LiveNowPulseWidget.dart</code>.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>HomeFeedScreen.dart</code> với
+<code>FeaturedCarousel.dart</code> trượt tự động và
+Pull-to-Refresh.</label></li>
+</ul>
+<h4 id="member-3-p3-ai-integration-mobile-offline-storage-1">👤 Member 3
+(P3) — AI Integration &amp; Mobile Offline Storage</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang <code>app/profile/page.tsx</code> hiển
+thị thông tin user và Role Badge, tích hợp toast popup
+<code>sonner</code>.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement hiệu ứng Shimmer Loading Skeleton khi tải
+danh sách kênh và lịch phát sóng.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Cài đặt thư viện <code>pretty_dio_logger</code> debug
+API, cấu hình Launcher Icon OmniCast cho Android.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>ProfileScreen.dart</code>: Hiển thị
+thông tin cá nhân, Badge Role và nút Đăng xuất xóa cache.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement giao diện xử lý lỗi rớt mạng (Network Error
+View) và Responsive xoay ngang khi xem trailer.</label></li>
+</ul>
+<h4
+id="member-4-p4-grpc-devops-vercel-data-seed-security-chuyên-trách-prn232-1">👤
+Member 4 (P4) — gRPC, DevOps Vercel, Data Seed &amp; Security
+<em>(Chuyên trách PRN232)</em></h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Implement <code>prisma/seed.ts</code> toàn
+diện:</strong> Seed 3 tài khoản mẫu, 5 Kênh truyền hình, bộ tags và 15
+chương trình mẫu kèm trailer HD.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Cấu hình Git Repository Monorepo,
+<code>.gitignore</code>, CORS Policy cho phép Frontend Web và Mobile gọi
+API.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Deploy thành công NestJS Web API lên Vercel
+Live (<code>https://omnicast-api.vercel.app</code>), mở Swagger UI Live
+(<code>/swagger</code>).</strong></label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Cấu hình Environment Variables trên Vercel:
+ConnectionString Supabase PostgreSQL, JWT Secret, TMDB Key, OpenAI
+Key.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> <strong>Deploy ứng dụng Web Next.js lên Vercel Live
+(<code>https://omnicast-fe.vercel.app</code>).</strong></label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Viết bộ Unit Tests bằng <code>Jest</code> cho thuật
+toán chống trùng lịch phát sóng của
+<code>ProgramsService</code>.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Chuẩn hóa mã phản hồi HTTP Status Codes (200, 201, 400,
+401, 403, 404, 409, 500).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 - Flutter
+Support]</strong> Cấu hình Base URL API Live Vercel cho Mobile Team
+(<code>https://omnicast-api.vercel.app</code>) và kiểm tra API
+Contract.</label></li>
+</ul>
+<hr />
+<h3
+id="đợt-review-3-tuần-8-sản-phẩm-hoàn-chỉnh-bảo-vệ-đồ-án-final-release">🚩
+ĐỢT REVIEW 3 (Tuần 8): SẢN PHẨM HOÀN CHỈNH &amp; BẢO VỆ ĐỒ ÁN (FINAL
+RELEASE)</h3>
+<p><em>Trọng tâm:</em> Hoàn thiện toàn bộ tính năng nâng cao: Dynamic
+Search &amp; Filter Engine, AI Curator thẩm định phát sóng, gRPC
+AuditLogger Microservice &amp; Admin Dashboard, <strong>SQLite
+Offline-First Watchlist</strong>, <strong>Native Local Notification hẹn
+giờ trước 15 phút</strong>, Rate Limiting Throttler, Helmet Security,
+<strong>Stress Test k6</strong>, <strong>Đóng gói
+<code>app-release.apk</code></strong>, nghiệm thu toàn diện và bảo vệ
+trước Hội đồng.</p>
+<h4
+id="member-1-p1-tech-lead-search-engine-chủ-trì-module-tìm-kiếm-nâng-cao">👤
+Member 1 (P1) — Tech Lead &amp; Search Engine (Chủ trì Module Tìm Kiếm
+Nâng Cao)</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement <code>SearchModule</code> trong NestJS: API
+<code>GET /api/programs/search</code> hỗ trợ dynamic filtering (thời
+lượng, tags, ngày chiếu, tên kênh, từ khóa) và sorting.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Xây dựng Prisma Query Builder linh hoạt xử lý dynamic
+<code>where</code> và <code>orderBy</code> an toàn không bị SQL
+injection.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang <code>app/search/page.tsx</code>:
+Thanh tìm kiếm Search Bar kết hợp Filter Chips động.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement <code>query-builder.ts</code> đồng bộ trạng
+thái filter lên URL Query Params.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>SearchRemoteProvider.dart</code>,
+<code>SearchBloc.dart</code> và <code>AdvancedSearchScreen.dart</code>
+trên Mobile.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement Widget <code>FilterChipsGroup.dart</code> và
+xử lý Debounce tìm kiếm (300ms) tránh spam request.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Viết Unit Tests với <code>Jest</code> cho
+<code>AuthService</code> và Roles Guards.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Viết Widget Tests cho luồng Auth và BLoC Tests cho
+<code>SearchBloc</code>.</label></li>
+<li><label><input type="checkbox" />🎤 <strong>Chung:</strong> Tham gia
+tổng duyệt và bảo vệ module Auth &amp; Search Engine trước Hội
+đồng.</label></li>
+</ul>
+<h4
+id="member-2-p2-broadcast-content-developer-chủ-trì-thông-báo-native-15p">👤
+Member 2 (P2) — Broadcast Content Developer (Chủ trì Thông Báo Native
+15p)</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Hiển thị khối thông tin “Nhận định Thẩm định AI” trong
+trang chi tiết chương trình
+<code>app/programs/[id]/page.tsx</code>.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>AiReportCard.dart</code> và nút tương
+tác “Thêm vào Watchlist” tại màn hình
+<code>ProgramDetailScreen</code>.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Thêm thư viện
+<code>flutter_local_notifications</code> và <code>timezone</code> vào dự
+án Mobile.</strong></label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Cấu hình quyền thông báo trong
+<code>AndroidManifest.xml</code></strong>
+(<code>POST_NOTIFICATIONS</code>, <code>SCHEDULE_EXACT_ALARM</code>,
+<code>RECEIVE_BOOT_COMPLETED</code>).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Implement
+<code>LocalNotificationService.dart</code>:</strong> Khởi tạo Channel
+thông báo ưu tiên cao với âm thanh và rung.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Triển khai hàm đặt lịch thông báo:</strong>
+Kích hoạt trước giờ chiếu 15 phút
+(<code>AirDateTime - 15m</code>).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Xử lý sự kiện khi bấm thông báo:</strong> Tự
+động mở app và chuyển thẳng tới
+<code>ProgramDetailScreen</code>.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Tinh chỉnh hiệu ứng chuyển cảnh Hero Animation từ EPG
+sang màn hình Chi tiết.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Tối ưu SEO Meta Tags động
+(<code>generateMetadata</code>), OpenGraph Images cho từng chương
+trình.</label></li>
+<li><label><input type="checkbox" />🎤 <strong>Chung:</strong> Tham gia
+tổng duyệt và bảo vệ module EPG &amp; Thông báo Native 15p trước Hội
+đồng.</label></li>
+</ul>
+<h4 id="member-3-p3-ai-integration-mobile-offline-storage-2">👤 Member 3
+(P3) — AI Integration &amp; Mobile Offline Storage</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Implement <code>AiCuratorModule</code> trong
+NestJS:</strong> Controller
+<code>POST /api/ai-curator/analyze/:programId</code>
+(<code>@Roles('Staff')</code>), gọi dịch vụ AI (OpenAI GPT-4o + TMDB) và
+lưu kết quả vào <code>BroadcastAiReport</code> bằng Prisma
+Transaction.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang
+<code>app/studio/curator/page.tsx</code> dành cho Staff: Bảng chương
+trình, nút kích hoạt AI, hiệu ứng Shimmer và component
+<code>AiBadge.tsx</code> phát sáng 3 tông màu.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>AiCuratorBloc.dart</code> và
+<code>StaffCuratorScreen.dart</code> trên Mobile cho phép biên tập viên
+kích hoạt AI và xem kết quả trực tiếp.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Thêm thư viện <code>sqflite</code> và
+<code>path</code>, implement <code>SQLiteDatabaseHelper.dart</code> khởi
+tạo database <code>omnicast_local.db</code>.</strong></label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Tạo bảng <code>LocalWatchlist</code> và
+<code>EpgCache</code>, implement các hàm CRUD
+SQLite.</strong></label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Implement <code>WatchlistBloc.dart</code>,
+<code>WatchlistScreen.dart</code>, widget
+<code>WatchlistCard.dart</code> và <code>OfflineBannerWidget.dart</code>
+(tự động nhận diện mất mạng, đọc Watchlist từ SQLite trơn
+tru).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> <strong>Chạy lệnh đóng gói bản phát hành chính
+thức:</strong> <code>flutter build apk --release</code> (Dung lượng ≤
+25MB).</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 -
+Flutter]</strong> Cài đặt file <code>app-release.apk</code> lên thiết bị
+Android thật, kiểm thử thực tế toàn bộ tính năng với Backend Vercel
+Live.</label></li>
+<li><label><input type="checkbox" />🎤 <strong>Chung:</strong> Tham gia
+tổng duyệt và bảo vệ module AI Studio &amp; SQLite Offline trước Hội
+đồng.</label></li>
+</ul>
+<h4
+id="member-4-p4-grpc-devops-vercel-data-seed-security-chuyên-trách-prn232-2">👤
+Member 4 (P4) — gRPC, DevOps Vercel, Data Seed &amp; Security
+<em>(Chuyên trách PRN232)</em></h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Implement <code>AuditLoggerModule</code> trong
+NestJS:</strong> Tạo gRPC Microservice Service ghi nhận vết kiểm toán
+vào bảng <code>AuditLogs</code> trên Supabase bất đồng bộ.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Implement <code>AuditInterceptor.ts</code> tự động ghi
+log vết kiểm toán mỗi khi Staff chỉnh sửa lịch hoặc chạy
+AI.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Implement trang
+<code>app/admin/audit-logs/page.tsx</code> dành cho Admin
+(<code>Role = 3</code>): Bảng dữ liệu xem chi tiết lịch sử vết kiểm
+toán.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> Cấu hình Rate Limiting (<code>@nestjs/throttler</code>)
+và Helmet bảo mật chống DoS/DDoS trên NestJS.</label></li>
+<li><label><input type="checkbox" />💻 <strong>[PRN232 -
+NestJS]</strong> <strong>Thực hiện kiểm thử tải (Stress Test) bằng k6 /
+Postman Runner</strong> đảm bảo API trên Vercel chịu tải tốt 20
+concurrent users.</label></li>
+<li><label><input type="checkbox" />🌐 <strong>[PRN232 -
+Next.js]</strong> Tối ưu hiệu năng tải trang Web (Google Lighthouse
+Score ≥ 90/100).</label></li>
+<li><label><input type="checkbox" />📖 <strong>Chung:</strong> Hoàn
+thiện tài liệu <code>README.md</code>, <code>TEST_CASES.md</code>,
+<code>Testing_Guide.md</code> và kiểm thử Smoke Test toàn bộ hệ
+thống.</label></li>
+<li><label><input type="checkbox" />📱 <strong>[PRM393 - Flutter
+Support]</strong> Hỗ trợ kiểm thử Smoke Test API Contract giữa NestJS
+Live Backend và Flutter Mobile App trước khi đóng gói APK.</label></li>
+<li><label><input type="checkbox" />🎤 <strong>Chung:</strong> Tham gia
+tổng duyệt và bảo vệ module gRPC &amp; Cloud Deployment trước Giảng
+viên.</label></li>
+</ul>
+<hr />
+<h2 id="chi-tiết-công-việc-từng-cá-nhân-person-1-person-4">👤 Chi Tiết
+Công Việc Từng Cá Nhân (Person 1 ➔ Person 4)</h2>
+<hr />
+<h3 id="person-1-tech-lead-architecture-search-engine-50-tasks">👤
+PERSON 1 — Tech Lead, Architecture &amp; Search Engine | 50 tasks</h3>
+<h4
+id="phần-1-môn-prn232-nestjs-core-api-next.js-web-client-25-tasks">💻🌐
+PHẦN 1: MÔN PRN232 (NESTJS CORE API &amp; NEXT.JS WEB CLIENT) — 25
+tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Hoàn thiện
+tài liệu Đặc tả Kiến trúc Backend NestJS 11 Modular và Luồng dữ liệu
+Auth JWT/Argon2/PBKDF2.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế chi
+tiết Prisma Schema (<code>schema.prisma</code>) 6 Models trên Supabase
+PostgreSQL.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+bảng đặc tả DTOs và Validation Rules cho Auth và RBAC Guards (Roles 1,
+2, 3).</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+luồng điều hướng Frontend Web Next.js theo Role và đặc tả Cinema Dark
+Theme.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo dự
+án NestJS 11+ (<code>backend/</code>) với TypeScript, cấu hình
+<code>tsconfig.json</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cài đặt các
+gói npm cốt lõi: <code>@nestjs/passport</code>,
+<code>@nestjs/jwt</code>, <code>@nestjs/swagger</code>,
+<code>passport-jwt</code>, <code>prisma</code>,
+<code>@prisma/client</code>, <code>argon2</code>,
+<code>class-validator</code>,
+<code>class-transformer</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>prisma/schema.prisma</code> đầy đủ 6 Models và quan
+hệ.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Chạy lệnh
+Migration: <code>npx prisma migrate dev --name init_schema</code> cập
+nhật lên Supabase Cloud.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>PrismaService.ts</code> quản lý kết nối cơ sở dữ
+liệu.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+DTOs xác thực: <code>RegisterDto</code>, <code>LoginDto</code>,
+<code>RefreshTokenDto</code> có Swagger Decorators.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuthService.ts</code> xử lý băm mật khẩu Argon2/PBKDF2, sinh
+Access Token JWT và Refresh Token.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuthController.ts</code> (<code>/api/auth/register</code>,
+<code>/api/auth/login</code>, <code>/api/auth/refresh-token</code>,
+<code>/api/auth/logout</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>JwtStrategy.ts</code>, <code>RolesGuard.ts</code> và
+<code>@Roles()</code> custom decorator.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+Swagger OpenAPI UI trong <code>main.ts</code> có hỗ trợ nút
+<code>Authorize</code> Bearer Token.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+Global ValidationPipe và Global Exception Filter chuẩn RFC
+7807.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo dự
+án Next.js 15 (<code>frontend/</code>) (App Router, TypeScript, Tailwind
+CSS).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/login/page.tsx</code> và
+<code>app/register/page.tsx</code> trên Next.js điều hướng theo mã
+Role.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuthContext.tsx</code> quản lý phiên đăng nhập và lưu token trên
+Web Client.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Axios Client <code>api-client.ts</code> tự động đính kèm Token và xử lý
+interceptor 401.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Navigation Bar và Responsive Sidebar trên Next.js.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement <code>SearchModule</code> trong NestJS:</strong> Cung
+cấp API <code>GET /api/programs/search</code> hỗ trợ dynamic
+filtering.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Xây dựng
+Prisma Query Builder linh hoạt xử lý dynamic <code>where</code> và
+<code>orderBy</code> an toàn.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/search/page.tsx</code> trên Next.js: Search Bar + Filter
+Chips Controls.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>query-builder.ts</code> chuyển đổi trạng thái Filter thành Query
+String chuẩn trên Next.js.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Unit
+Tests với <code>Jest</code> cho <code>AuthService</code> và kiểm tra
+phân quyền Roles Guards.</label></li>
+</ul>
+<h4 id="phần-2-môn-prm393-flutter-mobile-application-25-tasks">📱 PHẦN
+2: MÔN PRM393 (FLUTTER MOBILE APPLICATION) — 25 tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết lập
+cấu trúc thư mục chuẩn BLoC Pattern (<code>core/</code>,
+<code>data/</code>, <code>logic/</code>,
+<code>presentation/</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+Wireframe/UI Mockups cho màn hình Splash, Login, Register trên
+Mobile.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Đặc tả kỹ
+thuật quản lý State <code>AuthBloc</code> và giải pháp lưu trữ
+<code>flutter_secure_storage</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo dự
+án Flutter 3.x <code>mobile/</code> (Dart 3.x).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+dependencies trong <code>pubspec.yaml</code> (<code>flutter_bloc</code>,
+<code>dio</code>, <code>flutter_secure_storage</code>,
+<code>google_fonts</code>, <code>shimmer</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AppTheme.dart</code> (Cinema Dark Palette, Google Font
+Inter).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>DioClient.dart</code> cấu hình Base URL trỏ về API Live trên
+Vercel (<code>https://omnicast-api.vercel.app</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuthInterceptor.dart</code> tự động chèn JWT Token và refresh
+token ngầm khi nhận HTTP 401.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>TokenStorageHelper.dart</code> bọc bảo mật với
+<code>flutter_secure_storage</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>UserModel.dart</code> có <code>fromJson()</code> và
+<code>toJson()</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuthBloc.dart</code>, <code>AuthEvent.dart</code>,
+<code>AuthState.dart</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>SplashScreen.dart</code> tự động kiểm tra token khi mở
+app.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>LoginScreen.dart</code> và <code>RegisterScreen.dart</code> trên
+Mobile.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Form Validation cho Email và Mật khẩu trên Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Reusable Widgets: <code>CustomTextField.dart</code>,
+<code>PrimaryGradientButton.dart</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Dart Data Models: <code>ChannelModel.dart</code> và
+<code>ProgramModel.dart</code> kế thừa
+<code>Equatable</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AppBottomNavBar.dart</code> chuyển đổi giữa các màn hình
+chính.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>SearchRemoteProvider.dart</code> gọi endpoint tìm kiếm nâng cao
+trong Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>SearchBloc.dart</code> xử lý tìm kiếm và lọc dữ liệu động trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AdvancedSearchScreen.dart</code> với thanh tìm kiếm Search Bar
+trong Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Widget <code>FilterChipsGroup.dart</code> (Thể loại, Thời lượng &gt;60p,
+Khung giờ) trong Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Xử lý
+Debounce tìm kiếm (300ms) tránh spam request lên server.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hóa
+hiệu năng giao tiếp giữa các BLoC trong Flutter, giải phóng tài nguyên
+Streams.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Widget
+Tests cho luồng Đăng nhập, Đăng ký và Đăng xuất trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết BLoC
+Tests cho <code>SearchBloc</code> và tham gia bảo vệ đồ án trước Hội
+đồng.</label></li>
+</ul>
+<hr />
+<h3
+id="person-2-broadcast-content-epg-schedule-native-notifications-50-tasks">👤
+PERSON 2 — Broadcast Content, EPG Schedule &amp; Native Notifications |
+50 tasks</h3>
+<h4
+id="phần-1-môn-prn232-nestjs-core-api-next.js-web-client-25-tasks-1">💻🌐
+PHẦN 1: MÔN PRN232 (NESTJS CORE API &amp; NEXT.JS WEB CLIENT) — 25
+tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Đặc tả luồng
+nghiệp vụ quản lý Kênh (<code>BroadcastChannels</code>) và Chương trình
+phát sóng (<code>BroadcastPrograms</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code>
+<strong>Thiết kế thuật toán chống xung đột lịch phát sóng:</strong> Đặc
+tả logic kiểm tra giao thoa khung giờ trên cùng kênh.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+Wireframe giao diện Lưới lịch phát sóng EPG Grid Schedule 24h và Modal
+thêm/sửa chương trình.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ChannelsModule</code>: <code>ChannelsController.ts</code>,
+<code>ChannelsService.ts</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ProgramsModule</code>: <code>ProgramsController.ts</code>,
+<code>ProgramsService.ts</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+DTOs: <code>CreateChannelDto</code>, <code>CreateProgramDto</code>,
+<code>UpdateProgramDto</code>, <code>ProgramFilterDto</code> kèm
+validation decorators.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+logic CRUD Kênh trong <code>ChannelsService.ts</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+logic CRUD Chương trình trong
+<code>ProgramsService.ts</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Triển khai thuật toán chống xung đột lịch phát sóng trên cùng
+kênh</strong> (Ném <code>ConflictException</code> HTTP
+409).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Gắn Roles
+Guard <code>@Roles('Staff', 'Admin')</code> cho các endpoint tạo/sửa/xóa
+Channels và Programs.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Bổ sung
+Swagger API Documentation đầy đủ (<code>@ApiOperation</code>,
+<code>@ApiResponse</code>) cho tất cả endpoints.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Reusable Components: <code>TextInput.tsx</code>,
+<code>PasswordInput.tsx</code>,
+<code>GradientButton.tsx</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Form Validation bằng <code>zod</code> và <code>react-hook-form</code>
+trên Next.js.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/epg/page.tsx</code> trên Next.js: Bảng lịch EPG Grid
+Schedule 24 giờ.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ProgramModal.tsx</code> trên Next.js dành cho Staff thêm/sửa
+chương trình kèm validation trùng giờ.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+component <code>LiveBadge.tsx</code> nhấp nháy đỏ cho chương trình đang
+chiếu <code>LIVE NOW</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/programs/[id]/page.tsx</code> trên Next.js phát video
+trailer nhúng HD.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>DateFilterBar.tsx</code> trên Next.js chọn ngày phát
+sóng.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Hiển thị
+khối “Nhận định Thẩm định AI” trong trang chi tiết chương trình Next.js
+<code>app/programs/[id]/page.tsx</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Unit
+Tests với <code>Jest</code> cho thuật toán chống trùng giờ chiếu của
+<code>ProgramsService</code> (các ca biên trùng đầu, đuôi, bao
+trùm).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hóa
+SEO Meta Tags cho các trang chương trình trên Next.js
+(<code>generateMetadata</code>, OpenGraph).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Đảm bảo tính
+tương thích hiển thị trên Chrome, Safari, Edge và thiết bị di
+động.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Xử lý trạng
+thái rỗng khi kênh chưa có lịch phát sóng trong ngày trên
+Web.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hiển
+thị hình ảnh Banner chương trình trên Next.js qua
+<code>next/image</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tham gia
+buổi tổng duyệt và bảo vệ module EPG trước Hội đồng.</label></li>
+</ul>
+<h4 id="phần-2-môn-prm393-flutter-mobile-application-25-tasks-1">📱 PHẦN
+2: MÔN PRM393 (FLUTTER MOBILE APPLICATION) — 25 tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+Wireframe giao diện EPG Timeline cuộn 2 chiều và Video Trailer Player
+trên Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế đặc
+tả kỹ thuật tính năng Thông báo đẩy Native hẹn giờ xem trước 15
+phút.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+các Reusable Form Widgets trên Mobile:
+<code>CustomTextField.dart</code>,
+<code>PrimaryButton.dart</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tích hợp
+Regex Validation cho Form Đăng nhập và Đăng ký trên
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>EpgRemoteProvider.dart</code> và <code>EpgRepository.dart</code>
+trong Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ChannelBloc.dart</code> và <code>ProgramBloc.dart</code> trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>EpgTimelineScreen.dart</code>: Thanh chọn kênh cuộn ngang và lịch
+chiếu cuộn dọc.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ProgramDetailScreen.dart</code> trong Flutter tích hợp gói
+<code>youtube_player_flutter</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>LiveNowPulseWidget.dart</code> hiển thị huy hiệu phát sáng trực
+quan trên Mobile.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement bộ
+lọc ngày (Hôm nay, Ngày mai, Lịch tuần) trên Mobile.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+màn hình <code>HomeFeedScreen.dart</code> trong Flutter: Widget
+<code>FeaturedCarousel.dart</code> trượt tự động.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tích hợp
+tính năng Pull-to-Refresh trên màn hình Home và EPG.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Xử lý hiệu
+ứng Shimmer Loading khi đang tải dữ liệu danh sách chương
+trình.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AiReportCard.dart</code> hiển thị phân tích của Ban kiểm duyệt AI
+trong màn hình Chi tiết.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+nút tương tác “Thêm vào Watchlist” tại màn hình
+<code>ProgramDetailScreen</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+nút “Chạy đánh giá AI” (chỉ hiển thị khi tài khoản đăng nhập là Staff
+<code>Role = 1</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết BLoC
+Tests cho <code>ChannelBloc</code> và
+<code>ProgramBloc</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Widget
+Tests cho màn hình <code>ProgramDetailScreen</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tinh chỉnh
+hiệu ứng chuyển cảnh Hero Animation từ danh sách EPG sang màn hình Chi
+tiết.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+hiển thị video trailer HD mượt mà khi xoay ngang màn hình (Landscape
+Mode).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Thêm
+thư viện <code>flutter_local_notifications</code> và
+<code>timezone</code> vào dự án Mobile.</strong></label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Cấu
+hình quyền thông báo (Permissions) trong file
+<code>AndroidManifest.xml</code></strong>
+(<code>POST_NOTIFICATIONS</code>, <code>SCHEDULE_EXACT_ALARM</code>,
+<code>RECEIVE_BOOT_COMPLETED</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement <code>LocalNotificationService.dart</code>:</strong>
+Cấu hình Channel thông báo ưu tiên cao với âm thanh và
+rung.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Triển khai hàm đặt lịch thông báo:</strong> Kích hoạt trước giờ
+chiếu 15 phút (<code>AirDateTime - 15m</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Xử
+lý sự kiện khi bấm thông báo:</strong> Tự động mở app và chuyển thẳng
+tới <code>ProgramDetailScreen</code>.</label></li>
+</ul>
+<hr />
+<h3 id="person-3-ai-integration-mobile-offline-storage-50-tasks">👤
+PERSON 3 — AI Integration &amp; Mobile Offline Storage | 50 tasks</h3>
+<h4
+id="phần-1-môn-prn232-nestjs-ai-curator-next.js-web-client-25-tasks">💻🌐
+PHẦN 1: MÔN PRN232 (NESTJS AI CURATOR &amp; NEXT.JS WEB CLIENT) — 25
+tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Đặc tả quy
+trình Thẩm định phát sóng AI (3 Agent: Sentiment, Compliance, Editorial)
+kết hợp OpenAI GPT-4o &amp; TMDB.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+Wireframe giao diện Studio Biên tập AI (<code>/studio/curator</code>)
+dành riêng cho Staff.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/profile/page.tsx</code> trên Next.js hiển thị thông tin
+user và Role Badge.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Bắt lỗi API
+hiển thị Toast thông báo popup trên Next.js
+(<code>sonner</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+hiệu ứng Shimmer Loading Skeleton khi đang tải danh sách kênh và lịch
+phát sóng EPG trên Next.js.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hiển
+thị Avatar người dùng và Badge vai trò trên Navbar.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement <code>AiCuratorModule</code> trong NestJS:</strong>
+Controller <code>POST /api/ai-curator/analyze/:programId</code>
+(<code>@Roles('Staff')</code>), gọi dịch vụ AI thẩm định và lưu kết quả
+vào <code>BroadcastAiReport</code> bằng Prisma Transaction.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AiCuratorService.ts</code> trong NestJS quản lý logic thẩm định
+cảm xúc khán giả, phân loại độ tuổi và đề xuất khung giờ phát
+sóng.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+DTOs cho AI Curator: <code>AiAnalyzeRequestDto</code>,
+<code>AiReportResponseDto</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/studio/curator/page.tsx</code> trên Next.js dành riêng
+cho Staff kèm hiệu ứng Shimmer tiến trình thẩm định.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+component <code>AiBadge.tsx</code> hiển thị badge phát sáng
+(<code>PRIME TIME</code>, <code>STANDARD</code>,
+<code>RESTRICTED</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tích hợp
+Modal xem chi tiết kết quả thẩm định AI trên Web Studio.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tinh chỉnh
+UI AI Curator Studio: Nút “Xuất bản ngay” sau khi nhận kết quả thẩm định
+AI thành công.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Unit
+Test cho <code>AiCuratorService</code> trong NestJS.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+phân quyền Staff khi gọi API thẩm định AI.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra
+hiển thị báo cáo AI trên nhiều trình duyệt Web khác nhau.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tinh chỉnh
+hiệu ứng loading khi bấm nút kích hoạt AI trên Web Studio.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Xử lý hiển
+thị trạng thái chờ khi AI xử lý lâu (&gt;10s).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hóa
+Bundle Size và CSS animations trên Web AI Studio.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+luồng xuất bản chương trình từ Studio ra EPG công khai.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra
+tích hợp dữ liệu AI Report vào Prisma Database Supabase.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Rà soát giao
+diện Profile cá nhân và đổi mật khẩu trên Web.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết tài
+liệu hướng dẫn sử dụng tính năng Studio AI Curator vào
+<code>README.md</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+kịch bản rollback transaction khi lưu kết quả AI bị lỗi.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tham gia
+tổng duyệt và bảo vệ module AI Web Studio trước Giảng viên.</label></li>
+</ul>
+<h4 id="phần-2-môn-prm393-flutter-mobile-application-25-tasks-2">📱 PHẦN
+2: MÔN PRM393 (FLUTTER MOBILE APPLICATION) — 25 tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế cấu
+trúc cơ sở dữ liệu SQLite cục bộ <code>omnicast_local.db</code> gồm 2
+bảng <code>LocalWatchlist</code> và <code>EpgCache</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Đặc tả kỹ
+thuật cơ chế Offline-First và hiển thị Offline Banner khi mất kết nối
+mạng.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cài đặt và
+cấu hình thư viện <code>pretty_dio_logger</code> phục vụ debug API
+Mobile.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Thiết lập
+icon launcher ứng dụng OmniCast cho Android.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>ProfileScreen.dart</code>: Hiển thị thông tin người dùng, Badge
+Role (Staff / Viewer / Admin), nút “Đăng xuất” xóa sạch
+cache.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+giao diện xử lý lỗi rớt mạng (Network Error View) kèm nút bấm “Thử
+lại”.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hiển
+thị Responsive trên màn hình xoay ngang (Landscape Mode) khi xem
+trailer.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AiCuratorRemoteProvider.dart</code> gọi API kích hoạt AI trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AiCuratorBloc.dart</code> quản lý chu kỳ trạng thái xử lý AI trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>StaffCuratorScreen.dart</code> dành riêng cho biên tập viên trong
+Flutter.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Thêm
+thư viện <code>sqflite</code> và <code>path</code> vào
+<code>pubspec.yaml</code>.</strong></label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement <code>SQLiteDatabaseHelper.dart</code>:</strong> Khởi
+tạo database <code>omnicast_local.db</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Tạo
+bảng <code>LocalWatchlist</code> và các phương thức CRUD SQLite</strong>
+(<code>insert</code>, <code>getAll</code>, <code>delete</code>,
+<code>isExist</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Tạo
+bảng <code>EpgCache</code></strong> lưu trữ JSON cache của trang chủ
+EPG.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>WatchlistRepository.dart</code> điều phối dữ liệu giữa Remote và
+Local.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>WatchlistBloc.dart</code> quản lý trạng thái danh sách yêu
+thích.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>WatchlistScreen.dart</code> hiển thị các chương trình đã
+lưu.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+Widget <code>WatchlistCard.dart</code> hiển thị chi tiết và nút xóa khỏi
+Watchlist.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tích hợp thư
+viện <code>connectivity_plus</code> lắng nghe trạng thái mạng thiết
+bị.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement Banner “Chế độ Ngoại tuyến”:</strong> Hiển thị dải
+cảnh báo màu vàng khi ngắt mạng.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+kịch bản ngắt mạng: Bật Airplane Mode, app vẫn đọc Watchlist mượt mà từ
+SQLite.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết BLoC
+Tests cho <code>AiCuratorBloc</code> và
+<code>WatchlistBloc</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Chạy
+lệnh đóng gói bản phát hành chính thức:</strong>
+<code>flutter build apk --release</code> (Dung lượng ≤
+25MB).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cài đặt file
+<code>app-release.apk</code> lên thiết bị Android thật, kiểm thử toàn bộ
+tính năng và bảo vệ trước Giảng viên.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tinh chỉnh
+hiệu năng SQLite Local Cache khi lưu trữ trên 100 mục
+Watchlist.</label></li>
+</ul>
+<hr />
+<h3
+id="person-4-grpc-microservice-cloud-devops-vercel-data-seed-security-50-tasks">👤
+PERSON 4 — gRPC Microservice, Cloud DevOps Vercel, Data Seed &amp;
+Security | 50 tasks</h3>
+<p><em>(Chuyên trách Môn PRN232 — Đã hoàn thành môn PRM393)</em></p>
+<h4
+id="phần-1-môn-prn232-nestjs-grpc-vercel-devops-next.js-admin-48-tasks">💻🌐
+PHẦN 1: MÔN PRN232 (NESTJS GRPC, VERCEL DEVOPS &amp; NEXT.JS ADMIN) — 48
+tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+file đặc tả Protobuf gRPC <code>audit_logger.proto</code> cho
+microservice ghi vết kiểm toán Supabase.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+kịch bản dữ liệu mẫu toàn diện <code>seed.ts</code> (Admin, Staff,
+Viewer accounts, 5 Kênh truyền hình, bộ tags, 15 chương
+trình).</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Thiết kế
+kiến trúc triển khai Cloud Vercel CI/CD cho Backend Web API và Frontend
+Web Portal.</label></li>
+<li><label><input type="checkbox" /><code>[Review 1]</code> Xây dựng bộ
+tài liệu 52 Test Cases (<code>TEST_CASES.md</code>) và Kế hoạch kiểm thử
+nghiệm thu QA (<code>Testing_Guide.md</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Implement <code>prisma/seed.ts</code> toàn diện:</strong> Seed 3
+tài khoản mẫu, 5 Kênh truyền hình, bộ tags và 15 chương trình mẫu kèm
+trailer HD.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+scripts nạp seed data tự động trong
+<code>package.json</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo thư
+mục <code>protos/</code> và implement file đặc tả protobuf
+<code>audit_logger.proto</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Thiết lập
+Git Repository Monorepo, phân nhánh <code>main</code>, cấu hình
+<code>.gitignore</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo
+file <code>TESTING.md</code> và bảng theo dõi Smoke Test
+chung.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+CORS Policy trong <code>main.ts</code> cho phép các domain Frontend truy
+cập an toàn.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Cấu
+hình triển khai Backend Web API lên Vercel (<code>vercel.json</code>)
+ngay từ Stage 1.</strong></label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+biến môi trường trên Vercel: ConnectionString Supabase, JWT Secret, TMDB
+Key, OpenAI Key.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Deploy thành công NestJS Web API lên Vercel với đường dẫn HTTPS
+công khai</strong>
+(<code>https://omnicast-api.vercel.app</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra kết
+nối từ Backend Vercel đến Cloud Supabase PostgreSQL và mở Swagger UI
+Live
+(<code>https://omnicast-api.vercel.app/swagger</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code>
+<strong>Deploy ứng dụng Next.js lên Vercel
+(<code>https://omnicast-fe.vercel.app</code>).</strong></label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+biến môi trường <code>NEXT_PUBLIC_API_URL</code> trỏ tới Backend Live
+trên Vercel.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hóa
+hiệu năng truy vấn API danh sách EPG đảm bảo thời gian phản hồi ≤ 200ms
+trên Vercel.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra
+Swagger Live trên Vercel cho 100% các endpoint CRUD Channels và
+Programs.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết bộ Unit
+Tests bằng <code>Jest</code> cho thuật toán chống trùng lịch phát sóng
+của <code>ProgramsService</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Chuẩn hóa
+các mã phản hồi HTTP Status Codes (200, 201, 400, 401, 403, 404, 409,
+500).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuditLoggerModule</code> trong NestJS: Tạo gRPC Microservice
+Service ghi nhận vết kiểm toán vào bảng <code>AuditLogs</code> trên
+Supabase bất đồng bộ.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+<code>AuditInterceptor.ts</code> tự động ghi log vết kiểm toán mỗi khi
+Staff chỉnh sửa lịch hoặc chạy AI.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Implement
+trang <code>app/admin/audit-logs/page.tsx</code> trên Next.js xem vết
+kiểm toán gRPC cho Admin (<code>Role = 3</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+gRPC channel và protobuf compiler script tự động trong
+NestJS.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết Unit
+Tests với <code>Jest</code> cho <code>AuditLoggerService</code> trong
+NestJS.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Cấu hình
+Rate Limiting (<code>@nestjs/throttler</code>) và Helmet bảo mật chống
+DoS/DDoS trên NestJS.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> <strong>Thực
+hiện kiểm thử tải (Stress Test) bằng k6 / Postman Runner</strong> đảm
+bảo API trên Vercel chịu tải tốt 20 concurrent users.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra mã
+hóa HTTPS, SSL Supabase và bảo mật toàn bộ secrets trên Vercel
+Dashboard.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tối ưu hiệu
+năng tải trang Web (Google Lighthouse Score ≥ 90/100), kiểm tra CI/CD
+Auto-deploy trên Vercel.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo
+file <code>README.md</code> hướng dẫn Setup, Migrations và Link Live
+Swagger API.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Khởi tạo
+file <code>README.md</code> repo Web Portal và hoàn tất bảng kiểm thử
+nghiệm thu <code>TESTING.md</code>.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Rà soát toàn
+bộ cấu hình CORS và HTTP-Only Cookie bảo mật giữa Next.js và NestJS
+Backend.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra độ
+trễ (latency) của gRPC Audit Logger dưới 10ms.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm tra log
+error trên Vercel Dashboard và cấu hình alert khi service gặp sự
+cố.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Rà soát các
+biến môi trường nhạy cảm trong toàn bộ repository, đảm bảo không bị lộ
+trên Git.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Viết tài
+liệu đặc tả kiến trúc Cloud DevOps &amp; gRPC Audit Log.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Kiểm thử
+kịch bản phục hồi sau lỗi (Failover) của database Supabase và backend
+API.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Tham gia
+tổng duyệt và bảo vệ module gRPC &amp; Cloud Deployment trước Giảng
+viên.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Hỗ trợ kỹ
+thuật cho toàn đội trong suốt buổi thuyết trình trước Hội
+đồng.</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Đóng gói
+source code và tài liệu bàn giao hoàn chỉnh dự án.</label></li>
+</ul>
+<h4
+id="phần-2-hỗ-trợ-kiểm-thử-tích-hợp-mobile-prm393-support-2-tasks">📱
+PHẦN 2: HỖ TRỢ KIỂM THỬ TÍCH HỢP MOBILE (PRM393 SUPPORT) — 2 tasks</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>[Review 1]</code> Cấu hình
+Base URL API Live Vercel cho Mobile Team
+(<code>https://omnicast-api.vercel.app</code>).</label></li>
+<li><label><input type="checkbox" /><code>[Review 2]</code> Hỗ trợ kiểm
+thử Smoke Test API Contract giữa NestJS Live Backend và Flutter Mobile
+App trước khi đóng gói APK.</label></li>
+</ul>
+<hr />
+<h2
+id="bảng-kế-hoạch-smoke-test-tự-động-nghiệm-thu-testing-checklist">🧪
+Bảng Kế Hoạch Smoke Test Tự Động &amp; Nghiệm Thu (Testing
+Checklist)</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" /><strong>Môn PRN232 (NestJS Backend
+API + Web Next.js 15):</strong></label>
+<ul class="task-list">
+<li><label><input type="checkbox" />Đăng ký tài khoản trên Web Next.js,
+mật khẩu băm Argon2/PBKDF2 trong Supabase, cấp Role mặc định
+<code>2</code> (Viewer).</label></li>
+<li><label><input type="checkbox" />Đăng nhập nhận cặp Access Token
+(JWT) và Refresh Token; đăng nhập sai mật khẩu hiển thị toast lỗi
+inline.</label></li>
+<li><label><input type="checkbox" />Hết hạn Access Token: Interceptor tự
+động refresh token ngầm, phiên làm việc không bị ngắt
+quãng.</label></li>
+<li><label><input type="checkbox" />Đăng nhập tài khoản Viewer truy cập
+<code>/admin/dashboard</code> hoặc gọi API Staff trả về HTTP 403
+Forbidden.</label></li>
+<li><label><input type="checkbox" />Thêm 2 chương trình trùng giờ trên
+cùng 1 kênh: NestJS Backend chặn và báo lỗi HTTP 409
+Conflict.</label></li>
+<li><label><input type="checkbox" />Gửi truy vấn tìm kiếm nâng cao: Trả
+kết quả JSON chuẩn xác trong &lt; 200ms.</label></li>
+<li><label><input type="checkbox" />Biên tập viên (Staff) bấm “Kích hoạt
+Thẩm định AI” trên Web: NestJS chạy quy trình thẩm định 3 Agent hoàn tất
+trong ≤ 25s, lưu báo cáo vào Supabase.</label></li>
+<li><label><input type="checkbox" />Backend ghi log nội bộ qua gRPC
+AuditLogger Service, Admin mở trang <code>/admin/audit-logs</code> xem
+được toàn bộ lịch sử.</label></li>
+<li><label><input type="checkbox" />NestJS Backend API chạy trực tiếp
+trên Vercel (URL HTTPS công khai), mở Swagger UI (<code>/swagger</code>)
+kiểm thử thông suốt.</label></li>
+<li><label><input type="checkbox" />Frontend Web chạy trực tiếp trên
+Vercel, phản hồi nhanh và bảo mật.</label></li>
+</ul></li>
+<li><label><input type="checkbox" /><strong>Môn PRM393 (Mobile
+Application Flutter 3.x):</strong></label>
+<ul class="task-list">
+<li><label><input type="checkbox" />Đăng ký / Đăng nhập thành công trên
+ứng dụng di động Flutter, lưu token an toàn trong
+<code>flutter_secure_storage</code>.</label></li>
+<li><label><input type="checkbox" />Lịch EPG Timeline hiển thị mượt mà
+với thanh chọn kênh cuộn ngang và danh sách chương trình cuộn
+dọc.</label></li>
+<li><label><input type="checkbox" />Đến đúng giờ chiếu: Thẻ chương trình
+trên Mobile hiển thị nhấp nháy huy hiệu <code>LIVE NOW</code> màu
+đỏ.</label></li>
+<li><label><input type="checkbox" />Mở xem video trailer HD trực tiếp
+trong app qua trình phát YouTube nhúng không bị giật lag.</label></li>
+<li><label><input type="checkbox" />Thanh tìm kiếm nâng cao và Filter
+Chips lọc dữ liệu nhanh chóng qua API.</label></li>
+<li><label><input type="checkbox" />Bật chế độ máy bay (Airplane Mode):
+Ứng dụng hiển thị Banner màu vàng “Chế độ Ngoại tuyến”, mở xem Watchlist
+từ SQLite trơn tru.</label></li>
+<li><label><input type="checkbox" />Bấm “Nhắc tôi”: Điện thoại lập lịch
+và nhận được Local Notification Native trước 15 phút giờ phát
+sóng.</label></li>
+<li><label><input type="checkbox" />File <code>app-release.apk</code> (≤
+25MB) cài đặt và hoạt động ổn định trên thiết bị Android
+thật.</label></li>
+</ul></li>
+</ul>
+<hr />
+<p>**</p>
+<hr />
+<h2 id="hon-thnh-14-gap-round-4-oct-2026">? Ho�n th�nh 14 Gap � Round 4
+(Oct 2026)</h2>
+<p>Ph?n b? sung du?i d�y ghi nh?n 14 gap cu?i c�ng d� du?c d�ng theo k?
+ho?ch ho�n_th�nh_omnicast_�_14_gap_c�n_l?i.</p>
+<h3 id="backend-4-gaps">Backend (4 gaps)</h3>
+<ul>
+<li>? <strong>B1 � gRPC Audit Logger microservice</strong>: tri?n khai
+standalone NestJS gRPC service t?i ackend/microservices/audit-logger/.
+Proto file: protos/audit_logger.proto. H? tr? Write (idempotent qua
+entry.id) + Stream (server-streaming). Dockerfile distroless +
+docker-compose.yml + render.yaml d? deploy l�n Render/Railway.
+AuditLoggerService ? main backend t? d?ng forward qua gRPC khi c�
+AUDIT_LOGGER_GRPC_URL (fail-open).</li>
+<li>? <strong>B2 � Migration 007 AI Curator telemetry</strong>: th�m
+lastAppliedAt tr�n LiveEvent + cached/cachedAt tr�n AiCuratorReport.
+Migration idempotent t?i
+prisma/migrations/007_ai_curator_telemetry.sql.</li>
+<li>? <strong>B3 � WINDOW_DAYS audit cache-hit-rate</strong>: th�m
+constant v�o AiCuratorStatsService d? computeCacheHitRate() d?c tr?c
+ti?p c?t cached.</li>
+<li>? <strong>B4 � CORS consistency</strong>: parser FRONTEND_URL d�ng
+chung pattern pi/index.ts &amp; main.ts, fail-closed trong
+production.</li>
+</ul>
+<h3 id="frontend-5-gaps">Frontend (5 gaps)</h3>
+<ul>
+<li>? <strong>F1 � /forgot-password</strong>: trang form 2 bu?c (email ?
+token + new password) + reset-password API endpoints ? backend
+(rate-limited).</li>
+<li>? <strong>F2 � /help + /docs</strong>: 2 trang server-rendered d?c
+t? Document/HELP.md, FAQ.md v� c�c t�i li?u k? thu?t. Anchor TOC + dark
+cinematic styling.</li>
+<li>? <strong>F3 � <Skeleton> primitive</strong>: thay th? t?t c? inline
+nimate-pulse b?ng &lt;Skeleton variant=‘block’|‘text’|‘circle’ /&gt;
+xuy�n su?t 6 pages.</li>
+<li>? <strong>F4 � Query Builder</strong>: lib/query-builder.ts (~190
+LOC) cho uildSearchQuery/parseSearchQuery/ppendQueryParam/
+emoveQueryParam/withQuery. Update lib/api/search.ts &amp;
+lib/api/programs.ts d? d�ng. 17 unit tests passing.</li>
+<li>? <strong>F2 � T�i li?u index</strong>: xem /docs.</li>
+</ul>
+<h3 id="mobile-4-gaps">Mobile (4 gaps)</h3>
+<ul>
+<li>? <strong>M1 � Premium billing</strong>: BillingService (Google Play
+via purchases_flutter) + backend BillingService verify receipt +
+User.premiumUntil + migration  10_premium_until.sql. Stub mode
+dev-friendly.</li>
+<li>? <strong>M2 � FCM Push</strong>: FcmService (firebase_messaging) +
+NotificationsPushService (firebase-admin) + DeviceToken table +
+migration  09_device_tokens.sql.</li>
+<li>? <strong>M3 � Onboarding</strong>: 3-page swipe screen luu flag
+trong TokenStorageHelper.isOnboardingComplete(). Router t? redirect l?n
+d?u.</li>
+<li>? <strong>M4 � Supabase Realtime</strong>: SupabaseRealtimeService
+l?ng nghe INSERT/UPDATE/DELETE cho Comment + Reaction. Polling fallback
+n?u kh�ng c� SUPABASE_URL.</li>
+</ul>
+<h3 id="cross-cutting">Cross-cutting</h3>
+<ul>
+<li>? 3 migrations m?i ( 08,  09,  10) � t?ng c?ng 10 migrations.</li>
+<li>? Test totals: backend 7/7 pass, frontend 153/153 pass, 17
+query-builder tests pass.</li>
+<li>? px tsc –noEmit clean tr�n c? 3 codebase.</li>
+</ul>
+<hr />
+<p><em>T�i li?u n�y l� b?n ph�n c�ng ch�nh th?c cho nh�m 4 th�nh
+vi�n…</em></p>
+
+  </div>
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Reference Documentation</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+% ============================================================
+% PRM393 - Section 8: Conclusion & Future Work (Bilingual)
+% ============================================================
+\section{\bi{Kết luận và hướng phát triển}{Conclusion \& Future Work}}
+\label{sec:concl}
+
+\subsection{\bi{Kết luận}{Conclusion}}
+
+\bi{
+Báo cáo này đã trình bày toàn diện kiến trúc kỹ thuật và kết quả hiện thực của
+ứng dụng di động OmniCast Mobile được thực hiện bởi nhóm 4 sinh viên (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} trong khuôn khổ môn học PRM393 dưới sự hướng dẫn của giảng viên \textbf{Thầy Huỳnh Vang}. Năm mục tiêu
+kỹ thuật đặt ra ban đầu đều được chứng minh bằng mã nguồn (53.922 dòng mã Dart trên 31 màn hình) và dữ liệu thực
+nghiệm:
+}{
+This paper has presented the comprehensive software architecture and
+empirical findings of OmniCast Mobile developed by the four-member engineering team (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} for the PRM393 course under the mentorship of \textbf{Mr. Huỳnh Vang}. All five original
+engineering goals have been validated through concrete source code (53,922 Dart LOC across 31 screens) and
+rigorous benchmarks:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{Hiện thực thành công kiến trúc Clean Architecture 4 tầng kết hợp
+  12 module BLoC/Cubit, duy trì sự phân tách rõ ràng giữa giao diện hiển thị
+  và logic nghiệp vụ.}{%
+  A 4-tier Clean Architecture coupled with 12 decoupled BLoC/Cubit units,
+  strictly segregating reactive UI rendering from domain calculations.}
+
+  \item \bi{Xây dựng động cơ ngoại tuyến hoàn chỉnh trên SQLite với cơ chế
+  phát lại đột biến (\texttt{pending\_ops}) và nhắc lịch cục bộ trước 15 phút,
+  bảo đảm tính khả dụng 100\% khi không có mạng.}{%
+  An offline-first persistence engine driven by SQLite, mutation replay
+  queuing (\texttt{pending\_ops}), and exact 15-minute advance local alarms.}
+
+  \item \bi{Tích hợp trình phát đa năng \texttt{OmniPlayer} tự động khám phá máy chủ MediaMTX qua Wi-Fi (\texttt{LanDiscoveryService}), hỗ trợ phát trực
+  tiếp WebRTC/HLS độ trễ thấp, luồng trực tiếp Google Drive và phòng xem tương tác hai
+  chiều (\texttt{LiveWatchScreen}: Live Chat phân nhánh, biểu cảm hạt nổi xúc giác 0ms, quyên góp Super Chat 6 mệnh giá, thông báo ghim từ Host và đổi chương trình tức thời).}{%
+  The multi-engine \texttt{OmniPlayer} featuring automatic Wi-Fi LAN host discovery (\texttt{LanDiscoveryService}), ultra-low-latency WebRTC/HLS
+  live streams, direct Google Drive streaming, and bi-directional Socket.IO \texttt{/live} rooms (\texttt{LiveWatchScreen}: threaded chat, 0ms haptic floating reactions, 6-tier Super Chat donations, pinned host banners and on-the-fly program switching).}
+
+  \item \bi{Trang bị bàn điều khiển \texttt{LiveStudioScreen} 4 tab và máy quay hiện trường \texttt{MobileStudioRecorderScreen} hỗ trợ đẩy sóng WebRTC WHIP trực tiếp, mã thời gian SMPTE, đồng hồ âm lượng Stereo VU Meter và máy nhắc chữ Teleprompter HUD.}{%
+  A portable broadcast studio comprising the 4-tab \texttt{LiveStudioScreen} and the \texttt{MobileStudioRecorderScreen} field viewfinder with real-time WebRTC WHIP publishing, SMPTE timecode, Stereo VU meter and auto-scrolling Teleprompter HUD.}
+
+  \item \bi{Đạt độ tin cậy tuyệt đối với 91 ca kiểm thử tự động đạt tỷ lệ vượt
+  qua 100\% trong quy trình CI/CD GitHub Actions.}{%
+  Absolute software reliability substantiated by 91 automated unit and widget
+  tests achieving a 100\% pass rate on GitHub Actions CI runners.}
+\end{enumerate}
+
+\subsection{\bi{Đánh giá hiệu năng và hạn chế đã biết}{Performance Evaluation \& Limitations}}
+
+\bi{
+Thử nghiệm trên các thiết bị Android và iOS thực tế cho thấy ứng dụng duy trì
+tỷ lệ khung hình ổn định ở mức 58--60 FPS khi cuộn danh sách EPG và hiển thị
+các hiệu ứng hoạt họa nổi. Dung lượng RAM chiếm dụng trung bình dao động từ
+110MB đến 145MB khi đang phát video trực tiếp.
+
+Tuy nhiên, ứng dụng vẫn còn hai hạn chế kỹ thuật:
+}{
+Field profiling across physical Android and iOS devices indicates steady
+rendering performance at 58--60 FPS during intensive EPG scrolling and floating
+reaction animations. Memory usage averages between 110MB and 145MB during
+continuous live stream decoding.
+
+Nevertheless, two known technical limitations remain:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \bi{Chưa hỗ trợ giải mã phần cứng nâng cao đối với codec AV1 trên các
+  dòng máy Android đời cũ, dẫn đến việc phải chuyển đổi dự phòng sang định dạng
+  HLS H.264.}{%
+  Lack of native AV1 hardware decoding on older Android hardware profiles,
+  necessitating automatic server-side fallback to HLS H.264 profiles.}
+  \item \bi{Cơ chế đồng bộ ngoại tuyến hiện áp dụng chiến lược \emph{Last-Write-Wins}
+  đơn giản cho danh sách theo dõi, chưa triển khai cấu trúc dữ liệu CRDT để
+  xử lý xung đột đồng thời trên nhiều thiết bị.}{%
+  Offline synchronization employs a pragmatic \emph{Last-Write-Wins}
+  policy rather than Conflict-Free Replicated Data Types (CRDTs), which may
+  yield minor discrepancies during simultaneous cross-device updates.}
+\end{itemize}
+
+\subsection{\bi{Hướng phát triển tiếp theo}{Future Work}}
+
+\bi{
+Các định hướng nâng cấp trong giai đoạn tiếp theo bao gồm:
+}{
+Roadmap horizons for upcoming releases include:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{Tích hợp chế độ phát hình trong hình (Picture-in-Picture --- PiP)
+  và phát âm thanh trong nền (Background Audio Playback) cho các luồng tin tức
+  và podcast.}{%
+  Integrating native Picture-in-Picture (PiP) and background audio services
+  for broadcast news and podcast feeds.}
+  \item \bi{Mở rộng hỗ trợ nền tảng màn hình lớn Android TV và Apple TV với
+  giao diện điều khiển từ xa D-Pad.}{%
+  Expanding support for Android TV and Apple TV form factors with D-Pad
+  remote control navigation focus states.}
+  \item \bi{Ứng dụng mạng nơ-ron học máy cục bộ (TensorFlow Lite) trên thiết
+  bị để đề xuất chương trình cá nhân hóa mà không cần gửi dữ liệu xem về máy
+  chủ trung tâm.}{%
+  Deploying lightweight on-device recommendation models via TensorFlow Lite
+  to compute privacy-preserving suggestions locally.}
+\end{enumerate}
+
+\subsection{\bi{Lời cảm ơn}{Acknowledgements}}
+
+\bi{
+Nhóm tác giả (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) xin trân trọng cảm ơn giảng viên hướng dẫn \textbf{Thầy Huỳnh Vang} cùng các thầy cô tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} đã tận tình định hướng kỹ thuật và đánh giá nghiệm thu cho dự án OmniCast Mobile.
+}{
+The authors (\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn}, \textbf{Nguyễn Vĩnh Phú}, \textbf{Đồng Hoàng Nguyên}) wish to express their sincere appreciation to Mentor \textbf{Mr. Huỳnh Vang} and the faculty at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} for their invaluable guidance throughout the development of OmniCast Mobile.
+}

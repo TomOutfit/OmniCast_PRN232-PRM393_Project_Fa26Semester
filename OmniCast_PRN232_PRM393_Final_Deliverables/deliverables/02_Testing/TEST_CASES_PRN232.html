@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - Danh Mục Test Cases Môn PRN232 - OmniCast</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">
+      FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS
+    </div>
+    <div class="fptu-tag">FU CAHATA • PRN232 &amp; PRM393</div>
+  </div>
+
+  <div class="content">
+<h1 id="omnicast-danh-mục-test-cases-môn-prn232">📋 OmniCast — Danh Mục
+Test Cases Môn PRN232</h1>
+<h2
+id="phân-hệ-back-end-nestjs-19-modules-rest-api-grpc-web-portal-next.js-15">Phân
+Hệ: Back-End NestJS (19 Modules, REST API, gRPC) &amp; Web Portal
+Next.js 15</h2>
+<p><strong>Học viện Công nghệ FPT Quy Nhơn — FPTU Quy Nhon AI Campus -
+FU Cahata</strong><br />
+<em>Dự án: OmniCast — Nền tảng Truyền thông &amp; Trí tuệ Phát thanh
+Truyền hình Đa Phương tiện</em></p>
+<hr />
+<h3 id="thông-tin-dự-án-hội-đồng-kiểm-thử">Thông Tin Dự Án &amp; Hội
+Đồng Kiểm Thử</h3>
+<ul>
+<li><strong>Đơn vị đào tạo:</strong> Đại học FPT Quy Nhơn (FPTU Quy Nhon
+AI Campus)</li>
+<li><strong>Tổ chức / Câu lạc bộ:</strong> FU Cahata</li>
+<li><strong>Môn học:</strong> PRN232 (Building Cross-Platform Back-End
+Application)</li>
+<li><strong>Học kỳ:</strong> Fall 2026 (Fa26)</li>
+<li><strong>Giảng viên hướng dẫn (Mentor):</strong> Thầy <strong>Huỳnh
+Vang</strong></li>
+<li><strong>Nhóm sinh viên thực hiện (4 thành viên):</strong>
+<ol type="1">
+<li><strong>Nguyễn Bình An</strong> (<code>TomOutfit</code> — Trưởng
+nhóm / Tech Lead)</li>
+<li><strong>Trần Thanh Sơn</strong> (<code>TranThanhSonQE170080</code> —
+MSSV: <code>QE170080</code>)</li>
+<li><strong>Nguyễn Vĩnh Phú</strong> (<code>phunvqe180136</code> — MSSV:
+<code>QE180136</code>)</li>
+<li><strong>Đồng Hoàng Nguyên</strong> (<code>teng122</code>)</li>
+</ol></li>
+<li><strong>Tổng số ca kiểm thử:</strong> 32 Test Cases chức năng / E2E
++ 391 Automated Tests (163 Backend + 228 Frontend)</li>
+<li><strong>Tỷ lệ thực thi:</strong> 100% ĐẠT (PASS)</li>
+</ul>
+<hr />
+<h3 id="danh-mục-test-cases-chi-tiết">Danh Mục Test Cases Chi Tiết</h3>
+<h4
+id="module-xác-thực-jwt-phân-quyền-rbac-role-based-access-control">1.
+Module Xác thực, JWT &amp; Phân quyền RBAC (Role-Based Access
+Control)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-01</strong></td>
+<td style="text-align: left;">Đăng ký tài khoản người dùng mới</td>
+<td
+style="text-align: left;"><code>POST /api/v1/auth/register</code><br>Body:
+<code>{ email, password, fullName }</code></td>
+<td style="text-align: left;">HTTP 201 Created, mật khẩu mã hóa bcrypt
+10 rounds, gán quyền mặc định <code>VIEWER</code> (Role 1).</td>
+<td style="text-align: left;">Trả về thông tin User đã tạo không kèm mật
+khẩu</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-02</strong></td>
+<td style="text-align: left;">Đăng ký trùng lặp email đã có</td>
+<td style="text-align: left;"><code>POST /api/v1/auth/register</code>
+với email đã tồn tại trong DB</td>
+<td style="text-align: left;">HTTP 409 Conflict, thông báo
+<code>"Email already registered"</code>.</td>
+<td style="text-align: left;">Trả về đúng mã lỗi 409</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-03</strong></td>
+<td style="text-align: left;">Đăng nhập tài khoản hợp lệ</td>
+<td
+style="text-align: left;"><code>POST /api/v1/auth/login</code><br>Body:
+<code>{ email, password }</code></td>
+<td style="text-align: left;">HTTP 200 OK, trả về cặp
+<code>accessToken</code> (hạn 60m) và <code>refreshToken</code> (xoay
+vòng 90 ngày).</td>
+<td style="text-align: left;">Trả về token và hồ sơ người dùng</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-04</strong></td>
+<td style="text-align: left;">Đăng nhập sai mật khẩu</td>
+<td style="text-align: left;"><code>POST /api/v1/auth/login</code> với
+mật khẩu sai</td>
+<td style="text-align: left;">HTTP 401 Unauthorized, thông báo lỗi xác
+thực bảo mật.</td>
+<td style="text-align: left;">HTTP 401 Unauthorized</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-05</strong></td>
+<td style="text-align: left;">Xoay vòng Refresh Token</td>
+<td
+style="text-align: left;"><code>POST /api/v1/auth/refresh</code><br>Header:
+<code>Authorization: Bearer &lt;refreshToken&gt;</code></td>
+<td style="text-align: left;">HTTP 200 OK, thu hồi token cũ trong bảng
+<code>RefreshToken</code>, cấp phát cặp token mới.</td>
+<td style="text-align: left;">Token cũ vô hiệu hóa, cấp cặp token
+mới</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-06</strong></td>
+<td style="text-align: left;">Kiểm soát quyền truy cập RBAC
+(StaffOnly)</td>
+<td style="text-align: left;">Dùng token <code>VIEWER</code> gọi
+<code>POST /api/v1/channels</code></td>
+<td style="text-align: left;">HTTP 403 Forbidden qua
+<code>RolesGuard</code>.</td>
+<td style="text-align: left;">HTTP 403 Forbidden</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-07</strong></td>
+<td style="text-align: left;">Quản trị viên truy cập nhật ký kiểm
+toán</td>
+<td style="text-align: left;">Dùng token <code>ADMIN</code> gọi
+<code>GET /api/v1/admin/audit-logs</code></td>
+<td style="text-align: left;">HTTP 200 OK, dữ liệu nhật ký đồng bộ từ
+gRPC microservice.</td>
+<td style="text-align: left;">HTTP 200 OK</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4
+id="module-kênh-thuật-toán-phát-hiện-xung-đột-lịch-phát-anti-conflict-scheduling">2.
+Module Kênh &amp; Thuật toán Phát hiện Xung đột Lịch phát (Anti-Conflict
+Scheduling)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-08</strong></td>
+<td style="text-align: left;">Lấy danh mục kênh phát sóng</td>
+<td style="text-align: left;"><code>GET /api/v1/channels</code>
+(Public)</td>
+<td style="text-align: left;">HTTP 200 OK, danh sách kênh có đầy đủ
+logo, slug, danh mục và trạng thái.</td>
+<td style="text-align: left;">Danh mục kênh tải đầy đủ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-09</strong></td>
+<td style="text-align: left;">Thêm lịch phát sóng không xung đột</td>
+<td style="text-align: left;"><code>POST /api/v1/programs</code> khung
+giờ trống <code>10:00 - 11:00</code></td>
+<td style="text-align: left;">HTTP 201 Created, bản ghi
+<code>LiveEvent</code> được lưu vào PostgreSQL.</td>
+<td style="text-align: left;">Sự kiện lưu thành công</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-10</strong></td>
+<td style="text-align: left;">Xung đột lịch: Giao thoa phần đầu</td>
+<td style="text-align: left;">Kênh 1 có lịch <code>14:00 - 15:00</code>.
+Thêm lịch <code>13:30 - 14:30</code></td>
+<td style="text-align: left;">HTTP 409 Conflict, thông báo xung đột với
+sự kiện hiện có.</td>
+<td style="text-align: left;">HTTP 409 Conflict</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-11</strong></td>
+<td style="text-align: left;">Xung đột lịch: Giao thoa phần đuôi</td>
+<td style="text-align: left;">Kênh 1 có lịch <code>14:00 - 15:00</code>.
+Thêm lịch <code>14:30 - 15:30</code></td>
+<td style="text-align: left;">HTTP 409 Conflict, thông báo xung đột thời
+gian kết thúc.</td>
+<td style="text-align: left;">HTTP 409 Conflict</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-12</strong></td>
+<td style="text-align: left;">Xung đột lịch: Bao trùm toàn bộ</td>
+<td style="text-align: left;">Kênh 1 có lịch <code>14:00 - 15:00</code>.
+Thêm lịch <code>13:00 - 16:00</code></td>
+<td style="text-align: left;">HTTP 409 Conflict, chặn lưu vào cơ sở dữ
+liệu.</td>
+<td style="text-align: left;">HTTP 409 Conflict</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-13</strong></td>
+<td style="text-align: left;">Cùng giờ chiếu nhưng trên kênh khác</td>
+<td style="text-align: left;">Kênh 1 có lịch <code>14:00 - 15:00</code>.
+Thêm lịch <code>14:00 - 15:00</code> trên Kênh 2</td>
+<td style="text-align: left;">HTTP 201 Created (cho phép hai kênh phát
+sóng song song).</td>
+<td style="text-align: left;">HTTP 201 Created</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-cơ-chế-điền-lịch-epg-247-247-seeded-filler">3. Module Cơ
+chế Điền Lịch EPG 24/7 (24/7 Seeded Filler)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-14</strong></td>
+<td style="text-align: left;">Truy vấn EPG ngày có lịch thưa thớt</td>
+<td
+style="text-align: left;"><code>GET /api/v1/epg?channelId=1&amp;date=2026-10-28</code></td>
+<td style="text-align: left;">HTTP 200 OK, lưới 24 giờ không bị khoảng
+trống (gaps) nhờ thuật toán chèn bản ghi đệm.</td>
+<td style="text-align: left;">Lưới EPG lấp đầy 24 giờ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-15</strong></td>
+<td style="text-align: left;">Tính tái lập của EPG Filler</td>
+<td style="text-align: left;">Gọi liên tiếp 2 lần cùng kênh và cùng
+ngày</td>
+<td style="text-align: left;">Cùng một bộ dữ liệu chương trình với thứ
+tự cố định dựa trên seed ngẫu nhiên xác định.</td>
+<td style="text-align: left;">Kết quả 2 lần gọi trùng khớp 100%</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-trợ-lý-biên-tập-ai-ai-curator-pipeline">4. Module Trợ Lý
+Biên Tập AI (AI Curator Pipeline)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-16</strong></td>
+<td style="text-align: left;">Đánh giá nội dung với OpenAI API</td>
+<td
+style="text-align: left;"><code>POST /api/v1/ai-curator/curate</code>
+khi có <code>OPENAI_API_KEY</code></td>
+<td style="text-align: left;">Gọi mô hình GPT-4o một lần duy nhất, kết
+quả kiểm tra qua Zod schema, lưu báo cáo vào PostgreSQL.</td>
+<td style="text-align: left;">Báo cáo AI sinh thành công</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-17</strong></td>
+<td style="text-align: left;">Chế độ dự phòng Heuristic (Fallback)</td>
+<td style="text-align: left;">Gọi phân tích khi tắt
+<code>OPENAI_API_KEY</code> hoặc lỗi mạng</td>
+<td style="text-align: left;">Hệ thống chuyển sang thuật toán Heuristic,
+tính điểm tuân thủ và độ tin cậy từ kho luật ngữ cảnh.</td>
+<td style="text-align: left;">Báo cáo Heuristic trả về đúng chuẩn</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-18</strong></td>
+<td style="text-align: left;">Lưu trữ dấu vết phiên bản
+(Provenance)</td>
+<td style="text-align: left;">Kiểm tra bản ghi
+<code>AiCuratorReport</code> trong cơ sở dữ liệu</td>
+<td style="text-align: left;">Lưu đầy đủ <code>promptVersion</code>,
+<code>aiModelVersion</code>, <code>executionTimeMs</code>,
+<code>retryCount</code>.</td>
+<td style="text-align: left;">Thông tin dấu vết đầy đủ</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-tương-tác-thời-gian-thực-phòng-livestream-liveid">5.
+Module Tương Tác Thời Gian Thực &amp; Phòng LiveStream
+(<code>/live/[id]</code>)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-19</strong></td>
+<td style="text-align: left;">Kết nối Socket.IO Namespace
+<code>/live</code></td>
+<td style="text-align: left;">Client kết nối Socket tới
+<code>/live</code> với query <code>channelId=1</code></td>
+<td style="text-align: left;">Server chấp nhận kết nối, tự động gia nhập
+room <code>channel:1</code>, phát sự kiện <code>viewerCount</code>.</td>
+<td style="text-align: left;">Kết nối thành công, đếm số người xem chính
+xác</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-20</strong></td>
+<td style="text-align: left;">Live Chat kèm kiểm duyệt vi phạm</td>
+<td style="text-align: left;">Gửi tin nhắn chứa từ khóa spam hoặc vượt
+quá độ dài</td>
+<td style="text-align: left;">Bộ lọc Regex &amp; Heuristic chặn tin nhắn
+độc hại, phát tin nhắn hợp lệ tới phòng.</td>
+<td style="text-align: left;">Lọc tin rác hoạt động chuẩn xác</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-21</strong></td>
+<td style="text-align: left;">Phát tán Floating Reactions thời gian
+thực</td>
+<td style="text-align: left;">Client gửi sự kiện <code>reaction</code>
+với emoji <code>heart</code>, <code>fire</code></td>
+<td style="text-align: left;">Server nhận và broadcast tới toàn bộ
+client trong room <code>&lt; 50ms</code>.</td>
+<td style="text-align: left;">Phản hồi tức thì</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-22</strong></td>
+<td style="text-align: left;">Chuyển đổi 7 bộ chủ đề phòng Live (Room
+Themes)</td>
+<td style="text-align: left;">Người dùng chọn chủ đề Sunset, Ocean,
+Neon, Sakura…</td>
+<td style="text-align: left;">Giao diện Next.js thay đổi toàn bộ biến
+màu CSS và hiệu ứng mà không ngắt luồng video HLS.</td>
+<td style="text-align: left;">Chuyển chủ đề trơn tru</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-23</strong></td>
+<td style="text-align: left;">Khởi tạo và Bỏ phiếu Live Poll</td>
+<td style="text-align: left;">Host tạo cuộc thăm dò, Viewer gửi phiếu
+bầu</td>
+<td style="text-align: left;">Cập nhật tỷ lệ phiếu bầu theo thời gian
+thực tới tất cả khán giả.</td>
+<td style="text-align: left;">Thăm dò thời gian thực chính xác</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-24</strong></td>
+<td style="text-align: left;">Đặt câu hỏi và Ghim Q&amp;A lên màn
+hình</td>
+<td style="text-align: left;">Viewer gửi câu hỏi, Host bấm
+<code>Highlight on Screen</code></td>
+<td style="text-align: left;">Phát sự kiện
+<code>highlightQuestion</code>, câu hỏi ghim cố định trên khung chiếu
+video.</td>
+<td style="text-align: left;">Câu hỏi ghim nổi bật</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-25</strong></td>
+<td style="text-align: left;">Ghim thẻ sản phẩm Live Commerce</td>
+<td style="text-align: left;">Host bấm <code>Pin Product</code> từ bảng
+điều khiển Studio</td>
+<td style="text-align: left;">Sự kiện <code>pinnedProduct</code> gửi tới
+khán giả, hiển thị thẻ mua hàng nổi bật.</td>
+<td style="text-align: left;">Thẻ sản phẩm nổi lên tức thời</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-bàn-điều-khiển-phát-sóng-studio-studiolive">6. Module Bàn
+Điều Khiển Phát Sóng Studio (<code>/studio/live</code>)</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-26</strong></td>
+<td style="text-align: left;">Cấp phát khóa luồng RTMP / WHIP</td>
+<td style="text-align: left;">Staff truy cập <code>/studio/live</code>,
+chọn kênh</td>
+<td style="text-align: left;">Server trả về <code>streamKey</code> bảo
+mật và endpoint <code>whipUrl</code> hợp lệ.</td>
+<td style="text-align: left;">Cấp khóa luồng bảo mật</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-27</strong></td>
+<td style="text-align: left;">Đẩy luồng WebRTC WHIP từ trình duyệt</td>
+<td style="text-align: left;">Bật WebCam/Screen Share, bấm
+<code>Go Live</code></td>
+<td style="text-align: left;">Thiết lập PeerConnection tới MediaMTX,
+truyền video và audio trễ &lt; 500ms.</td>
+<td style="text-align: left;">Luồng phát ổn định</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-28</strong></td>
+<td style="text-align: left;">Chế độ phát lặp ảo (Virtual Loop
+Stream)</td>
+<td style="text-align: left;">Kích hoạt chế độ Loop cho kênh không có
+streamer trực tiếp</td>
+<td style="text-align: left;">Hệ thống tự động nạp danh sách VOD và phát
+lặp 24/7 không gián đoạn.</td>
+<td style="text-align: left;">Phát lặp mượt mà</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-29</strong></td>
+<td style="text-align: left;">Quản lý điều phối 4 Tab Studio</td>
+<td style="text-align: left;">Chuyển đổi giữa Chat Moderation, Polls,
+Q&amp;A, Commerce</td>
+<td style="text-align: left;">Mỗi tab hoạt động độc lập, không ảnh hưởng
+đến luồng truyền phát đang chạy.</td>
+<td style="text-align: left;">Điều khiển mượt mà</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-standalone-grpc-audit-microservice-cổng-web">7. Module
+Standalone gRPC Audit Microservice &amp; Cổng Web</h4>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Kịch bản kiểm thử</th>
+<th style="text-align: left;">Dữ liệu đầu vào &amp; Các bước</th>
+<th style="text-align: left;">Kết quả mong đợi</th>
+<th style="text-align: left;">Kết quả thực tế</th>
+<th style="text-align: center;">Trạng thái</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-30</strong></td>
+<td style="text-align: left;">Ghi nhận nhật ký kiểm toán qua gRPC</td>
+<td style="text-align: left;">Khi thực hiện thao tác nhạy cảm (đổi role,
+xóa kênh)</td>
+<td style="text-align: left;">NestJS gọi gRPC Client
+<code>LogActivity</code>, microservice ghi nhận vào DB độc lập.</td>
+<td style="text-align: left;">Nhật ký ghi nhận tức thì</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-31</strong></td>
+<td style="text-align: left;">Tải trang chủ Cổng Web Next.js 15</td>
+<td style="text-align: left;">Truy cập URL <code>/</code> trên trình
+duyệt</td>
+<td style="text-align: left;">HTTP 200 OK, tải SSR mượt mà kèm Navbar,
+Carousel, Kênh nổi bật.</td>
+<td style="text-align: left;">Tải trang &lt; 450ms</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-PRN-32</strong></td>
+<td style="text-align: left;">Tìm kiếm chống rung (Debounce Search)</td>
+<td style="text-align: left;">Nhập từ khóa tại <code>/search</code></td>
+<td style="text-align: left;">Debounce 300ms, gửi query và hiển thị kết
+quả phân loại kênh, chương trình, VOD.</td>
+<td style="text-align: left;">Kết quả hiển thị chính xác</td>
+<td style="text-align: center;"><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+
+  </div>
+
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Enterprise Broadcast Intelligence Ecosystem</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

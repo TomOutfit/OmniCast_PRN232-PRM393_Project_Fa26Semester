@@ -1,0 +1,122 @@
+% ============================================================
+% PRM393 - Section 5: Multimedia, LiveStream & Mobile Live Studio (Bilingual)
+% ============================================================
+\section{\bi{Trình phát OmniPlayer, Phòng xem LiveStream và Bàn điều khiển Mobile Live Studio}{OmniPlayer, Interactive LiveStream Room \& Mobile Live Studio}}
+\label{sec:streaming}
+
+\bi{
+Trung tâm trải nghiệm nghe nhìn và truyền phát trực tiếp của ứng dụng di động được cấu thành từ năm thành phần kỹ thuật gắn kết chặt chẽ:
+(1) trình phát đa năng \texttt{OmniPlayer} (\texttt{lib/presentation/widgets/omni\_player.dart});
+(2) dịch vụ tự động khám phá máy chủ phát sóng nội bộ \texttt{LanDiscoveryService} (\texttt{lib/core/network/lan\_discovery\_service.dart});
+(3) trung tâm sự kiện đang phát \texttt{LiveNowScreen} (\texttt{/live});
+(4) phòng xem tương tác thời gian thực \texttt{LiveWatchScreen} (\texttt{/live/:id}); và
+(5) tổ hợp bàn điều khiển \texttt{LiveStudioScreen} (\texttt{/studio/live}) cùng máy quay hiện trường \texttt{MobileStudioRecorderScreen}.
+}{
+At the epicenter of the mobile broadcast experience are five tightly integrated components:
+(1) the multi-engine \texttt{OmniPlayer} (\texttt{lib/presentation/widgets/omni\_player.dart});
+(2) the automatic Wi-Fi subnet scanner \texttt{LanDiscoveryService} (\texttt{lib/core/network/lan\_discovery\_service.dart});
+(3) the real-time broadcast hub \texttt{LiveNowScreen} (\texttt{/live});
+(4) the interactive viewer lounge \texttt{LiveWatchScreen} (\texttt{/live/:id}); and
+(5) the 4-tab \texttt{LiveStudioScreen} (\texttt{/studio/live}) paired with the hardware field-reporter viewfinder \texttt{MobileStudioRecorderScreen}.
+}
+
+\subsection{\bi{Kiến trúc Đa luồng của \texttt{OmniPlayer} và Khám phá Mạng LAN (\texttt{LanDiscoveryService})}{Multi-Engine \texttt{OmniPlayer} and Automatic LAN Host Discovery}}
+
+\bi{
+Đối với các kênh phát trực tiếp và VOD, \texttt{OmniPlayer} phân tích URL đầu vào để định tuyến thông minh qua bốn cơ chế phát:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Luồng HLS / WebRTC độ trễ thấp từ MediaMTX (\texttt{:8888/<streamKey>/index.m3u8}):} Tích hợp \texttt{video\_player} và \texttt{chewie} với cờ nhận diện \texttt{\_isMediamtxLiveStream}. Đặc biệt, khi chạy trên điện thoại vật lý kết nối cùng mạng Wi-Fi với máy chủ phát sóng MediaMTX mà URL trả về chứa \texttt{localhost} hoặc \texttt{10.0.2.2}, dịch vụ \texttt{LanDiscoveryService} tự động quét song song dải mạng \texttt{/24} trên cổng \texttt{8888}, tìm ra địa chỉ IP LAN thực tế của máy chủ MediaMTX và viết lại URL luồng phát mà người dùng không cần nhập IP thủ công.
+  \item \textbf{Phục hồi Luồng Camera Trực tiếp Không Chuyển đổi Dự phòng Hoạt hình (Zero-Cartoon-Fallback Live Retry):} Đối với các buổi quay trực tiếp từ Camera (\texttt{/live/webcam\_*}), nếu máy chủ MediaMTX đang khởi tạo phân đoạn HLS đầu tiên, \texttt{OmniPlayer} tuyệt đối không chuyển sang video mẫu mà tự động kích hoạt bộ thử lại lũy tiến (tối đa 10 lần, chu kỳ $2 \times \text{retry}$ giây) kèm tiến trình quét lại LAN IP ở lần thử thứ 2, giữ nguyên trạng thái ``Đang kết nối tín hiệu trường quay...'' cho tới khi luồng camera sẵn sàng.
+  \item \textbf{Phân giải Luồng Trực tiếp Google Drive (Direct Drive Stream Engine):} Các liên kết chia sẻ \texttt{drive.google.com/file/d/<id>/view} được tự động biến đổi sang điểm cuối tải trực tiếp \texttt{https://drive.usercontent.google.com/download?id=<id>\&export=download\&confirm=t}, cho phép giải mã phần cứng mượt mà không cần đăng nhập Google.
+  \item \textbf{Luồng nhúng YouTube \& Lớp phủ Gói cước VIP:} Các liên kết YouTube được chuyển sang chế độ \texttt{webview\_flutter}; đồng thời các chương trình gắn cờ \texttt{isPremium} tự động kiểm tra quyền thuê bao của người dùng và mở bảng đăng ký \texttt{SubscriptionPaymentSheet} nếu tài khoản chưa nâng cấp VIP.
+\end{enumerate}
+}{
+For live channels and VOD assets, \texttt{OmniPlayer} inspects the incoming URL and routes playback across four specialised engines:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Low-Latency MediaMTX HLS / WebRTC (\texttt{:8888/<streamKey>/index.m3u8}):} Powered by native \texttt{video\_player} and \texttt{chewie} with \texttt{\_isMediamtxLiveStream} detection. When running on a physical smartphone over Wi-Fi where the backend returns \texttt{localhost} or Android emulator loopback \texttt{10.0.2.2}, \texttt{LanDiscoveryService} automatically scans the local \texttt{/24} subnet on port \texttt{8888}, discovers the active MediaMTX host IP, and rewrites the stream URL transparently.
+  \item \textbf{Zero-Cartoon-Fallback Live Camera Retry:} For real-time camera streams (\texttt{/live/webcam\_*}), while MediaMTX is muxing the initial HLS segments, \texttt{OmniPlayer} strictly disables sample VOD fallbacks and executes up to 10 exponential-backoff retries (triggering a fresh LAN subnet scan on retry \#2) while displaying a studio signal synchronisation HUD.
+  \item \textbf{Direct Google Drive Stream Resolution:} Standard \texttt{drive.google.com/file/d/<id>/view} links are rewritten to \texttt{https://drive.usercontent.google.com/download?id=<id>\&export=download\&confirm=t}, enabling native hardware decoding without Google login prompts.
+  \item \textbf{YouTube WebView Embed \& VIP Paywall Enforcement:} Partner YouTube streams mount an embedded \texttt{webview\_flutter} player, while \texttt{isPremium} programmes verify the viewer's subscription tier and present \texttt{SubscriptionPaymentSheet} when upgrading is required.
+\end{enumerate}
+}
+
+\begin{lstlisting}[language=Dart, caption={\bi{Cơ chế phân giải địa chỉ phát trực tiếp động và quét mạng LAN trong \texttt{OmniPlayer}.}{Dynamic stream endpoint resolution and LAN discovery integration in \texttt{OmniPlayer}.}}]
+String resolveStreamUrl(String rawUrl, String? lanHostIp) {
+  if (lanHostIp != null &&
+      (rawUrl.contains('localhost') || rawUrl.contains('127.0.0.1') || rawUrl.contains('10.0.2.2'))) {
+    return rawUrl
+      .replaceAll('localhost', lanHostIp)
+      .replaceAll('127.0.0.1', lanHostIp)
+      .replaceAll('10.0.2.2', lanHostIp);
+  }
+  return rawUrl;
+}
+\end{lstlisting}
+
+\subsection{\bi{Màn hình Trung tâm Đang Phát Sóng (\texttt{LiveNowScreen}) và Phòng Xem Tương tác (\texttt{LiveWatchScreen})}{Live Broadcast Hub (\texttt{LiveNowScreen}) and Interactive Viewer Room (\texttt{LiveWatchScreen})}}
+
+\bi{
+Trải nghiệm xem trực tiếp của khán giả trên di động được thiết kế xuyên suốt qua hai màn hình:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Trung tâm Sự kiện Trực tiếp (\texttt{LiveNowScreen} --- \texttt{/live}):} Tự động đồng bộ danh sách sự kiện đang \texttt{LIVE} mỗi 15 giây (\texttt{Timer.periodic}), hiển thị các thẻ thống kê tổng số kênh đang lên sóng và tổng lượng người xem đồng thời (CCU), hỗ trợ sắp xếp theo lượng người xem cao nhất hoặc mới bắt đầu, cùng nút nổi mở nhanh \texttt{LiveStudioScreen} dành cho \texttt{STAFF}/\texttt{ADMIN}.
+  \item \textbf{Sảnh chờ \& Phòng xem Trực tiếp (\texttt{LiveWatchScreen} --- \texttt{/live/:id}):} Khi mở sự kiện, người xem thấy biểu ngữ sảnh chờ \texttt{LiveJoinPromptBanner} mời tham gia phòng. Khi nhấn tham gia, ứng dụng kết nối vào namespace Socket.IO \texttt{/live} (\texttt{subscribe:event}) và kích hoạt đầy đủ 6 thao tác tương tác thời gian thực:
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Đồng bộ Mắt xem Thời gian thực (\texttt{live:viewerCount}):} Cập nhật tức thời số người đang cùng xem trên huy hiệu đỏ \texttt{LIVE}.
+    \item \emph{Trò chuyện Trực tiếp có Nhánh trả lời \& Kiểm duyệt (\texttt{live:chat}):} Khán giả gửi bình luận trực tiếp, nhấn trả lời từng bình luận (\texttt{parentId}), thả tim bình luận; người dùng \texttt{STAFF}/\texttt{ADMIN} có thể xóa tin nhắn vi phạm ngay lập tức (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}).
+    \item \emph{Biểu cảm Hạt nổi Phản hồi Xúc giác 0ms (\texttt{live:reaction}):} Thanh công cụ cung cấp các nút thả biểu cảm (\texttt{HEART} $\heartsuit$, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}). Ngay khi chạm, ứng dụng kích hoạt rung xúc giác (\texttt{HapticFeedback.lightImpact()}), tăng bộ đếm cục bộ tức thì (optimistic delta) và vẽ hoạt họa hạt bay lên mượt mà qua \texttt{FloatingReactionOverlay}.
+    \item \emph{Thông báo Ghim từ Đạo diễn (\texttt{broadcaster:message}):} Hiển thị thông điệp quan trọng từ phòng thu dưới dạng dải băng thông báo nổi bật trên đầu khung chat.
+    \item \emph{Quyên góp Super Chat 6 Mệnh giá (\texttt{LiveDonationModal}):} Mở bảng tặng quà trực tiếp gồm 6 mức quà tặng kèm lời nhắn vinh danh, phương thức thanh toán và hiệu ứng ăn mừng toàn phòng (\texttt{live:donation:received}).
+    \item \emph{Chuyển Chương trình Tự động Không Gián đoạn (\texttt{live:program:changed}):} Lắng nghe sự kiện đổi luồng từ đạo diễn và tự động chuyển \texttt{OmniPlayer} sang URL video mới mà không làm thoát màn hình hay mất lịch sử chat.
+  \end{itemize}
+\end{enumerate}
+}{
+The mobile viewer LiveStream journey spans two dedicated screens:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Live Broadcast Hub (\texttt{LiveNowScreen} --- \texttt{/live}):} Auto-refreshes active \texttt{LIVE} broadcasts every 15 seconds (\texttt{Timer.periodic}), displays summary pills for active streams and total concurrent viewers (CCU), supports sorting by trending viewers or newest start time, and provides a quick-launch button to \texttt{LiveStudioScreen} for \texttt{STAFF}/\texttt{ADMIN} operators.
+  \item \textbf{Interactive Live Watch Room (\texttt{LiveWatchScreen} --- \texttt{/live/:id}):} Presents a \texttt{LiveJoinPromptBanner} lobby card and, upon joining, connects to the Socket.IO \texttt{/live} namespace (\texttt{subscribe:event}) to power six real-time interactive operations:
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Real-Time Viewer Counter (\texttt{live:viewerCount}):} Updates concurrent viewer badges live as audiences join or leave.
+    \item \emph{Threaded Live Chat \& Moderation (\texttt{live:chat}):} Supports real-time chat messages, nested replies (\texttt{parentId}), comment likes, and instant \texttt{STAFF}/\texttt{ADMIN} message deletion (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}).
+    \item \emph{0ms Haptic Floating Emoji Reactions (\texttt{live:reaction}):} Tapping reaction buttons (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}) triggers immediate \texttt{HapticFeedback.lightImpact()}, increments optimistic local counters, and spawns rising particle animations via \texttt{FloatingReactionOverlay}.
+    \item \emph{Pinned Host Announcements (\texttt{broadcaster:message}):} Renders live announcements from studio producers as a highlighted banner.
+    \item \emph{6-Tier Super Chat \& Live Donations (\texttt{LiveDonationModal}):} Enables viewers to send virtual gifts across 6 preset tiers with custom messages, updating creator wallets and triggering celebratory room overlays (\texttt{live:donation:received}).
+    \item \emph{Zero-Downtime Program Switching (\texttt{live:program:changed}):} Automatically reloads \texttt{OmniPlayer} with the newly switched stream URL whenever the studio changes the active programme.
+  \end{itemize}
+\end{enumerate}
+}
+
+\subsection{\bi{Màn hình Bàn điều khiển \texttt{LiveStudioScreen} (4 Tab) và Máy quay Hiện trường \texttt{MobileStudioRecorderScreen}}{4-Tab \texttt{LiveStudioScreen} Console and \texttt{MobileStudioRecorderScreen} Field Viewfinder}}
+
+\bi{
+Điểm nhấn kỹ thuật nổi bật trên ứng dụng di động là khả năng biến chiếc điện thoại của biên tập viên (\texttt{STAFF}/\texttt{ADMIN}) thành một bàn điều khiển phát sóng di động hoàn chỉnh thông qua \texttt{LiveStudioScreen} (\texttt{lib/presentation/screens/studio/live\_studio\_screen.dart}) và \texttt{MobileStudioRecorderScreen} (\texttt{lib/presentation/screens/studio/mobile\_studio\_recorder\_screen.dart}):
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Bàn điều khiển \texttt{LiveStudioScreen} 4 Tab:}
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Tab 1 --- Chọn nội dung phát sóng (Curated Live):} Chọn kênh phát, đặt tiêu đề/mô tả và chọn một hoặc nhiều bản ghi từ thư viện kênh hoặc kho chung để lên sóng ngay lập tức (\texttt{POST /programs/studio/curate-live}).
+    \item \emph{Tab 2 --- Tự ghi hình \& Phát trực tiếp từ Thiết bị (Self-Record):} Mở máy quay hiện trường \texttt{MobileStudioRecorderScreen} hoặc chọn video từ thư viện máy, tải lên trực tiếp Cloudinary bằng chữ ký số và chọn 1 trong 3 chế độ xuất bản (\texttt{IMMEDIATE} phát ngay, \texttt{SCHEDULED} hẹn giờ, \texttt{PRIVATE} lưu nháp).
+    \item \emph{Tab 3 --- Kho nội dung công khai (Verified Public Catalog):} Duyệt các luồng HLS/MP4 đã kiểm định, lọc theo định dạng và nhập một chạm vào kênh hoặc thêm URL tùy chỉnh.
+    \item \emph{Tab 4 --- Điều hành \& Thông báo Phòng Live:} Phát thông báo ghim (\texttt{broadcaster:message}) tới toàn bộ người xem, theo dõi trạng thái sóng và kết thúc phiên Live (\texttt{keepAsVod}).
+  \end{itemize}
+  \item \textbf{Máy quay Tác nghiệp Hiện trường \texttt{MobileStudioRecorderScreen}:} Được thiết kế theo chuẩn máy quay truyền hình chuyên nghiệp (Broadcast ENG Viewfinder) với hai chế độ vận hành:
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Chế độ 1 --- Đẩy sóng Trực tiếp Thời gian thực (Push-to-Live WebRTC WHIP):} Sử dụng \texttt{WebRTCPublisherService} để thu hình ảnh/âm thanh từ ống kính camera điện thoại và đẩy trực tiếp qua giao thức WebRTC WHIP tới máy chủ MediaMTX, phát sóng tức thì tới mọi khán giả trên Web và Mobile với viền đỏ nhấp nháy \texttt{ON-AIR}.
+    \item \emph{Chế độ 2 --- Ghi hình Chuẩn 1080p \& Duyệt Master QC (Record-then-Live):} Ghi tệp MP4 chất lượng cao kèm bộ tạo mã thời gian chuẩn truyền hình \textbf{SMPTE Timecode} (\texttt{HH:MM:SS:FF}), đồng hồ đo âm lượng \textbf{Stereo VU Audio Meter} hai kênh L/R thời gian thực, khung lưới bố cục \textbf{Rule-of-Thirds} \& \textbf{Safe Area}, lớp phủ \textbf{Lower Third} \& \textbf{Watermark}, điều khiển đèn Flash (Torch), chuyển đổi camera trước/sau, thu phóng quang học \texttt{1x--5x}, và \textbf{Máy nhắc chữ tự động cuộn (Reporter Teleprompter HUD)} ngay trên màn hình quay. Sau khi dừng quay, màn hình tự động chuyển sang trình duyệt chất lượng \textbf{Master QC Review} để phóng viên kiểm tra lại hình/tiếng trước khi đẩy lên đám mây.
+  \end{itemize}
+\end{enumerate}
+}{
+A flagship engineering capability of OmniCast Mobile is transforming any authorised smartphone (\texttt{STAFF}/\texttt{ADMIN}) into a portable broadcast control centre via \texttt{LiveStudioScreen} (\texttt{lib/presentation/screens/studio/live\_studio\_screen.dart}) and \texttt{MobileStudioRecorderScreen} (\texttt{lib/presentation/screens/studio/mobile\_studio\_recorder\_screen.dart}):
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{The 4-Tab \texttt{LiveStudioScreen} Console:}
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Tab 1 --- Curated Live:} Pick target channel, enter stream metadata, and select one or more VOD recordings for immediate multi-item broadcast (\texttt{POST /programs/studio/curate-live}).
+    \item \emph{Tab 2 --- Self-Record \& Device Broadcast:} Launch \texttt{MobileStudioRecorderScreen} or pick device media, upload directly to Cloudinary via signed parameters, and publish under \texttt{IMMEDIATE}, \texttt{SCHEDULED} or \texttt{PRIVATE} visibility.
+    \item \emph{Tab 3 --- Verified Public Catalog:} Browse verified public HLS/MP4 feeds with one-click channel import or custom URL probing.
+    \item \emph{Tab 4 --- Host Announcement \& Broadcast Control:} Dispatch pinned room announcements (\texttt{broadcaster:message}) and stop active live events (\texttt{keepAsVod}).
+  \end{itemize}
+  \item \textbf{The \texttt{MobileStudioRecorderScreen} Field Reporter Viewfinder:} Engineered after professional Electronic News Gathering (ENG) broadcast cameras with two operating modes:
+  \begin{itemize}[leftmargin=*,itemsep=1pt]
+    \item \emph{Mode 1 --- Push-to-Live Real-Time WebRTC WHIP:} Streams live camera video and microphone audio directly to MediaMTX via \texttt{WebRTCPublisherService} with a flashing red \texttt{ON-AIR} tally border.
+    \item \emph{Mode 2 --- 1080p Record-then-Live with Master QC:} Captures 1080p MP4 video equipped with a real-time \textbf{SMPTE Timecode Generator} (\texttt{HH:MM:SS:FF}), dual-channel \textbf{Stereo VU Audio Meter}, \textbf{Rule-of-Thirds} \& \textbf{Safe Area} framing guides, live \textbf{Lower Third} \& \textbf{Watermark} overlays, hardware Torch toggle, front/rear lens flip, \texttt{1x--5x} zoom presets, and an auto-scrolling \textbf{Reporter Teleprompter HUD}. Upon stopping, the studio transitions into a \textbf{Master QC Review} player to verify footage prior to signed cloud upload.
+  \end{itemize}
+\end{enumerate}
+}

@@ -1,0 +1,88 @@
+% ============================================================
+% PRN232 - Appendix (Vietnamese)
+% ============================================================
+\appendix
+\section{\bi{Phụ lục A: Danh mục endpoint REST}{Appendix A: REST Endpoint Inventory}}
+\label{app:endpoints}
+
+\bi{
+Bảng dưới đây được sinh tự động bằng cách phân tích trực tiếp 19
+tệp controller trong \texttt{backend/src}. Tổng cộng 140 endpoint trải
+trên 19 module; cột đường dẫn gốc cho biết tiền tố được dùng khi
+gọi.
+}{
+The following table is generated automatically by analysing the 19
+controller files in \texttt{backend/src}. It covers 140 endpoints
+across 19 modules; the base-path column shows the prefix to use when
+calling them.
+}
+
+\begin{table*}[t]
+\caption{\bi{Danh mục endpoint theo module và phương thức HTTP.}{Endpoint
+inventory by module and HTTP method.}}
+\label{tab:endpoints}
+\centering
+\scriptsize
+\fitfull{\input{generated/table-endpoints.tex}}
+\end{table*}
+
+\section{\bi{Phụ lục B: Quy mô mã nguồn}{Appendix B: Source-Code Scale}}
+\label{app:loc}
+
+\bi{
+Bảng tổng hợp quy mô mã nguồn của ba sản phẩm, tính theo số dòng
+vật lý của từng tệp. Con số này được dùng để định lượng khối lượng
+công việc thực tế và là cơ sở để ước lượng công sức bảo trì.
+}{
+A summary of the source-code scale of the three deliverables, counted
+as physical lines per file. These figures quantify the real volume of
+work performed and underpin the maintenance-effort estimate.
+}
+
+\begin{table}[t]
+\caption{\bi{Quy mô mã nguồn theo thành phần.}{Source-code scale per
+component.}}
+\label{tab:loc}
+\centering
+\footnotesize
+\fitcol{\input{generated/table-loc.tex}}
+\end{table}
+
+\section{\bi{Phụ lục C: Cấu trúc kho mã nguồn}{Appendix C: Repository Layout}}
+\label{app:tree}
+
+\begin{lstlisting}[caption={\bi{Cấu trúc thư mục ở mức tổng quát.}{Directory
+structure at a high level.}}]
+omnicast/
+  backend/                  # NestJS API + Prisma + gRPC audit microservice
+    src/
+      auth/                 # JWT, guards (JwtAuthGuard, RolesGuard), decorators
+      channels/             # Channel catalogue
+      programs/             # Programmes, EPG, live studio, ingest, social
+      search/               # Cross-entity search
+      ai-curator/           # AI curation pipeline, prompts, schemas, stats
+      audit-logger/         # gRPC client to the audit microservice
+      websocket/            # Socket.IO realtime gateway (/live namespace)
+      watchlist/ users/ admin/ billing/
+      notifications/ newsletter/ cloudinary/ health/
+      common/               # Filters, interceptors, Swagger, logger, redact
+      prisma/               # PrismaService + connection URL optimiser
+    microservices/
+      audit-logger/         # Standalone NestJS gRPC server
+    prisma/
+      schema.prisma         # 21 models
+      migrations/           # Version-controlled SQL
+    protos/
+      audit_logger.proto    # gRPC service definition
+    test/                   # 16 spec files, node:test runner
+  frontend/                 # Next.js 15 App Router + Tailwind
+    app/                    # 33 routes (24 route folders)
+    components/ lib/        # UI components, hooks, API clients
+    __tests__/              # 76 Vitest suites
+  mobile/                   # Flutter 3.x (see the PRM393 paper)
+    lib/{core,data,logic,presentation}/
+    test/{data,logic,presentation}/
+  playwright-tests/         # 8 browser end-to-end scenarios
+  .github/workflows/ci.yml  # 5-job CI/CD pipeline
+  deliverables/             # Submission artefacts (this document set)
+\end{lstlisting}

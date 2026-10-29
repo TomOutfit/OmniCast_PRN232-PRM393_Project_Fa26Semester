@@ -1,0 +1,11 @@
+% Auto-generated from backend/prisma/schema.prisma (enum UserRole)
+\begin{tabular}{@{}clp{6.6cm}@{}}
+\toprule
+\textbf{\bi{Mã}{Code}} & \textbf{\bi{Giá trị}{Value}} & \textbf{\bi{Mô tả}{Description}} \\
+\midrule
+\texttt{GUEST} & 0 & \bi{Khách chưa đăng nhập -- chỉ xem lịch phát công khai và trailer}{Unauthenticated guest -- public schedule and trailers only} \\
+\texttt{VIEWER} & 1 & \bi{Người xem đã đăng nhập -- lưu watchlist, bình luận, thích, xem lịch sử}{Signed-in viewer -- watchlist, comments, likes, watch history} \\
+\texttt{STAFF} & 2 & \bi{Biên tập viên nội dung -- quản lý kênh, lịch phát, chạy AI Curator}{Content editor -- manage channels, schedule, run AI Curator} \\
+\texttt{ADMIN} & 3 & \bi{Quản trị viên -- toàn bộ quyền STAFF cộng quản lý người dùng và nhật ký kiểm toán}{Administrator -- all STAFF rights plus user and audit-log management} \\
+\bottomrule
+\end{tabular}

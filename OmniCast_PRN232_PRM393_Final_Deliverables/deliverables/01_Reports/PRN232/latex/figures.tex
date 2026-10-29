@@ -1,0 +1,337 @@
+% ============================================================
+% OmniCast - Shared TikZ figures (bilingual)
+%
+% Every visible string uses \bi{Vietnamese}{English} so the same
+% source renders correctly in both the VN and the EN report.
+%
+% Requires the OmniCast preamble (omnicast-preamble-ieee.tex) for
+% the colour palette, TikZ styles and the \bi macro.
+% ============================================================
+
+% ------------------------------------------------------------
+% Figure: Overall layered architecture (PRN232)
+% ------------------------------------------------------------
+\newcommand{\figArchitecture}{%
+\begin{tikzpicture}[scale=0.92, transform shape]
+  % --- Presentation layer ---
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (web) at (0,4.6) {\textbf{Next.js 15 Web Portal}\\App Router $\cdot$ React 19\\Tailwind Cinema Dark};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (mob) at (4.0,4.6) {\textbf{Flutter 3.x Mobile}\\BLoC $\cdot$ Dio $\cdot$ Sqflite};
+
+  % --- API layer ---
+  \node[omniAccent, minimum width=5.4cm, minimum height=1.5cm] (api) at (2.0,2.5) {\textbf{NestJS 10 REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT + RBAC $\cdot$ Swagger/OpenAPI};
+  \node[omniTealNode] (gw) at (2.0,0.9) {\textbf{WebSocket Gateway}\\namespace \texttt{/live}\\Socket.IO $\cdot$ WebRTC signalling};
+  \node[omniTealNode] (grpc) at (5.6,0.9) {\textbf{gRPC Client}\\AuditLogger proto};
+
+  % --- Microservice ---
+  \node[omniAmberNode] (audit) at (5.6,-0.9) {\textbf{Audit-Logger Microservice}\\NestJS $\cdot$ gRPC server\\Render/own deployment};
+
+  % --- Data layer ---
+  \node[omniDarkNode, minimum width=3.0cm] (db) at (0.2,-0.9) {\textbf{PostgreSQL}\\Supabase\\21 Prisma models};
+  \node[omniDarkNode] (media) at (2.8,-0.9) {\textbf{MediaMTX}\\WHIP ingest\\HLS / WebRTC out};
+  \node[omniDarkNode] (cdn) at (5.0,-0.9) {\textbf{Cloudinary}\\media assets};
+  \node[omniDarkNode] (ext) at (7.2,-0.9) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB\\YouTube/Twitch/RSS};
+
+  % --- Flows ---
+  \draw[omniFlowAccent] (web) -- (api);
+  \draw[omniFlowAccent] (mob) -- (api);
+  \draw[omniFlow] (api) -- (gw);
+  \draw[omniFlow] (api) -- (grpc);
+  \draw[omniFlowTeal] (grpc) -- (audit);
+  \draw[omniFlow] (api) -- (db);
+  \draw[omniFlow] (api) -- (media);
+  \draw[omniFlow] (api) -- (cdn);
+  \draw[omniFlowAmber] (api) -- (ext);
+  \draw[omniFlow] (media) -- (mob);
+  \draw[omniFlow] (media) -- (web);
+
+  % --- Layer annotations ---
+  \node[omniLabel, anchor=west] at (-1.85,4.6) {\bi{\textbf{Tầng}}{\textbf{Presentation}}};
+  \node[omniLabel, anchor=west] at (-1.85,2.5) {\bi{\textbf{API}}{\textbf{API}}};
+  \node[omniLabel, anchor=west] at (-1.85,0.9) {\bi{\textbf{Real-time}}{\textbf{Real-time}}};
+  \node[omniLabel, anchor=west] at (-1.85,-0.9) {\bi{\textbf{Dữ liệu}}{\textbf{Data}}};
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: EPG anti-conflict scheduling timeline
+% ------------------------------------------------------------
+\newcommand{\figScheduleConflict}{%
+\begin{tikzpicture}[x=0.95cm, y=0.75cm]
+  % Existing event on the channel
+  \filldraw[fill=omniBlue!22, draw=omniBlue, line width=0.8pt]
+    (1.0,1.6) rectangle (5.2,2.3);
+  \node at (3.1,1.95) {\footnotesize \bi{\textbf{Sự kiện đã có}}{\textbf{Existing event}} (14:00--15:00)};
+
+  % Candidate event - overlapping head
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (0.4,0.45) rectangle (4.2,1.15);
+  \node at (2.3,0.8) {\footnotesize \bi{\textbf{Lịch mới}}{\textbf{New schedule}} (13:30--14:30)};
+  \node[omniRose, font=\scriptsize\bfseries] at (2.3,0.15) {\bi{giao thoa đầu $\rightarrow$ 409}{head overlap $\rightarrow$ 409}};
+
+  % Candidate event - overlapping tail
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (4.0,2.85) rectangle (7.2,3.55);
+  \node at (5.6,3.2) {\footnotesize \bi{\textbf{Lịch mới}}{\textbf{New schedule}} (14:30--15:30)};
+  \node[omniRose, font=\scriptsize\bfseries] at (5.6,2.6) {\bi{giao thoa đuôi $\rightarrow$ 409}{tail overlap $\rightarrow$ 409}};
+
+  % Candidate event - fully contained
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (0.9,3.4) rectangle (5.6,4.1);
+  \node at (3.25,3.75) {\footnotesize \bi{\textbf{Lịch mới}}{\textbf{New schedule}} (13:00--16:00)};
+  \node[omniRose, font=\scriptsize\bfseries] at (3.25,3.15) {\bi{bao trùm toàn bộ $\rightarrow$ 409}{fully contained $\rightarrow$ 409}};
+
+  % Non-overlapping on another channel
+  \filldraw[fill=omniTeal!20, draw=omniTeal, line width=0.8pt]
+    (6.0,0.45) rectangle (9.4,1.15);
+  \node at (7.7,0.8) {\footnotesize \bi{\textbf{Kênh khác}}{\textbf{Other channel}} (14:00--15:00)};
+  \node[omniTeal, font=\scriptsize\bfseries] at (7.7,0.15) {\bi{cho phép $\rightarrow$ 201}{allowed $\rightarrow$ 201}};
+
+  % Time axis
+  \draw[-{Latex[length=2mm]}, line width=0.6pt] (0.2,0) -- (9.8,0);
+  \foreach \x/\lab in {1.0/13:00,2.6/14:00,4.2/15:00,5.8/16:00,7.4/17:00,9.0/18:00}{
+    \draw (\x,0) -- (\x,0.12);
+    \node[font=\scriptsize, below=2pt] at (\x,0) {\lab};
+  }
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: AI Curator pipeline (consolidated single call + fallback)
+% ------------------------------------------------------------
+\newcommand{\figAiPipeline}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.3cm]
+  \node[omniNode] (input) {\bi{\textbf{Đầu vào}}{\textbf{Input}}\\title + description\\category + tags};
+  \node[omniAccent, right=of input] (norm) {\bi{\textbf{Chuẩn hoá}}{\textbf{Normalise}}\\\texttt{CuratorProgramInput}};
+  \node[omniAmberNode, right=of norm] (branch) {\bi{\textbf{Phân nhánh}}{\textbf{Branch}}\\\bi{có \texttt{OPENAI\_API\_KEY}?}{has \texttt{OPENAI\_API\_KEY}?}};
+
+  \node[omniTealNode, above right=0.4cm and 1.6cm of branch] (prompt) {\textbf{buildConsolidatedPrompt}\\temperature 0.3 $\cdot$ top\_p 0.95};
+  \node[omniTealNode, right=of prompt] (call) {\bi{\textbf{Gọi OpenAI}}{\textbf{Call OpenAI}}\\gpt-4o $\cdot$ retry + backoff};
+  \node[omniDarkNode, right=of call] (valid) {\bi{\textbf{Kiểm tra schema}}{\textbf{Schema check}}\\Zod validate};
+
+  \node[omniRoseNode, below right=0.4cm and 1.6cm of branch] (fallback) {\bi{\textbf{Heuristic fallback}}{\textbf{Heuristic fallback}}\\\texttt{sentiment / compliance / editorial}};
+  \node[omniPurpleNode, right=of fallback] (conf) {\bi{\textbf{Tính confidence}}{\textbf{Compute confidence}}\\heuristic $\cdot$ clamp 0..1};
+
+  \node[omniAccent, right=of valid, minimum width=2.4cm] (report) {\textbf{AiCuratorReport}\\\bi{\texttt{lưu trong PostgreSQL}}{\texttt{stored in PostgreSQL}}};
+  \node[omniNode, below=of report] (stamp) {\bi{\textbf{Dấu vết}}{\textbf{Provenance}}\\\texttt{promptVersion} $\cdot$ \texttt{aiModelVersion}\\\texttt{openaiCallMs} $\cdot$ \texttt{openaiRetries}};
+
+  \draw[omniFlowAccent] (input) -- (norm);
+  \draw[omniFlowAccent] (norm) -- (branch);
+  \draw[omniFlowTeal] (branch) -- node[above, font=\scriptsize] {\bi{có}{yes}} (prompt);
+  \draw[omniFlowTeal] (prompt) -- (call);
+  \draw[omniFlowTeal] (call) -- (valid);
+  \draw[omniFlowRose] (branch) -- node[below, font=\scriptsize] {\bi{không}{no}} (fallback);
+  \draw[omniFlowRose] (fallback) -- (conf);
+  \draw[omniFlowTeal] (valid) -- (report);
+  \draw[omniFlowRose] (conf) -- (report);
+  \draw[omniFlow] (report) -- (stamp);
+  \draw[omniFlowRose, dashed] (valid) to[out=200,in=20] node[font=\scriptsize, text=omniRose] {validate fail} (fallback);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Mobile BLoC layered architecture (PRM393)
+% ------------------------------------------------------------
+\newcommand{\figMobileArchitecture}{%
+\begin{tikzpicture}[scale=0.95, transform shape]
+  \begin{scope}[local bounding box=pres]
+    \node[omniPurpleNode, minimum width=5.0cm, minimum height=1.4cm] (pres) at (0,3.4) {\bi{\textbf{Tầng Presentation}}{\textbf{Presentation layer}}\\31 screens $\cdot$ 22 widgets\\GoRouter navigation};
+  \end{scope}
+
+  \begin{scope}[local bounding box=logic]
+    \node[omniAccent, minimum width=5.0cm, minimum height=1.4cm] (logic) at (0,1.5) {\bi{\textbf{Tầng Logic (BLoC)}}{\textbf{Logic layer (BLoC)}}\\12 BLoC/Cubit\\events $\rightarrow$ states};
+  \end{scope}
+
+  \begin{scope}[local bounding box=data]
+    \node[omniTealNode, minimum width=5.0cm, minimum height=1.4cm] (data) at (0,-0.4) {\bi{\textbf{Tầng Data}}{\textbf{Data layer}}\\10 repositories $\cdot$ 10 models\\Dio client $\cdot$ AuthInterceptor};
+  \end{scope}
+
+  \begin{scope}[local bounding box=core]
+    \node[omniDarkNode, minimum width=5.0cm, minimum height=1.4cm] (core) at (0,-2.3) {\bi{\textbf{Tầng Core}}{\textbf{Core layer}}\\DI (get\_it) $\cdot$ theme $\cdot$ i18n\\constants $\cdot$ utils $\cdot$ services};
+  \end{scope}
+
+  \node[omniAmberNode, right=1.4cm of data] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local Storage}}\\\texttt{omnicast\_local.db}\\Sqflite offline-first};
+  \node[omniRoseNode, right=1.4cm of core] (remote) {\bi{\textbf{Từ xa}}{\textbf{Remote}}\\REST API (NestJS)\\FCM push $\cdot$ Supabase Realtime};
+
+  \draw[omniFlowAccent] (pres) -- node[right, font=\scriptsize] {dispatch} (logic);
+  \draw[omniFlowAccent] (logic) -- node[right, font=\scriptsize] {\bi{gọi}{calls}} (data);
+  \draw[omniFlowTeal] (data) -- (local);
+  \draw[omniFlowRose] (data) -- (remote);
+  \draw[omniFlow, dashed] (core) -- (data);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Offline-first watchlist sync flow
+% ------------------------------------------------------------
+\newcommand{\figOfflineSync}{%
+\begin{tikzpicture}[node distance=1.0cm and 1.4cm]
+  \node[omniNode] (ui) {\textbf{WatchlistScreen}\\SaveToWatchlistButton};
+  \node[omniAccent, right=of ui] (bloc) {\textbf{WatchlistBloc}\\\texttt{AddToWatchlist}\\\texttt{LoadWatchlist}};
+  \node[omniTealNode, right=of bloc] (repo) {\textbf{WatchlistRepository}};
+
+  \node[omniAmberNode, below=of repo] (sqlite) {\textbf{SQLite}\\\texttt{omnicast\_local.db}\\\texttt{WatchlistCache}};
+  \node[omniRoseNode, right=of sqlite] (api) {\textbf{REST}\\\texttt{GET/POST /me/watchlist}};
+  \node[omniDarkNode, right=of api] (notif) {\bi{\textbf{Thông báo cục bộ}}{\textbf{Local notification}}\\\bi{đặt lịch trước 15 phút}{schedule 15 min ahead}};
+
+  \draw[omniFlowAccent] (ui) -- (bloc);
+  \draw[omniFlowAccent] (bloc) -- (repo);
+  \draw[omniFlowTeal] (repo) -- (sqlite);
+  \draw[omniFlowRose] (repo) -- (api);
+  \draw[omniFlow] (sqlite) -- (notif);
+  \draw[omniFlowRose, dashed] (api) to[out=0,in=180] node[above, font=\scriptsize] {\bi{đồng bộ khi online}{sync online}} (sqlite);
+  \draw[omniFlowAmber, dashed] (sqlite) to[out=200,in=20] node[below, font=\scriptsize, text=omniAmber] {\bi{đọc offline khi mất mạng}{read offline when offline}} (ui);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: CI/CD pipeline
+% ------------------------------------------------------------
+\newcommand{\figCicd}{%
+\begin{tikzpicture}[node distance=0.85cm and 1.1cm]
+  \node[omniDarkNode] (push) {\textbf{git push main}};
+  \node[omniAccent, right=of push] (gha) {\textbf{GitHub Actions}\\\texttt{ci.yml}};
+
+  \node[omniNode, below=of gha] (be) {\bi{\textbf{backend job}}{\textbf{backend job}}\\npm ci $\cdot$ prisma generate\\node:test (163)$\cdot$prisma migrate $\cdot$ nest build};
+  \node[omniNode, right=of be] (fe) {\bi{\textbf{frontend job}}{\textbf{frontend job}}\\npm ci $\cdot$ vitest run (228)\\tsc --noEmit $\cdot$ next build};
+  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\flutter test (91)$\cdot$flutter build apk};
+
+  \node[omniTealNode, below=of be] (sum) {\bi{\textbf{test-summary job}}{\textbf{test-summary job}}\\merge artifacts $\cdot$ generate HTML report\\quality gate};
+  \node[omniPurpleNode, right=of sum] (dep) {\bi{\textbf{deploy job}}{\textbf{deploy job}}\\Vercel backend\\Vercel frontend};
+
+  \draw[omniFlowAccent] (push) -- (gha);
+  \draw[omniFlow] (gha) -- (be);
+  \draw[omniFlow] (gha) -- (fe);
+  \draw[omniFlow] (gha) -- (mob);
+  \draw[omniFlowTeal] (be) -- (sum);
+  \draw[omniFlowTeal] (fe) -- (sum);
+  \draw[omniFlowTeal] (mob) -- (sum);
+  \draw[omniFlowAccent] (sum) -- (dep);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: JWT authentication & RBAC flow
+% ------------------------------------------------------------
+\newcommand{\figAuthFlow}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.2cm]
+  \node[omniNode] (client) {\bi{\textbf{Client}}{\textbf{Client}}\\\bi{Web hoặc Mobile}{Web or Mobile}};
+  \node[omniAccent, right=of client] (auth) {\textbf{AuthController}\\\texttt{/api/v1/auth/login}};
+  \node[omniTealNode, right=of auth] (svc) {\textbf{AuthService}\\bcrypt verify\\deactivated check};
+  \node[omniDarkNode, right=of svc] (db) {\textbf{PostgreSQL}\\\texttt{User} + \texttt{RefreshToken}};
+
+  \node[omniPurpleNode, below=of svc] (tok) {\bi{\textbf{Cấp token}}{\textbf{Issue tokens}}\\\texttt{access} 60 min\\\texttt{refresh} 90 days (rotated)};
+  \node[omniAmberNode, right=of tok] (guard) {\bi{\textbf{RBAC Guards}}{\textbf{RBAC Guards}}\\\texttt{JwtAuthGuard}\\\texttt{RolesGuard}};
+  \node[omniRoseNode, right=of guard] (api) {\bi{\textbf{Endpoint có kiểm tra quyền}}{\textbf{Role-guarded endpoint}}\\\texttt{@Roles(1,2,3)}};
+
+  \draw[omniFlowAccent] (client) -- (auth);
+  \draw[omniFlowAccent] (auth) -- (svc);
+  \draw[omniFlow] (svc) -- (db);
+  \draw[omniFlowTeal] (svc) -- (tok);
+  \draw[omniFlowTeal] (tok) -- (guard);
+  \draw[omniFlowRose] (guard) -- (api);
+  \draw[omniFlow, dashed] (client) to[out=0,in=180] node[above, font=\scriptsize] {Bearer token} (guard);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Ingest pipeline (external sources -> normalised events)
+% ------------------------------------------------------------
+\newcommand{\figIngest}{%
+\begin{tikzpicture}[node distance=0.85cm and 1.2cm]
+  \node[omniAmberNode] (yt) {\textbf{YouTube}\\Data API v3};
+  \node[omniAmberNode, below=of yt] (tw) {\textbf{Twitch}\\Helix API};
+  \node[omniAmberNode, below=of tw] (rss) {\textbf{RSS}\\Feed parser};
+
+  \node[omniAccent, right=of yt] (cron) {\bi{\textbf{Bộ lập lịch}}{\textbf{Scheduler}}\\\texttt{@Cron}\\\bi{15'/30' phút}{15'/30' minutes}};
+  \node[omniTealNode, right=of cron] (norm) {\bi{\textbf{Chuẩn hoá}}{\textbf{Normalise}}\\\texttt{NormalizedLiveEvent}\\duration in seconds};
+  \node[omniDarkNode, right=of norm] (db) {\textbf{LiveEvent}\\\bi{upsert theo kênh}{upsert per channel}};
+  \node[omniRoseNode, right=of db] (fill) {\bi{\textbf{Điền lịch trống}}{\textbf{EPG filler}}\\24/7 grid};
+
+  \draw[omniFlowAmber] (yt) -- (cron);
+  \draw[omniFlowAmber] (tw) -- (cron);
+  \draw[omniFlowAmber] (rss) -- (cron);
+  \draw[omniFlowAccent] (cron) -- (norm);
+  \draw[omniFlowTeal] (norm) -- (db);
+  \draw[omniFlowRose] (db) -- (fill);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: End-to-End LiveStream & Live Studio Real-Time Architecture
+% ------------------------------------------------------------
+\newcommand{\figLiveStreamArch}{%
+\begin{tikzpicture}[node distance=0.75cm and 1.1cm]
+  % --- Broadcaster / Studio Sources (Left) ---
+  \node[omniPurpleNode, minimum width=3.4cm] (tab1) at (0, 3.3) {\bi{\textbf{Tab 1: Chọn nội dung}}{\textbf{Tab 1: Curated Live}}\\VOD Library $\cdot$ Anti-piracy guard};
+  \node[omniPurpleNode, minimum width=3.4cm] (tab2) at (0, 1.9) {\bi{\textbf{Tab 2: Tự ghi hình / Camera}}{\textbf{Tab 2: Self-Record / Camera}}\\WHIP WebRTC $\cdot$ Screen $\cdot$ Dropzone};
+  \node[omniPurpleNode, minimum width=3.4cm] (tab3) at (0, 0.5) {\bi{\textbf{Tab 3: Kho công khai}}{\textbf{Tab 3: Public Catalog}}\\Verified HLS/MP4 $\cdot$ HEAD probe};
+  \node[omniPurpleNode, minimum width=3.4cm] (tab4) at (0,-0.9) {\bi{\textbf{Tab 4: Điều hành \& Tương tác}}{\textbf{Tab 4: Host Control Console}}\\Pinned announcement $\cdot$ Stop/Switch};
+
+  % --- Ingestion & Orchestration (Middle-Left) ---
+  \node[omniAccent, minimum width=3.8cm, minimum height=1.5cm] (studio) at (4.6, 2.2) {\textbf{LiveStudioService}\\atomic event lifecycle\\\texttt{switchProgramOnLiveEvent}};
+  \node[omniDarkNode, minimum width=3.8cm] (mtx) at (4.6, 0.5) {\textbf{MediaMTX + Cloudinary}\\WHIP/RTSP $\rightarrow$ WHEP/HLS (\texttt{.m3u8})\\Direct Drive proxy $\cdot$ Signed upload};
+  \node[omniTealNode, minimum width=3.8cm, minimum height=1.5cm] (ws) at (4.6,-1.1) {\textbf{LiveStreamGateway (\texttt{/live})}\\Socket.IO rooms (\texttt{event:id})\\WebRTC SDP/ICE signalling};
+
+  % --- Real-Time Events & Viewer Rooms (Right) ---
+  \node[omniAmberNode, minimum width=4.0cm] (webroom) at (9.6, 2.5) {\bi{\textbf{Phòng Live Web (\texttt{/live/[id]})}}{\textbf{Web Live Room (\texttt{/live/[id]})}}\\7 genre lounges $\cdot$ Cinema mode\\Lineup switcher $\cdot$ Join Lobby};
+  \node[omniAmberNode, minimum width=4.0cm] (mobroom) at (9.6, 0.7) {\bi{\textbf{Màn hình Mobile (\texttt{LiveWatch})}}{\textbf{Mobile \texttt{LiveWatchScreen}}}\\OmniPlayer $\cdot$ LAN host discovery\\Zero-cartoon exponential retry};
+  \node[omniRoseNode, minimum width=4.0cm] (ops) at (9.6,-1.1) {\bi{\textbf{Thao tác Tương tác Tức thời}}{\textbf{Interactive Live Operations}}\\Chat \& Reply $\cdot$ 0ms Haptic Reactions\\6-Tier Super Chat $\cdot$ Host Toast};
+
+  % --- Flows ---
+  \draw[omniFlowAccent] (tab1) -- (studio);
+  \draw[omniFlowAccent] (tab2) -- (studio);
+  \draw[omniFlow] (tab2) -- (mtx);
+  \draw[omniFlowAccent] (tab3) -- (studio);
+  \draw[omniFlowTeal] (tab4) -- (ws);
+  \draw[omniFlowTeal] (studio) -- (ws);
+  \draw[omniFlow] (studio) -- (mtx);
+  \draw[omniFlowAccent] (mtx) -- (webroom);
+  \draw[omniFlowAccent] (mtx) -- (mobroom);
+  \draw[omniFlowTeal] (ws) -- (webroom);
+  \draw[omniFlowTeal] (ws) -- (mobroom);
+  \draw[omniFlowRose] (ws) -- (ops);
+  \draw[omniFlowRose, dashed] (ops) -- (mobroom);
+  \draw[omniFlowRose, dashed] (ops) -- (webroom);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: 5-Domain Relational Database Architecture (21 Prisma Models)
+% ------------------------------------------------------------
+\newcommand{\figDatabaseArchitecture}{%
+\begin{tikzpicture}[node distance=0.8cm and 1.0cm]
+  \node[omniAccent, minimum width=3.6cm, minimum height=2.1cm] (d1) at (0, 2.2) {\bi{\textbf{1. Định danh \& Bảo mật}}{\textbf{1. Identity \& Security}}\\\texttt{User} $\cdot$ \texttt{Role}\\\texttt{RefreshToken}};
+  \node[omniTealNode, minimum width=4.0cm, minimum height=2.1cm] (d2) at (4.4, 2.2) {\bi{\textbf{2. Lõi Phát sóng \& EPG}}{\textbf{2. Broadcast Core \& EPG}}\\\texttt{Channel} $\cdot$ \texttt{Program}\\\texttt{Schedule} $\cdot$ \texttt{LiveEvent}\\\texttt{Category} $\cdot$ \texttt{ProgramCategory}};
+  \node[omniPurpleNode, minimum width=4.0cm, minimum height=2.1cm] (d3) at (9.0, 2.2) {\bi{\textbf{3. Tương tác \& Thương mại}}{\textbf{3. Social \& Monetization}}\\\texttt{Comment} $\cdot$ \texttt{Reaction} $\cdot$ \texttt{Donation}\\\texttt{SubscriptionPlan} $\cdot$ \texttt{UserSubscription}\\\texttt{Watchlist} $\cdot$ \texttt{ViewHistory} $\cdot$ \texttt{FavoriteChannel}};
+  \node[omniAmberNode, minimum width=4.2cm, minimum height=1.8cm] (d4) at (2.2,-0.5) {\bi{\textbf{4. Vận hành \& Kiểm toán gRPC}}{\textbf{4. Operations \& gRPC Audit}}\\\texttt{Notification} $\cdot$ \texttt{AuditLog}\\\texttt{WebhookSubscription}};
+  \node[omniRoseNode, minimum width=4.2cm, minimum height=1.8cm] (d5) at (7.2,-0.5) {\bi{\textbf{5. Trí tuệ Nhân tạo (AI Curator)}}{\textbf{5. AI Content Intelligence}}\\\texttt{AiCuratorReport}\\\bi{1-1 với \texttt{Program} (sentiment/compliance)}{1-to-1 with \texttt{Program} (sentiment/compliance)}};
+
+  \draw[omniFlowAccent] (d1) -- (d2);
+  \draw[omniFlowTeal] (d2) -- (d3);
+  \draw[omniFlow] (d1) -- (d3);
+  \draw[omniFlowAmber] (d1) -- (d4);
+  \draw[omniFlowRose] (d2) -- (d5);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Complete Mobile Navigation & 31-Screen Hierarchy (PRM393)
+% ------------------------------------------------------------
+\newcommand{\figMobileScreenMap}{%
+\begin{tikzpicture}[node distance=0.65cm and 0.9cm]
+  \node[omniDarkNode, minimum width=3.6cm] (root) at (4.5, 3.6) {\textbf{GoRouter Root}\\Splash $\cdot$ Onboarding $\cdot$ Auth (4)};
+
+  \node[omniAccent, minimum width=3.8cm] (shell) at (4.5, 2.1) {\textbf{MainNavigationShell (6 Tabs)}\\Home $\cdot$ Channels $\cdot$ Schedule\\Saved $\cdot$ History $\cdot$ Profile};
+
+  \node[omniRoseNode, minimum width=3.5cm] (live) at (0.2, 0.4) {\bi{\textbf{Cụm Xem Live \& VOD}}{\textbf{Live \& VOD Cluster}}\\\texttt{LiveNowScreen} (\texttt{/live})\\\texttt{LiveWatchScreen} (\texttt{/live/:id})\\\texttt{OmniPlayer} + Super Chat + Chat};
+
+  \node[omniPurpleNode, minimum width=3.6cm] (studio) at (4.5, 0.4) {\bi{\textbf{Cụm Studio Phát sóng}}{\textbf{Broadcast Studio Cluster}}\\\texttt{LiveStudioScreen} (4 Tabs)\\\texttt{MobileStudioRecorderScreen}\\Teleprompter $\cdot$ VU Meter $\cdot$ QC};
+
+  \node[omniTealNode, minimum width=3.5cm] (admin) at (8.8, 0.4) {\bi{\textbf{Cụm Quản trị \& AI}}{\textbf{Admin \& AI Cluster}}\\\texttt{AdminManageScreen} (4 Tabs)\\\texttt{AiCuratorScreen} $\cdot$ Schedule Form\\Notifications $\cdot$ Settings $\cdot$ Sub Plans};
+
+  \draw[omniFlowAccent] (root) -- (shell);
+  \draw[omniFlowRose] (shell) -- (live);
+  \draw[omniFlow] (shell) -- (studio);
+  \draw[omniFlowTeal] (shell) -- (admin);
+\end{tikzpicture}%
+}

@@ -453,10 +453,12 @@ timeline
   - [ ] Bấm "Nhắc tôi": Điện thoại lập lịch và nhận được Local Notification Native trước 15 phút giờ phát sóng.
   - [ ] File `app-release.apk` (≤ 25MB) cài đặt và hoạt động ổn định trên thiết bị Android thật.
 
----
-*Tài liệu Work Breakdown Structure này là bản phân công kỹ thuật chính thức của dự án OmniCast cho nhóm 4 thành viên (Person 1, 2, 3: PRN232 + PRM393; Person 4: Chuyên trách PRN232, đã qua PRM393) theo lộ trình chuẩn 2 Đợt Review (Review 1 Tuần 5-6: Thiết kế & MVP, bắt đầu code từ Tuần 1-4 | Review 2 Tuần 8: Sản phẩm hoàn chỉnh), áp dụng kiến trúc NestJS + Next.js + Flutter + Vercel/Supabase.*
 
----
+***
+
+**
+
+***
 
 ## ? Ho�n th�nh 14 Gap � Round 4 (Oct 2026)
 

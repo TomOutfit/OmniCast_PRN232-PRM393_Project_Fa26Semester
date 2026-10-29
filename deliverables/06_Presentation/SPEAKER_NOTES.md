@@ -1,7 +1,13 @@
 # OmniCast: Capstone Defense Presentation & Speaker Guide
 **Dual-Course Joint Project:** PRN232 (Back-End Engineering) + PRM393 (Mobile Applications Development)  
-**Institution:** Department of Software Engineering — FPT University  
-**Language:** English  
+**Institution & Campus:** FPTU Quy Nhon AI Campus — FU Cahata, FPT University  
+**Mentor / Supervisor:** Thầy Huỳnh Vang (Mr. Huỳnh Vang)  
+**Project Team Members (4):**
+1. **Nguyễn Bình An** (`TomOutfit` — Team Leader / Core NestJS Architecture, Security & EPG Engine)
+2. **Trần Thanh Sơn** (`QE170080` — Standalone gRPC Audit Microservice & Supabase PostgreSQL)
+3. **Nguyễn Vĩnh Phú** (`QE180136` — Mobile Flutter Lead, OmniPlayer, LiveStudio & ENG Recorder)
+4. **Đồng Hoàng Nguyên** (`teng122` — Next.js 15 Portal, 7-Theme Live Room, Socket.IO `/live` & AI Curator)  
+**Language:** English / Vietnamese  
 **Recommended Total Presentation Time:** 15 – 20 Minutes (followed by 10 Minutes Committee Q&A)
 
 ---

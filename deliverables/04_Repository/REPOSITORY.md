@@ -1,6 +1,23 @@
 # 📁 OmniCast — Cấu Trúc Kho Mã Nguồn & Hướng Dẫn Phát Triển (Repository Guide)
 ## Tổ Chức Monorepo, Quy Ước Mã Nguồn & Quy Trình Đóng Góp (PRN232 & PRM393)
 
+**Học viện Công nghệ FPT Quy Nhơn — FPTU Quy Nhon AI Campus - FU Cahata**  
+*Dự án: OmniCast — Nền tảng Truyền thông & Trí tuệ Phát thanh Truyền hình Đa Phương tiện*
+
+---
+
+### Thông Tin Dự Án & Đội Ngũ Phát Triển
+- **Đơn vị đào tạo:** Đại học FPT Quy Nhơn (FPTU Quy Nhon AI Campus)
+- **Tổ chức / Câu lạc bộ:** FU Cahata
+- **Môn học:** PRN232 & PRM393
+- **Học kỳ:** Fall 2026 (Fa26)
+- **Giảng viên hướng dẫn (Mentor):** Thầy **Huỳnh Vang**
+- **Nhóm sinh viên thực hiện (4 thành viên):**
+  1. **Nguyễn Bình An** (`TomOutfit` — Trưởng nhóm / Tech Lead: Kiến trúc Monorepo, NestJS Core, CI/CD Actions)
+  2. **Trần Thanh Sơn** (`TranThanhSonQE170080` — MSSV: `QE170080`: Standalone gRPC Service, Prisma Schema & Seeding)
+  3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136`: Mobile Lead Developer, Flutter Mobile App)
+  4. **Đồng Hoàng Nguyên** (`teng122`: Full-Stack & Realtime Engineer, Next.js 15 Web Portal & Socket.IO)
+
 ---
 
 ### 1. Thông Tin Kho Mã Nguồn (GitHub Repository)

@@ -22,13 +22,20 @@ maintainability.
 \centering
 \fitcol{\figMobileArchitecture}
 \caption{\bi{Sơ đồ kiến trúc phân tầng 4 lớp của ứng dụng di động OmniCast:
-tầng Presentation điều hướng qua GoRouter, tầng Logic với 12 BLoC/Cubit, tầng
-Data giao tiếp đồng thời với REST API và SQLite ngoại tuyến.}{The 4-tier
-layered architecture of OmniCast Mobile: Presentation routed by GoRouter,
+tầng Presentation điều hướng qua GoRouter (31 màn hình, 22 widget), tầng Logic với 12 BLoC/Cubit, tầng
+Data giao tiếp đồng thời với REST API, Socket.IO \texttt{/live} và SQLite ngoại tuyến.}{The 4-tier
+layered architecture of OmniCast Mobile: Presentation routed by GoRouter (31 screens, 22 widgets),
 Logic driven by 12 BLoC/Cubits, and Data communicating concurrently with
-NestJS REST APIs and local SQLite storage.}}
+NestJS REST APIs, Socket.IO \texttt{/live} and local SQLite storage.}}
 \label{fig:mob_arch}
 \end{figure}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figLiveStreamArch}
+\caption{\bi{Kiến trúc truyền phát trực tiếp (LiveStream) và bàn điều khiển Live Studio đầu-cuối giữa ứng dụng di động Flutter, cổng Web Next.js 15, máy chủ MediaMTX (WHIP/WHEP/HLS) và cổng Socket.IO \texttt{/live}.}{End-to-end LiveStream and Live Studio architecture bridging the Flutter mobile client, Next.js 15 web portal, MediaMTX (WHIP/WHEP/HLS) and the Socket.IO \texttt{/live} gateway.}}
+\label{fig:mob_livestream_arch}
+\end{figure*}
 
 \subsection{\bi{Phân tầng trách nhiệm}{Layered Organization}}
 
@@ -54,19 +61,19 @@ The four architectural tiers are defined as follows:
   Hosts 12 state-management modules. BLoCs accept incoming events from UI
   widgets, invoke domain repositories, and emit reactive state streams.}
 
-  \item \textbf{Data Layer:} \bi{Chứa các Repository, Data Sources và Model
+  \item \textbf{Data Layer:} \bi{Chứa 10 Repository, Data Sources và 10 Model
   dữ liệu. Tầng này trừu tượng hóa nguồn gốc dữ liệu: tự động quyết định đọc
   từ bộ nhớ đệm SQLite hay gọi mạng từ xa qua Dio Client.}{%
-  Encapsulates Repositories, Data Sources, and Data Transfer Objects (DTOs).
+  Encapsulates 10 Repositories, Data Sources, and 10 Data Transfer Objects (DTOs).
   It abstracts data origins, transparently querying SQLite or fetching
   remotely via Dio.}
 
   \item \textbf{Core Layer:} \bi{Cung cấp các tiện ích dùng chung: bộ định
-  tuyến \texttt{GoRouter}, bộ tiêm phụ thuộc \texttt{get\_it}, cấu hình
+  tuyến \texttt{GoRouter}, bộ tiêm phụ thuộc \texttt{get\_it}, dịch vụ khám phá máy chủ phát sóng nội bộ \texttt{LanDiscoveryService}, dịch vụ đẩy luồng \texttt{WebRTCPublisherService}, cấu hình
   giao diện (theme), chuỗi bản địa hóa (i18n), dịch vụ thông báo cục bộ và
   quản lý token bảo mật.}{%
   Supplies cross-cutting concerns: \texttt{GoRouter} navigation definitions,
-  \texttt{get\_it} dependency injection, UI theme styling, i18n
+  \texttt{get\_it} dependency injection, \texttt{LanDiscoveryService} Wi-Fi subnet scanner, \texttt{WebRTCPublisherService} WHIP streamer, UI theme styling, i18n
   localization, and secure token storage.}
 \end{enumerate}
 

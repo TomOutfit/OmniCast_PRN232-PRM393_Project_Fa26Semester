@@ -424,7 +424,7 @@
   <header>
     <div class="brand">
       <span class="logo">OMNICAST</span>
-      <span class="tagline">Enterprise Media & Broadcast Intelligence Network</span>
+      <span class="tagline">FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</span>
     </div>
     <div class="header-controls">
       <span id="partBadge" class="badge-part badge-overview">Overview</span>
@@ -440,28 +440,56 @@
 
       <!-- SLIDE 1: Title -->
       <div class="slide active title-slide" data-part="Overview" data-badge="badge-overview">
-        <div style="font-size: 0.8rem; color: var(--omni-slate); font-weight: 700; letter-spacing: 1.5px;">
-          FPT UNIVERSITY • FACULTY OF INFORMATION TECHNOLOGY
+        <div style="font-size: 0.85rem; color: var(--omni-cyan); font-weight: 700; letter-spacing: 1.5px;">
+          FPT UNIVERSITY • FPTU QUY NHON AI CAMPUS — FU CAHATA
         </div>
-        <div style="font-size: 0.75rem; color: var(--omni-cyan); font-weight: 700; letter-spacing: 2px;">
-          FINAL CAPSTONE DEFENSE & PROJECT PRESENTATION
+        <div style="font-size: 0.78rem; color: var(--omni-amber); font-weight: 700; letter-spacing: 1.5px;">
+          MENTOR / SUPERVISOR: THẦY HUỲNH VANG (MR. HUỲNH VANG)
         </div>
         <h1 class="title-banner">OMNICAST</h1>
-        <div class="title-sub">Enterprise Media & Broadcast Intelligence Network</div>
+        <div class="title-sub">Enterprise Media, Real-Time LiveStream & Broadcast Intelligence Network</div>
         
         <div class="part-pills">
           <div class="pill blue">
-            <strong>PART 1: PRN232</strong> • <span style="color: #60a5fa;">Back-End Engineering & Web Portal</span>
+            <strong>PART 1: PRN232</strong> • <span style="color: #60a5fa;">Back-End, gRPC & Next.js 15 (33 Routes)</span>
           </div>
           <div class="pill purple">
-            <strong>PART 2: PRM393</strong> • <span style="color: #c084fc;">Mobile Applications (Flutter & Dart)</span>
+            <strong>PART 2: PRM393</strong> • <span style="color: #c084fc;">Flutter Mobile App (31 Screens & Live Studio)</span>
           </div>
+        </div>
+
+        <div style="font-size: 0.9rem; color: #fff; font-weight: 600; margin-bottom: 12px;">
+          Nguyễn Bình An • Trần Thanh Sơn (QE170080) • Nguyễn Vĩnh Phú (QE180136) • Đồng Hoàng Nguyên
         </div>
 
         <div class="metrics-banner">
           <span>✓ 142,897 Physical LOC</span>
-          <span>✓ 482 Automated Tests (100% Pass)</span>
-          <span>✓ Production Deployed</span>
+          <span>✓ 482/482 Automated Tests (100% Pass)</span>
+          <span>✓ WebRTC WHIP/WHEP + Socket.IO /live</span>
+        </div>
+      </div>
+
+      <!-- SLIDE 2: Team & Mentorship -->
+      <div class="slide" data-part="Overview" data-badge="badge-overview">
+        <div class="slide-header">
+          <h2 class="slide-title">Project Team & Academic Mentorship</h2>
+          <div class="slide-subtitle">FPTU Quy Nhon AI Campus — FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+        </div>
+        <div class="slide-body">
+          <div class="card cyan">
+            <div class="card-title">BACKEND, MICROSERVICES & DATABASE</div>
+            <ul>
+              <li><strong>1. Nguyễn Bình An (<code>TomOutfit</code> — Team Leader):</strong> NestJS 10 core architecture (19 modules, 140+ REST endpoints), JWT + 4-role RBAC security, atomic SQL schedule conflict detection, 24/7 seeded EPG filler, Direct Stream Engine & CI/CD.</li>
+              <li><strong>2. Trần Thanh Sơn (<code>QE170080</code> — gRPC & Database):</strong> Standalone gRPC Audit-Logger microservice (<code>audit_logger.proto</code> over HTTP/2), Supabase PostgreSQL schema (21 Prisma models, <code>:6543</code> transaction pooler), telemetry & seeding.</li>
+            </ul>
+          </div>
+          <div class="card purple">
+            <div class="card-title">MOBILE FLUTTER, WEB PORTAL, LIVESTREAM & AI</div>
+            <ul>
+              <li><strong>3. Nguyễn Vĩnh Phú (<code>QE180136</code> — Mobile Flutter Lead):</strong> 4-Tier Clean Architecture, 12 BLoC/Cubits, 31 screens & 22 widgets, <code>OmniPlayer</code>, Wi-Fi <code>LanDiscoveryService</code>, 4-tab <code>LiveStudioScreen</code>, <code>MobileStudioRecorderScreen</code> (WebRTC WHIP, SMPTE Timecode, VU Meter, Teleprompter HUD) & SQLite offline sync.</li>
+              <li><strong>4. Đồng Hoàng Nguyên (<code>teng122</code> — Full-Stack Web, Live & AI):</strong> Next.js 15 Cinema Dark Portal (33 routes), 7-theme <code>/live/[id]</code> interactive room, 4-tab <code>/studio/live</code> console, Socket.IO <code>/live</code> gateway & OpenAI GPT-4o AI Curator.</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -668,24 +696,25 @@
       <!-- SLIDE 10: Next.js Studio -->
       <div class="slide" data-part="PRN232" data-badge="badge-prn">
         <div class="slide-header">
-          <h2 class="slide-title">PRN232: Next.js 15 Web Portal & Studio</h2>
-          <div class="slide-subtitle">App Router, Broadcaster Studio, and Real-Time Telemetry Dashboard</div>
+          <h2 class="slide-title">PRN232: Next.js 15 LiveStream Room & 4-Tab Live Studio</h2>
+          <div class="slide-subtitle">33 Routes, 7 Genre-Themed Broadcast Lounges (<code>/live/[id]</code>) & 4-Tab Live Studio Console (<code>/studio/live</code>)</div>
         </div>
         <div class="slide-body">
           <div class="card cyan">
-            <div class="card-title">BROADCASTER STUDIO FEATURES</div>
+            <div class="card-title">INTERACTIVE LIVESTREAM ROOM (<code>/live</code> & <code>/live/[id]</code>)</div>
             <ul>
-              <li><strong>WebRTC WHIP Ingestion:</strong> Broadcasters publish live camera and desktop feeds directly to MediaMTX from the browser without OBS.</li>
-              <li><strong>Interactive EPG Planner:</strong> Drag-and-drop schedule manager with instant interval collision validation.</li>
-              <li><strong>Live Stream Switcher:</strong> Switch between linear automated playout and live breaking broadcast with zero viewer drop.</li>
+              <li><strong>Live Hub (<code>/live</code>):</strong> Auto-refreshes every 15s, displays active LIVE events & total CCU pills, sorts by trending viewers or newest start time.</li>
+              <li><strong>7 Genre-Themed Lounges:</strong> Dynamically styles room into <em>Kids Wonderland</em>, <em>Podcast</em>, <em>Music Stage</em>, <em>Academy</em>, <em>Sports Arena</em>, <em>Obsidian Theater</em> or <em>Broadcast Lounge</em>.</li>
+              <li><strong>Interactive Viewer Operations:</strong> <code>JoinLobbyCard</code> entry, <strong>Cinema Mode</strong> (lights-off focus), zero-downtime <strong>lineup program switcher</strong> (<code>live:program:changed</code>), real-time Socket.IO chat, <strong>4 floating reactions</strong> (Heart, Fire, Clap, Wow) & pinned host banner.</li>
             </ul>
           </div>
           <div class="card blue">
-            <div class="card-title">NEXT.JS 15 APP ROUTER ARCHITECTURE</div>
+            <div class="card-title">4-TAB WEB LIVE STUDIO CONSOLE (<code>/studio/live</code>)</div>
             <ul>
-              <li><strong>React Server Components (RSC):</strong> Pre-renders public catalog and metadata on Vercel Edge for instant LCP performance.</li>
-              <li><strong>Real-Time Dashboards:</strong> WebSocket connection to <code>/live</code> stream renders Chart.js concurrency, bitrates, and viewer stats.</li>
-              <li><strong>Tailwind CSS Dark Theme:</strong> Professional cinema-dark UI designed for studio control room ergonomics.</li>
+              <li><strong>Tab 1 (Curated Live):</strong> Select 1 or more VOD recordings (<code>lineup</code>) guarded by an Anti-Piracy filter & atomic channel transition.</li>
+              <li><strong>Tab 2 (Camera / Screen / Signed Upload):</strong> <code>WebcamLiveBroadcaster</code> (WebRTC WHIP to MediaMTX), Screen Share (<code>getDisplayMedia</code>), or <code>UploadDropzone</code> (Signed Direct-to-Cloudinary upload with MB/s speed, ETA & HTML5 canvas thumbnail).</li>
+              <li><strong>Tab 3 (Verified Public Catalog):</strong> 1-click import of verified HLS/MP4 streams with server <code>HEAD</code> probing.</li>
+              <li><strong>Tab 4 (Host Console):</strong> Send pinned announcements (<code>broadcaster:message</code>) & stop live broadcast (<code>keepAsVod</code>).</li>
             </ul>
           </div>
         </div>
@@ -809,24 +838,22 @@
       <!-- SLIDE 16: Interactive Features -->
       <div class="slide" data-part="PRM393" data-badge="badge-prm">
         <div class="slide-header">
-          <h2 class="slide-title">PRM393: Real-Time Interactivity & Canvas</h2>
-          <div class="slide-subtitle">Socket.IO Live Chat, Confetti Overlays, and Social Engagement</div>
+          <h2 class="slide-title">PRM393: Mobile LiveWatchScreen, 4-Tab Studio & ENG Recorder</h2>
+          <div class="slide-subtitle">Wi-Fi LAN Discovery, 0ms Haptic Reactions, 6-Tier Super Chat & Field Reporter Viewfinder</div>
         </div>
         <div class="slide-body">
           <div class="card purple">
-            <div class="card-title">SOCKET.IO REAL-TIME CHAT</div>
+            <div class="card-title">LIVEWATCHSCREEN (<code>/live/:id</code>) & OMNIPLAYER</div>
             <ul>
-              <li><strong>Sub-100ms Delivery:</strong> Real-time messaging over Socket.IO gateway on the <code>/live</code> namespace.</li>
-              <li><strong>Rate Limiting & Moderation:</strong> Client-side debounce and server-side token bucket prevent message spamming.</li>
-              <li><strong>Role-Based Badging:</strong> Chat messages highlight broadcaster, staff, and VIP donor badges automatically.</li>
+              <li><strong>Automatic Wi-Fi LAN Discovery (<code>LanDiscoveryService</code>):</strong> Scans the <code>/24</code> subnet on port <code>8888</code> to auto-replace <code>localhost</code>/<code>10.0.2.2</code> with the real MediaMTX host IP on physical phones, with 10x exponential retry (Zero-Cartoon Fallback).</li>
+              <li><strong>Interactive Room Operations:</strong> <code>LiveJoinPromptBanner</code>, threaded chat (<code>parentId</code> reply, likes, Staff/Admin <code>chat:delete</code>), <strong>0ms haptic floating reactions</strong> (Heart, Fire, Clap, Wow/Party), <strong>6-tier Super Chat</strong> (<code>LiveDonationModal</code>), pinned host banner & instant program switching.</li>
             </ul>
           </div>
           <div class="card amber">
-            <div class="card-title">PARTICLE CANVAS & DONATIONS</div>
+            <div class="card-title">4-TAB LIVESTUDIOSCREEN & MOBILESTUDIORECORDERSCREEN</div>
             <ul>
-              <li><strong>Interactive Donations:</strong> Viewers tip broadcasters; real-time broadcast event triggers full-screen celebrations.</li>
-              <li><strong>60 FPS Particle Canvas:</strong> CustomPainter renders animated confetti and particle physics without dropped frames.</li>
-              <li><strong>Non-Blocking Overlay:</strong> Particle animations run on a transparent layer above OmniPlayer without degrading video playback.</li>
+              <li><strong>4-Tab Mobile Studio (<code>/studio/live</code>):</strong> (1) Curated VOD Lineup; (2) Self-Record / Signed Cloudinary Upload; (3) Verified Public Catalog; (4) Pinned Host Announcement & Stop Broadcast.</li>
+              <li><strong>Field Reporter Viewfinder (<code>MobileStudioRecorderScreen</code>):</strong> Supports <code>Push-to-Live</code> real-time WebRTC WHIP streaming (<code>WebRTCPublisherService</code>) and <code>Record-then-Live</code> 1080p MP4 capture with <strong>SMPTE Timecode</strong> (<code>HH:MM:SS:FF</code>), dual-channel <strong>Stereo VU Audio Meter</strong>, <strong>Rule-of-Thirds</strong>, auto-scrolling <strong>Teleprompter HUD</strong> & post-record <strong>Master QC Review</strong>.</li>
             </ul>
           </div>
         </div>
@@ -982,9 +1009,15 @@
 
       <!-- SLIDE 21: Conclusion & Q&A -->
       <div class="slide title-slide" data-part="Synergy" data-badge="badge-synergy">
+        <div style="font-size: 0.85rem; color: var(--omni-cyan); font-weight: 700; letter-spacing: 1.5px;">
+          FPTU QUY NHON AI CAMPUS — FU CAHATA • MENTOR: THẦY HUỲNH VANG
+        </div>
         <h1 class="title-banner" style="font-size: 3rem;">Thank You for Your Attention!</h1>
         <div class="title-sub" style="color: var(--omni-cyan);">OmniCast: Enterprise Media & Broadcast Intelligence Network</div>
-        <div style="font-size: 1.1rem; color: #fff; margin-bottom: 24px; font-weight: 600;">
+        <div style="font-size: 0.95rem; color: #fff; margin-bottom: 12px; font-weight: 600;">
+          Nguyễn Bình An • Trần Thanh Sơn (QE170080) • Nguyễn Vĩnh Phú (QE180136) • Đồng Hoàng Nguyên
+        </div>
+        <div style="font-size: 1.05rem; color: var(--omni-amber); margin-bottom: 20px; font-weight: 600;">
           We are ready for Live System Demonstration & Committee Q&A
         </div>
 
@@ -994,8 +1027,8 @@
           <div class="pill green"><strong>GitHub:</strong> github.com/TomOutfit/OmniCast</div>
         </div>
 
-        <div style="font-size: 0.8rem; color: var(--omni-slate); margin-top: 20px;">
-          Department of Software Engineering • FPT University • Fall Semester 2026
+        <div style="font-size: 0.8rem; color: var(--omni-slate); margin-top: 16px;">
+          FPTU Quy Nhon AI Campus — FU Cahata • Faculty of Information Technology, FPT University • Fall Semester 2026
         </div>
       </div>
 

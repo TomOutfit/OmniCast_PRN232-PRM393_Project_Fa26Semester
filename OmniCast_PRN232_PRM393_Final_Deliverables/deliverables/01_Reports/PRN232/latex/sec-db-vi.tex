@@ -1,0 +1,186 @@
+% ============================================================
+% PRN232 - Section 6: Database Design (Vietnamese & English)
+% ============================================================
+\section{\bi{Thiết kế cơ sở dữ liệu}{Database Design}}
+\label{sec:db}
+
+\subsection{\bi{Cơ sở dữ liệu quan hệ với Prisma}{Relational Database with Prisma}}
+
+\bi{
+Toàn bộ dữ liệu nghiệp vụ nằm trong PostgreSQL, được định nghĩa bằng
+21 model Prisma trong \texttt{backend/prisma/schema.prisma}. Prisma
+đóng vai trò lớp trừu tượng hoá: mọi truy vấn được viết bằng API
+có kiểu \texttt{findMany}, \texttt{upsert} hoặc \texttt{createMany} và
+được biên dịch thành SQL tham số hoá, nhờ vậy loại bỏ hoàn toàn khả
+năng chèn SQL trực tiếp từ mã ứng dụng. Hình~\ref{fig:db_arch} minh hoạ sơ đồ kiến trúc 5 miền dữ liệu của 21 model Prisma.
+}{
+All business data resides in PostgreSQL, defined by 21 Prisma models in
+\texttt{backend/prisma/schema.prisma}. Prisma acts as the
+abstraction layer: every query is written against a typed API such as
+\texttt{findMany}, \texttt{upsert} or \texttt{createMany} and compiled
+into parameterised SQL, which eliminates the possibility of injecting
+raw SQL from application code. Fig.~\ref{fig:db_arch} illustrates the 5-domain relational architecture across all 21 Prisma models.
+}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figDatabaseArchitecture}
+\caption{\bi{Sơ đồ kiến trúc cơ sở dữ liệu quan hệ 5 miền nghiệp vụ (21 model Prisma trên Supabase PostgreSQL).}{Five-domain relational database architecture diagram (21 Prisma models on Supabase PostgreSQL).}}
+\label{fig:db_arch}
+\end{figure*}
+
+\begin{table}[t]
+\caption{\bi{21 model Prisma cùng số trường vô hướng và quan hệ.}{The 21
+Prisma models with their scalar and relation field counts.}}
+\label{tab:erd}
+\centering
+\scriptsize
+\fitcol{\input{generated/table-erd.tex}}
+\end{table}
+
+\subsection{\bi{Phân nhóm miền dữ liệu}{Data-Domain Grouping}}
+
+\bi{
+Các model được tổ chức theo năm nhóm nghiệp vụ:
+}{
+The models are organised into five business groups:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Xác thực và danh tính.} \texttt{User} lưu thông tin
+  tài khoản cùng vai trò, \texttt{RefreshToken} lưu phiên đăng nhập
+  xoay vòng, \texttt{PasswordResetToken} lưu mã đặt lại mật khẩu với
+  thời hạn một giờ.}{
+  \textbf{Authentication and identity.} \texttt{User} stores account
+  details together with the role, \texttt{RefreshToken} stores
+  rotating login sessions, and \texttt{PasswordResetToken} stores
+  password-reset codes with a one-hour lifetime.}
+
+  \item \bi{\textbf{Nội dung phát sóng.} \texttt{LiveChannel} là kênh,
+  \texttt{LiveEvent} là chương trình trong lịch và phiên phát sóng trực tiếp, \texttt{Recording}
+  là bản ghi đã phát, \texttt{ProductionTag} là thẻ nội dung gắn với
+  chương trình.}{
+  \textbf{Broadcast content.} \texttt{LiveChannel} is the channel,
+  \texttt{LiveEvent} is a scheduled programme and active live broadcast, \texttt{Recording} is
+  a published recording and \texttt{ProductionTag} is a content tag
+  attached to a production.}
+
+  \item \bi{\textbf{Tương tác người dùng \& Thương mại Live.} \texttt{Comment},
+  \texttt{CommentLike}, \texttt{Reaction}, \texttt{Follow},
+  \texttt{WatchHistory}, \texttt{Watchlist} và
+  \texttt{StreamDonation} (quyên góp Super Chat trong phòng Live) mô tả toàn bộ hành vi của người xem.}{
+  \textbf{User interaction \& Live Monetization.} \texttt{Comment}, \texttt{CommentLike},
+  \texttt{Reaction}, \texttt{Follow}, \texttt{WatchHistory},
+  \texttt{Watchlist} and \texttt{StreamDonation} (Super Chat live donations) describe the full
+  spectrum of viewer behaviour.}
+
+  \item \bi{\textbf{Vận hành và kiểm toán.} \texttt{AuditLog} nhận
+  bản ghi từ microservice gRPC, \texttt{Notification} lưu thông báo
+  trong ứng dụng, \texttt{DeviceToken} lưu token FCM,
+  \texttt{NewsletterSubscriber} lưu người đăng ký bản tin.}{
+  \textbf{Operations and auditing.} \texttt{AuditLog} receives records
+  from the gRPC microservice, \texttt{Notification} stores in-app
+  notifications, \texttt{DeviceToken} stores FCM tokens and
+  \texttt{NewsletterSubscriber} stores newsletter subscribers.}
+
+  \item \bi{\textbf{Trợ lý AI.} \texttt{AiCuratorReport} lưu kết quả
+  biên tập AI kèm dấu vết phiên bản prompt và mô hình.}{
+  \textbf{AI assistance.} \texttt{AiCuratorReport} stores AI curation
+  output together with its prompt and model version provenance.}
+\end{itemize}
+
+\subsection{\bi{Quan hệ và ràng buộc}{Relationships and Constraints}}
+
+\bi{
+Quan hệ được định nghĩa bằng khóa ngoại chuẩn của Prisma, và mỗi quan
+hệ đều có chỉ mục phù hợp với truy vấn hot-path. Ba ràng buộc đáng
+chú ý:
+}{
+Relationships are expressed with standard Prisma foreign keys, and
+each carries an index matched to its hot-path query. Three constraints
+deserve attention:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Xoá người dùng không phá vỡ nhật ký kiểm toán.}
+  \texttt{RefreshToken.user} có quan hệ \texttt{OnDelete: SetNull},
+  nên xoá tài khoản chỉ vô hiệu hoá phiên mà vẫn giữ được dấu vết
+  kiểm toán.}{
+  \textbf{User deletion does not destroy the audit trail.}
+  \texttt{RefreshToken.user} uses \texttt{OnDelete: SetNull}, so
+  deleting an account invalidates the sessions while preserving the
+  audit trail.}
+
+  \item \bi{\textbf{Khoá duy nhất trên thẻ nội dung.} \texttt{ProductionTag}
+  có khoá duy nhất trên cặp chương trình và tên thẻ, nên cùng một thẻ
+  không thể bị gán hai lần.}{
+  \textbf{A unique key on content tags.} \texttt{ProductionTag} carries
+  a unique constraint on the programme-and-tag pair, so the same tag
+  cannot be attached twice.}
+
+  \item \bi{\textbf{Chỉ mục theo trục thời gian.} Các truy vấn EPG
+  luôn lọc theo \texttt{scheduledAt} và \texttt{channelId}, nên cột
+  này được chỉ mục; truy vấn lịch sử xem lọc theo
+  \texttt{userId} và \texttt{watchedAt}.}{
+  \textbf{Time-axis indexes.} EPG queries always filter by
+  \texttt{scheduledAt} and \texttt{channelId}, so those columns are
+  indexed; watch-history queries filter by \texttt{userId} and
+  \texttt{watchedAt}.}
+\end{enumerate}
+
+\subsection{\bi{Chuẩn hoá và quyết định thiết kế}{Normalisation and Design Decisions}}
+
+\bi{
+Mô hình được chuẩn hoá ở mức 3NF: các thuộc tính chỉ phụ thuộc khóa
+chính, không có phụ thuộc hàm bắc cầu giữa các thuộc tính
+không khóa. Hai quyết định thiết kế đáng bàn:
+}{
+The model is normalised to third normal form: attributes depend only on
+the primary key and no non-key attribute depends transitively on
+another. Two design decisions deserve discussion:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Chuẩn hoá cấu trúc EPG.} Thay vì lưu lưới 24
+  giờ đã điền, hệ thống lưu các sự kiện thật cùng thẻ nội dung, và
+  lưới được tính lại khi truy vấn. Cách này giữ dữ liệu gốc trung
+  thực và cho phép lịch thay đổi mà không cần di chuyển dữ liệu, đổi
+  lại tốn công tính toán tại thời điểm đọc --- một đánh đổi đúng đắn
+  khi phần lớn thao tác ghi là chương trình biên tập và phần lớn
+  thao tác đọc là xem lịch.}{
+  \textbf{EPG structure normalisation.} Rather than storing the
+  filled 24-hour grid, the system stores real events with content tags
+  and recomputes the grid on demand. This keeps the source data
+  truthful and lets schedules change without data migration, at the
+  cost of computation at read time --- a sound trade-off when most
+  writes are editorial and most reads are schedule viewing.}
+
+  \item \bi{\textbf{Không lưu sẵn báo cáo AI trong JSON blob.}
+  \texttt{AiCuratorReport} có các cột riêng cho từng trường quan
+  trọng (điểm tin cậy, phân loại phù hợp phát sóng, cờ tuân thủ)
+  để có thể lọc và thống kê bằng SQL, chỉ giữ phần phân tích tự do
+  dạng văn bản trong trường riêng.}{
+  \textbf{AI reports are not stored as a JSON blob.}
+  \texttt{AiCuratorReport} exposes separate columns for each important
+  field (confidence score, broadcast-suitability class, compliance
+  flags) so they can be filtered and aggregated in SQL, keeping only
+  the free-form analysis in a dedicated text column.}
+\end{itemize}
+
+\subsection{\bi{Quản lý phiên bản lược đồ}{Schema Versioning}}
+
+\bi{
+Mọi thay đổi lược đồ đều được quản lý bằng \texttt{prisma migrate},
+tạo ra các tệp SQL trong \texttt{backend/prisma/migrations} được đưa
+vào kiểm soát phiên bản. CI chạy \texttt{prisma migrate deploy} trên
+một dịch vụ PostgreSQL 15 tạm trước khi biên dịch ứng dụng, nhờ vậy
+một lược đồ không tương thích sẽ bị phát hiện trước khi triển khai
+sản xuất.
+}{
+Every schema change is managed through \texttt{prisma migrate}, which
+generates SQL files under \texttt{backend/prisma/migrations} that are
+kept under version control. CI runs \texttt{prisma migrate deploy}
+against a temporary PostgreSQL 15 service before building the
+application, so an incompatible schema is detected before any
+production deployment.
+}

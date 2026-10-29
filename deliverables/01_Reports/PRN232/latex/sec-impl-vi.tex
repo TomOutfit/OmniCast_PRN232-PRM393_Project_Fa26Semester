@@ -1,5 +1,5 @@
 % ============================================================
-% PRN232 - Section 4: Backend Implementation (Vietnamese)
+% PRN232 - Section 4: Backend Implementation (Vietnamese & English)
 % ============================================================
 \section{\bi{Cài đặt back-end}{Back-End Implementation}}
 \label{sec:impl}
@@ -7,7 +7,7 @@
 \subsection{\bi{Xác thực JWT và phân quyền theo vai trò}{JWT Authentication and Role-Based Access Control}}
 
 \bi{
-Hệ thống xác thực dùng cặp token truy cập/ làm mới. Khi đăng nhập,
+Hệ thống xác thực dùng cặp token truy cập/làm mới. Khi đăng nhập,
 mật khẩu được kiểm tra bằng \texttt{bcrypt.compare} với 12 vòng lặp
 (\texttt{BCRYPT\_ROUNDS=12}); khi đăng ký, mật khẩu được băm bằng
 \texttt{bcrypt.hash}. \texttt{AuthService} phát hành access token có
@@ -45,7 +45,7 @@ metadata \texttt{@Roles} qua \texttt{Reflector}; nếu handler không khai
 báo vai trò thì mọi người đã xác thực đều được phép. Điểm đáng chú
 ý là guard chuẩn hoá vai trò về tên chuỗi trước khi so sánh, nhờ vậy
 cả dạng tên (\texttt{'STAFF'}) lẫn dạng số (legacy \texttt{'2'}) đều
-đều được chấp nhận. Bốn vai trò được định nghĩa trong enum
+được chấp nhận. Bốn vai trò được định nghĩa trong enum
 \texttt{UserRole} và xếp hạng trong \texttt{role-config.ts} của cổng
 web.
 }{
@@ -73,13 +73,13 @@ roles and their permission scope.}}
 \bi{
 Để đảm bảo nguyên tắc đặc quyền tối thiểu, các thao tác nhạy cảm
 được bảo vệ ở cấp controller chứ không phải ở tầng giao diện. Ví dụ,
-toàn bộ 11 endpoint ghi trong nhóm \texttt{ai-curator} đều yêu cầu
+toàn bộ 11 endpoint ghi trong nhóm \texttt{ai-curator} và các endpoint điều khiển phát sóng trong \texttt{LiveStudioController} đều yêu cầu
 \texttt{@Roles('STAFF','ADMIN')}, và mọi endpoint quản lý người dùng
 hay nhật ký kiểm toán đều yêu cầu \texttt{@Roles('ADMIN')}.
 }{
 To enforce least privilege, sensitive operations are guarded at the
 controller level rather than in the user interface. For example, all
-eleven write endpoints in the \texttt{ai-curator} group require
+eleven write endpoints in the \texttt{ai-curator} group and all broadcast control endpoints in \texttt{LiveStudioController} require
 \texttt{@Roles('STAFF','ADMIN')}, and every user-management or
 audit-log endpoint requires \texttt{@Roles('ADMIN')}.
 }
@@ -111,7 +111,7 @@ containment. A schedule on a different channel causes no conflict.}}
 \end{figure}
 
 \bi{
-Điểm khó nhất nằm ở việc tính thời điểm kết thúc \emph{hieu lực} của
+Điểm khó nhất nằm ở việc tính thời điểm kết thúc \emph{hiệu lực} của
 một sự kiện đã tồn tại. Trường \texttt{endedAt} có thể còn
 \texttt{NULL} với sự kiện ở trạng thái \texttt{SCHEDULED}, tức là sự
 kiện chưa thực sự kết thúc. Nếu dùng truy vấn \texttt{where} thông
@@ -153,7 +153,7 @@ WHERE "channelId" = $1::uuid
 \end{lstlisting}
 
 \bi{
-Truuy vấn chỉ chạy trên các sự kiện ở trạng thái \texttt{SCHEDULED}
+Truy vấn chỉ chạy trên các sự kiện ở trạng thái \texttt{SCHEDULED}
 hoặc \texttt{LIVE}; sự kiện \texttt{ENDED} hoặc \texttt{CANCELLED} không
 còn gây xung đột. Biểu thức \texttt{CASE} cũng xử lý sự bất nhất về
 đơn vị: lớp ingest ghi \texttt{duration} theo \emph{giây}, còn logic EPG
@@ -175,6 +175,38 @@ list of conflicting events, so the user interface can name the
 programme that caused the rejection.
 }
 
+\subsection{\bi{Bàn điều khiển Live Studio và Vận hành LiveStream Thời gian thực}{Live Studio Controller and Real-Time LiveStream Operations}}
+
+\bi{
+Module \texttt{programs} cung cấp hai bộ điều khiển chuyên biệt cho nghiệp vụ phát sóng trực tiếp: \texttt{LiveStudioController} (\texttt{backend/src/programs/live-studio.controller.ts}) và \texttt{SocialController} (\texttt{backend/src/programs/social.controller.ts}), phối hợp chặt chẽ với \texttt{LiveStreamGateway} (\texttt{backend/src/websocket/live-stream.gateway.ts}). Toàn bộ quy trình vận hành phòng Live bao gồm 6 nhóm thao tác kỹ thuật:
+}{
+The \texttt{programs} module exposes two dedicated controllers for live broadcasting: \texttt{LiveStudioController} (\texttt{backend/src/programs/live-studio.controller.ts}) and \texttt{SocialController} (\texttt{backend/src/programs/social.controller.ts}), working in tandem with \texttt{LiveStreamGateway} (\texttt{backend/src/websocket/live-stream.gateway.ts}). The complete live studio and viewer room lifecycle spans six technical operations:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{\textbf{Chế độ 1 --- Phát sóng từ Thư viện Nội dung chọn lọc (\texttt{POST /programs/studio/curate-live}):} Cho phép đạo diễn (\texttt{STAFF}/\texttt{ADMIN}) chọn một hoặc nhiều bản ghi (\texttt{recordingIds}) trong thư viện kênh hoặc kho tổng OmniCast để phát sóng ngay lập tức. Service kiểm tra điều kiện chống vi phạm bản quyền (\emph{Anti-Piracy Guard}, từ chối các URL YouTube/Twitch/Vimeo trái phép), tự động kết thúc sự kiện \texttt{LIVE} cũ trên cùng kênh trong một giao dịch nguyên tử, khởi tạo \texttt{LiveEvent} mới với danh sách chương trình (\texttt{lineup}) và phát tín hiệu \texttt{live:started} qua Socket.IO.}{
+  \textbf{Mode 1 --- Curated VOD Broadcast (\texttt{POST /programs/studio/curate-live}):} Allows producers (\texttt{STAFF}/\texttt{ADMIN}) to select one or more \texttt{recordingIds} from the channel or global VOD library for immediate broadcast. The service enforces an Anti-Piracy Guard (rejecting unauthorised YouTube/Twitch/Vimeo URLs), atomically ends any previous \texttt{LIVE} event on the same channel, creates the new \texttt{LiveEvent} with a multi-item \texttt{lineup}, and emits \texttt{live:started} over Socket.IO.}
+
+  \item \bi{\textbf{Chế độ 2 --- Tự ghi hình, Tải lên có chữ ký số \& Phát trực tiếp từ Camera (\texttt{POST /programs/studio/self-record} \& \texttt{/live/webcam/start}):} Hỗ trợ hai luồng làm việc:
+  (a) \emph{Direct-to-Cloudinary Signed Upload}: client xin chữ ký qua \texttt{POST /programs/studio/recordings/sign}, đẩy tệp MP4/WebM trực tiếp lên CDN Cloudinary kèm theo dõi tốc độ/ETA, sau đó gọi \texttt{self-record} để kiểm định \texttt{HEAD} probe và đưa lên sóng (hoặc hẹn giờ phát sóng \texttt{SCHEDULED} / lưu nháp \texttt{PRIVATE}); có hỗ trợ dọn dẹp tài nguyên mồ côi (\texttt{DELETE /programs/studio/recordings/orphan}) nếu người dùng hủy giữa chừng.
+  (b) \emph{WebRTC WHIP Direct Camera/Screen Streaming}: client gọi \texttt{POST /programs/studio/live/webcam/start} để cấp phát khóa luồng (\texttt{streamKey}), đẩy luồng video/âm thanh trực tiếp từ Camera hoặc Màn hình tới MediaMTX (\texttt{:8889/whip}) và phân phối lại qua HLS (\texttt{.m3u8}) tới mọi người xem.}{
+  \textbf{Mode 2 --- Self-Record, Signed Direct Upload \& Webcam WHIP Live (\texttt{POST /programs/studio/self-record} \& \texttt{/live/webcam/start}):} Supports two workflows:
+  (a) \emph{Direct-to-Cloudinary Signed Upload}: the client obtains signed parameters via \texttt{POST /programs/studio/recordings/sign}, uploads MP4/WebM directly to Cloudinary with live speed/ETA telemetry, and invokes \texttt{self-record} with server-side media probing to go live immediately (\texttt{IMMEDIATE}), schedule (\texttt{SCHEDULED}), or save as \texttt{PRIVATE} draft, complete with orphan asset cleanup (\texttt{DELETE /programs/studio/recordings/orphan}).
+  (b) \emph{WebRTC WHIP Direct Camera/Screen Streaming}: the client calls \texttt{POST /programs/studio/live/webcam/start} to allocate a \texttt{streamKey}, publishes camera or screen media via WebRTC WHIP to MediaMTX (\texttt{:8889/whip}), and serves low-latency HLS (\texttt{.m3u8}) to all viewers.}
+
+  \item \bi{\textbf{Chế độ 3 --- Kho nội dung công khai đã xác thực (\texttt{GET /programs/studio/public-catalog}):} Cung cấp danh mục các luồng HLS và MP4 hợp pháp từ Mux, Cloudinary và Internet Archive. Đạo diễn có thể lọc theo định dạng, nhập một chạm vào thư viện kênh (\texttt{POST /programs/studio/recordings/library/from-catalog}) hoặc thêm URL tùy chỉnh kèm kiểm tra \texttt{HEAD} probe tự động (\texttt{POST /programs/studio/recordings/library}).}{
+  \textbf{Mode 3 --- Verified Public Stream Catalog (\texttt{GET /programs/studio/public-catalog}):} Provides a curated catalog of royalty-free HLS and MP4 streams from Mux, Cloudinary and Internet Archive. Producers can filter by format, import with one click (\texttt{POST /programs/studio/recordings/library/from-catalog}), or register custom stream URLs with automated \texttt{HEAD} probing (\texttt{POST /programs/studio/recordings/library}).}
+
+  \item \bi{\textbf{Chuyển đổi chương trình đang phát tức thời (\texttt{POST /programs/studio/events/:eventId/switch-program}):} Khi một sự kiện Live có nhiều chương trình trong \texttt{lineup} hoặc đạo diễn muốn đổi sang một bản ghi khác ngay giữa buổi phát, endpoint này cập nhật \texttt{streamUrl} của \texttt{LiveEvent} và phát sự kiện \texttt{live:program:changed} tới toàn bộ phòng \texttt{event:<eventId>}. Trình phát của mọi khán giả tự động nạp luồng video mới mà không làm mất khung chat hay đứt kết nối WebSocket.}{
+  \textbf{On-the-Fly Program Switching (\texttt{POST /programs/studio/events/:eventId/switch-program}):} When a live event contains multiple lineup items or a producer switches to another recording mid-broadcast, this endpoint updates the active \texttt{streamUrl} and broadcasts \texttt{live:program:changed} to room \texttt{event:<eventId>}. All connected viewers seamlessly transition to the new video stream without losing their chat session or WebSocket connection.}
+
+  \item \bi{\textbf{Tương tác Phòng Live hai chiều qua \texttt{LiveStreamGateway} (\texttt{/live}):} Khi khán giả nhấn tham gia phòng (\texttt{subscribe:event}), cổng WebSocket tăng bộ đếm người xem thực tế trong bộ nhớ và đồng bộ xuống cơ sở dữ liệu (\texttt{LiveEvent.viewerCount}), phát bản tin \texttt{live:viewerCount}. Khán giả có thể gửi bình luận trực tiếp (\texttt{live:chat}), trả lời bình luận theo nhánh (\texttt{parentId}), thả tim bình luận, và bắn các biểu cảm hạt nổi (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}) với độ trễ phản hồi xúc giác 0ms. Đạo diễn có thể phát thông báo ghim (\texttt{broadcaster:message}), xóa tin nhắn vi phạm (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}) hoặc dừng sóng (\texttt{POST /programs/studio/live-events/:eventId/stop} kèm tùy chọn \texttt{keepAsVod}).}{
+  \textbf{Bi-Directional Room Interaction via \texttt{LiveStreamGateway} (\texttt{/live}):} Joining a room (\texttt{subscribe:event}) increments the in-memory and database-persisted viewer counter (\texttt{LiveEvent.viewerCount}) and broadcasts \texttt{live:viewerCount}. Viewers engage through live chat (\texttt{live:chat}), threaded replies (\texttt{parentId}), comment likes, and 0ms haptic floating emoji reactions (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}). Producers can broadcast pinned toast banners (\texttt{broadcaster:message}), delete inappropriate messages (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}), or stop the broadcast (\texttt{POST /programs/studio/live-events/:eventId/stop} with \texttt{keepAsVod}).}
+
+  \item \bi{\textbf{Quyên góp Super Chat \& Quà tặng trực tiếp (\texttt{StreamDonation}):} Khán giả trong phòng Live có thể ủng hộ nhà sáng tạo qua 6 mệnh giá quà tặng kèm lời nhắn vinh danh và phương thức thanh toán, cập nhật trực tiếp số dư ví của kênh và hiển thị hiệu ứng ăn mừng toàn phòng qua sự kiện \texttt{live:donation:received}.}{
+  \textbf{Super Chat \& Live Donations (\texttt{StreamDonation}):} Viewers in the live room can support creators across 6 preset gift tiers with custom messages and payment methods, updating the streamer's wallet balance and triggering a celebratory overlay across the room via \texttt{live:donation:received}.}
+\end{enumerate}
+
 \subsection{\bi{Cơ chế điền lịch EPG 24/7}{24/7 EPG Filler Mechanism}}
 
 \bi{
@@ -184,7 +216,7 @@ giờ được xây dựng bởi \texttt{EpgScheduleFillerService}. Service này
 }{
 Because channels originate only a handful of productions per day, the
 24-hour EPG grid is materialised by \texttt{EpgScheduleFillerService}.
-The service guarantees five properties demanded by the design.
+The service guarantees five properties demanded by the design:
 }
 
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
@@ -283,7 +315,7 @@ gắn thẻ cho chương trình. Quy trình được thiết kế theo bốn ngu
 The \texttt{ai-curator} module is one of the most significant
 contributions. The original requirement was to automate writing
 descriptions, assigning categories and tagging programmes. The
-pipeline is designed around four principles.
+pipeline is designed around four principles:
 }
 
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
@@ -364,7 +396,7 @@ trình và bản ghi được truy vấn đồng thời bằng điều kiện
 \texttt{contains} không phân biệt hoa thường, kèm lọc theo thể loại
 và phân trang. Kết quả được gộp thành một đối tượng duy nhất kèm
 tổng số kết quả, phù hợp với mô hình giao diện tìm kiếm một trang
-hiển thị đan kèm các nhóm kết quả.
+hiển thị đan xen các nhóm kết quả.
 
 Module \texttt{billing} quản lý gói dịch vụ và lịch sử thanh toán;
 module \texttt{notifications} đẩy thông báo qua Firebase Cloud
@@ -391,10 +423,10 @@ live-recording flow in the studio.
 
 \bi{
 Bốn quy ước áp dụng xuyên suốt toàn hệ thống đáng được nêu rõ vì
-chúng quyết định tính nhất quán của API.
+chúng quyết định tính nhất quán của API:
 }{
 Four conventions applied across the whole system deserve explicit
-mention because they determine API consistency.
+mention because they determine API consistency:
 }
 
 \begin{enumerate}[leftmargin=*,itemsep=1pt]

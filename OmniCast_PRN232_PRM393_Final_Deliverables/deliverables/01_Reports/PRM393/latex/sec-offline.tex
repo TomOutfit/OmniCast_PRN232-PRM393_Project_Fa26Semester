@@ -1,0 +1,144 @@
+% ============================================================
+% PRM393 - Section 4: Offline-First Engine (Bilingual)
+% ============================================================
+\section{\bi{Cơ chế ngoại tuyến và đồng bộ dữ liệu}{Offline-First Architecture \& Synchronization Engine}}
+\label{sec:offline}
+
+\bi{
+Một trong những ưu điểm kỹ thuật vượt trội của OmniCast Mobile là khả năng hoạt
+động độc lập khi không có kết nối Internet. Thay vì hiển thị màn hình báo lỗi
+mất mạng, ứng dụng duy trì trải nghiệm liền mạch thông qua cơ sở dữ liệu
+SQLite cục bộ (\texttt{omnicast\_local.db}) được quản lý bởi lớp
+\texttt{DatabaseHelper}.
+}{
+A hallmark technological achievement of OmniCast Mobile is its robust
+operational capability under complete network disconnection. Rather than
+halting execution with generic error dialogs, the client preserves an
+uninterrupted browsing experience using a dedicated local SQLite database
+(\texttt{omnicast\_local.db}) managed by \texttt{DatabaseHelper}.
+}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figOfflineSync}
+\caption{\bi{Quy trình đồng bộ danh sách theo dõi ngoại tuyến: thao tác của
+người dùng được ghi nhận ngay lập tức vào SQLite, lên lịch thông báo cục bộ
+trước 15 phút và xếp vào hàng đợi \texttt{pending\_ops} để tự động gửi lên máy
+chủ khi có mạng.}{The offline-first watchlist synchronization lifecycle: user
+actions immediately write to SQLite, schedule a local alert 15 minutes ahead,
+and enqueue into \texttt{pending\_ops} for automated background replay upon
+network restoration.}}
+\label{fig:offline_sync}
+\end{figure}
+
+\subsection{\bi{Lược đồ cơ sở dữ liệu SQLite cục bộ}{Local SQLite Database Schema}}
+
+\bi{
+Cơ sở dữ liệu \texttt{omnicast\_local.db} gồm 5 bảng chính được chuẩn hóa:
+}{
+The \texttt{omnicast\_local.db} schema consists of five primary tables:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{watchlist:} \bi{Lưu trữ các chương trình được người dùng đánh
+  dấu. Bảng có các cột theo dõi đồng bộ như \texttt{cloudId},
+  \texttt{lastSyncedAt} và cờ \texttt{dirty} để phát hiện dữ liệu chưa được
+  đẩy lên máy chủ.}{Stores user-bookmarked broadcast events. It includes cloud
+  mirror markers such as \texttt{cloudId}, \texttt{lastSyncedAt}, and a
+  \texttt{dirty} boolean flag signifying unsynchronized local alterations.}
+
+  \item \textbf{cached\_channels \& cached\_programs:} \bi{Lưu trữ dữ liệu
+  JSON của danh mục kênh và chương trình kèm thời điểm ghi nhận
+  \texttt{cachedAt}, cho phép đọc tức thì khi khởi động ứng dụng mà không cần
+  chờ phản hồi từ API.}{Persists serialized JSON snapshots of channels and
+  programs along with timestamps, powering zero-latency cold app launches.}
+
+  \item \textbf{epg\_cache:} \bi{Lưu trữ lưới phát sóng EPG theo từng ngày
+  (\texttt{date} làm khóa chính), bảo đảm người dùng xem lại được toàn bộ lịch
+  phát đã tải của các ngày trước đó ngay cả khi ngoại tuyến.}{Caches EPG
+  grids indexed by date string, allowing viewers to inspect programme
+  schedules offline.}
+
+  \item \textbf{pending\_ops:} \bi{Hàng đợi các thao tác thay đổi dữ liệu phát
+  sinh khi mất mạng (thêm hoặc xóa chương trình khỏi danh sách theo dõi), lưu
+  rõ loại thao tác \texttt{kind}, mã \texttt{programId} và thời gian tạo
+  \texttt{createdAt}.}{An atomic mutation queue recording changes made
+  offline (additions or deletions), preserving mutation types, payload
+  identifiers, and UTC timestamps.}
+\end{itemize}
+
+\subsection{\bi{Hàng đợi phát lại đột biến (Mutation Replay Queue)}{Pending Operations Replay Queue}}
+
+\bi{
+Khi người dùng bấm thêm hoặc xóa một chương trình khi không có mạng, ứng dụng
+thực hiện theo quy trình ba bước:
+}{
+When a viewer toggles a watchlist item without active connectivity, the
+repository executes an optimistic three-stage transaction:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{Cập nhật ngay lập tức giao diện người dùng (Optimistic UI Update)
+  và ghi nhận trạng thái vào bảng \texttt{watchlist} cục bộ với cờ
+  \texttt{dirty = 1}.}{%
+  Optimistically reflects the change in the UI and writes to the local
+  \texttt{watchlist} table with \texttt{dirty = 1}.}
+
+  \item \bi{Ghi một bản ghi mới vào bảng \texttt{pending\_ops} chứa thông tin
+  thao tác cần phát lại.}{%
+  Inserts an actionable mutation payload into the \texttt{pending\_ops}
+  queue.}
+
+  \item \bi{Lắng nghe sự kiện kết nối mạng thông qua gói
+  \texttt{connectivity\_plus}. Khi mạng khôi phục, dịch vụ đồng bộ nền
+  (\texttt{WatchlistSyncService}) sẽ duyệt tuần tự các bản ghi trong
+  \texttt{pending\_ops}, gửi yêu cầu REST tương ứng lên backend NestJS và xóa
+  bản ghi khỏi hàng đợi sau khi nhận mã HTTP 200/201.}{%
+  Listens for network reconnection events. Once online, the background
+  \texttt{WatchlistSyncService} replays queued operations in FIFO sequence to
+  the NestJS REST endpoints, clearing successfully committed entries.}
+\end{enumerate}
+
+\subsection{\bi{Lên lịch thông báo cục bộ trước 15 phút}{Advance 15-Minute Local Notifications}}
+
+\bi{
+Để người dùng không bỏ lỡ các chương trình yêu thích, OmniCast tích hợp gói
+\texttt{flutter\_local\_notifications} và \texttt{timezone}. Khi một chương
+trình được thêm vào danh sách theo dõi, hệ thống tự động tính toán thời điểm
+phát sóng trừ đi 15 phút:
+}{
+To ensure viewers never miss broadcast premieres, OmniCast integrates
+\texttt{flutter\_local\_notifications} configured with the device's local
+\texttt{timezone}. Adding an event to the watchlist automatically computes an
+exact reminder scheduled 15 minutes before airtime:
+}
+
+\begin{lstlisting}[language=Dart, caption={\bi{Cơ chế tính toán và đặt lịch thông báo cục bộ.}{Local notification scheduling logic.}}]
+final scheduledTime = event.scheduledAt.subtract(
+  const Duration(minutes: 15),
+);
+
+if (scheduledTime.isAfter(DateTime.now())) {
+  await notificationsPlugin.zonedSchedule(
+    event.id.hashCode,
+    'Sắp phát sóng: ${event.title}',
+    'Chương trình sẽ bắt đầu sau 15 phút trên kênh ${event.channelName}',
+    tz.TZDateTime.from(scheduledTime, tz.local),
+    notificationDetails,
+    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
+  );
+}
+\end{lstlisting}
+
+\bi{
+Nhờ cơ chế \texttt{exactAllowWhileIdle}, thiết bị Android vẫn kích hoạt thông
+báo chính xác đến từng giây ngay cả khi hệ điều hành đang ở chế độ tiết kiệm pin
+ngủ sâu (Doze mode), hoàn toàn không phụ thuộc vào máy chủ đẩy tin nhắn từ xa.
+}{
+Employing \texttt{AndroidScheduleMode.exactAllowWhileIdle} guarantees that
+reminders fire precisely on time even when the host operating system enters
+deep sleep (Doze mode), operating completely independent of external push
+gateways.
+}

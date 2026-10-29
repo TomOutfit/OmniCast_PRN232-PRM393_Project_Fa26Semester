@@ -1,0 +1,465 @@
+% ============================================================
+% PRN232 - Section 4: Backend Implementation (Vietnamese & English)
+% ============================================================
+\section{\bi{Cài đặt back-end}{Back-End Implementation}}
+\label{sec:impl}
+
+\subsection{\bi{Xác thực JWT và phân quyền theo vai trò}{JWT Authentication and Role-Based Access Control}}
+
+\bi{
+Hệ thống xác thực dùng cặp token truy cập/làm mới. Khi đăng nhập,
+mật khẩu được kiểm tra bằng \texttt{bcrypt.compare} với 12 vòng lặp
+(\texttt{BCRYPT\_ROUNDS=12}); khi đăng ký, mật khẩu được băm bằng
+\texttt{bcrypt.hash}. \texttt{AuthService} phát hành access token có
+thời hạn 60 phút và refresh token có thời hạn 90 ngày, lưu trong bảng
+\texttt{RefreshToken}. Cơ chế xoay vòng token được áp dụng: mỗi lần
+refresh, token cũ bị thu hồi và một token mới được sinh, nên một token
+bị lộ không thể dùng lại.
+}{
+The system authenticates with an access/refresh token pair. At login
+the password is verified with \texttt{bcrypt.compare} at 12 rounds
+(\texttt{BCRYPT\_ROUNDS=12}); at registration it is hashed with
+\texttt{bcrypt.hash}. \texttt{AuthService} issues a 60-minute access
+token and a 90-day refresh token stored in the \texttt{RefreshToken}
+table. Token rotation is enforced: on every refresh the old token is
+revoked and a new one is issued, so a leaked token cannot be reused.
+}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figAuthFlow}
+\caption{\bi{Luồng xác thực và phân quyền. Access token được gửi kèm
+mọi yêu cầu; \texttt{JwtAuthGuard} xác thực chữ ký, \texttt{RolesGuard}
+đối chiếu vai trò với metadata \texttt{@Roles}.}{Authentication and
+authorisation flow. The access token accompanies every request;
+\texttt{JwtAuthGuard} validates the signature and \texttt{RolesGuard}
+compares the role against the \texttt{@Roles} metadata.}}
+\label{fig:auth}
+\end{figure}
+
+\bi{
+Hai guard được cài đặt trong \texttt{backend/src/auth/guards}. Guard
+\texttt{JwtAuthGuard} dùng chiến lược Passport-JWT và bỏ qua các
+handler được đánh dấu \texttt{@Public()}. Guard \texttt{RolesGuard} đọc
+metadata \texttt{@Roles} qua \texttt{Reflector}; nếu handler không khai
+báo vai trò thì mọi người đã xác thực đều được phép. Điểm đáng chú
+ý là guard chuẩn hoá vai trò về tên chuỗi trước khi so sánh, nhờ vậy
+cả dạng tên (\texttt{'STAFF'}) lẫn dạng số (legacy \texttt{'2'}) đều
+được chấp nhận. Bốn vai trò được định nghĩa trong enum
+\texttt{UserRole} và xếp hạng trong \texttt{role-config.ts} của cổng
+web.
+}{
+Two guards are implemented in \texttt{backend/src/auth/guards}. The
+\texttt{JwtAuthGuard} uses the Passport-JWT strategy and skips handlers
+marked \texttt{@Public()}. The \texttt{RolesGuard} reads \texttt{@Roles}
+metadata through the \texttt{Reflector}; a handler that declares no
+roles admits every authenticated user. A notable detail is that the
+guard normalises roles to string names before comparing, so both the
+name form (\texttt{'STAFF'}) and the legacy numeric form
+(\texttt{'2'}) are accepted. The four roles are declared in the
+\texttt{UserRole} enum and ranked in the portal's
+\texttt{role-config.ts}.
+}
+
+\begin{table}[t]
+\caption{\bi{Bốn vai trò người dùng và phạm vi quyền.}{The four user
+roles and their permission scope.}}
+\label{tab:rbac}
+\centering
+\footnotesize
+\fitcol{\input{generated/table-rbac.tex}}
+\end{table}
+
+\bi{
+Để đảm bảo nguyên tắc đặc quyền tối thiểu, các thao tác nhạy cảm
+được bảo vệ ở cấp controller chứ không phải ở tầng giao diện. Ví dụ,
+toàn bộ 11 endpoint ghi trong nhóm \texttt{ai-curator} và các endpoint điều khiển phát sóng trong \texttt{LiveStudioController} đều yêu cầu
+\texttt{@Roles('STAFF','ADMIN')}, và mọi endpoint quản lý người dùng
+hay nhật ký kiểm toán đều yêu cầu \texttt{@Roles('ADMIN')}.
+}{
+To enforce least privilege, sensitive operations are guarded at the
+controller level rather than in the user interface. For example, all
+eleven write endpoints in the \texttt{ai-curator} group and all broadcast control endpoints in \texttt{LiveStudioController} require
+\texttt{@Roles('STAFF','ADMIN')}, and every user-management or
+audit-log endpoint requires \texttt{@Roles('ADMIN')}.
+}
+
+\subsection{\bi{Phát hiện xung đột lịch phát}{Broadcast Schedule Conflict Detection}}
+
+\bi{
+Thuật toán phát hiện xung đột là cốt lõi nghiệp vụ của hệ thống. Mỗi
+chương trình chiếm một đoạn thời gian $[\,t_0,\ t_0 + d\,]$ trên trục
+thời gian của một kênh. Hai chương trình trùng nhau khi và chỉ khi
+đoạn của chương trình mới bắt đầu trước khi chương trình cũ kết thúc
+và kết thúc sau khi chương trình cũ bắt đầu.
+}{
+The conflict-detection algorithm is the business core of the system.
+Each programme occupies a time interval $[\,t_0,\ t_0 + d\,]$ on the
+timeline of one channel. Two programmes collide if and only if the new
+interval starts before the existing one ends and ends after the
+existing one starts.
+}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figScheduleConflict}
+\caption{\bi{Ba trường hợp giao thoa được phát hiện: chồng đầu, chồng
+đuôi và bao trùm toàn bộ. Lịch trên một kênh khác không gây xung đột.}{
+The three detected overlap forms: head overlap, tail overlap and full
+containment. A schedule on a different channel causes no conflict.}}
+\label{fig:conflict}
+\end{figure}
+
+\bi{
+Điểm khó nhất nằm ở việc tính thời điểm kết thúc \emph{hiệu lực} của
+một sự kiện đã tồn tại. Trường \texttt{endedAt} có thể còn
+\texttt{NULL} với sự kiện ở trạng thái \texttt{SCHEDULED}, tức là sự
+kiện chưa thực sự kết thúc. Nếu dùng truy vấn \texttt{where} thông
+thường của Prisma, các sự kiện như vậy sẽ bị bỏ qua, dẫn tới sai sót
+cho phép đặt lịch trùng. Vì vậy hàm \texttt{checkScheduleConflict}
+dùng SQL thô để tính thời điểm kết thúc hiệu lực bằng biểu thức
+\texttt{COALESCE} với \texttt{MAX} giữa \texttt{endedAt} và
+\texttt{scheduledAt + duration}.
+}{
+The hardest part is computing the \emph{effective} end time of an
+existing event. The \texttt{endedAt} column can still be \texttt{NULL}
+for a \texttt{SCHEDULED} event, meaning the event has not actually
+finished. A naive Prisma \texttt{where} clause would skip such events,
+producing false negatives that allow conflicting schedules. The
+\texttt{checkScheduleConflict} helper therefore uses raw SQL to compute
+the effective end time with a \texttt{COALESCE}/\texttt{MAX}
+expression over \texttt{endedAt} and \texttt{scheduledAt + duration}.
+}
+
+\begin{lstlisting}[caption={\bi{Phát hiện xung đột bằng một truy vấn SQL
+thô. Điều kiện \texttt{excludeEventId} cho phép dùng lại cùng hàm này
+khi cập nhật một sự kiện đang tồn tại.}{Conflict detection in a single
+raw SQL query. The \texttt{excludeEventId} clause lets the same helper
+be reused when updating an existing event.}}]
+SELECT id, title, "scheduledAt" AS scheduled_at, "duration"
+FROM "LiveEvent"
+WHERE "channelId" = $1::uuid
+  AND status IN ('SCHEDULED', 'LIVE')
+  AND "scheduledAt" < $2                      -- moi bat dau truoc khi cu ket thuc
+  AND COALESCE(
+        "endedAt",
+        "scheduledAt" + (
+          CASE
+            WHEN "duration" IS NULL THEN ($3 || ' minutes')::interval
+            WHEN "duration" > 1440  THEN ("duration" || ' seconds')::interval
+            ELSE ("duration" || ' minutes')::interval
+          END)
+      ) > $4                                    -- moi ket thuc sau khi cu bat dau
+\end{lstlisting}
+
+\bi{
+Truy vấn chỉ chạy trên các sự kiện ở trạng thái \texttt{SCHEDULED}
+hoặc \texttt{LIVE}; sự kiện \texttt{ENDED} hoặc \texttt{CANCELLED} không
+còn gây xung đột. Biểu thức \texttt{CASE} cũng xử lý sự bất nhất về
+đơn vị: lớp ingest ghi \texttt{duration} theo \emph{giây}, còn logic EPG
+làm việc theo \emph{phút}, nên giá trị vượt quá 1440 được hiểu là
+giây và chuyển đổi, còn lại được coi là phút. Khi phát hiện xung đột,
+service ném \texttt{ConflictException} với mã HTTP 409 kèm danh sách
+các sự kiện gây xung đột, nhờ vậy giao diện có thể hiển thị chính xác
+chương trình nào đang bị chặn.
+}{
+The query only considers events in the \texttt{SCHEDULED} or
+\texttt{LIVE} states; \texttt{ENDED} and \texttt{CANCELLED} events
+cannot cause a conflict. The \texttt{CASE} expression also absorbs a
+unit inconsistency: the ingest layer writes \texttt{duration} in
+\emph{seconds} while the EPG logic works in \emph{minutes}, so values
+above 1440 are interpreted as seconds and converted, and everything else
+is treated as minutes. On a detected collision the service throws a
+\texttt{ConflictException} carrying HTTP status 409 together with the
+list of conflicting events, so the user interface can name the
+programme that caused the rejection.
+}
+
+\subsection{\bi{Bàn điều khiển Live Studio và Vận hành LiveStream Thời gian thực}{Live Studio Controller and Real-Time LiveStream Operations}}
+
+\bi{
+Module \texttt{programs} cung cấp hai bộ điều khiển chuyên biệt cho nghiệp vụ phát sóng trực tiếp: \texttt{LiveStudioController} (\texttt{backend/src/programs/live-studio.controller.ts}) và \texttt{SocialController} (\texttt{backend/src/programs/social.controller.ts}), phối hợp chặt chẽ với \texttt{LiveStreamGateway} (\texttt{backend/src/websocket/live-stream.gateway.ts}). Toàn bộ quy trình vận hành phòng Live bao gồm 6 nhóm thao tác kỹ thuật:
+}{
+The \texttt{programs} module exposes two dedicated controllers for live broadcasting: \texttt{LiveStudioController} (\texttt{backend/src/programs/live-studio.controller.ts}) and \texttt{SocialController} (\texttt{backend/src/programs/social.controller.ts}), working in tandem with \texttt{LiveStreamGateway} (\texttt{backend/src/websocket/live-stream.gateway.ts}). The complete live studio and viewer room lifecycle spans six technical operations:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{\textbf{Chế độ 1 --- Phát sóng từ Thư viện Nội dung chọn lọc (\texttt{POST /programs/studio/curate-live}):} Cho phép đạo diễn (\texttt{STAFF}/\texttt{ADMIN}) chọn một hoặc nhiều bản ghi (\texttt{recordingIds}) trong thư viện kênh hoặc kho tổng OmniCast để phát sóng ngay lập tức. Service kiểm tra điều kiện chống vi phạm bản quyền (\emph{Anti-Piracy Guard}, từ chối các URL YouTube/Twitch/Vimeo trái phép), tự động kết thúc sự kiện \texttt{LIVE} cũ trên cùng kênh trong một giao dịch nguyên tử, khởi tạo \texttt{LiveEvent} mới với danh sách chương trình (\texttt{lineup}) và phát tín hiệu \texttt{live:started} qua Socket.IO.}{
+  \textbf{Mode 1 --- Curated VOD Broadcast (\texttt{POST /programs/studio/curate-live}):} Allows producers (\texttt{STAFF}/\texttt{ADMIN}) to select one or more \texttt{recordingIds} from the channel or global VOD library for immediate broadcast. The service enforces an Anti-Piracy Guard (rejecting unauthorised YouTube/Twitch/Vimeo URLs), atomically ends any previous \texttt{LIVE} event on the same channel, creates the new \texttt{LiveEvent} with a multi-item \texttt{lineup}, and emits \texttt{live:started} over Socket.IO.}
+
+  \item \bi{\textbf{Chế độ 2 --- Tự ghi hình, Tải lên có chữ ký số \& Phát trực tiếp từ Camera (\texttt{POST /programs/studio/self-record} \& \texttt{/live/webcam/start}):} Hỗ trợ hai luồng làm việc:
+  (a) \emph{Direct-to-Cloudinary Signed Upload}: client xin chữ ký qua \texttt{POST /programs/studio/recordings/sign}, đẩy tệp MP4/WebM trực tiếp lên CDN Cloudinary kèm theo dõi tốc độ/ETA, sau đó gọi \texttt{self-record} để kiểm định \texttt{HEAD} probe và đưa lên sóng (hoặc hẹn giờ phát sóng \texttt{SCHEDULED} / lưu nháp \texttt{PRIVATE}); có hỗ trợ dọn dẹp tài nguyên mồ côi (\texttt{DELETE /programs/studio/recordings/orphan}) nếu người dùng hủy giữa chừng.
+  (b) \emph{WebRTC WHIP Direct Camera/Screen Streaming}: client gọi \texttt{POST /programs/studio/live/webcam/start} để cấp phát khóa luồng (\texttt{streamKey}), đẩy luồng video/âm thanh trực tiếp từ Camera hoặc Màn hình tới MediaMTX (\texttt{:8889/whip}) và phân phối lại qua HLS (\texttt{.m3u8}) tới mọi người xem.}{
+  \textbf{Mode 2 --- Self-Record, Signed Direct Upload \& Webcam WHIP Live (\texttt{POST /programs/studio/self-record} \& \texttt{/live/webcam/start}):} Supports two workflows:
+  (a) \emph{Direct-to-Cloudinary Signed Upload}: the client obtains signed parameters via \texttt{POST /programs/studio/recordings/sign}, uploads MP4/WebM directly to Cloudinary with live speed/ETA telemetry, and invokes \texttt{self-record} with server-side media probing to go live immediately (\texttt{IMMEDIATE}), schedule (\texttt{SCHEDULED}), or save as \texttt{PRIVATE} draft, complete with orphan asset cleanup (\texttt{DELETE /programs/studio/recordings/orphan}).
+  (b) \emph{WebRTC WHIP Direct Camera/Screen Streaming}: the client calls \texttt{POST /programs/studio/live/webcam/start} to allocate a \texttt{streamKey}, publishes camera or screen media via WebRTC WHIP to MediaMTX (\texttt{:8889/whip}), and serves low-latency HLS (\texttt{.m3u8}) to all viewers.}
+
+  \item \bi{\textbf{Chế độ 3 --- Kho nội dung công khai đã xác thực (\texttt{GET /programs/studio/public-catalog}):} Cung cấp danh mục các luồng HLS và MP4 hợp pháp từ Mux, Cloudinary và Internet Archive. Đạo diễn có thể lọc theo định dạng, nhập một chạm vào thư viện kênh (\texttt{POST /programs/studio/recordings/library/from-catalog}) hoặc thêm URL tùy chỉnh kèm kiểm tra \texttt{HEAD} probe tự động (\texttt{POST /programs/studio/recordings/library}).}{
+  \textbf{Mode 3 --- Verified Public Stream Catalog (\texttt{GET /programs/studio/public-catalog}):} Provides a curated catalog of royalty-free HLS and MP4 streams from Mux, Cloudinary and Internet Archive. Producers can filter by format, import with one click (\texttt{POST /programs/studio/recordings/library/from-catalog}), or register custom stream URLs with automated \texttt{HEAD} probing (\texttt{POST /programs/studio/recordings/library}).}
+
+  \item \bi{\textbf{Chuyển đổi chương trình đang phát tức thời (\texttt{POST /programs/studio/events/:eventId/switch-program}):} Khi một sự kiện Live có nhiều chương trình trong \texttt{lineup} hoặc đạo diễn muốn đổi sang một bản ghi khác ngay giữa buổi phát, endpoint này cập nhật \texttt{streamUrl} của \texttt{LiveEvent} và phát sự kiện \texttt{live:program:changed} tới toàn bộ phòng \texttt{event:<eventId>}. Trình phát của mọi khán giả tự động nạp luồng video mới mà không làm mất khung chat hay đứt kết nối WebSocket.}{
+  \textbf{On-the-Fly Program Switching (\texttt{POST /programs/studio/events/:eventId/switch-program}):} When a live event contains multiple lineup items or a producer switches to another recording mid-broadcast, this endpoint updates the active \texttt{streamUrl} and broadcasts \texttt{live:program:changed} to room \texttt{event:<eventId>}. All connected viewers seamlessly transition to the new video stream without losing their chat session or WebSocket connection.}
+
+  \item \bi{\textbf{Tương tác Phòng Live hai chiều qua \texttt{LiveStreamGateway} (\texttt{/live}):} Khi khán giả nhấn tham gia phòng (\texttt{subscribe:event}), cổng WebSocket tăng bộ đếm người xem thực tế trong bộ nhớ và đồng bộ xuống cơ sở dữ liệu (\texttt{LiveEvent.viewerCount}), phát bản tin \texttt{live:viewerCount}. Khán giả có thể gửi bình luận trực tiếp (\texttt{live:chat}), trả lời bình luận theo nhánh (\texttt{parentId}), thả tim bình luận, và bắn các biểu cảm hạt nổi (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}) với độ trễ phản hồi xúc giác 0ms. Đạo diễn có thể phát thông báo ghim (\texttt{broadcaster:message}), xóa tin nhắn vi phạm (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}) hoặc dừng sóng (\texttt{POST /programs/studio/live-events/:eventId/stop} kèm tùy chọn \texttt{keepAsVod}).}{
+  \textbf{Bi-Directional Room Interaction via \texttt{LiveStreamGateway} (\texttt{/live}):} Joining a room (\texttt{subscribe:event}) increments the in-memory and database-persisted viewer counter (\texttt{LiveEvent.viewerCount}) and broadcasts \texttt{live:viewerCount}. Viewers engage through live chat (\texttt{live:chat}), threaded replies (\texttt{parentId}), comment likes, and 0ms haptic floating emoji reactions (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}). Producers can broadcast pinned toast banners (\texttt{broadcaster:message}), delete inappropriate messages (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}), or stop the broadcast (\texttt{POST /programs/studio/live-events/:eventId/stop} with \texttt{keepAsVod}).}
+
+  \item \bi{\textbf{Quyên góp Super Chat \& Quà tặng trực tiếp (\texttt{StreamDonation}):} Khán giả trong phòng Live có thể ủng hộ nhà sáng tạo qua 6 mệnh giá quà tặng kèm lời nhắn vinh danh và phương thức thanh toán, cập nhật trực tiếp số dư ví của kênh và hiển thị hiệu ứng ăn mừng toàn phòng qua sự kiện \texttt{live:donation:received}.}{
+  \textbf{Super Chat \& Live Donations (\texttt{StreamDonation}):} Viewers in the live room can support creators across 6 preset gift tiers with custom messages and payment methods, updating the streamer's wallet balance and triggering a celebratory overlay across the room via \texttt{live:donation:received}.}
+\end{enumerate}
+
+\subsection{\bi{Cơ chế điền lịch EPG 24/7}{24/7 EPG Filler Mechanism}}
+
+\bi{
+Do các kênh chỉ có khoảng một chương trình gốc mỗi ngày, lưới EPG 24
+giờ được xây dựng bởi \texttt{EpgScheduleFillerService}. Service này
+đảm bảo năm tính chất mà thiết kế yêu cầu:
+}{
+Because channels originate only a handful of productions per day, the
+24-hour EPG grid is materialised by \texttt{EpgScheduleFillerService}.
+The service guarantees five properties demanded by the design:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Không có ngày trống.} Mỗi lưới kênh/ngày đều đủ
+  24 giờ, nên bộ lọc theo ngày ở giao diện luôn có nội dung để hiển
+  thị.}{
+  \textbf{No empty days.} Every channel-day grid covers the full 24
+  hours, so the day filter in the user interface always has content to
+  render.}
+
+  \item \bi{\textbf{Lựa chọn ưu tiên theo thể loại.} Bản ghi có
+  \texttt{category} khớp thể loại của kênh được ưu tiên; chỉ khi
+  không có bản ghi khớp mới quay sang toàn bộ thư viện.}{
+  \textbf{Genre-aware selection.} Recordings whose \texttt{category}
+  matches the channel category are preferred; the full library is used
+  only when nothing matches.}
+
+  \item \bi{\textbf{Tách tập.} Bản ghi dài hơn
+  \texttt{LONG\_PROGRAM\_MINUTES} được chia thành các tập dài
+  \texttt{EPISODE\_MINUTES}, để lưới hiển thị ``Tập 1 / Tập 2 / ...''
+  thay vì một khối duy nhất.}{
+  \textbf{Episode splitting.} Recordings longer than
+  \texttt{LONG\_PROGRAM\_MINUTES} are split into chunks of
+  \texttt{EPISODE\_MINUTES} so the grid exposes ``Episode 1 / Episode
+  2 / ...'' entries instead of one massive block.}
+
+  \item \bi{\textbf{Phát lại có giới hạn.} Cùng một bản ghi hoặc tập
+  chỉ được xuất hiện tối đa \texttt{MAX\_REPEATS\_PER\_ITEM\_PER\_DAY}
+  lần trong một ngày, tránh việc người xem phải xem lặp vô tận.}{
+  \textbf{Limited replay.} The same recording or episode may appear at
+  most \texttt{MAX\_REPEATS\_PER\_ITEM\_PER\_DAY} times in a single
+  day, so viewers never see an episode loop endlessly.}
+
+  \item \bi{\textbf{Tính ngẫu nhiên có thể tái lập.} Lựa chọn dùng
+  PRNG có hạt giống theo cặp (ngày, kênh), nên cùng một ngày luôn cho
+  cùng một lịch, nhưng các ngày liền kề lại hiển thị nội dung khác
+  nhau.}{
+  \textbf{Reproducible randomness.} Selection uses a seeded PRNG keyed
+  on the (date, channel) pair, so the same day always renders the same
+  schedule while adjacent days surface different content.}
+\end{enumerate}
+
+\bi{
+Điểm quan trọng về mặt kỹ thuật là service này \emph{không thực hiện
+truy vấn I/O}: nó là logic thuần túy, nhận danh sách bản ghi và danh
+sách chương trình thật rồi trả về lưới đã điền. Nhờ vậy 18 kiểm thử
+đơn vị trong \texttt{epg-filler.spec.ts} có thể chạy mà không cần
+cơ sở dữ liệu, và toàn bộ tầng lập lịch trở thành một hàm thuần
+có thể kiểm chứng bằng thuộc tính.
+}{
+The technically important point is that the service performs \emph{no
+I/O}: it is pure logic that receives the recording list and the real
+programme list and returns the filled grid. As a result the 18 unit
+tests in \texttt{epg-filler.spec.ts} run without a database, and the
+whole scheduling layer becomes a pure function verifiable by
+properties.
+}
+
+\subsection{\bi{Lớp ingest nội dung và làm giàu dữ liệu}{Content Ingestion and Enrichment}}
+
+\bi{
+Lớp ingest thu thập lịch phát từ YouTube, Twitch và RSS theo lịch
+cron (\texttt{0 */15 * * * *} cho YouTube, \texttt{0 */30 * * * *} cho
+Twitch), chuẩn hoá về một cấu trúc thống nhất
+\texttt{NormalizedLiveEvent}, rồi ghi vào bảng \texttt{LiveEvent}. Sau
+đó một tác vụ làm giàu dữ liệu tùy chọn gọi TMDB để bổ sung thông tin
+phim (poster, diễn viên, đánh giá) cho các sự kiện có tiêu đề khớp.
+}{
+The ingestion layer collects schedules from YouTube, Twitch and RSS on
+a cron schedule (\texttt{0 */15 * * * *} for YouTube, \texttt{0 */30 *
+* * *} for Twitch), normalises them into a unified
+\texttt{NormalizedLiveEvent} structure and writes them to the
+\texttt{LiveEvent} table. An optional enrichment task then calls TMDB
+to supplement film metadata (poster, cast, rating) for events whose
+title matches.
+}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figIngest}
+\caption{\bi{Luồng ingest từ các nguồn bên ngoài. Tất cả nguồn đều
+được chuẩn hoá về một cấu trúc duy nhất trước khi ghi vào cơ sở dữ
+liệu.}{Ingestion flow from external sources. Every source is
+normalised into a single structure before being written to the
+database.}}
+\label{fig:ingest}
+\end{figure}
+
+\subsection{\bi{Trợ lý biên tập AI có kiểm soát chất lượng}{Quality-Controlled AI Curation Assistant}}
+
+\bi{
+Module \texttt{ai-curator} là một trong những đóng góp đáng chú ý
+nhất. Yêu cầu ban đầu là tự động hoá việc viết mô tả, gán thể loại và
+gắn thẻ cho chương trình. Quy trình được thiết kế theo bốn nguyên tắc:
+}{
+The \texttt{ai-curator} module is one of the most significant
+contributions. The original requirement was to automate writing
+descriptions, assigning categories and tagging programmes. The
+pipeline is designed around four principles:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Một lần gọi mô hình duy nhất.} Phiên bản
+  \texttt{curator-prompt-v4.0.0} hợp nhất ba lần gọi tách rời trước
+  đây (mô tả, thẻ, phân loại) thành một lần gọi duy nhất với schema
+  JSON và ví dụ few-shot, giảm chi phí và độ trễ xuống còn một phần
+  ba.}{
+  \textbf{A single consolidated model call.} Prompt revision
+  \texttt{curator-prompt-v4.0.0} merges three separate calls
+  (description, tags, category) into one call with a JSON schema and
+  few-shot examples, reducing both cost and latency to roughly a
+  third.}
+
+  \item \bi{\textbf{Kiểm tra schema bằng Zod.} Đầu ra của mô hình được
+  kiểm tra bằng \texttt{ai-curator.schemas.ts}; nếu không hợp lệ,
+  yêu cầu được chuyển sang đường dự phòng heuristic.}{
+  \textbf{Zod schema validation.} The model output is validated
+  against \texttt{ai-curator.schemas.ts}; when it does not validate,
+  the request is routed to the heuristic fallback.}
+
+  \item \bi{\textbf{Đường dự phòng heuristic.} Khi thiếu
+  \texttt{OPENAI\_API\_KEY} hoặc khóa bằng \texttt{dummy-key}, một bộ
+  quy tắc cục bộ đánh giá giọng điệu, tuân thủ và tính chất biên tập
+  để sinh kết quả tương đương về cấu trúc.}{
+  \textbf{Heuristic fallback.} When \texttt{OPENAI\_API\_KEY} is absent
+  or equal to \texttt{dummy-key}, a local rule engine assesses
+  sentiment, compliance and editorial tone to produce a structurally
+  equivalent result.}
+
+  \item \bi{\textbf{Dấu vết phiên bản.} Mỗi báo cáo lưu kèm
+  \texttt{promptVersion}, \texttt{aiModelVersion},
+  \texttt{openaiCallMs} và \texttt{openaiRetries}, cho phép so sánh
+  chất lượng giữa các phiên bản prompt.}{
+  \textbf{Version provenance.} Every report stores
+  \texttt{promptVersion}, \texttt{aiModelVersion},
+  \texttt{openaiCallMs} and \texttt{openaiRetries}, allowing quality to
+  be compared across prompt revisions.}
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figAiPipeline}
+\caption{\bi{Quy trình AI Curator: nhánh theo sự hiện diện của khóa
+API, kiểm tra schema bằng Zod, và đường dự phòng heuristic khi
+kiểm tra thất bại.}{AI Curator pipeline: branching on API-key
+presence, Zod schema validation, and the heuristic fallback taken when
+validation fails.}}
+\label{fig:ai}
+\end{figure}
+
+\bi{
+Tham số siêu tham số được đặt cố định ở \texttt{ai-curator.prompts.ts}
+(\texttt{temperature = 0.3}, \texttt{top\_p = 0.95}), được hướng dẫn
+rõ rằng không được đổi \texttt{temperature} nếu chưa đánh giá lại các
+ví dụ few-shot. Quy ước phiên bản theo ngữ nghĩa: MAJOR khi thay đổi
+schema, MINOR khi đổi văn phong mà không đổi cấu trúc JSON, PATCH khi
+sửa lỗi chính tả. Module thống kê \texttt{ai-curator-stats.service.ts}
+tổng hợp theo nhóm \texttt{broadcastSuitability}, theo phiên bản mô
+hình, và theo khoảng thời gian.
+}{
+The hyper-parameters are pinned in \texttt{ai-curator.prompts.ts}
+(\texttt{temperature = 0.3}, \texttt{top\_p = 0.95}), with an explicit
+instruction not to change \texttt{temperature} without re-evaluating
+the few-shot examples. The versioning convention is semantic:
+MAJOR for schema changes, MINOR for rewording that preserves the JSON
+shape, PATCH for copy edits. The statistics module
+\texttt{ai-curator-stats.service.ts} aggregates by
+\texttt{broadcastSuitability} group, by model version and by time
+period.
+}
+
+\subsection{\bi{Tìm kiếm, thanh toán và các module phụ trợ}{Search, Billing and Supporting Modules}}
+
+\bi{
+Module \texttt{search} thực hiện tìm kiếm liên thực thể: kênh, chương
+trình và bản ghi được truy vấn đồng thời bằng điều kiện
+\texttt{contains} không phân biệt hoa thường, kèm lọc theo thể loại
+và phân trang. Kết quả được gộp thành một đối tượng duy nhất kèm
+tổng số kết quả, phù hợp với mô hình giao diện tìm kiếm một trang
+hiển thị đan xen các nhóm kết quả.
+
+Module \texttt{billing} quản lý gói dịch vụ và lịch sử thanh toán;
+module \texttt{notifications} đẩy thông báo qua Firebase Cloud
+Messaging dựa trên bảng \texttt{DeviceToken}; module \texttt{newsletter}
+quản lý đăng ký bản tin; module \texttt{cloudinary} xử lý tải lên
+hình ảnh và video cho luồng ghi hình trực tiếp trong studio.
+}{
+The \texttt{search} module performs cross-entity search: channels,
+programmes and recordings are queried simultaneously with
+case-insensitive \texttt{contains} conditions, combined with category
+filtering and pagination. Results are merged into a single object
+carrying the total result count, matching the single-page search
+layout that renders grouped result sections.
+
+The \texttt{billing} module manages plans and payment history; the
+\texttt{notifications} module pushes notifications through Firebase
+Cloud Messaging based on the \texttt{DeviceToken} table; the
+\texttt{newsletter} module manages subscriptions; and the
+\texttt{cloudinary} module handles image and video uploads for the
+live-recording flow in the studio.
+}
+
+\subsection{\bi{Các quy ước kỹ thuật xuyên suốt}{Cross-Cutting Technical Conventions}}
+
+\bi{
+Bốn quy ước áp dụng xuyên suốt toàn hệ thống đáng được nêu rõ vì
+chúng quyết định tính nhất quán của API:
+}{
+Four conventions applied across the whole system deserve explicit
+mention because they determine API consistency:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{Định dạng phản hồi thống nhất.} Một
+  \texttt{TransformInterceptor} toàn cục bọc mọi kết quả trong
+  \texttt{\{success, statusCode, data, meta, timestamp\}}, nên client
+  chỉ cần một cách giải mã duy nhất.}{
+  \textbf{Uniform response envelope.} A global
+  \texttt{TransformInterceptor} wraps every result in
+  \texttt{\{success, statusCode, data, meta, timestamp\}}, so clients
+  need exactly one decoding path.}
+
+  \item \bi{\textbf{Xử lý ngoại lệ tập trung.} \texttt{HttpExceptionFilter}
+  chuẩn hoá mọi lỗi thành cùng một cấu trúc, bao gồm thông báo thân
+  thiện bằng tiếng Việt cho người dùng cuối.}{
+  \textbf{Centralised exception handling.}
+  \texttt{HttpExceptionFilter} normalises every error into the same
+  structure, including user-facing Vietnamese messages.}
+
+  \item \bi{\textbf{Xác thực đầu vào nghiêm ngặt.} \texttt{ValidationPipe}
+  với \texttt{whitelist} và \texttt{forbidNonWhitelisted} loại bỏ mọi
+  trường không khai báo trong DTO, ngăn chặn mass-assignment.}{
+  \textbf{Strict input validation.} A \texttt{ValidationPipe} with
+  \texttt{whitelist} and \texttt{forbidNonWhitelisted} strips every
+  field not declared in the DTO, preventing mass assignment.}
+
+  \item \bi{\textbf{Tài liệu API tự sinh.} Decorator Swagger trên mỗi
+  controller tạo ra tài liệu OpenAPI tại \texttt{/swagger}, được kiểm
+  tra bởi 19 endpoint thuộc nhóm \texttt{ai-curator}, \texttt{channels},
+  \texttt{programs} và các nhóm còn lại.}{
+  \textbf{Generated API documentation.} Swagger decorators on each
+  controller produce OpenAPI documentation at \texttt{/swagger},
+  covering 19 endpoints in the \texttt{ai-curator} group together
+  with \texttt{channels}, \texttt{programs} and the remaining
+  groups.}
+\end{enumerate}

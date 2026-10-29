@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - Testing_Guide</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS</div>
+    <div class="fptu-tag">FU CAHATA • REFERENCE DOCS</div>
+  </div>
+  <div class="content">
+<h1
+id="omnicast-omni-kế-hoạch-kiểm-thử-cicd-toàn-diện-testing-automation-strategy">🧪
+OmniCast (OMNI) — Kế Hoạch Kiểm Thử &amp; CI/CD Toàn Diện (Testing &amp;
+Automation Strategy)</h1>
+<h1
+id="chiến-lược-kiểm-thử-song-hành-2-môn-học-prn232-.net-10-next.js-15-prm393-flutter-3.x">Chiến
+Lược Kiểm Thử Song Hành 2 Môn Học: PRN232 (.NET 10 + Next.js 15) &amp;
+PRM393 (Flutter 3.x)</h1>
+<h1
+id="tích-hợp-tự-động-hóa-cicd-automated-test-cases-github-actions">Tích
+Hợp Tự Động Hóa CI/CD: Automated Test Cases &amp; GitHub Actions</h1>
+<p><strong>Tên Dự Án:</strong> OmniCast Enterprise Media &amp; Broadcast
+Intelligence Network<br />
+<strong>Mã Dự Án:</strong> OMNI<br />
+<strong>Mục Đích Tài Liệu:</strong> Đặc tả ma trận Test Cases chi tiết
+cho toàn bộ các phân hệ Backend (.NET 10), Frontend Web (Next.js 15) và
+Frontend Mobile (Flutter 3.x), cấu hình kịch bản tự động hóa CI
+(Continuous Integration) kiểm thử tự động ngay khi đẩy code lên
+GitHub.</p>
+<hr />
+<h2 id="mục-lục">📑 Mục Lục</h2>
+<ol type="1">
+<li><a
+href="#1--chiến-lược--khung-công-cụ-kiểm-thử-testing-stack--strategy">🎯
+Chiến Lược &amp; Khung Công Cụ Kiểm Thử (Testing Stack &amp;
+Strategy)</a></li>
+<li><a
+href="#2--cấu-hình-tự-động-hóa-github-actions-ci-githubworkflowsciyml">🤖
+Cấu Hình Tự Động Hóa GitHub Actions CI
+(<code>.github/workflows/ci.yml</code>)</a></li>
+<li><a
+href="#3--ma-trận-test-cases-chi-tiết-theo-môn-học-detailed-test-cases-matrix">📋
+Ma Trận Test Cases Chi Tiết Theo Môn Học (Detailed Test Cases
+Matrix)</a>
+<ul>
+<li><a href="#31--môn-prn232-backend-api-net-10-xunit--moq">3.1. 💻 Môn
+PRN232: Backend API (.NET 10 xUnit + Moq)</a></li>
+<li><a
+href="#32--môn-prn232-web-portal-nextjs-15-vitest--react-testing-library">3.2.
+🌐 Môn PRN232: Web Portal (Next.js 15 Vitest / React Testing
+Library)</a></li>
+<li><a
+href="#33--môn-prm393-mobile-app-flutter-test--bloc-test--mocktail">3.3.
+📱 Môn PRM393: Mobile App (Flutter Test + BLoC Test + Mocktail)</a></li>
+</ul></li>
+<li><a
+href="#4--hướng-dẫn-chạy-test-nhanh-tại-local-local-test-commands">⚡
+Hướng Dẫn Chạy Test Nhanh Tại Local (Local Test Commands)</a></li>
+<li><a
+href="#5--bảng-nhật-ký-nghiệm-thu-smoke-test-cho-2-đợt-review-review-sign-off-log">📊
+Bảng Nhật Ký Nghiệm Thu Smoke Test Cho 2 Đợt Review (Review Sign-Off
+Log)</a></li>
+</ol>
+<hr />
+<h2 id="chiến-lược-khung-công-cụ-kiểm-thử-testing-stack-strategy">1. 🎯
+CHIẾN LƯỢC &amp; KHUNG CÔNG CỤ KIỂM THỬ (TESTING STACK &amp;
+STRATEGY)</h2>
+<p>Hệ thống OmniCast áp dụng mô hình kim tự tháp kiểm thử (Testing
+Pyramid) với 3 tầng tự động hóa:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode mermaid"><code class="sourceCode mermaid"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">flowchart</span> <span class="cn">TD</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">E2E</span>[<span class="vs">3. End-to-End &amp; Smoke Tests: Vercel Live &amp; Real Android Device</span>] <span class="pp">--&gt;</span> <span class="dt">Int</span>[<span class="vs">2. Integration Tests: Prisma In-Memory, Search Queries, gRPC Client</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Int</span> <span class="pp">--&gt;</span> <span class="dt">Unit</span>[<span class="vs">1. Unit &amp; BLoC Tests: Jest, Vitest, flutter_test, bloc_test</span>]</span></code></pre></div>
+<h3 id="bộ-công-cụ-kiểm-thử-cho-từng-phân-hệ">🛠️ Bộ Công Cụ Kiểm Thử Cho
+Từng Phân Hệ:</h3>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 27%" />
+<col style="width: 22%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Phân Hệ</th>
+<th style="text-align: center;">Môn Học</th>
+<th style="text-align: left;">Công Cụ &amp; Thư Viện Kiểm Thử</th>
+<th style="text-align: center;">Mục Tiêu Độ Phủ (Code Coverage
+Target)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>💻 Backend API</strong></td>
+<td style="text-align: center;"><strong>PRN232</strong></td>
+<td style="text-align: left;"><code>xUnit</code>, <code>Moq</code>,
+<code>FluentAssertions</code>,
+<code>Microsoft.AspNetCore.Mvc.Testing</code></td>
+<td style="text-align: center;"><strong>≥ 80%</strong> Business Logic
+Layer</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>🌐 Web Portal</strong></td>
+<td style="text-align: center;"><strong>PRN232</strong></td>
+<td style="text-align: left;"><code>Vitest</code>,
+<code>@testing-library/react</code>,
+<code>@testing-library/user-event</code>, <code>msw</code></td>
+<td style="text-align: center;"><strong>≥ 75%</strong> Components &amp;
+Helpers</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>📱 Mobile App</strong></td>
+<td style="text-align: center;"><strong>PRM393</strong></td>
+<td style="text-align: left;"><code>flutter_test</code>,
+<code>bloc_test</code>, <code>mocktail</code>,
+<code>sqflite_common_ffi</code></td>
+<td style="text-align: center;"><strong>≥ 75%</strong> BLoCs &amp;
+Database Helpers</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2
+id="cấu-hình-tự-động-hóa-github-actions-ci-.githubworkflowsci.yml">2. 🤖
+CẤU HÌNH TỰ ĐỘNG HÓA GITHUB ACTIONS CI
+(<code>.github/workflows/ci.yml</code>)</h2>
+<p>File cấu hình CI này được đặt tại
+<code>.github/workflows/ci.yml</code> trên root repository, tự động chạy
+kiểm thử cho cả 3 phân hệ ngay lập tức khi có <strong>Pull
+Request</strong> hoặc <strong>Push</strong> lên nhánh
+<code>main</code>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> OmniCast Continuous Integration (CI)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> main</span><span class="kw">,</span><span class="at"> develop </span><span class="kw">]</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> main </span><span class="kw">]</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># JOB 1: KIỂM THỬ BACKEND .NET 10 API (MÔN PRN232)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backend-ci</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 💻 Backend .NET 10 (Build &amp; xUnit Tests)</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">working-directory</span><span class="kw">:</span><span class="at"> ./backend</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📥 Checkout Repository</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ⚙️ Setup .NET 10 SDK</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-dotnet@v4</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dotnet-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;10.0.x&#39;</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📦 Restore Dependencies</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> dotnet restore OmniCast.slnx</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🔨 Build Solution</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> dotnet build OmniCast.slnx --no-restore --configuration Release</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🧪 Run xUnit Tests &amp; Collect Coverage</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="at">          dotnet test OmniCast.slnx </span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="at">          --no-build </span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="at">          --configuration Release </span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="at">          --verbosity normal </span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="at">          --collect:&quot;XPlat Code Coverage&quot; </span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="at">          --logger &quot;trx;LogFileName=backend_test_results.trx&quot;</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📊 Upload Backend Test Results</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/upload-artifact@v4</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backend-test-results</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> backend/**/TestResults/</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># JOB 2: KIỂM THỬ WEB NEXT.JS 15 (MÔN PRN232)</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web-ci</span><span class="kw">:</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🌐 Web Next.js 15 (Lint, Typecheck &amp; Vitest)</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">working-directory</span><span class="kw">:</span><span class="at"> ./web</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📥 Checkout Repository</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ⚙️ Setup Node.js 20.x</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-node@v4</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">node-version</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">cache</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;npm&#39;</span></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">cache-dependency-path</span><span class="kw">:</span><span class="at"> web/package-lock.json</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📦 Install NPM Packages</span></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm ci</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🔍 Run ESLint &amp; TypeScript Check</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="at">          npm run lint</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="at">          npx tsc --noEmit</span></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🧪 Run Vitest Suite with Coverage</span></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm run test -- --run --coverage</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📊 Upload Web Coverage Report</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/upload-artifact@v4</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-coverage-report</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> web/coverage/</span></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># JOB 3: KIỂM THỬ MOBILE FLUTTER 3.X (MÔN PRM393)</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="co"># ========================================================</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mobile-ci</span><span class="kw">:</span></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📱 Mobile Flutter 3.x (Analyze &amp; BLoC Tests)</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">run</span><span class="kw">:</span></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">working-directory</span><span class="kw">:</span><span class="at"> ./mobile</span></span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📥 Checkout Repository</span></span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ⚙️ Setup Java 17</span></span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-java@v4</span></span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">distribution</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;temurin&#39;</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">java-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;17&#39;</span></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ⚙️ Setup Flutter 3.x SDK</span></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> subosito/flutter-action@v2</span></span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">flutter-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.x&#39;</span></span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">channel</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;stable&#39;</span></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">cache</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📦 Get Flutter Packages</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> flutter pub get</span></span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🔍 Static Code Analysis (Flutter Analyze)</span></span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> flutter analyze --fatal-infos --fatal-warnings</span></span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 🧪 Run Flutter Unit &amp; BLoC Tests</span></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> flutter test --coverage</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> 📦 Build Release APK Verification (Dry-Run)</span></span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> flutter build apk --release --target-platform android-arm64</span></span></code></pre></div>
+<hr />
+<h2
+id="ma-trận-test-cases-chi-tiết-theo-môn-học-detailed-test-cases-matrix">3.
+📋 MA TRẬN TEST CASES CHI TIẾT THEO MÔN HỌC (DETAILED TEST CASES
+MATRIX)</h2>
+<hr />
+<h3 id="môn-prn232-backend-api-.net-10-xunit-moq">3.1. 💻 MÔN PRN232:
+BACKEND API (.NET 10 xUnit + Moq)</h3>
+<h4 id="module-1-xác-thực-phân-quyền-auth-rbac">🔐 Module 1: Xác Thực
+&amp; Phân Quyền (Auth &amp; RBAC)</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Điều Kiện Đầu Vào</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-01</strong></td>
+<td style="text-align: left;">Hash mật khẩu PBKDF2</td>
+<td style="text-align: left;">Nhập <code>Password123!</code> vào
+<code>PasswordHasherService.HashPassword()</code></td>
+<td style="text-align: left;">Chuỗi băm khác plain-text, độ dài &gt; 50
+ký tự, verify trả về <code>true</code>.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-02</strong></td>
+<td style="text-align: left;">Đăng ký tài khoản mới thành công</td>
+<td style="text-align: left;">Gửi <code>RegisterRequestDto</code> với
+email <code>newuser@omnicast.tv</code> chưa tồn tại</td>
+<td style="text-align: left;">Tạo user trong DB, gán
+<code>Role = 2</code> (Viewer), mật khẩu được băm, HTTP 201.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-03</strong></td>
+<td style="text-align: left;">Đăng ký với email đã tồn tại</td>
+<td style="text-align: left;">Gửi <code>RegisterRequestDto</code> với
+email <code>admin@omnicast.tv</code> đã có trong DB</td>
+<td style="text-align: left;">Ném ngoại lệ
+<code>ConflictException</code> (HTTP 409: “Email already
+registered”).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-04</strong></td>
+<td style="text-align: left;">Đăng nhập đúng mật khẩu</td>
+<td style="text-align: left;">Gửi <code>LoginRequestDto</code> với email
+và mật khẩu chính xác</td>
+<td style="text-align: left;">Trả về <code>AuthResponseDto</code> chứa
+JWT Access Token (hạn 60p, claim <code>role="2"</code>), Refresh Token
+lưu DB.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-05</strong></td>
+<td style="text-align: left;">Đăng nhập sai mật khẩu</td>
+<td style="text-align: left;">Gửi <code>LoginRequestDto</code> với mật
+khẩu không đúng</td>
+<td style="text-align: left;">Ném ngoại lệ
+<code>UnauthorizedException</code> (HTTP 401: “Invalid
+credentials”).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-06</strong></td>
+<td style="text-align: left;">Làm mới Access Token bằng Refresh
+Token</td>
+<td style="text-align: left;">Gửi <code>RefreshTokenRequestDto</code>
+hợp lệ còn hạn</td>
+<td style="text-align: left;">Thu hồi token cũ, sinh cặp Access Token và
+Refresh Token mới, HTTP 200.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-07</strong></td>
+<td style="text-align: left;">Phân quyền RBAC Policy:
+<code>StaffOnly</code></td>
+<td style="text-align: left;">Request tới <code>/api/channels</code>
+(POST) kèm JWT có <code>Role = 2</code> (Viewer)</td>
+<td style="text-align: left;">Middleware Authorization chặn, trả về HTTP
+403 Forbidden.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-08</strong></td>
+<td style="text-align: left;">Phân quyền RBAC Policy:
+<code>AdminOnly</code></td>
+<td style="text-align: left;">Request tới <code>/admin/audit-logs</code>
+kèm JWT có <code>Role = 3</code> (Admin)</td>
+<td style="text-align: left;">Request được cấp quyền truy cập, trả về
+HTTP 200 OK.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-2-quản-lý-lịch-epg-chống-trùng-giờ-phát-sóng">📺 Module
+2: Quản Lý Lịch EPG &amp; Chống Trùng Giờ Phát Sóng</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Điều Kiện Đầu Vào</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-09</strong></td>
+<td style="text-align: left;">Thêm chương trình hợp lệ</td>
+<td style="text-align: left;">Thêm chương trình lúc
+<code>14:00 - 15:00</code>, kênh chưa có lịch phát sóng trong khung giờ
+này</td>
+<td style="text-align: left;">Lưu thành công vào DB Supabase, gán đúng
+<code>ChannelId</code>, HTTP 201 Created.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-10</strong></td>
+<td style="text-align: left;">Chặn trùng lịch: Giao thoa phần đầu</td>
+<td style="text-align: left;">Đã có lịch <code>14:00 - 15:00</code>.
+Thêm lịch mới lúc <code>13:30 - 14:30</code> trên cùng kênh</td>
+<td style="text-align: left;"><code>ProgramService</code> ném
+<code>ConflictException</code> (HTTP 409: “Schedule overlaps”).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-11</strong></td>
+<td style="text-align: left;">Chặn trùng lịch: Giao thoa phần đuôi</td>
+<td style="text-align: left;">Đã có lịch <code>14:00 - 15:00</code>.
+Thêm lịch mới lúc <code>14:30 - 15:30</code> trên cùng kênh</td>
+<td style="text-align: left;"><code>ProgramService</code> ném
+<code>ConflictException</code> (HTTP 409).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-12</strong></td>
+<td style="text-align: left;">Chặn trùng lịch: Bao trùm toàn bộ</td>
+<td style="text-align: left;">Đã có lịch <code>14:00 - 15:00</code>.
+Thêm lịch mới lúc <code>13:00 - 16:00</code> trên cùng kênh</td>
+<td style="text-align: left;"><code>ProgramService</code> chặn lưu, HTTP
+409 Conflict.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-13</strong></td>
+<td style="text-align: left;">Khác kênh cùng giờ chiếu</td>
+<td style="text-align: left;">Đã có lịch kênh 1 lúc
+<code>14:00 - 15:00</code>. Thêm lịch kênh 2 lúc
+<code>14:00 - 15:00</code></td>
+<td style="text-align: left;">Lưu thành công (cho phép phát sóng đồng
+thời trên các kênh khác nhau).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-3-truy-vấn-động-odata-8.x-odataprograms">🔍 Module 3:
+Truy Vấn Động OData 8.x (<code>/odata/Programs</code>)</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Điều Kiện Đầu Vào</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-14</strong></td>
+<td style="text-align: left;">Lọc OData theo thời lượng</td>
+<td style="text-align: left;">Request:
+<code>GET /odata/Programs?$filter=DurationMinutes gt 60</code></td>
+<td style="text-align: left;">Trả về danh sách chỉ gồm các chương trình
+có thời lượng &gt; 60 phút.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-15</strong></td>
+<td style="text-align: left;">Sắp xếp OData</td>
+<td style="text-align: left;">Request:
+<code>GET /odata/Programs?$orderby=AirDateTime desc</code></td>
+<td style="text-align: left;">Danh sách sắp xếp giảm dần theo thời điểm
+phát sóng chuẩn xác.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-16</strong></td>
+<td style="text-align: left;">Mở rộng liên kết <code>$expand</code></td>
+<td style="text-align: left;">Request:
+<code>GET /odata/Programs?$expand=Channel,AiReport</code></td>
+<td style="text-align: left;">Payload JSON chứa lồng dữ liệu của
+<code>BroadcastChannel</code> và <code>BroadcastAiReport</code>.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<h4 id="module-4-multi-agent-ai-pipeline-grpc-auditlogger">🤖 Module 4:
+Multi-Agent AI Pipeline &amp; gRPC AuditLogger</h4>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Điều Kiện Đầu Vào</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-17</strong></td>
+<td style="text-align: left;">Agent 1: Sentiment Analysis</td>
+<td style="text-align: left;">Giả lập (Moq) TMDB trả 10 bình luận ➔ Gửi
+prompt phân tích cảm xúc</td>
+<td style="text-align: left;">Trả về đoạn văn bản 2-3 câu phân tích cảm
+xúc tích cực/tiêu cực.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-18</strong></td>
+<td style="text-align: left;">Agent 2: Compliance Auditor</td>
+<td style="text-align: left;">Đầu vào: Synopsis kịch bản + Output Agent
+1</td>
+<td style="text-align: left;">Đề xuất khung giờ phát sóng
+(<code>PRIME TIME</code>, <code>STANDARD</code>, hoặc
+<code>RESTRICTED</code>).</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-19</strong></td>
+<td style="text-align: left;">Agent 3: JSON Schema Parser</td>
+<td style="text-align: left;">Đầu vào: Output Agent 1 + Agent 2</td>
+<td style="text-align: left;">Parse JSON thành công:
+<code>broadcastSuitability</code>, <code>suggestedTimeSlot</code>,
+<code>riskWarnings</code>.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-20</strong></td>
+<td style="text-align: left;">Transaction DB khi lưu AI Report</td>
+<td style="text-align: left;">Lưu thành công kết quả thẩm định vào bảng
+<code>BroadcastAiReports</code></td>
+<td style="text-align: left;">Quan hệ 1-1 chính xác với
+<code>BroadcastProgram</code>, không bị duplicate report.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-BE-21</strong></td>
+<td style="text-align: left;">gRPC AuditLogger Client Call</td>
+<td style="text-align: left;">Staff kích hoạt AI ➔ Kích hoạt
+non-blocking gRPC call tới Server</td>
+<td style="text-align: left;">Bảng <code>AuditLogs</code> ghi nhận 1
+record: <code>UserId</code>, <code>Action="AI_EVALUATION"</code>,
+<code>Timestamp</code>.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3
+id="môn-prn232-web-portal-next.js-15-vitest-react-testing-library">3.2.
+🌐 MÔN PRN232: WEB PORTAL (Next.js 15 Vitest / React Testing
+Library)</h3>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Thao Tác</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-01</strong></td>
+<td style="text-align: left;">Render Form Đăng nhập</td>
+<td style="text-align: left;">Render
+<code>app/login/page.tsx</code></td>
+<td style="text-align: left;">Hiển thị đầy đủ ô Email, Password, nút
+Đăng nhập và link Đăng ký.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-02</strong></td>
+<td style="text-align: left;">Validation Form Đăng nhập</td>
+<td style="text-align: left;">Nhập email không đúng định dạng
+<code>test@</code> và bấm Đăng nhập</td>
+<td style="text-align: left;">Hiển thị lỗi inline “Email không hợp lệ”,
+không gửi request API.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-03</strong></td>
+<td style="text-align: left;">Điều hướng theo Role sau đăng nhập</td>
+<td style="text-align: left;">API Login mock trả về
+<code>role = 1</code> (Staff)</td>
+<td style="text-align: left;">Router chuyển hướng tới
+<code>/studio/curator</code>.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-04</strong></td>
+<td style="text-align: left;">Render huy hiệu LIVE NOW nhấp nháy</td>
+<td style="text-align: left;">Render <code>LiveBadge.tsx</code> khi
+<code>isLiveNow = true</code></td>
+<td style="text-align: left;">Render badge có class CSS
+<code>animate-pulse</code> màu đỏ.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-05</strong></td>
+<td style="text-align: left;">Render màu sắc Badge AI</td>
+<td style="text-align: left;">Render <code>AiBadge.tsx</code> với
+<code>suitability = "PRIME TIME"</code></td>
+<td style="text-align: left;">Render badge màu xanh neon với nhãn “PRIME
+TIME”.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-06</strong></td>
+<td style="text-align: left;">OData Query Builder Helper</td>
+<td style="text-align: left;">Gọi helper với filter
+<code>{ duration: 60, channelId: 1 }</code></td>
+<td style="text-align: left;">Trả về chuỗi query chuẩn:
+<code>$filter=DurationMinutes gt 60 and ChannelId eq 1</code>.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-FE-07</strong></td>
+<td style="text-align: left;">Nhúng trình phát Video Trailer</td>
+<td style="text-align: left;">Render
+<code>app/programs/[id]/page.tsx</code> có
+<code>videoTrailerUrl</code></td>
+<td style="text-align: left;">Render iframe YouTube hoặc thẻ HTML5
+<code>&lt;video&gt;</code> phát trailer HD.</td>
+<td style="text-align: center;">Component</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="môn-prm393-mobile-app-flutter-test-bloc-test-mocktail">3.3. 📱
+MÔN PRM393: MOBILE APP (Flutter Test + BLoC Test + Mocktail)</h3>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã TC</th>
+<th style="text-align: left;">Tên Test Case</th>
+<th style="text-align: left;">Mô Tả &amp; Điều Kiện BLoC / SQLite</th>
+<th style="text-align: left;">Kết Quả Mong Đợi (Assertion)</th>
+<th style="text-align: center;">Loại Test</th>
+<th style="text-align: center;">Tự Động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-01</strong></td>
+<td style="text-align: left;"><code>AuthBloc</code>: Đăng nhập thành
+công</td>
+<td style="text-align: left;">Event
+<code>LoginSubmitted(email, password)</code> khi API trả về token</td>
+<td style="text-align: left;">Emit:
+<code>[AuthLoading, Authenticated(user)]</code>, lưu token vào
+SecureStorage.</td>
+<td style="text-align: center;">BLoC Test</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-02</strong></td>
+<td style="text-align: left;"><code>AuthBloc</code>: Đăng nhập thất
+bại</td>
+<td style="text-align: left;">Event <code>LoginSubmitted</code> khi API
+trả về HTTP 401</td>
+<td style="text-align: left;">Emit:
+<code>[AuthLoading, AuthFailure(errorMessage)]</code>.</td>
+<td style="text-align: center;">BLoC Test</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-03</strong></td>
+<td style="text-align: left;"><code>ChannelBloc</code>: Tải danh sách
+kênh</td>
+<td style="text-align: left;">Event <code>FetchChannels()</code> khi
+khởi động màn hình EPG</td>
+<td style="text-align: left;">Emit:
+<code>[ChannelLoading, ChannelLoaded(channels)]</code>.</td>
+<td style="text-align: center;">BLoC Test</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-04</strong></td>
+<td style="text-align: left;"><code>ProgramBloc</code>: Chặn trùng
+lịch</td>
+<td style="text-align: left;">Event <code>CreateProgram()</code> với
+khung giờ bị trùng</td>
+<td style="text-align: left;">Emit
+<code>ProgramActionFailure("Lịch chiếu bị trùng trên kênh này")</code>.</td>
+<td style="text-align: center;">BLoC Test</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-05</strong></td>
+<td style="text-align: left;">SQLite: Thêm vào Watchlist</td>
+<td style="text-align: left;">Gọi
+<code>SQLiteDatabaseHelper.insertWatchlist(program)</code></td>
+<td style="text-align: left;">Dữ liệu được ghi vào bảng
+<code>LocalWatchlist</code> trong SQLite cục bộ.</td>
+<td style="text-align: center;">Unit / DB</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-06</strong></td>
+<td style="text-align: left;">SQLite: Đọc Watchlist khi Offline</td>
+<td style="text-align: left;">Bật chế độ Airplane Mode, gọi
+<code>WatchlistRepository.getWatchlist()</code></td>
+<td style="text-align: left;">Đọc trọn vẹn danh sách phim từ SQLite,
+không ném crash ngoại lệ.</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-07</strong></td>
+<td style="text-align: left;">Hiển thị Banner Offline</td>
+<td style="text-align: left;">Giả lập <code>connectivity_plus</code> trả
+về trạng thái <code>ConnectivityResult.none</code></td>
+<td style="text-align: left;">Màn hình hiển thị
+<code>OfflineBannerWidget</code> cảnh báo màu vàng trên cùng.</td>
+<td style="text-align: center;">Widget Test</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-MB-08</strong></td>
+<td style="text-align: left;">Lập lịch thông báo Native trước 15p</td>
+<td style="text-align: left;">Bấm nút “Nhắc tôi” cho chương trình chiếu
+lúc <code>20:00</code></td>
+<td style="text-align: left;"><code>LocalNotificationService</code> tạo
+schedule kích hoạt vào lúc <code>19:45</code> cùng ngày.</td>
+<td style="text-align: center;">Unit</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="hướng-dẫn-chạy-test-nhanh-tại-local-local-test-commands">4. ⚡
+HƯỚNG DẪN CHẠY TEST NHANH TẠI LOCAL (LOCAL TEST COMMANDS)</h2>
+<h3 id="chạy-tests-backend-.net-10-web-api">💻 1. Chạy Tests Backend
+(.NET 10 Web API):</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy toàn bộ Unit &amp; Integration Tests của Solution</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> backend</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>dotnet test OmniCast<span class="op">.</span><span class="fu">slnx</span> <span class="op">--</span>verbosity normal</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy riêng các bài test kiểm tra logic chống trùng lịch EPG</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>dotnet test <span class="op">--</span>filter <span class="st">&quot;FullyQualifiedName~ProgramServiceTests&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy test và xuất báo cáo Code Coverage</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>dotnet test <span class="op">/</span>p<span class="op">:</span>CollectCoverage<span class="op">=</span>true <span class="op">/</span>p<span class="op">:</span>CoverletOutputFormat<span class="op">=</span>cobertura</span></code></pre></div>
+<h3 id="chạy-tests-web-portal-next.js-15">🌐 2. Chạy Tests Web Portal
+(Next.js 15):</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> web</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy linter kiểm tra cú pháp và kiểu dữ liệu TypeScript</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run lint</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy toàn bộ test suites với Vitest</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> test</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy test ở chế độ theo dõi tương tác (Watch Mode)</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:watch</span></code></pre></div>
+<h3 id="chạy-tests-mobile-app-flutter-3.x">📱 3. Chạy Tests Mobile App
+(Flutter 3.x):</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> mobile</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Kiểm tra phân tích tĩnh toàn bộ mã nguồn</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">flutter</span> analyze</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy toàn bộ Unit Tests và BLoC Tests</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">flutter</span> test</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Chạy test và xuất báo cáo độ phủ mã nguồn (Coverage HTML)</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ex">flutter</span> test <span class="at">--coverage</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ex">genhtml</span> coverage/lcov.info <span class="at">-o</span> coverage/html</span></code></pre></div>
+<hr />
+<h2
+id="bảng-nhật-ký-nghiệm-thu-smoke-test-cho-2-đợt-review-review-sign-off-log">5.
+📊 BẢNG NHẬT KÝ NGHIỆM THU SMOKE TEST CHO 2 ĐỢT REVIEW (REVIEW SIGN-OFF
+LOG)</h2>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Đợt Review</th>
+<th style="text-align: left;">Nội Dung Nghiệm Thu Trọng Tâm</th>
+<th style="text-align: left;">Tiêu Chí Đạt (Pass Criteria)</th>
+<th style="text-align: center;">Trạng Thái</th>
+<th style="text-align: center;">Người Ký Nghiệm Thu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>🚩 Review 1 (W3)</strong></td>
+<td style="text-align: left;">- Thiết kế DB Supabase (6 tables)<br>-
+Auth JWT/PBKDF2/RBAC<br>- CRUD Kênh &amp; Lịch EPG<br>- Thuật toán chống
+trùng lịch<br>- EPG Grid &amp; Thẻ <code>LIVE NOW</code><br>- Deploy
+Swagger Vercel Live<br>- Deploy Next.js Web Live</td>
+<td style="text-align: left;">Mở được Swagger và Web Portal trên URL
+Cloud công khai, đăng ký/đăng nhập thành công và cấp JWT token chuẩn có
+Claim <code>role</code>. Thêm 2 chương trình trùng giờ chiếu trên cùng 1
+kênh ➔ Backend chặn và báo lỗi rõ ràng.</td>
+<td style="text-align: center;"><code>PASS</code></td>
+<td style="text-align: center;"><em>P1, P2, P3</em></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>🚩 Review 2 (W8)</strong></td>
+<td style="text-align: left;">- Dynamic Search &amp; Filter<br>- AI Thẩm
+định nội dung<br>- gRPC AuditLogger<br>- SQLite Watchlist Offline<br>-
+Native Push Alert trước 15p<br>- Tối ưu Stress Test (20 users)<br>-
+<strong>Đóng gói file <code>app-release.apk</code></strong><br>- Nghiệm
+thu toàn diện</td>
+<td style="text-align: left;">Lọc Search API phản hồi &lt; 200ms. Staff
+bấm kích hoạt AI ➔ thẩm định chạy tuần tự, lưu báo cáo DB và ghi gRPC
+log. Bật chế độ máy bay xem Watchlist trơn tru. Cài đặt
+<code>app-release.apk</code> (≤ 25MB) lên điện thoại Android thật, nhận
+thông báo hẹn giờ trước 15p, gọi trực tiếp Backend Live trên Vercel ổn
+định 100%.</td>
+<td style="text-align: center;"><code>PASS</code></td>
+<td style="text-align: center;"><em>P1, P2, P3</em></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Tài liệu Kế Hoạch Kiểm Thử và Tự Động Hóa CI này là kim chỉ nam
+chất lượng cho toàn bộ dự án OmniCast, đảm bảo mã nguồn luôn ổn định, tự
+động kiểm thử liên tục và sẵn sàng bảo vệ đồ án trước Hội đồng Giảng
+viên.</em></p>
+
+  </div>
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Reference Documentation</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

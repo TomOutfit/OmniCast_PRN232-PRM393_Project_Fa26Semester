@@ -13,7 +13,7 @@ Bảng đối chiếu 100% các hạng mục yêu cầu nộp bài của Giảng
 | 2 | **LaTeX source files** | ✅ ĐẦY ĐỦ | • Phân hệ PRN232: `01_Reports/PRN232/latex/`<br>• Phân hệ PRM393: `01_Reports/PRM393/latex/`<br>(Bao gồm toàn bộ `.tex`, `.bib`, macro TikZ, và bảng số liệu) |
 | 3 | **GitHub repository link or source code** | ✅ ĐẦY ĐỦ | • **GitHub Repo:** [https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester)<br>• **Branch:** `main`<br>• **Chi tiết kiến trúc:** `04_Repository/REPOSITORY.md` |
 | 4 | **Deployed web app & backend** | ✅ ĐANG CHẠY | • **Frontend Web:** [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app)<br>• **Backend API Root:** [https://omnicast-api.vercel.app/api/v1](https://omnicast-api.vercel.app/api/v1)<br>• **API Swagger UI:** [https://omnicast-api.vercel.app/swagger](https://omnicast-api.vercel.app/swagger)<br>• **Tài khoản Demo Admin:** `admin@omnicast.tv` / `Admin123!`<br>• **Hướng dẫn chi tiết:** `03_Deployment/DEPLOYMENT.md` |
-| 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• Test cases PRN232: `02_Testing/TEST_CASES_PRN232.md`<br>• Test cases PRM393: `02_Testing/TEST_CASES_PRM393.md`<br>• Báo cáo tổng kết 482 tests PASS: `02_Testing/TEST_EXECUTION_REPORT.md`<br>• Minh chứng E2E: `02_Testing/screenshots/` |
+| 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• **Hồ sơ Master Testing:** `02_Testing/OmniCast_Comprehensive_Testing_Report.pdf` (cùng `.html` & `.docx`)<br>• Báo cáo tổng kết 482 tests PASS: `02_Testing/TEST_EXECUTION_REPORT.pdf` (cùng `.html`, `.docx`)<br>• Test cases PRN232 (32 ca): `02_Testing/TEST_CASES_PRN232.pdf` (cùng `.html`, `.docx`)<br>• Test cases PRM393 (28 ca): `02_Testing/TEST_CASES_PRM393.pdf` (cùng `.html`, `.docx`)<br>• Minh chứng E2E: `02_Testing/screenshots/` |
 | 6 | **PDF version generated from LaTeX** | ✅ ĐẦY ĐỦ | • **PRN232 PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf`<br>• **PRN232 PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf`<br>• **PRM393 PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf`<br>• **PRM393 PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` |
 
 ---
@@ -21,7 +21,14 @@ Bảng đối chiếu 100% các hạng mục yêu cầu nộp bài của Giảng
 ### 1. Thông Tin Chung Đồ Án
 
 - **Tên dự án:** **OmniCast** — Enterprise Media & Broadcast Intelligence Platform  
-- **Ý tưởng cốt lõi:** Hệ thống lập lịch và phát sóng nội dung số đa nền tảng kết hợp trợ lý biên tập AI, cơ chế EPG 24/7 không để trống lịch, trình phát đa phương tiện độ trễ thấp và ứng dụng di động ngoại tuyến (Offline-First).
+- **Đơn vị & Câu lạc bộ:** **FPTU Quy Nhon AI Campus - FU Cahata** (Trường Đại học FPT)  
+- **Giảng viên hướng dẫn (Mentor):** **Thầy Huỳnh Vang**  
+- **Thành viên nhóm thực hiện (4 thành viên):**
+  1. **Nguyễn Bình An** (`TomOutfit` — Nhóm trưởng / Kiến trúc Backend NestJS, Bảo mật JWT/RBAC, Thuật toán chống xung đột lịch EPG, Direct Stream Engine, CI/CD)
+  2. **Trần Thanh Sơn** (`QE170080` — Kiến trúc vi dịch vụ gRPC Audit Logger, Cơ sở dữ liệu PostgreSQL Supabase 21 Prisma models, Telemetry & Seeding)
+  3. **Nguyễn Vĩnh Phú** (`QE180136` — Trưởng nhóm Mobile Flutter 31 màn hình, 12 BLoC, Trình phát `OmniPlayer`, `LiveStudioScreen` 4 tab, Máy quay `MobileStudioRecorderScreen` WebRTC WHIP & Offline SQLite)
+  4. **Đồng Hoàng Nguyên** (`teng122` — Full-Stack Web Next.js 15 33 route, Phòng xem Live 7 chủ đề `/live/[id]`, Bàn điều khiển `/studio/live`, Socket.IO `/live` & Trợ lý AI Curator)
+- **Ý tưởng cốt lõi:** Hệ thống lập lịch, truyền phát trực tiếp (LiveStream & Live Studio) và phân phối nội dung số đa nền tảng kết hợp trợ lý biên tập AI, cơ chế EPG 24/7 không để trống lịch, trình phát đa phương tiện độ trễ thấp và ứng dụng di động ngoại tuyến (Offline-First).
 - **Học kỳ:** Fall 2026 (Fa26)
 - **Học phần thực hiện:**
   - **PRN232:** *Building Cross-Platform Back-End Application* (NestJS 10, Next.js 15, PostgreSQL Supabase, gRPC Microservice)

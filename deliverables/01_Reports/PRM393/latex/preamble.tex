@@ -1,20 +1,8 @@
 % ============================================================
 % OmniCast - Shared preamble for IEEEtran conference reports
 %   PRN232 (VN / EN) and PRM393 (VN / EN)
-%
-% Requires: XeLaTeX (MiKTeX / TeX Live)
-%   xelatex main-vi.tex && xelatex main-vi.tex
-%   xelatex main-en.tex && xelatex main-en.tex
-%
-% NOTE: IEEEtran already defines its own caption machinery, so the
-% `caption` / `subcaption` / `float` packages are intentionally NOT
-% loaded here (they clash with IEEEtran). Figure and table labels are
-% switched with \renewcommands{\figurename} in the main files.
 % ============================================================
 
-% ---------- Language switch ----------
-% \bi{Vietnamese text}{English text} picks the right string.
-% main-vi.tex calls \omniENfalse (default), main-en.tex calls \omniENtrue.
 \newif\ifomniEN
 \omniENfalse
 \newcommand{\bi}[2]{\ifomniEN#2\else#1\fi}
@@ -52,9 +40,9 @@
 \setlength{\headheight}{14pt}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
-\fancyhead[L]{\footnotesize\textsf{\bi{OmniCast --- Báo Cáo Kỹ Thuật Đồ Án PRM393}{OmniCast --- PRM393 Technical Report}}}
+\fancyhead[L]{\footnotesize\textsf{\bi{OmniCast Mobile --- Báo Cáo Kỹ Thuật PRM393 (Mentor: Thầy Huỳnh Vang)}{OmniCast Mobile --- PRM393 Technical Report (Mentor: Mr. Huỳnh Vang)}}}
 \fancyhead[R]{\footnotesize\textsf{\bi{Học Kỳ Fall 2026 (FA26)}{Fall 2026 Semester (FA26)}}}
-\fancyfoot[L]{\footnotesize\textsf{\bi{Trường Đại học FPT}{FPT University}}}
+\fancyfoot[L]{\footnotesize\textsf{FPTU Quy Nhon AI Campus --- FU Cahata}}
 \fancyfoot[R]{\footnotesize\textsf{\textbf{\bi{Trang \thepage\ / \pageref{LastPage}}{Page \thepage\ of \pageref{LastPage}}}}}
 
 
@@ -69,10 +57,10 @@
   linkcolor=omniBlue,
   citecolor=omniTeal,
   urlcolor=omniPurple,
-  pdftitle={OmniCast Project Report},
-  pdfauthor={OmniCast Team},
-  pdfsubject={PRN232 / PRM393},
-  pdfkeywords={OmniCast, EPG, broadcast, NestJS, Flutter, Next.js}
+  pdftitle={OmniCast Mobile Project Report - PRM393},
+  pdfauthor={Nguyen Binh An, Tran Thanh Son, Nguyen Vinh Phu, Dong Hoang Nguyen},
+  pdfsubject={PRM393 - FPTU Quy Nhon AI Campus - FU Cahata},
+  pdfkeywords={OmniCast, EPG, broadcast, LiveStream, Flutter, BLoC, FPTU Quy Nhon AI Campus, FU Cahata}
 }
 
 % ---------- OmniCast brand palette ----------
@@ -94,8 +82,6 @@
 \setcounter{secnumdepth}{3}
 
 % ---------- Caption / listing labels ----------
-% Overridden by the main files so that Vietnamese reports show
-% "Hình"/"Bảng" and English reports show "Figure"/"Table".
 \newcommand{\figName}{Fig.}
 \newcommand{\tabName}{TABLE}
 \renewcommand{\figurename}{\figName}

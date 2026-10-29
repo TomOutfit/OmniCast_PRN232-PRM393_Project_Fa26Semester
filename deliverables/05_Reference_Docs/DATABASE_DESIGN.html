@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - DATABASE_DESIGN</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS</div>
+    <div class="fptu-tag">FU CAHATA • REFERENCE DOCS</div>
+  </div>
+  <div class="content">
+<h1 id="omnicast---database-design-specification">OmniCast - Database
+Design Specification</h1>
+<p><strong>Version:</strong> 2.0<br />
+<strong>Created:</strong> 2026-09-23<br />
+<strong>Database:</strong> PostgreSQL (Supabase)<br />
+<strong>ORM:</strong> Prisma</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-database-overview">Database Overview</a></li>
+<li><a href="#2-prisma-schema">Prisma Schema</a></li>
+<li><a href="#3-sql-migrations">SQL Migrations</a></li>
+<li><a href="#4-entity-relationship-diagram">Entity Relationship
+Diagram</a></li>
+<li><a href="#5-sample-data">Sample Data</a></li>
+<li><a href="#6-api-endpoints">API Endpoints</a></li>
+</ol>
+<hr />
+<h2 id="database-overview">1. Database Overview</h2>
+<h3 id="connection-details">Connection Details</h3>
+<pre><code>Host: db.tktexqtqfnlfynbytjpw.supabase.co
+Port: 5432
+Database: postgres
+User: postgres
+
+Connection String:
+postgresql://postgres:[YOUR-PASSWORD]@db.tktexqtqfnlfynbytjpw.supabase.co:5432/postgres
+
+Supabase URL: https://tktexqtqfnlfynbytjpw.supabase.co</code></pre>
+<h3 id="module-structure">Module Structure</h3>
+<pre><code>OmniCast Database
+├── Module 1: EPG (Electronic Program Guide)
+│   ├── BroadcastChannel, BroadcastProgram
+│   ├── ProductionTag, BroadcastAiReport
+│   └── Watchlist, ScheduleReminder
+│
+├── Module 2: Live Streaming &amp; VOD
+│   ├── LiveChannel, LiveEvent, Recording
+│   ├── Content Sources: External | Uploaded | Generated
+│   └── Podcast, PodcastEpisode
+│
+├── Module 3: Social &amp; Engagement
+│   ├── Follow, Subscription
+│   ├── Comment, CommentLike
+│   ├── Reaction, WatchHistory
+│   └── Notification
+│
+└── Module 4: Core
+    ├── User, RefreshToken
+    └── AuditLog</code></pre>
+<hr />
+<h2 id="prisma-schema">2. Prisma Schema</h2>
+<pre class="prisma"><code>// This file is the source of truth.
+// Run: npx prisma generate
+// Run: npx prisma db push
+
+generator client {
+  provider = &quot;prisma-client-js&quot;
+}
+
+datasource db {
+  provider = &quot;postgresql&quot;
+  url      = env(&quot;DATABASE_URL&quot;)
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  GUEST
+  VIEWER
+  STAFF
+  ADMIN
+}
+
+enum BroadcastCategory {
+  GENERAL
+  NEWS
+  ENTERTAINMENT
+  SPORTS
+  MOVIES
+  KIDS
+  DOCUMENTARY
+  MUSIC
+  EDUCATION
+  LIFESTYLE
+}
+
+enum LiveCategory {
+  GAMING
+  PODCAST
+  MUSIC
+  EDUCATION
+  LIFESTYLE
+  NEWS
+  SPORTS
+  TECH
+  ART
+  BUSINESS
+  HEALTH
+  FOOD
+  TRAVEL
+  ENTERTAINMENT
+}
+
+enum ContentSource {
+  EXTERNAL
+  UPLOADED
+  GENERATED
+}
+
+enum ExternalPlatform {
+  YOUTUBE
+  VIMEO
+  TWITCH
+  FACEBOOK
+  TIKTOK
+  DAILYMOTION
+  CUSTOM_HLS
+  CUSTOM_RTMP
+  CUSTOM_MP4
+  EMBED_IFRAME
+}
+
+enum EventStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+  ON_DEMAND
+}
+
+enum ContentType {
+  VIDEO
+  AUDIO
+  LIVE
+}
+
+enum StreamQuality {
+  AUTO
+  SD_480P
+  HD_720P
+  FULL_HD_1080P
+  QHD_1440P
+  UHD_4K
+}
+
+enum TagType {
+  GENRE
+  COUNTRY
+  RATING
+  FEATURE
+}
+
+enum Suitability {
+  PRIME_TIME
+  STANDARD
+  RESTRICTED
+}
+
+enum ReactionType {
+  HEART
+  FIRE
+  CLAP
+  WOW
+  SAD
+  ANGRY
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  NEW_VIDEO
+  LIVE_START
+  LIVE_ENDED
+  COMMENT_REPLY
+  COMMENT_MENTION
+  REACTION
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum WatchSource {
+  CHANNEL_PAGE
+  SEARCH
+  RECOMMENDATION
+  DIRECT_LINK
+  SOCIAL_SHARE
+}
+
+// ============================================================
+// MODULE 1: AUTH &amp; USER MANAGEMENT
+// ============================================================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  fullName        String
+  avatarUrl       String?
+  bio             String?   @db.VarChar(500)
+  role            UserRole  @default(VIEWER)
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  refreshTokens    RefreshToken[]
+  watchlist        Watchlist[]
+  notifications    Notification[]
+  followedChannels Follow[]
+  comments         Comment[]
+  reactions        Reaction[]
+  watchHistory     WatchHistory[]
+  ownedChannels    LiveChannel[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============================================================
+// MODULE 2: EPG (BROADCAST TV)
+// ============================================================
+
+model BroadcastChannel {
+  id            String   @id @default(uuid())
+  channelCode   String   @unique
+  name          String
+  shortName     String?
+  logoUrl       String?
+  description   String?   @db.VarChar(1000)
+  category      BroadcastCategory
+  region        String?
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  programs      BroadcastProgram[]
+
+  @@index([channelCode])
+  @@index([category])
+  @@index([isActive, sortOrder])
+}
+
+model BroadcastProgram {
+  id              String    @id @default(uuid())
+  title           String
+  description     String?   @db.VarChar(2000)
+  genre           String?
+
+  airDate         DateTime @db.Date
+  startTime       DateTime
+  endTime         DateTime
+  durationMinutes Int
+  isRepeat        Boolean   @default(false)
+
+  thumbnailUrl    String?
+  trailerUrl      String?
+  trailerSource   ExternalPlatform?
+
+  channelId      String
+  channel        BroadcastChannel @relation(fields: [channelId], references: [id])
+
+  tags           ProductionTag[]
+  aiReport       BroadcastAiReport?
+  isLiveNow      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([channelId, airDate, startTime])
+  @@index([airDate])
+  @@index([channelId, airDate])
+  @@index([isLiveNow])
+}
+
+model ProductionTag {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  slug     String  @unique
+  color    String?
+  type     TagType
+
+  programs BroadcastProgram[]
+
+  @@index([type])
+}
+
+model BroadcastAiReport {
+  id                String   @id @default(uuid())
+  programId         String   @unique
+  program           BroadcastProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  suitability       Suitability
+  suitabilityScore  Float
+  sentiment         String
+  sentimentScore    Float
+
+  suggestedTimes    String[]
+  targetAudience    String[]
+  contentWarnings   String[]
+  keywords          String[]
+
+  sentimentAgentId  String?
+  complianceAgentId String?
+  editorAgentId     String?
+
+  generatedAt       DateTime @default(now())
+
+  @@index([suitability])
+}
+
+// ============================================================
+// MODULE 3: LIVE STREAMING &amp; VOD
+// ============================================================
+
+model LiveChannel {
+  id            String   @id @default(uuid())
+
+  name          String
+  slug          String   @unique
+  description   String?   @db.VarChar(1500)
+
+  avatarUrl     String?
+  coverUrl      String?
+  bannerColor   String?
+  tagline       String?   @db.VarChar(200)
+
+  category      LiveCategory
+  subcategory   String?
+  language      String    @default(&quot;vi&quot;)
+  region        String?
+
+  followerCount    Int       @default(0)
+  totalViews       BigInt    @default(0)
+  totalVideos      Int       @default(0)
+  subscriberCount   Int       @default(0)
+
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isFeatured    Boolean   @default(false)
+
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id])
+
+  isPublic      Boolean   @default(true)
+  allowComments Boolean   @default(true)
+  requireSub    Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  liveEvents    LiveEvent[]
+  recordings    Recording[]
+  followers     Follow[]
+
+  @@index([category])
+  @@index([slug])
+  @@index([isFeatured, followerCount])
+  @@index([ownerId])
+}
+
+model LiveEvent {
+  id            String   @id @default(uuid())
+
+  title         String
+  description   String?   @db.VarChar(3000)
+  thumbnailUrl  String?
+
+  // Stream Configuration
+  streamSource       ContentSource @default(EXTERNAL)
+  externalPlatform   ExternalPlatform?
+  externalId         String?
+  externalUrl        String?
+  embedCode          String?
+
+  // Internal Stream
+  streamUrl          String?
+  streamKey          String?
+  isPrivate          Boolean   @default(false)
+  streamPassword     String?
+
+  quality        StreamQuality @default(AUTO)
+  language       String    @default(&quot;vi&quot;)
+
+  status         EventStatus @default(SCHEDULED)
+
+  scheduledAt    DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  duration       Int?
+
+  viewerCount    Int       @default(0)
+  peakViewers    Int       @default(0)
+  likeCount      Int       @default(0)
+  commentCount   Int       @default(0)
+  shareCount     Int       @default(0)
+
+  channelId      String
+  channel        LiveChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  tags           String[]
+
+  autoRecord     Boolean   @default(true)
+  recording      Recording?
+
+  slowMode       Boolean   @default(false)
+  chatEnabled    Boolean   @default(true)
+
+  comments       Comment[]
+  reactions      Reaction[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([channelId, status])
+  @@index([status, startedAt])
+}
+
+model Recording {
+  id            String   @id @default(uuid())
+
+  title         String
+  description   String?   @db.VarChar(3000)
+  thumbnailUrl  String?
+
+  // External Source
+  contentSource       ContentSource @default(EXTERNAL)
+  externalPlatform    ExternalPlatform?
+  externalId          String?
+  externalUrl         String?
+  embedCode           String?
+
+  // Internal Upload
+  videoUrl            String?
+  videoBucketPath     String?
+  fileSize            BigInt?
+
+  // Generated from Live
+  generatedFromEventId String?   @unique
+  generatedFromEvent   LiveEvent? @relation(fields: [generatedFromEventId], references: [id])
+
+  duration          Int
+  quality           StreamQuality
+  language          String    @default(&quot;vi&quot;)
+
+  // Audio
+  audioUrl          String?
+  audioBucketPath   String?
+
+  viewCount         BigInt    @default(0)
+  likeCount         Int       @default(0)
+  commentCount      Int       @default(0)
+  shareCount        Int       @default(0)
+  downloadCount     Int       @default(0)
+
+  contentType       ContentType @default(VIDEO)
+
+  channelId         String
+  channel           LiveChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  isPublished       Boolean   @default(true)
+  isFeatured        Boolean   @default(false)
+  isAgeRestricted   Boolean   @default(false)
+
+  tags              String[]
+  category          LiveCategory?
+
+  chapters          Json?
+  subtitles         Json?
+
+  comments          Comment[]
+  reactions         Reaction[]
+  watchHistory      WatchHistory[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  publishedAt       DateTime  @default(now())
+
+  @@index([channelId])
+  @@index([contentSource])
+  @@index([contentType])
+  @@index([viewCount])
+  @@index([isFeatured, publishedAt])
+}
+
+// ============================================================
+// MODULE 4: PODCAST &amp; AUDIO
+// ============================================================
+
+model Podcast {
+  id            String   @id @default(uuid())
+
+  title         String
+  slug          String   @unique
+  description   String?   @db.VarChar(2000)
+  coverUrl      String?
+
+  category      LiveCategory @default(PODCAST)
+  tags          String[]
+
+  subscriberCount Int     @default(0)
+  totalEpisodes   Int     @default(0)
+  totalPlays      BigInt  @default(0)
+
+  channelId     String
+  channel       LiveChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  isExplicit    Boolean   @default(false)
+  isComplete    Boolean   @default(false)
+
+  spotifyUrl    String?
+  appleUrl      String?
+  googleUrl     String?
+
+  episodes      PodcastEpisode[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([channelId])
+}
+
+model PodcastEpisode {
+  id            String   @id @default(uuid())
+
+  title         String
+  episodeNumber Int?
+  seasonNumber  Int?
+  description   String?   @db.VarChar(2000)
+  coverUrl      String?
+
+  audioSource         ContentSource @default(EXTERNAL)
+  externalPlatform   ExternalPlatform?
+  externalUrl        String?
+
+  audioUrl           String?
+  audioBucketPath    String?
+  fileSize           BigInt?
+  duration           Int
+  fileFormat         String?   @default(&quot;mp3&quot;)
+
+  playCount         BigInt    @default(0)
+  downloadCount     Int       @default(0)
+
+  podcastId       String
+  podcast         Podcast   @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  publishedAt     DateTime
+  createdAt       DateTime  @default(now())
+
+  @@index([podcastId, publishedAt])
+}
+
+// ============================================================
+// MODULE 5: SOCIAL &amp; ENGAGEMENT
+// ============================================================
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation(fields: [followerId], references: [id])
+  channelId   String
+  channel     LiveChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  notifyNewVideo   Boolean @default(true)
+  notifyLiveStart  Boolean @default(true)
+  notifyNewPost    Boolean @default(true)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, channelId])
+  @@index([channelId])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String   @db.VarChar(2000)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  liveEventId String?
+  liveEvent   LiveEvent? @relation(fields: [liveEventId], references: [id], onDelete: Cascade)
+
+  recordingId String?
+  recording   Recording? @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  parentId    String?
+  parent      Comment?  @relation(&quot;CommentReplies&quot;, fields: [parentId], references: [id])
+  replies     Comment[] @relation(&quot;CommentReplies&quot;)
+
+  likeCount   Int      @default(0)
+  isEdited    Boolean  @default(false)
+  isPinned    Boolean  @default(false)
+  isHidden    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([liveEventId, createdAt])
+  @@index([recordingId, createdAt])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String  @id @default(uuid())
+  userId    String
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+}
+
+model Reaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        ReactionType
+
+  liveEventId String?
+  liveEvent   LiveEvent? @relation(fields: [liveEventId], references: [id], onDelete: Cascade)
+
+  recordingId String?
+  recording   Recording? @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, liveEventId])
+  @@unique([userId, recordingId])
+  @@index([liveEventId])
+  @@index([recordingId])
+}
+
+model WatchHistory {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recordingId String
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  progress    Int      @default(0)
+  duration    Int
+  completed   Boolean  @default(false)
+  watchedAt   DateTime @default(now())
+  source      WatchSource
+
+  @@unique([userId, recordingId])
+  @@index([userId, watchedAt])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        NotificationType
+  title       String
+  body        String
+  imageUrl    String?
+  actionUrl   String?
+
+  actorId     String?
+  actor       User?    @relation(&quot;NotificationActor&quot;, fields: [actorId], references: [id])
+
+  eventId     String?
+  recordingId String?
+  channelId   String?
+
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// ============================================================
+// MODULE 6: EPG FEATURES
+// ============================================================
+
+model Watchlist {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programId   String
+  program     BroadcastProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  notifyBefore Boolean @default(true)
+  notifyAt    DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, programId])
+}
+
+model ScheduleReminder {
+  id          String   @id @default(uuid())
+  userId      String
+  programId   String
+  remindAt    DateTime
+  isNotified  Boolean  @default(false)
+  notifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([remindAt, isNotified])
+}
+
+// ============================================================
+// MODULE 7: AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  userEmail   String?
+  action      String
+  entityType  String
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}</code></pre>
+<hr />
+<h2 id="sql-migrations">3. SQL Migrations</h2>
+<h3 id="create-extensions">3.1 Create Extensions</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Enable UUID extension</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> EXTENSION <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> <span class="ot">&quot;uuid-ossp&quot;</span>;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- Enable Full-Text Search</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> EXTENSION <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> <span class="ot">&quot;pg_trgm&quot;</span>;</span></code></pre></div>
+<h3 id="create-tables-direct-sql-for-supabase">3.2 Create Tables (Direct
+SQL for Supabase)</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- ENUMS (Create as PostgreSQL types)</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;UserRole&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;GUEST&#39;</span>, <span class="st">&#39;VIEWER&#39;</span>, <span class="st">&#39;STAFF&#39;</span>, <span class="st">&#39;ADMIN&#39;</span>);</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;BroadcastCategory&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;GENERAL&#39;</span>, <span class="st">&#39;NEWS&#39;</span>, <span class="st">&#39;ENTERTAINMENT&#39;</span>, <span class="st">&#39;SPORTS&#39;</span>, <span class="st">&#39;MOVIES&#39;</span>, <span class="st">&#39;KIDS&#39;</span>, <span class="st">&#39;DOCUMENTARY&#39;</span>, <span class="st">&#39;MUSIC&#39;</span>, <span class="st">&#39;EDUCATION&#39;</span>, <span class="st">&#39;LIFESTYLE&#39;</span>);</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;LiveCategory&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;GAMING&#39;</span>, <span class="st">&#39;PODCAST&#39;</span>, <span class="st">&#39;MUSIC&#39;</span>, <span class="st">&#39;EDUCATION&#39;</span>, <span class="st">&#39;LIFESTYLE&#39;</span>, <span class="st">&#39;NEWS&#39;</span>, <span class="st">&#39;SPORTS&#39;</span>, <span class="st">&#39;TECH&#39;</span>, <span class="st">&#39;ART&#39;</span>, <span class="st">&#39;BUSINESS&#39;</span>, <span class="st">&#39;HEALTH&#39;</span>, <span class="st">&#39;FOOD&#39;</span>, <span class="st">&#39;TRAVEL&#39;</span>, <span class="st">&#39;ENTERTAINMENT&#39;</span>);</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;ContentSource&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;EXTERNAL&#39;</span>, <span class="st">&#39;UPLOADED&#39;</span>, <span class="st">&#39;GENERATED&#39;</span>);</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;ExternalPlatform&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;YOUTUBE&#39;</span>, <span class="st">&#39;VIMEO&#39;</span>, <span class="st">&#39;TWITCH&#39;</span>, <span class="st">&#39;FACEBOOK&#39;</span>, <span class="st">&#39;TIKTOK&#39;</span>, <span class="st">&#39;DAILYMOTION&#39;</span>, <span class="st">&#39;CUSTOM_HLS&#39;</span>, <span class="st">&#39;CUSTOM_RTMP&#39;</span>, <span class="st">&#39;CUSTOM_MP4&#39;</span>, <span class="st">&#39;EMBED_IFRAME&#39;</span>);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;EventStatus&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;SCHEDULED&#39;</span>, <span class="st">&#39;LIVE&#39;</span>, <span class="st">&#39;ENDED&#39;</span>, <span class="st">&#39;CANCELLED&#39;</span>, <span class="st">&#39;ON_DEMAND&#39;</span>);</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;ContentType&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;VIDEO&#39;</span>, <span class="st">&#39;AUDIO&#39;</span>, <span class="st">&#39;LIVE&#39;</span>);</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;StreamQuality&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;AUTO&#39;</span>, <span class="st">&#39;SD_480P&#39;</span>, <span class="st">&#39;HD_720P&#39;</span>, <span class="st">&#39;FULL_HD_1080P&#39;</span>, <span class="st">&#39;QHD_1440P&#39;</span>, <span class="st">&#39;UHD_4K&#39;</span>);</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;TagType&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;GENRE&#39;</span>, <span class="st">&#39;COUNTRY&#39;</span>, <span class="st">&#39;RATING&#39;</span>, <span class="st">&#39;FEATURE&#39;</span>);</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;Suitability&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;PRIME_TIME&#39;</span>, <span class="st">&#39;STANDARD&#39;</span>, <span class="st">&#39;RESTRICTED&#39;</span>);</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;ReactionType&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;HEART&#39;</span>, <span class="st">&#39;FIRE&#39;</span>, <span class="st">&#39;CLAP&#39;</span>, <span class="st">&#39;WOW&#39;</span>, <span class="st">&#39;SAD&#39;</span>, <span class="st">&#39;ANGRY&#39;</span>);</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;NotificationType&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;NEW_FOLLOWER&#39;</span>, <span class="st">&#39;NEW_VIDEO&#39;</span>, <span class="st">&#39;LIVE_START&#39;</span>, <span class="st">&#39;LIVE_ENDED&#39;</span>, <span class="st">&#39;COMMENT_REPLY&#39;</span>, <span class="st">&#39;COMMENT_MENTION&#39;</span>, <span class="st">&#39;REACTION&#39;</span>, <span class="st">&#39;SYSTEM_ANNOUNCEMENT&#39;</span>);</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TYPE</span> <span class="ot">&quot;WatchSource&quot;</span> <span class="kw">AS</span> ENUM (<span class="st">&#39;CHANNEL_PAGE&#39;</span>, <span class="st">&#39;SEARCH&#39;</span>, <span class="st">&#39;RECOMMENDATION&#39;</span>, <span class="st">&#39;DIRECT_LINK&#39;</span>, <span class="st">&#39;SOCIAL_SHARE&#39;</span>);</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">-- CORE TABLES</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">-- Users</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;User&quot;</span> (</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  email <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;passwordHash&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;fullName&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;avatarUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  bio <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="kw">role</span> <span class="ot">&quot;UserRole&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;VIEWER&#39;</span>,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isActive&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;emailVerified&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;lastLoginAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_user_email <span class="kw">ON</span> <span class="ot">&quot;User&quot;</span>(email);</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_user_role <span class="kw">ON</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">role</span>);</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="co">-- Refresh Tokens</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;RefreshToken&quot;</span> (</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>  token <span class="dt">VARCHAR</span>(<span class="dv">500</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;expiresAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isRevoked&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_refresh_token_user <span class="kw">ON</span> <span class="ot">&quot;RefreshToken&quot;</span>(<span class="ot">&quot;userId&quot;</span>);</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_refresh_token_expires <span class="kw">ON</span> <span class="ot">&quot;RefreshToken&quot;</span>(<span class="ot">&quot;expiresAt&quot;</span>);</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 1: EPG (BROADCAST TV)</span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a><span class="co">-- Broadcast Channels</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;BroadcastChannel&quot;</span> (</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelCode&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">50</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>  name <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;shortName&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;logoUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">1000</span>),</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>  <span class="kw">category</span> <span class="ot">&quot;BroadcastCategory&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>  region <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isActive&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;sortOrder&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_channel_code <span class="kw">ON</span> <span class="ot">&quot;BroadcastChannel&quot;</span>(<span class="ot">&quot;channelCode&quot;</span>);</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_channel_category <span class="kw">ON</span> <span class="ot">&quot;BroadcastChannel&quot;</span>(<span class="kw">category</span>);</span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_channel_active_sort <span class="kw">ON</span> <span class="ot">&quot;BroadcastChannel&quot;</span>(<span class="ot">&quot;isActive&quot;</span>, <span class="ot">&quot;sortOrder&quot;</span>);</span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="co">-- Production Tags</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;ProductionTag&quot;</span> (</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>  name <span class="dt">VARCHAR</span>(<span class="dv">100</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>  slug <span class="dt">VARCHAR</span>(<span class="dv">100</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>  color <span class="dt">VARCHAR</span>(<span class="dv">20</span>),</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="ot">&quot;TagType&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_production_tag_type <span class="kw">ON</span> <span class="ot">&quot;ProductionTag&quot;</span>(<span class="kw">type</span>);</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a><span class="co">-- Broadcast Programs</span></span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;BroadcastProgram&quot;</span> (</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">2000</span>),</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>  genre <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;airDate&quot;</span> <span class="dt">DATE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;startTime&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;endTime&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;durationMinutes&quot;</span> <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isRepeat&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;thumbnailUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;trailerUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;trailerSource&quot;</span> <span class="ot">&quot;ExternalPlatform&quot;</span>,</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;BroadcastChannel&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isLiveNow&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;channelId&quot;</span>, <span class="ot">&quot;airDate&quot;</span>, <span class="ot">&quot;startTime&quot;</span>)</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_program_air_date <span class="kw">ON</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="ot">&quot;airDate&quot;</span>);</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_program_channel_date <span class="kw">ON</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="ot">&quot;channelId&quot;</span>, <span class="ot">&quot;airDate&quot;</span>);</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_broadcast_program_live <span class="kw">ON</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="ot">&quot;isLiveNow&quot;</span>);</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a><span class="co">-- Broadcast AI Reports</span></span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;BroadcastAiReport&quot;</span> (</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;programId&quot;</span> UUID <span class="kw">UNIQUE</span> <span class="kw">REFERENCES</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>  suitability <span class="ot">&quot;Suitability&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;suitabilityScore&quot;</span> <span class="dt">FLOAT</span>,</span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>  sentiment <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;sentimentScore&quot;</span> <span class="dt">FLOAT</span>,</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;suggestedTimes&quot;</span> TEXT[],</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;targetAudience&quot;</span> TEXT[],</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;contentWarnings&quot;</span> TEXT[],</span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>  keywords TEXT[],</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;sentimentAgentId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;complianceAgentId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-124"><a href="#cb5-124" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;editorAgentId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-125"><a href="#cb5-125" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;generatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-126"><a href="#cb5-126" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-127"><a href="#cb5-127" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_ai_report_suitability <span class="kw">ON</span> <span class="ot">&quot;BroadcastAiReport&quot;</span>(suitability);</span>
+<span id="cb5-128"><a href="#cb5-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-129"><a href="#cb5-129" aria-hidden="true" tabindex="-1"></a><span class="co">-- Program-Tag Junction</span></span>
+<span id="cb5-130"><a href="#cb5-130" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;_BroadcastProgramToProductionTag&quot;</span> (</span>
+<span id="cb5-131"><a href="#cb5-131" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;A&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-132"><a href="#cb5-132" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;B&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;ProductionTag&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-133"><a href="#cb5-133" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (<span class="ot">&quot;A&quot;</span>, <span class="ot">&quot;B&quot;</span>)</span>
+<span id="cb5-134"><a href="#cb5-134" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-135"><a href="#cb5-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-136"><a href="#cb5-136" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-137"><a href="#cb5-137" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 2: LIVE STREAMING &amp; VOD</span></span>
+<span id="cb5-138"><a href="#cb5-138" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-139"><a href="#cb5-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-140"><a href="#cb5-140" aria-hidden="true" tabindex="-1"></a><span class="co">-- Live Channels (Fictional)</span></span>
+<span id="cb5-141"><a href="#cb5-141" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;LiveChannel&quot;</span> (</span>
+<span id="cb5-142"><a href="#cb5-142" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-143"><a href="#cb5-143" aria-hidden="true" tabindex="-1"></a>  name <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-144"><a href="#cb5-144" aria-hidden="true" tabindex="-1"></a>  slug <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-145"><a href="#cb5-145" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">1500</span>),</span>
+<span id="cb5-146"><a href="#cb5-146" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;avatarUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-147"><a href="#cb5-147" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;coverUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-148"><a href="#cb5-148" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;bannerColor&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">20</span>),</span>
+<span id="cb5-149"><a href="#cb5-149" aria-hidden="true" tabindex="-1"></a>  tagline <span class="dt">VARCHAR</span>(<span class="dv">200</span>),</span>
+<span id="cb5-150"><a href="#cb5-150" aria-hidden="true" tabindex="-1"></a>  <span class="kw">category</span> <span class="ot">&quot;LiveCategory&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-151"><a href="#cb5-151" aria-hidden="true" tabindex="-1"></a>  subcategory <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-152"><a href="#cb5-152" aria-hidden="true" tabindex="-1"></a>  language <span class="dt">VARCHAR</span>(<span class="dv">10</span>) <span class="kw">DEFAULT</span> <span class="st">&#39;vi&#39;</span>,</span>
+<span id="cb5-153"><a href="#cb5-153" aria-hidden="true" tabindex="-1"></a>  region <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-154"><a href="#cb5-154" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;followerCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-155"><a href="#cb5-155" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;totalViews&quot;</span> BIGINT <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-156"><a href="#cb5-156" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;totalVideos&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-157"><a href="#cb5-157" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;subscriberCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-158"><a href="#cb5-158" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isVerified&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-159"><a href="#cb5-159" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isActive&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-160"><a href="#cb5-160" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isFeatured&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-161"><a href="#cb5-161" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;ownerId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-162"><a href="#cb5-162" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isPublic&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-163"><a href="#cb5-163" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;allowComments&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-164"><a href="#cb5-164" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;requireSub&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-165"><a href="#cb5-165" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-166"><a href="#cb5-166" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-167"><a href="#cb5-167" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-168"><a href="#cb5-168" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_channel_category <span class="kw">ON</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="kw">category</span>);</span>
+<span id="cb5-169"><a href="#cb5-169" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_channel_slug <span class="kw">ON</span> <span class="ot">&quot;LiveChannel&quot;</span>(slug);</span>
+<span id="cb5-170"><a href="#cb5-170" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_channel_featured <span class="kw">ON</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="ot">&quot;isFeatured&quot;</span>, <span class="ot">&quot;followerCount&quot;</span>);</span>
+<span id="cb5-171"><a href="#cb5-171" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_channel_owner <span class="kw">ON</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="ot">&quot;ownerId&quot;</span>);</span>
+<span id="cb5-172"><a href="#cb5-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-173"><a href="#cb5-173" aria-hidden="true" tabindex="-1"></a><span class="co">-- Live Events</span></span>
+<span id="cb5-174"><a href="#cb5-174" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;LiveEvent&quot;</span> (</span>
+<span id="cb5-175"><a href="#cb5-175" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-176"><a href="#cb5-176" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-177"><a href="#cb5-177" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">3000</span>),</span>
+<span id="cb5-178"><a href="#cb5-178" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;thumbnailUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-179"><a href="#cb5-179" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;streamSource&quot;</span> <span class="ot">&quot;ContentSource&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;EXTERNAL&#39;</span>,</span>
+<span id="cb5-180"><a href="#cb5-180" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalPlatform&quot;</span> <span class="ot">&quot;ExternalPlatform&quot;</span>,</span>
+<span id="cb5-181"><a href="#cb5-181" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb5-182"><a href="#cb5-182" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-183"><a href="#cb5-183" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;embedCode&quot;</span> TEXT,</span>
+<span id="cb5-184"><a href="#cb5-184" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;streamUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-185"><a href="#cb5-185" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;streamKey&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb5-186"><a href="#cb5-186" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isPrivate&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-187"><a href="#cb5-187" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;streamPassword&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb5-188"><a href="#cb5-188" aria-hidden="true" tabindex="-1"></a>  quality <span class="ot">&quot;StreamQuality&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;AUTO&#39;</span>,</span>
+<span id="cb5-189"><a href="#cb5-189" aria-hidden="true" tabindex="-1"></a>  language <span class="dt">VARCHAR</span>(<span class="dv">10</span>) <span class="kw">DEFAULT</span> <span class="st">&#39;vi&#39;</span>,</span>
+<span id="cb5-190"><a href="#cb5-190" aria-hidden="true" tabindex="-1"></a>  status <span class="ot">&quot;EventStatus&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;SCHEDULED&#39;</span>,</span>
+<span id="cb5-191"><a href="#cb5-191" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;scheduledAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-192"><a href="#cb5-192" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;startedAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-193"><a href="#cb5-193" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;endedAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-194"><a href="#cb5-194" aria-hidden="true" tabindex="-1"></a>  duration <span class="dt">INTEGER</span>,</span>
+<span id="cb5-195"><a href="#cb5-195" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;viewerCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-196"><a href="#cb5-196" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;peakViewers&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-197"><a href="#cb5-197" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;likeCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-198"><a href="#cb5-198" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;commentCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-199"><a href="#cb5-199" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;shareCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-200"><a href="#cb5-200" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-201"><a href="#cb5-201" aria-hidden="true" tabindex="-1"></a>  tags TEXT[],</span>
+<span id="cb5-202"><a href="#cb5-202" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;autoRecord&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-203"><a href="#cb5-203" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;slowMode&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-204"><a href="#cb5-204" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;chatEnabled&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-205"><a href="#cb5-205" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-206"><a href="#cb5-206" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-207"><a href="#cb5-207" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-208"><a href="#cb5-208" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_event_status_scheduled <span class="kw">ON</span> <span class="ot">&quot;LiveEvent&quot;</span>(status, <span class="ot">&quot;scheduledAt&quot;</span>);</span>
+<span id="cb5-209"><a href="#cb5-209" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_event_channel_status <span class="kw">ON</span> <span class="ot">&quot;LiveEvent&quot;</span>(<span class="ot">&quot;channelId&quot;</span>, status);</span>
+<span id="cb5-210"><a href="#cb5-210" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_live_event_status_started <span class="kw">ON</span> <span class="ot">&quot;LiveEvent&quot;</span>(status, <span class="ot">&quot;startedAt&quot;</span>);</span>
+<span id="cb5-211"><a href="#cb5-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-212"><a href="#cb5-212" aria-hidden="true" tabindex="-1"></a><span class="co">-- Recordings</span></span>
+<span id="cb5-213"><a href="#cb5-213" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Recording&quot;</span> (</span>
+<span id="cb5-214"><a href="#cb5-214" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-215"><a href="#cb5-215" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-216"><a href="#cb5-216" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">3000</span>),</span>
+<span id="cb5-217"><a href="#cb5-217" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;thumbnailUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-218"><a href="#cb5-218" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;contentSource&quot;</span> <span class="ot">&quot;ContentSource&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;EXTERNAL&#39;</span>,</span>
+<span id="cb5-219"><a href="#cb5-219" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalPlatform&quot;</span> <span class="ot">&quot;ExternalPlatform&quot;</span>,</span>
+<span id="cb5-220"><a href="#cb5-220" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb5-221"><a href="#cb5-221" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-222"><a href="#cb5-222" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;embedCode&quot;</span> TEXT,</span>
+<span id="cb5-223"><a href="#cb5-223" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;videoUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-224"><a href="#cb5-224" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;videoBucketPath&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-225"><a href="#cb5-225" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;fileSize&quot;</span> BIGINT,</span>
+<span id="cb5-226"><a href="#cb5-226" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;generatedFromEventId&quot;</span> UUID <span class="kw">UNIQUE</span>,</span>
+<span id="cb5-227"><a href="#cb5-227" aria-hidden="true" tabindex="-1"></a>  duration <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-228"><a href="#cb5-228" aria-hidden="true" tabindex="-1"></a>  quality <span class="ot">&quot;StreamQuality&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;HD_720P&#39;</span>,</span>
+<span id="cb5-229"><a href="#cb5-229" aria-hidden="true" tabindex="-1"></a>  language <span class="dt">VARCHAR</span>(<span class="dv">10</span>) <span class="kw">DEFAULT</span> <span class="st">&#39;vi&#39;</span>,</span>
+<span id="cb5-230"><a href="#cb5-230" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;audioUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-231"><a href="#cb5-231" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;audioBucketPath&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-232"><a href="#cb5-232" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;viewCount&quot;</span> BIGINT <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-233"><a href="#cb5-233" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;likeCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-234"><a href="#cb5-234" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;commentCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-235"><a href="#cb5-235" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;shareCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-236"><a href="#cb5-236" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;downloadCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-237"><a href="#cb5-237" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;contentType&quot;</span> <span class="ot">&quot;ContentType&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;VIDEO&#39;</span>,</span>
+<span id="cb5-238"><a href="#cb5-238" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-239"><a href="#cb5-239" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isPublished&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-240"><a href="#cb5-240" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isFeatured&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-241"><a href="#cb5-241" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isAgeRestricted&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-242"><a href="#cb5-242" aria-hidden="true" tabindex="-1"></a>  tags TEXT[],</span>
+<span id="cb5-243"><a href="#cb5-243" aria-hidden="true" tabindex="-1"></a>  <span class="kw">category</span> <span class="ot">&quot;LiveCategory&quot;</span>,</span>
+<span id="cb5-244"><a href="#cb5-244" aria-hidden="true" tabindex="-1"></a>  chapters JSONB,</span>
+<span id="cb5-245"><a href="#cb5-245" aria-hidden="true" tabindex="-1"></a>  subtitles JSONB,</span>
+<span id="cb5-246"><a href="#cb5-246" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-247"><a href="#cb5-247" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-248"><a href="#cb5-248" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;publishedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-249"><a href="#cb5-249" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-250"><a href="#cb5-250" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_recording_channel <span class="kw">ON</span> <span class="ot">&quot;Recording&quot;</span>(<span class="ot">&quot;channelId&quot;</span>);</span>
+<span id="cb5-251"><a href="#cb5-251" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_recording_content_source <span class="kw">ON</span> <span class="ot">&quot;Recording&quot;</span>(<span class="ot">&quot;contentSource&quot;</span>);</span>
+<span id="cb5-252"><a href="#cb5-252" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_recording_content_type <span class="kw">ON</span> <span class="ot">&quot;Recording&quot;</span>(<span class="ot">&quot;contentType&quot;</span>);</span>
+<span id="cb5-253"><a href="#cb5-253" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_recording_view_count <span class="kw">ON</span> <span class="ot">&quot;Recording&quot;</span>(<span class="ot">&quot;viewCount&quot;</span>);</span>
+<span id="cb5-254"><a href="#cb5-254" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_recording_featured <span class="kw">ON</span> <span class="ot">&quot;Recording&quot;</span>(<span class="ot">&quot;isFeatured&quot;</span>, <span class="ot">&quot;publishedAt&quot;</span>);</span>
+<span id="cb5-255"><a href="#cb5-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-256"><a href="#cb5-256" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-257"><a href="#cb5-257" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 3: PODCAST</span></span>
+<span id="cb5-258"><a href="#cb5-258" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-259"><a href="#cb5-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-260"><a href="#cb5-260" aria-hidden="true" tabindex="-1"></a><span class="co">-- Podcasts</span></span>
+<span id="cb5-261"><a href="#cb5-261" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Podcast&quot;</span> (</span>
+<span id="cb5-262"><a href="#cb5-262" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-263"><a href="#cb5-263" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-264"><a href="#cb5-264" aria-hidden="true" tabindex="-1"></a>  slug <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">UNIQUE</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-265"><a href="#cb5-265" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">2000</span>),</span>
+<span id="cb5-266"><a href="#cb5-266" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;coverUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-267"><a href="#cb5-267" aria-hidden="true" tabindex="-1"></a>  <span class="kw">category</span> <span class="ot">&quot;LiveCategory&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;PODCAST&#39;</span>,</span>
+<span id="cb5-268"><a href="#cb5-268" aria-hidden="true" tabindex="-1"></a>  tags TEXT[],</span>
+<span id="cb5-269"><a href="#cb5-269" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;subscriberCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-270"><a href="#cb5-270" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;totalEpisodes&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-271"><a href="#cb5-271" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;totalPlays&quot;</span> BIGINT <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-272"><a href="#cb5-272" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-273"><a href="#cb5-273" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isExplicit&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-274"><a href="#cb5-274" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isComplete&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-275"><a href="#cb5-275" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;spotifyUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-276"><a href="#cb5-276" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;appleUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-277"><a href="#cb5-277" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;googleUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-278"><a href="#cb5-278" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-279"><a href="#cb5-279" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-280"><a href="#cb5-280" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-281"><a href="#cb5-281" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_podcast_channel <span class="kw">ON</span> <span class="ot">&quot;Podcast&quot;</span>(<span class="ot">&quot;channelId&quot;</span>);</span>
+<span id="cb5-282"><a href="#cb5-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-283"><a href="#cb5-283" aria-hidden="true" tabindex="-1"></a><span class="co">-- Podcast Episodes</span></span>
+<span id="cb5-284"><a href="#cb5-284" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;PodcastEpisode&quot;</span> (</span>
+<span id="cb5-285"><a href="#cb5-285" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-286"><a href="#cb5-286" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-287"><a href="#cb5-287" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;episodeNumber&quot;</span> <span class="dt">INTEGER</span>,</span>
+<span id="cb5-288"><a href="#cb5-288" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;seasonNumber&quot;</span> <span class="dt">INTEGER</span>,</span>
+<span id="cb5-289"><a href="#cb5-289" aria-hidden="true" tabindex="-1"></a>  description <span class="dt">VARCHAR</span>(<span class="dv">2000</span>),</span>
+<span id="cb5-290"><a href="#cb5-290" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;coverUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-291"><a href="#cb5-291" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;audioSource&quot;</span> <span class="ot">&quot;ContentSource&quot;</span> <span class="kw">DEFAULT</span> <span class="st">&#39;EXTERNAL&#39;</span>,</span>
+<span id="cb5-292"><a href="#cb5-292" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalPlatform&quot;</span> <span class="ot">&quot;ExternalPlatform&quot;</span>,</span>
+<span id="cb5-293"><a href="#cb5-293" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;externalUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-294"><a href="#cb5-294" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;audioUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-295"><a href="#cb5-295" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;audioBucketPath&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-296"><a href="#cb5-296" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;fileSize&quot;</span> BIGINT,</span>
+<span id="cb5-297"><a href="#cb5-297" aria-hidden="true" tabindex="-1"></a>  duration <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-298"><a href="#cb5-298" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;fileFormat&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">10</span>) <span class="kw">DEFAULT</span> <span class="st">&#39;mp3&#39;</span>,</span>
+<span id="cb5-299"><a href="#cb5-299" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;playCount&quot;</span> BIGINT <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-300"><a href="#cb5-300" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;downloadCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-301"><a href="#cb5-301" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;podcastId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Podcast&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-302"><a href="#cb5-302" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;publishedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-303"><a href="#cb5-303" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-304"><a href="#cb5-304" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-305"><a href="#cb5-305" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_podcast_episode_podcast <span class="kw">ON</span> <span class="ot">&quot;PodcastEpisode&quot;</span>(<span class="ot">&quot;podcastId&quot;</span>, <span class="ot">&quot;publishedAt&quot;</span>);</span>
+<span id="cb5-306"><a href="#cb5-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-307"><a href="#cb5-307" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-308"><a href="#cb5-308" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 4: SOCIAL &amp; ENGAGEMENT</span></span>
+<span id="cb5-309"><a href="#cb5-309" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-310"><a href="#cb5-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-311"><a href="#cb5-311" aria-hidden="true" tabindex="-1"></a><span class="co">-- Follows</span></span>
+<span id="cb5-312"><a href="#cb5-312" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Follow&quot;</span> (</span>
+<span id="cb5-313"><a href="#cb5-313" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-314"><a href="#cb5-314" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;followerId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-315"><a href="#cb5-315" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveChannel&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-316"><a href="#cb5-316" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifyNewVideo&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-317"><a href="#cb5-317" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifyLiveStart&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-318"><a href="#cb5-318" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifyNewPost&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-319"><a href="#cb5-319" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-320"><a href="#cb5-320" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;followerId&quot;</span>, <span class="ot">&quot;channelId&quot;</span>)</span>
+<span id="cb5-321"><a href="#cb5-321" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-322"><a href="#cb5-322" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_follow_channel <span class="kw">ON</span> <span class="ot">&quot;Follow&quot;</span>(<span class="ot">&quot;channelId&quot;</span>);</span>
+<span id="cb5-323"><a href="#cb5-323" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-324"><a href="#cb5-324" aria-hidden="true" tabindex="-1"></a><span class="co">-- Comments</span></span>
+<span id="cb5-325"><a href="#cb5-325" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Comment&quot;</span> (</span>
+<span id="cb5-326"><a href="#cb5-326" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-327"><a href="#cb5-327" aria-hidden="true" tabindex="-1"></a>  content <span class="dt">VARCHAR</span>(<span class="dv">2000</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-328"><a href="#cb5-328" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-329"><a href="#cb5-329" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;liveEventId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveEvent&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-330"><a href="#cb5-330" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;recordingId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Recording&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-331"><a href="#cb5-331" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;parentId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Comment&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-332"><a href="#cb5-332" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;likeCount&quot;</span> <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-333"><a href="#cb5-333" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isEdited&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-334"><a href="#cb5-334" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isPinned&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-335"><a href="#cb5-335" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isHidden&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-336"><a href="#cb5-336" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-337"><a href="#cb5-337" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;updatedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-338"><a href="#cb5-338" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-339"><a href="#cb5-339" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_comment_event <span class="kw">ON</span> <span class="ot">&quot;Comment&quot;</span>(<span class="ot">&quot;liveEventId&quot;</span>, <span class="ot">&quot;createdAt&quot;</span>);</span>
+<span id="cb5-340"><a href="#cb5-340" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_comment_recording <span class="kw">ON</span> <span class="ot">&quot;Comment&quot;</span>(<span class="ot">&quot;recordingId&quot;</span>, <span class="ot">&quot;createdAt&quot;</span>);</span>
+<span id="cb5-341"><a href="#cb5-341" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_comment_parent <span class="kw">ON</span> <span class="ot">&quot;Comment&quot;</span>(<span class="ot">&quot;parentId&quot;</span>);</span>
+<span id="cb5-342"><a href="#cb5-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-343"><a href="#cb5-343" aria-hidden="true" tabindex="-1"></a><span class="co">-- Comment Likes</span></span>
+<span id="cb5-344"><a href="#cb5-344" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;CommentLike&quot;</span> (</span>
+<span id="cb5-345"><a href="#cb5-345" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-346"><a href="#cb5-346" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID,</span>
+<span id="cb5-347"><a href="#cb5-347" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;commentId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Comment&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-348"><a href="#cb5-348" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-349"><a href="#cb5-349" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;commentId&quot;</span>)</span>
+<span id="cb5-350"><a href="#cb5-350" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-351"><a href="#cb5-351" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-352"><a href="#cb5-352" aria-hidden="true" tabindex="-1"></a><span class="co">-- Reactions</span></span>
+<span id="cb5-353"><a href="#cb5-353" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Reaction&quot;</span> (</span>
+<span id="cb5-354"><a href="#cb5-354" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-355"><a href="#cb5-355" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-356"><a href="#cb5-356" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="ot">&quot;ReactionType&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-357"><a href="#cb5-357" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;liveEventId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;LiveEvent&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-358"><a href="#cb5-358" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;recordingId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Recording&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-359"><a href="#cb5-359" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-360"><a href="#cb5-360" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;liveEventId&quot;</span>),</span>
+<span id="cb5-361"><a href="#cb5-361" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;recordingId&quot;</span>)</span>
+<span id="cb5-362"><a href="#cb5-362" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-363"><a href="#cb5-363" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_reaction_event <span class="kw">ON</span> <span class="ot">&quot;Reaction&quot;</span>(<span class="ot">&quot;liveEventId&quot;</span>);</span>
+<span id="cb5-364"><a href="#cb5-364" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_reaction_recording <span class="kw">ON</span> <span class="ot">&quot;Reaction&quot;</span>(<span class="ot">&quot;recordingId&quot;</span>);</span>
+<span id="cb5-365"><a href="#cb5-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-366"><a href="#cb5-366" aria-hidden="true" tabindex="-1"></a><span class="co">-- Watch History</span></span>
+<span id="cb5-367"><a href="#cb5-367" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;WatchHistory&quot;</span> (</span>
+<span id="cb5-368"><a href="#cb5-368" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-369"><a href="#cb5-369" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-370"><a href="#cb5-370" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;recordingId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;Recording&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-371"><a href="#cb5-371" aria-hidden="true" tabindex="-1"></a>  progress <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb5-372"><a href="#cb5-372" aria-hidden="true" tabindex="-1"></a>  duration <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-373"><a href="#cb5-373" aria-hidden="true" tabindex="-1"></a>  completed <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-374"><a href="#cb5-374" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;watchedAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-375"><a href="#cb5-375" aria-hidden="true" tabindex="-1"></a>  <span class="kw">source</span> <span class="ot">&quot;WatchSource&quot;</span>,</span>
+<span id="cb5-376"><a href="#cb5-376" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;recordingId&quot;</span>)</span>
+<span id="cb5-377"><a href="#cb5-377" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-378"><a href="#cb5-378" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_watch_history_user <span class="kw">ON</span> <span class="ot">&quot;WatchHistory&quot;</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;watchedAt&quot;</span>);</span>
+<span id="cb5-379"><a href="#cb5-379" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-380"><a href="#cb5-380" aria-hidden="true" tabindex="-1"></a><span class="co">-- Notifications</span></span>
+<span id="cb5-381"><a href="#cb5-381" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Notification&quot;</span> (</span>
+<span id="cb5-382"><a href="#cb5-382" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-383"><a href="#cb5-383" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-384"><a href="#cb5-384" aria-hidden="true" tabindex="-1"></a>  <span class="kw">type</span> <span class="ot">&quot;NotificationType&quot;</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-385"><a href="#cb5-385" aria-hidden="true" tabindex="-1"></a>  title <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-386"><a href="#cb5-386" aria-hidden="true" tabindex="-1"></a>  <span class="kw">body</span> TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-387"><a href="#cb5-387" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;imageUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-388"><a href="#cb5-388" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;actionUrl&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">500</span>),</span>
+<span id="cb5-389"><a href="#cb5-389" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;actorId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>),</span>
+<span id="cb5-390"><a href="#cb5-390" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;eventId&quot;</span> UUID,</span>
+<span id="cb5-391"><a href="#cb5-391" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;recordingId&quot;</span> UUID,</span>
+<span id="cb5-392"><a href="#cb5-392" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;channelId&quot;</span> UUID,</span>
+<span id="cb5-393"><a href="#cb5-393" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isRead&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-394"><a href="#cb5-394" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;readAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-395"><a href="#cb5-395" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-396"><a href="#cb5-396" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-397"><a href="#cb5-397" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_notification_user_read <span class="kw">ON</span> <span class="ot">&quot;Notification&quot;</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;isRead&quot;</span>);</span>
+<span id="cb5-398"><a href="#cb5-398" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_notification_user_date <span class="kw">ON</span> <span class="ot">&quot;Notification&quot;</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;createdAt&quot;</span>);</span>
+<span id="cb5-399"><a href="#cb5-399" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-400"><a href="#cb5-400" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-401"><a href="#cb5-401" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 5: EPG FEATURES</span></span>
+<span id="cb5-402"><a href="#cb5-402" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-403"><a href="#cb5-403" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-404"><a href="#cb5-404" aria-hidden="true" tabindex="-1"></a><span class="co">-- Watchlist</span></span>
+<span id="cb5-405"><a href="#cb5-405" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;Watchlist&quot;</span> (</span>
+<span id="cb5-406"><a href="#cb5-406" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-407"><a href="#cb5-407" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;User&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-408"><a href="#cb5-408" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;programId&quot;</span> UUID <span class="kw">REFERENCES</span> <span class="ot">&quot;BroadcastProgram&quot;</span>(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
+<span id="cb5-409"><a href="#cb5-409" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifyBefore&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,</span>
+<span id="cb5-410"><a href="#cb5-410" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifyAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-411"><a href="#cb5-411" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW(),</span>
+<span id="cb5-412"><a href="#cb5-412" aria-hidden="true" tabindex="-1"></a>  <span class="kw">UNIQUE</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;programId&quot;</span>)</span>
+<span id="cb5-413"><a href="#cb5-413" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-414"><a href="#cb5-414" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-415"><a href="#cb5-415" aria-hidden="true" tabindex="-1"></a><span class="co">-- Schedule Reminders</span></span>
+<span id="cb5-416"><a href="#cb5-416" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;ScheduleReminder&quot;</span> (</span>
+<span id="cb5-417"><a href="#cb5-417" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-418"><a href="#cb5-418" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-419"><a href="#cb5-419" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;programId&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-420"><a href="#cb5-420" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;remindAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-421"><a href="#cb5-421" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;isNotified&quot;</span> <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-422"><a href="#cb5-422" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;notifiedAt&quot;</span> <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-423"><a href="#cb5-423" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-424"><a href="#cb5-424" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-425"><a href="#cb5-425" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_reminder_notify <span class="kw">ON</span> <span class="ot">&quot;ScheduleReminder&quot;</span>(<span class="ot">&quot;remindAt&quot;</span>, <span class="ot">&quot;isNotified&quot;</span>);</span>
+<span id="cb5-426"><a href="#cb5-426" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-427"><a href="#cb5-427" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-428"><a href="#cb5-428" aria-hidden="true" tabindex="-1"></a><span class="co">-- MODULE 6: AUDIT LOG</span></span>
+<span id="cb5-429"><a href="#cb5-429" aria-hidden="true" tabindex="-1"></a><span class="co">-- ============================================================</span></span>
+<span id="cb5-430"><a href="#cb5-430" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-431"><a href="#cb5-431" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;AuditLog&quot;</span> (</span>
+<span id="cb5-432"><a href="#cb5-432" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-433"><a href="#cb5-433" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userId&quot;</span> UUID,</span>
+<span id="cb5-434"><a href="#cb5-434" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userEmail&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb5-435"><a href="#cb5-435" aria-hidden="true" tabindex="-1"></a>  action <span class="dt">VARCHAR</span>(<span class="dv">100</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-436"><a href="#cb5-436" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;entityType&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">100</span>),</span>
+<span id="cb5-437"><a href="#cb5-437" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;entityId&quot;</span> UUID,</span>
+<span id="cb5-438"><a href="#cb5-438" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;oldValues&quot;</span> JSONB,</span>
+<span id="cb5-439"><a href="#cb5-439" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;newValues&quot;</span> JSONB,</span>
+<span id="cb5-440"><a href="#cb5-440" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;ipAddress&quot;</span> <span class="dt">VARCHAR</span>(<span class="dv">50</span>),</span>
+<span id="cb5-441"><a href="#cb5-441" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;userAgent&quot;</span> TEXT,</span>
+<span id="cb5-442"><a href="#cb5-442" aria-hidden="true" tabindex="-1"></a>  <span class="ot">&quot;createdAt&quot;</span> <span class="dt">TIMESTAMP</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb5-443"><a href="#cb5-443" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-444"><a href="#cb5-444" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_audit_user <span class="kw">ON</span> <span class="ot">&quot;AuditLog&quot;</span>(<span class="ot">&quot;userId&quot;</span>, <span class="ot">&quot;createdAt&quot;</span>);</span>
+<span id="cb5-445"><a href="#cb5-445" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_audit_entity <span class="kw">ON</span> <span class="ot">&quot;AuditLog&quot;</span>(<span class="ot">&quot;entityType&quot;</span>, <span class="ot">&quot;entityId&quot;</span>);</span>
+<span id="cb5-446"><a href="#cb5-446" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_audit_action <span class="kw">ON</span> <span class="ot">&quot;AuditLog&quot;</span>(action, <span class="ot">&quot;createdAt&quot;</span>);</span></code></pre></div>
+<hr />
+<h2 id="entity-relationship-diagram">4. Entity Relationship Diagram</h2>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode mermaid"><code class="sourceCode mermaid"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">erDiagram</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">RefreshToken</span> :<span class="vs"> has</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">Watchlist</span> :<span class="vs"> has</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">Follow</span> :<span class="vs"> follows</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">Comment</span> :<span class="vs"> writes</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">Reaction</span> :<span class="vs"> reacts</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">WatchHistory</span> :<span class="vs"> has</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">Notification</span> :<span class="vs"> receives</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">User</span> <span class="pp">||--o{</span> <span class="dt">LiveChannel</span> :<span class="vs"> owns</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveChannel</span> <span class="pp">||--o{</span> <span class="dt">Follow</span> :<span class="vs"> has</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveChannel</span> <span class="pp">||--o{</span> <span class="dt">LiveEvent</span> :<span class="vs"> hosts</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveChannel</span> <span class="pp">||--o{</span> <span class="dt">Recording</span> :<span class="vs"> publishes</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveChannel</span> <span class="pp">||--o{</span> <span class="dt">Podcast</span> :<span class="vs"> runs</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveEvent</span> <span class="pp">||--o|</span> <span class="dt">Recording</span> :<span class="vs"> generates</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveEvent</span> <span class="pp">||--o{</span> <span class="dt">Comment</span> :<span class="vs"> has</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LiveEvent</span> <span class="pp">||--o{</span> <span class="dt">Reaction</span> :<span class="vs"> has</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Recording</span> <span class="pp">||--o{</span> <span class="dt">Comment</span> :<span class="vs"> has</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Recording</span> <span class="pp">||--o{</span> <span class="dt">Reaction</span> :<span class="vs"> has</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Recording</span> <span class="pp">||--o{</span> <span class="dt">WatchHistory</span> :<span class="vs"> has</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Podcast</span> <span class="pp">||--o{</span> <span class="dt">PodcastEpisode</span> :<span class="vs"> contains</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Comment</span> <span class="er">|</span><span class="pp">|o--o{</span> <span class="dt">Comment</span> :<span class="vs"> replies_to</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Comment</span> <span class="pp">||--o{</span> <span class="dt">CommentLike</span> :<span class="vs"> has</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">BroadcastChannel</span> <span class="pp">||--o{</span> <span class="dt">BroadcastProgram</span> :<span class="vs"> broadcasts</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">BroadcastProgram</span> <span class="pp">||--o|</span> <span class="dt">BroadcastAiReport</span> :<span class="vs"> has</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">BroadcastProgram</span> <span class="pp">||--o{</span> <span class="dt">ProductionTag</span> :<span class="vs"> tagged</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    <span class="dt">BroadcastProgram</span> <span class="pp">||--o{</span> <span class="dt">Watchlist</span> :<span class="vs"> saved_in</span></span></code></pre></div>
+<hr />
+<h2 id="sample-data">5. Sample Data</h2>
+<h3 id="live-channels-10-fictional-channels">5.1 Live Channels (10
+Fictional Channels)</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;OmniGaming&quot;</span><span class="fu">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;omni-gaming&quot;</span><span class="fu">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;GAMING&quot;</span><span class="fu">,</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Kênh gaming hàng đầu Việt Nam - Stream game, giải đấu esports, review game mới nhất&quot;</span><span class="fu">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">125000</span><span class="fu">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">15000000</span><span class="fu">,</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">450</span><span class="fu">,</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Gaming&quot;</span><span class="ot">,</span> <span class="st">&quot;Esports&quot;</span><span class="ot">,</span> <span class="st">&quot;Live Stream&quot;</span><span class="ot">,</span> <span class="st">&quot;Việt Nam&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/6366f1/ffffff?text=OG&quot;</span><span class="fu">,</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#6366f1&quot;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;TechTalk Vietnam&quot;</span><span class="fu">,</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;techtalk-vietnam&quot;</span><span class="fu">,</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;PODCAST&quot;</span><span class="fu">,</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Podcast công nghệ hàng đầu Việt Nam - Tin tức tech, review gadget, interview founder công nghệ&quot;</span><span class="fu">,</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">89000</span><span class="fu">,</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">5200000</span><span class="fu">,</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">156</span><span class="fu">,</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Công nghệ&quot;</span><span class="ot">,</span> <span class="st">&quot;Podcast&quot;</span><span class="ot">,</span> <span class="st">&quot;Tech News&quot;</span><span class="ot">,</span> <span class="st">&quot;Vietnam&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/10b981/ffffff?text=TT&quot;</span><span class="fu">,</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#10b981&quot;</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;MusicHub&quot;</span><span class="fu">,</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;music-hub&quot;</span><span class="fu">,</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;MUSIC&quot;</span><span class="fu">,</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Nhạc Việt, US-UK, K-Pop - Live concert, MV premiere, music news, album launch&quot;</span><span class="fu">,</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">200000</span><span class="fu">,</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">25000000</span><span class="fu">,</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">320</span><span class="fu">,</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Music&quot;</span><span class="ot">,</span> <span class="st">&quot;Concert&quot;</span><span class="ot">,</span> <span class="st">&quot;Live&quot;</span><span class="ot">,</span> <span class="st">&quot;K-Pop&quot;</span><span class="ot">,</span> <span class="st">&quot;V-Pop&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/ec4899/ffffff?text=MH&quot;</span><span class="fu">,</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#ec4899&quot;</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;EduStream&quot;</span><span class="fu">,</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;edu-stream&quot;</span><span class="fu">,</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;EDUCATION&quot;</span><span class="fu">,</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Học tập trực tuyến - Luyện thi đại học, kỹ năng mềm, lập trình, ngoại ngữ&quot;</span><span class="fu">,</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">65000</span><span class="fu">,</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">3800000</span><span class="fu">,</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">280</span><span class="fu">,</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Education&quot;</span><span class="ot">,</span> <span class="st">&quot;Học tập&quot;</span><span class="ot">,</span> <span class="st">&quot;Luyện thi&quot;</span><span class="ot">,</span> <span class="st">&quot;Programming&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/f59e0b/ffffff?text=ES&quot;</span><span class="fu">,</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#f59e0b&quot;</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;LifestyleVN&quot;</span><span class="fu">,</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;lifestyle-vn&quot;</span><span class="fu">,</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;LIFESTYLE&quot;</span><span class="fu">,</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Ẩm thực, du lịch, phong cách sống - Review nhà hàng, travel vlog, tips hay cuộc sống&quot;</span><span class="fu">,</span></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">95000</span><span class="fu">,</span></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">7800000</span><span class="fu">,</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">180</span><span class="fu">,</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Lifestyle&quot;</span><span class="ot">,</span> <span class="st">&quot;Food&quot;</span><span class="ot">,</span> <span class="st">&quot;Travel&quot;</span><span class="ot">,</span> <span class="st">&quot;Vietnam&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/8b5cf6/ffffff?text=LS&quot;</span><span class="fu">,</span></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#8b5cf6&quot;</span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;OmniNews&quot;</span><span class="fu">,</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;omni-news&quot;</span><span class="fu">,</span></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;NEWS&quot;</span><span class="fu">,</span></span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Tin tức 24/7 - Thời sự, kinh tế, thể thao, giải trí, thời tiết&quot;</span><span class="fu">,</span></span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">180000</span><span class="fu">,</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">42000000</span><span class="fu">,</span></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">1200</span><span class="fu">,</span></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;News&quot;</span><span class="ot">,</span> <span class="st">&quot;Tin tức&quot;</span><span class="ot">,</span> <span class="st">&quot;24/7&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/ef4444/ffffff?text=ON&quot;</span><span class="fu">,</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#ef4444&quot;</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;SportsArena&quot;</span><span class="fu">,</span></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;sports-arena&quot;</span><span class="fu">,</span></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;SPORTS&quot;</span><span class="fu">,</span></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Thể thao - Bóng đá, tennis, boxing, eSports tournaments, highlight reels&quot;</span><span class="fu">,</span></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">150000</span><span class="fu">,</span></span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">35000000</span><span class="fu">,</span></span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">500</span><span class="fu">,</span></span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Sports&quot;</span><span class="ot">,</span> <span class="st">&quot;Football&quot;</span><span class="ot">,</span> <span class="st">&quot;Tennis&quot;</span><span class="ot">,</span> <span class="st">&quot;E-Sports&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/22c55e/ffffff?text=SA&quot;</span><span class="fu">,</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#22c55e&quot;</span></span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;CookWithMe&quot;</span><span class="fu">,</span></span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;cook-with-me&quot;</span><span class="fu">,</span></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;FOOD&quot;</span><span class="fu">,</span></span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Nấu ăn - Recipe, cooking tips, food review, restaurant tours, street food&quot;</span><span class="fu">,</span></span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">78000</span><span class="fu">,</span></span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">4500000</span><span class="fu">,</span></span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">220</span><span class="fu">,</span></span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Food&quot;</span><span class="ot">,</span> <span class="st">&quot;Cooking&quot;</span><span class="ot">,</span> <span class="st">&quot;Recipe&quot;</span><span class="ot">,</span> <span class="st">&quot;Vietnamese Food&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/f97316/ffffff?text=CW&quot;</span><span class="fu">,</span></span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#f97316&quot;</span></span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;TravelDiary&quot;</span><span class="fu">,</span></span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;travel-diary&quot;</span><span class="fu">,</span></span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;TRAVEL&quot;</span><span class="fu">,</span></span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Du lịch - Vlog, travel tips, hidden gems, budget travel, backpacking&quot;</span><span class="fu">,</span></span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">62000</span><span class="fu">,</span></span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">3200000</span><span class="fu">,</span></span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">150</span><span class="fu">,</span></span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Travel&quot;</span><span class="ot">,</span> <span class="st">&quot;Vlog&quot;</span><span class="ot">,</span> <span class="st">&quot;Adventure&quot;</span><span class="ot">,</span> <span class="st">&quot;Budget Travel&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/06b6d4/ffffff?text=TD&quot;</span><span class="fu">,</span></span>
+<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#06b6d4&quot;</span></span>
+<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;ComedyHouse&quot;</span><span class="fu">,</span></span>
+<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;slug&quot;</span><span class="fu">:</span> <span class="st">&quot;comedy-house&quot;</span><span class="fu">,</span></span>
+<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;ENTERTAINMENT&quot;</span><span class="fu">,</span></span>
+<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Hài kịch, stand-up comedy, vlog hài - Giải trí không giới hạn, meme, parody&quot;</span><span class="fu">,</span></span>
+<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;followerCount&quot;</span><span class="fu">:</span> <span class="dv">220000</span><span class="fu">,</span></span>
+<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalViews&quot;</span><span class="fu">:</span> <span class="dv">28000000</span><span class="fu">,</span></span>
+<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalVideos&quot;</span><span class="fu">:</span> <span class="dv">380</span><span class="fu">,</span></span>
+<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Comedy&quot;</span><span class="ot">,</span> <span class="st">&quot;Stand-up&quot;</span><span class="ot">,</span> <span class="st">&quot;Funny&quot;</span><span class="ot">,</span> <span class="st">&quot;Vietnamese Humor&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;avatarUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://placeholder.co/200x200/eab308/ffffff?text=CH&quot;</span><span class="fu">,</span></span>
+<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;bannerColor&quot;</span><span class="fu">:</span> <span class="st">&quot;#eab308&quot;</span></span>
+<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code></pre></div>
+<h3 id="sample-recordings-all-content-sources">5.2 Sample Recordings
+(All Content Sources)</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Review iPhone 16 Pro Max - Có đáng lên đời không?&quot;</span><span class="fu">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentSource&quot;</span><span class="fu">:</span> <span class="st">&quot;EXTERNAL&quot;</span><span class="fu">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;externalPlatform&quot;</span><span class="fu">:</span> <span class="st">&quot;YOUTUBE&quot;</span><span class="fu">,</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;externalId&quot;</span><span class="fu">:</span> <span class="st">&quot;dQw4w9WgXcQ&quot;</span><span class="fu">,</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;duration&quot;</span><span class="fu">:</span> <span class="dv">1200</span><span class="fu">,</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewCount&quot;</span><span class="fu">:</span> <span class="dv">45000</span><span class="fu">,</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;likeCount&quot;</span><span class="fu">:</span> <span class="dv">3200</span><span class="fu">,</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;TECH&quot;</span><span class="fu">,</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;iPhone&quot;</span><span class="ot">,</span> <span class="st">&quot;Apple&quot;</span><span class="ot">,</span> <span class="st">&quot;Review&quot;</span><span class="ot">,</span> <span class="st">&quot;Smartphone&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;VIDEO&quot;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Highlights: Giải đấu Valorant Championship 2026&quot;</span><span class="fu">,</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentSource&quot;</span><span class="fu">:</span> <span class="st">&quot;GENERATED&quot;</span><span class="fu">,</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;duration&quot;</span><span class="fu">:</span> <span class="dv">7200</span><span class="fu">,</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewCount&quot;</span><span class="fu">:</span> <span class="dv">150000</span><span class="fu">,</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;likeCount&quot;</span><span class="fu">:</span> <span class="dv">12000</span><span class="fu">,</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;GAMING&quot;</span><span class="fu">,</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Valorant&quot;</span><span class="ot">,</span> <span class="st">&quot;Championship&quot;</span><span class="ot">,</span> <span class="st">&quot;Highlights&quot;</span><span class="ot">,</span> <span class="st">&quot;Esports&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;VIDEO&quot;</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Workshop React Native cho người mới bắt đầu&quot;</span><span class="fu">,</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentSource&quot;</span><span class="fu">:</span> <span class="st">&quot;UPLOADED&quot;</span><span class="fu">,</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;videoUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://storage.supabase.co/omnicast/workshops/react-native-workshop.mp4&quot;</span><span class="fu">,</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;fileSize&quot;</span><span class="fu">:</span> <span class="dv">524288000</span><span class="fu">,</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;duration&quot;</span><span class="fu">:</span> <span class="dv">10800</span><span class="fu">,</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewCount&quot;</span><span class="fu">:</span> <span class="dv">25000</span><span class="fu">,</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;likeCount&quot;</span><span class="fu">:</span> <span class="dv">1800</span><span class="fu">,</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;EDUCATION&quot;</span><span class="fu">,</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;React Native&quot;</span><span class="ot">,</span> <span class="st">&quot;Workshop&quot;</span><span class="ot">,</span> <span class="st">&quot;Programming&quot;</span><span class="ot">,</span> <span class="st">&quot;Mobile Dev&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;VIDEO&quot;</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;TechTalk EP.45: AI trong năm 2026 - Thực tế hay viễn vông?&quot;</span><span class="fu">,</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentSource&quot;</span><span class="fu">:</span> <span class="st">&quot;EXTERNAL&quot;</span><span class="fu">,</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;externalPlatform&quot;</span><span class="fu">:</span> <span class="st">&quot;YOUTUBE&quot;</span><span class="fu">,</span></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;externalId&quot;</span><span class="fu">:</span> <span class="st">&quot;example_video_id_2&quot;</span><span class="fu">,</span></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;duration&quot;</span><span class="fu">:</span> <span class="dv">5400</span><span class="fu">,</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewCount&quot;</span><span class="fu">:</span> <span class="dv">45000</span><span class="fu">,</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;likeCount&quot;</span><span class="fu">:</span> <span class="dv">3500</span><span class="fu">,</span></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;PODCAST&quot;</span><span class="fu">,</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;AI&quot;</span><span class="ot">,</span> <span class="st">&quot;Technology&quot;</span><span class="ot">,</span> <span class="st">&quot;Podcast&quot;</span><span class="ot">,</span> <span class="st">&quot;TechTalk&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;AUDIO&quot;</span></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Nấu Phở Bò Việt Nam chuẩn vị Hà Nội&quot;</span><span class="fu">,</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentSource&quot;</span><span class="fu">:</span> <span class="st">&quot;UPLOADED&quot;</span><span class="fu">,</span></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;videoUrl&quot;</span><span class="fu">:</span> <span class="st">&quot;https://storage.supabase.co/omnicast/recipes/pho-bo.mp4&quot;</span><span class="fu">,</span></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;fileSize&quot;</span><span class="fu">:</span> <span class="dv">209715200</span><span class="fu">,</span></span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;duration&quot;</span><span class="fu">:</span> <span class="dv">1800</span><span class="fu">,</span></span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewCount&quot;</span><span class="fu">:</span> <span class="dv">85000</span><span class="fu">,</span></span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;likeCount&quot;</span><span class="fu">:</span> <span class="dv">6200</span><span class="fu">,</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;FOOD&quot;</span><span class="fu">,</span></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Phở&quot;</span><span class="ot">,</span> <span class="st">&quot;Vietnamese Food&quot;</span><span class="ot">,</span> <span class="st">&quot;Recipe&quot;</span><span class="ot">,</span> <span class="st">&quot;Cooking&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;VIDEO&quot;</span></span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code></pre></div>
+<h3 id="sample-live-events">5.3 Sample Live Events</h3>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Stream rank Đế chế - Rank Thách đấu với viewer&quot;</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;channelSlug&quot;</span><span class="fu">:</span> <span class="st">&quot;omni-gaming&quot;</span><span class="fu">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;SCHEDULED&quot;</span><span class="fu">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;scheduledAt&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-25T19:00:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Valorant&quot;</span><span class="ot">,</span> <span class="st">&quot;Rank&quot;</span><span class="ot">,</span> <span class="st">&quot;Stream&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewerCount&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Chúng mình cùng rank Đế chế nào! Viewer vote map, vote agent.&quot;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Review iPhone 16 Pro Max - Live Review&quot;</span><span class="fu">,</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;channelSlug&quot;</span><span class="fu">:</span> <span class="st">&quot;techtalk-vietnam&quot;</span><span class="fu">,</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;LIVE&quot;</span><span class="fu">,</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;startedAt&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-23T10:00:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;iPhone&quot;</span><span class="ot">,</span> <span class="st">&quot;Apple&quot;</span><span class="ot">,</span> <span class="st">&quot;Review&quot;</span><span class="ot">,</span> <span class="st">&quot;Live&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;viewerCount&quot;</span><span class="fu">:</span> <span class="dv">2450</span><span class="fu">,</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;peakViewers&quot;</span><span class="fu">:</span> <span class="dv">3200</span><span class="fu">,</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Unbox và review chi tiết iPhone 16 Pro Max - So sánh với 15 Pro&quot;</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Live Concert: Summer Vibes 2026&quot;</span><span class="fu">,</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;channelSlug&quot;</span><span class="fu">:</span> <span class="st">&quot;music-hub&quot;</span><span class="fu">,</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;ENDED&quot;</span><span class="fu">,</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;startedAt&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-20T20:00:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;endedAt&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-09-20T23:30:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;tags&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;Concert&quot;</span><span class="ot">,</span> <span class="st">&quot;Live Music&quot;</span><span class="ot">,</span> <span class="st">&quot;Summer&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;peakViewers&quot;</span><span class="fu">:</span> <span class="dv">45000</span><span class="fu">,</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;Live concert mùa hè với các nghệ sĩ hot nhất&quot;</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code></pre></div>
+<hr />
+<h2 id="api-endpoints">6. API Endpoints</h2>
+<h3 id="live-channels">6.1 Live Channels</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/live/channels</code></td>
+<td>List all channels (filter by category)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/channels/:slug</code></td>
+<td>Get channel by slug</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/channels</code></td>
+<td>Create channel (Staff only)</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/live/channels/:id</code></td>
+<td>Update channel</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/live/channels/:id</code></td>
+<td>Delete channel</td>
+</tr>
+</tbody>
+</table>
+<h3 id="live-events">6.2 Live Events</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 32%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/live/events</code></td>
+<td>List events (filter: status, date, channel)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/events/live-now</code></td>
+<td>Get currently live events</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/events/upcoming</code></td>
+<td>Get upcoming events</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/events/:id</code></td>
+<td>Get event details</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/events</code></td>
+<td>Create event</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/live/events/:id</code></td>
+<td>Update event</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/events/:id/start</code></td>
+<td>Start live streaming</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/events/:id/end</code></td>
+<td>End live streaming</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recordings">6.3 Recordings</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/live/recordings</code></td>
+<td>List recordings</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/recordings/:id</code></td>
+<td>Get recording details</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/recordings</code></td>
+<td>Create recording</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/live/recordings/:id</code></td>
+<td>Update recording</td>
+</tr>
+</tbody>
+</table>
+<h3 id="social">6.4 Social</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/live/channels/:id/follow</code></td>
+<td>Follow channel</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/live/channels/:id/follow</code></td>
+<td>Unfollow channel</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/channels/:id/followers</code></td>
+<td>Get followers</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/events/:id/comments</code></td>
+<td>Get comments</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/events/:id/comments</code></td>
+<td>Add comment</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/live/events/:id/reactions</code></td>
+<td>Add reaction</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/live/recordings/:id/reactions</code></td>
+<td>Get reactions</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="deployment-instructions">Deployment Instructions</h2>
+<h3 id="option-1-using-prisma-recommended">Option 1: Using Prisma
+(Recommended)</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Install dependencies</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install @prisma/client prisma</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Create .env file</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;DATABASE_URL=&quot;postgresql://postgres:[YOUR-PASSWORD]@db.tktexqtqfnlfynbytjpw.supabase.co:5432/postgres&quot;&#39;</span> <span class="op">&gt;</span> .env</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Create prisma folder</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> prisma</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Copy schema.prisma content to prisma/schema.prisma</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Generate Prisma Client</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma generate</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Push schema to database</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma db push</span></code></pre></div>
+<h3 id="option-2-direct-sql-supabase-dashboard">Option 2: Direct SQL
+(Supabase Dashboard)</h3>
+<ol type="1">
+<li>Go to Supabase Dashboard</li>
+<li>Navigate to SQL Editor</li>
+<li>Copy and paste the SQL from Section 3.2</li>
+<li>Click Run</li>
+</ol>
+<h3 id="option-3-migration-files">Option 3: Migration Files</h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create migration</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma migrate dev <span class="at">--name</span> init</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or reset</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> prisma migrate reset</span></code></pre></div>
+<hr />
+<h2 id="environment-variables">Environment Variables</h2>
+<pre class="env"><code># .env
+DATABASE_URL=&quot;postgresql://postgres:[YOUR-PASSWORD]@db.tktexqtqfnlfynbytjpw.supabase.co:5432/postgres&quot;
+NEXT_PUBLIC_SUPABASE_URL=&quot;https://tktexqtqfnlfynbytjpw.supabase.co&quot;
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=&quot;sb_publishable_sZa2lJxnHmCn4DsesvFl2g_pU6Q7FQy&quot;</code></pre>
+<hr />
+<p><strong>Document Version:</strong> 2.0<br />
+<strong>Last Updated:</strong> 2026-09-23</p>
+
+  </div>
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Reference Documentation</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

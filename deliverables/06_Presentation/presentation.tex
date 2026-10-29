@@ -3,7 +3,7 @@
 % ============================================================
 % OmniCast - Joint Project Defense Presentation Slide Deck
 % Courses: PRN232 (Back-End) & PRM393 (Mobile Client)
-% Academic Semester: Fall 2026 (FA26) - FPT University
+% FPTU Quy Nhon AI Campus - FU Cahata | Mentor: Mr. Huỳnh Vang
 % ============================================================
 
 \usepackage{fontspec}
@@ -56,7 +56,7 @@
     \draw[omniBorder, line width=0.5pt] ($(current page.north west) + (0,-10mm)$) -- ($(current page.north east) + (0,-10mm)$);
     \node[anchor=west, text=omniCyan, font=\scriptsize\bfseries] at ($(current page.north west) + (8mm,-5mm)$) {OMNICAST};
     \node[anchor=west, text=omniSlate, font=\scriptsize] at ($(current page.north west) + (26mm,-5mm)$) {$\vert$ \ \insertsectionhead};
-    \node[anchor=east, text=omniSlate, font=\tiny] at ($(current page.north east) + (-8mm,-5mm)$) {FPT UNIVERSITY $\bullet$ FA26};
+    \node[anchor=east, text=omniSlate, font=\tiny] at ($(current page.north east) + (-8mm,-5mm)$) {FPTU QUY NHON AI CAMPUS --- FU CAHATA $\bullet$ MENTOR: MR. HUỲNH VANG};
   \end{tikzpicture}
   \vspace{8mm}
 }
@@ -66,8 +66,8 @@
   \begin{tikzpicture}[remember picture, overlay]
     \fill[omniDeep] (current page.south west) rectangle ($(current page.south east) + (0,6mm)$);
     \draw[omniBorder, line width=0.5pt] ($(current page.south west) + (0,6mm)$) -- ($(current page.south east) + (0,6mm)$);
-    \node[anchor=west, text=omniSlate, font=\tiny] at ($(current page.south west) + (8mm,3mm)$) {OmniCast: Enterprise Media \& Broadcast Intelligence Network};
-    \node[anchor=center, text=omniSlate, font=\tiny] at ($(current page.south) + (0,3mm)$) {PRN232 (Back-End) \& PRM393 (Mobile Applications)};
+    \node[anchor=west, text=omniSlate, font=\tiny] at ($(current page.south west) + (8mm,3mm)$) {Nguyễn Bình An $\cdot$ Trần Thanh Sơn $\cdot$ Nguyễn Vĩnh Phú $\cdot$ Đồng Hoàng Nguyên};
+    \node[anchor=center, text=omniSlate, font=\tiny] at ($(current page.south) + (0,3mm)$) {FPTU Quy Nhon AI Campus --- FU Cahata $\vert$ PRN232 \& PRM393};
     \node[anchor=east, text=omniCyan, font=\tiny\bfseries] at ($(current page.south east) + (-8mm,3mm)$) {\insertframenumber{} / \inserttotalframenumber{}};
   \end{tikzpicture}
 }
@@ -98,8 +98,8 @@
 % ---------- Title Information ----------
 \title{OMNICAST}
 \subtitle{Enterprise Media \& Broadcast Intelligence Network}
-\author{OmniCast Engineering Team}
-\institute{Department of Software Engineering --- FPT University}
+\author{Nguyễn Bình An $\cdot$ Trần Thanh Sơn $\cdot$ Nguyễn Vĩnh Phú $\cdot$ Đồng Hoàng Nguyên}
+\institute{FPTU Quy Nhon AI Campus --- FU Cahata $\bullet$ Mentor: Mr. Huỳnh Vang}
 \date{Fall Semester 2026 (FA26)}
 
 \begin{document}
@@ -122,52 +122,96 @@
   \end{tikzpicture}
 
   \begin{center}
-    \vspace*{-4mm}
-    {\scriptsize\bfseries\color{omniSlate}FPT UNIVERSITY $\bullet$ FACULTY OF INFORMATION TECHNOLOGY}\\[2mm]
-    {\tiny\color{omniCyan}\bfseries FINAL CAPSTONE DEFENSE \& PROJECT PRESENTATION}\\[4mm]
+    \vspace*{-5mm}
+    {\scriptsize\bfseries\color{omniCyan}FPT UNIVERSITY $\bullet$ FPTU QUY NHON AI CAMPUS --- FU CAHATA}\\[1.5mm]
+    {\tiny\color{omniSlate}\bfseries FINAL CAPSTONE DEFENSE \& PROJECT PRESENTATION (FALL 2026)}\\[3mm]
 
-    {\Huge\bfseries\color{white}OMNI\textcolor{omniCyan}{CAST}}\\[1.5mm]
-    {\large\bfseries\color{omniSlate}Enterprise Media \& Broadcast Intelligence Network}\\[3mm]
+    {\Huge\bfseries\color{white}OMNI\textcolor{omniCyan}{CAST}}\\[1mm]
+    {\large\bfseries\color{omniSlate}Enterprise Media, Real-Time LiveStream \& Broadcast Intelligence Network}\\[2.5mm]
     
-    {\color{omniBorder}\rule{0.65\linewidth}{1pt}}\\[3mm]
+    {\color{omniBorder}\rule{0.72\linewidth}{1pt}}\\[2.5mm]
 
     \begin{tikzpicture}
-      \node[draw=omniBlue, fill=omniCard, rounded corners=3pt, line width=0.8pt, inner sep=4pt] (b1) at (-3.2,0) {
-        \textbf{\scriptsize\color{white}PART 1: PRN232} \ \textcolor{omniSlate}{\tiny$\vert$} \ \textsf{\scriptsize\color{omniBlue}Back-End Engineering \& Web Portal}
+      \node[draw=omniBlue, fill=omniCard, rounded corners=3pt, line width=0.8pt, inner sep=4pt] (b1) at (-3.4,0) {
+        \textbf{\scriptsize\color{white}PART 1: PRN232} \ \textcolor{omniSlate}{\tiny$\vert$} \ \textsf{\scriptsize\color{omniBlue}Back-End, gRPC \& Next.js 15 (33 Routes)}
       };
-      \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, line width=0.8pt, inner sep=4pt] (b2) at (3.2,0) {
-        \textbf{\scriptsize\color{white}PART 2: PRM393} \ \textcolor{omniSlate}{\tiny$\vert$} \ \textsf{\scriptsize\color{omniPurple}Mobile Application (Flutter \& Dart)}
+      \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, line width=0.8pt, inner sep=4pt] (b2) at (3.4,0) {
+        \textbf{\scriptsize\color{white}PART 2: PRM393} \ \textcolor{omniSlate}{\tiny$\vert$} \ \textsf{\scriptsize\color{omniPurple}Flutter Mobile App (31 Screens \& Live Studio)}
       };
     \end{tikzpicture}
-    \vspace{4mm}
+    \vspace{2.5mm}
 
     \begin{tikzpicture}
-      \node[text=omniGreen, font=\tiny\bfseries] at (-3.8,0) {$\checkmark$ 142,897 Physical LOC};
-      \node[text=omniCyan, font=\tiny\bfseries] at (0,0) {$\checkmark$ 482/482 Tests PASS (100\%)};
-      \node[text=omniAmber, font=\tiny\bfseries] at (4.2,0) {$\checkmark$ Live Production on Vercel \& Supabase};
+      \node[text=omniGreen, font=\tiny\bfseries] at (-4.2,0) {$\checkmark$ 142,897 Physical LOC};
+      \node[text=omniCyan, font=\tiny\bfseries] at (0,0) {$\checkmark$ 482/482 Automated Tests PASS (100\%)};
+      \node[text=omniAmber, font=\tiny\bfseries] at (4.4,0) {$\checkmark$ WebRTC WHIP/WHEP + Socket.IO /live};
     \end{tikzpicture}
-    \vspace{4mm}
+    \vspace{2.5mm}
 
-    {\scriptsize\color{omniSlate}Author: \textbf{\color{white}OmniCast Engineering Team} $\bullet$ Academic Semester: \textbf{\color{white}Fall 2026 (FA26)}}\\[1mm]
-    {\tiny\color{omniSlate}October 28, 2026}
+    {\scriptsize\color{omniSlate}Mentor / Supervisor: \textbf{\color{omniAmber}Thầy Huỳnh Vang (Mr. Huỳnh Vang)}}\\[1.5mm]
+    {\scriptsize\color{white}\textbf{Nguyễn Bình An} \ $\bullet$ \ \textbf{Trần Thanh Sơn} (\texttt{QE170080}) \ $\bullet$ \ \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}) \ $\bullet$ \ \textbf{Đồng Hoàng Nguyên}}\\[1mm]
+    {\tiny\color{omniCyan}FPTU Quy Nhon AI Campus --- FU Cahata $\bullet$ October 2026}
   \end{center}
 \end{frame}
 }
 
 % ============================================================
-% SLIDE 2: Executive Summary & Problem Statement
+% SLIDE 2: Project Team & Mentorship (FPTU Quy Nhon AI Campus - FU Cahata)
 % ============================================================
-\section{Overview}
+\section{Overview \& Team}
+\begin{frame}{Project Team \& Academic Mentorship}{FPTU Quy Nhon AI Campus --- FU Cahata $\bullet$ Mentor: Thầy Huỳnh Vang}
+  \begin{columns}[t]
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniCyan}{1. NGUYỄN BÌNH AN (\texttt{TomOutfit}) --- TEAM LEADER}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item \textbf{Core Back-End:} NestJS 10 modular architecture (19 modules, 140+ REST endpoints).
+          \item \textbf{Security \& EPG Engine:} JWT + 4-role RBAC, atomic SQL schedule conflict detection, 24/7 seeded EPG filler, Direct Stream Engine \& CI/CD.
+        \end{itemize}
+      }
+      \vspace{1mm}
+      \card{\linewidth}{omniGreen}{2. TRẦN THANH SƠN (\texttt{QE170080}) --- MICROSERVICES \& DB}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item \textbf{gRPC Microservice:} Standalone \texttt{audit-logger-service} over HTTP/2 Protocol Buffers (\texttt{audit\_logger.proto}).
+          \item \textbf{Database Engineering:} Supabase PostgreSQL (21 Prisma models), connection pooling (\texttt{:6543}), telemetry \& seeding.
+        \end{itemize}
+      }
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniPurple}{3. NGUYỄN VĨNH PHÚ (\texttt{QE180136}) --- MOBILE FLUTTER LEAD}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item \textbf{Flutter Client:} 4-Tier Clean Architecture, 12 BLoC/Cubits, 31 screens \& 22 custom widgets.
+          \item \textbf{Mobile Live \& Offline:} \texttt{OmniPlayer}, \texttt{LanDiscoveryService}, \texttt{MobileStudioRecorderScreen} (WebRTC WHIP), SQLite offline sync.
+        \end{itemize}
+      }
+      \vspace{1mm}
+      \card{\linewidth}{omniAmber}{4. ĐỒNG HOÀNG NGUYÊN (\texttt{teng122}) --- WEB, LIVE \& AI}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item \textbf{Next.js 15 Portal:} 33 App Router screens, 7-theme \texttt{/live/[id]} lounge, 4-tab \texttt{/studio/live} console.
+          \item \textbf{Realtime \& AI:} Socket.IO \texttt{/live} gateway \& OpenAI GPT-4o AI Curator with Zod validation + heuristic fallback.
+        \end{itemize}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ============================================================
+% SLIDE 3: Executive Summary & Problem Statement
+% ============================================================
 \begin{frame}{Executive Summary}{The Industry Challenge \& The OmniCast Solution}
   \begin{columns}[t]
     \begin{column}{0.48\textwidth}
       \card{\linewidth}{omniAmber}{THE PROBLEM: BROADCAST COLLISION \& FRAGMENTATION}{
         \begin{itemize}
           \setlength\itemsep{1.5mm}
-          \item \textbf{Airtime Collisions:} Overlapping broadcast events cause stream disruptions and schedule inconsistencies.
-          \item \textbf{24/7 EPG Dead Air:} Linear TV grids leave empty slots if content runs short, resulting in blank viewer screens.
+          \item \textbf{Multi-Source Live Complexity:} Switching between VOD lineups, live studio cameras, and public streams often drops connected viewers.
+          \item \textbf{Airtime Collisions \& 24/7 Dead Air:} Overlapping events disrupt broadcasts, while sparse schedules leave blank EPG grids.
           \item \textbf{Manual Content Curation:} Broadcasters manually tag, rate, and check compliance across high-volume video catalogs.
-          \item \textbf{Rigid Mobile Experiences:} Mobile players freeze without network connection, discarding pending user actions.
+          \item \textbf{Rigid Mobile Experiences:} Mobile players fail on local LAN IPs or freeze when offline.
         \end{itemize}
       }
     \end{column}
@@ -176,10 +220,10 @@
       \card{\linewidth}{omniCyan}{THE OMNICAST SOLUTION: UNIFIED HYBRID ECOSYSTEM}{
         \begin{itemize}
           \setlength\itemsep{1.5mm}
-          \item \textbf{Mathematical Collision Engine:} Single SQL interval query prevents airtime overlaps at database transaction level.
-          \item \textbf{Seeded 24/7 EPG Auto-Filler:} Fills schedule gaps deterministically with reproducible, channel-specific fallback content.
-          \item \textbf{AI Broadcast Curator:} LLM-driven structured metadata curation with Zod schema validation and heuristic fallback.
-          \item \textbf{Offline-First Mobile Client:} SQLite caching with pending mutation queue and low-latency WebRTC/HLS streaming.
+          \item \textbf{4-Mode Live Studio \& Zero-Downtime Switch:} Curated VOD, WebRTC WHIP Camera/Screen, Public Catalog \& instant program switching via Socket.IO \texttt{/live}.
+          \item \textbf{Mathematical Collision \& 24/7 EPG Engine:} Single raw SQL interval query + deterministic seeded 24/7 auto-filler.
+          \item \textbf{AI Broadcast Curator:} Single-call GPT-4o curation with Zod schema validation and heuristic fallback.
+          \item \textbf{LAN-Aware Offline-First Mobile App:} SQLite mutation queue + automatic Wi-Fi MediaMTX LAN discovery.
         \end{itemize}
       }
     \end{column}
@@ -187,39 +231,76 @@
 \end{frame}
 
 % ============================================================
-% SLIDE 3: End-to-End System Architecture (The Big Picture)
+% SLIDE 4: End-to-End System Architecture (The Big Picture)
 % ============================================================
-\begin{frame}{End-to-End System Architecture}{Dual-Platform Unified Topology}
+\begin{frame}{End-to-End System Architecture}{Dual-Platform Unified Topology (Web, Mobile, NestJS, MediaMTX, gRPC)}
   \begin{center}
-  \begin{tikzpicture}[scale=0.88, every node/.style={transform shape, align=center}]
-    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (web) at (0, 2.2) {Next.js 15 Web Portal\\{\tiny\color{omniSlate}React 19 $\bullet$ Studio $\bullet$ Telemetry}};
-    \node[draw=omniPurple, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (mob) at (0, -0.6) {Flutter Mobile App\\{\tiny\color{omniSlate}Dart 3.x $\bullet$ BLoC $\bullet$ Offline SQLite}};
+  \begin{tikzpicture}[scale=0.86, every node/.style={transform shape, align=center}]
+    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (web) at (0, 2.2) {Next.js 15 Web Portal\\{\tiny\color{omniSlate}33 Routes $\bullet$ 7-Theme Live $\bullet$ Studio}};
+    \node[draw=omniPurple, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (mob) at (0, -0.6) {Flutter Mobile App\\{\tiny\color{omniSlate}31 Screens $\bullet$ 12 BLoCs $\bullet$ SQLite}};
 
-    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=32mm, minimum height=11mm] (mtx) at (5.2, 2.2) {MediaMTX Engine\\{\tiny\color{omniSlate}WebRTC WHIP/WHEP $\bullet$ HLS}};
+    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=34mm, minimum height=11mm] (mtx) at (5.2, 2.2) {MediaMTX + Cloudinary\\{\tiny\color{omniSlate}WHIP/WHEP $\bullet$ HLS $\bullet$ Signed CDN}};
 
-    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=42mm, minimum height=18mm] (api) at (5.2, -0.6) {NestJS 10 Core API\\{\tiny\color{omniSlate}19 Modules $\bullet$ 140+ REST Endpoints}\\{\tiny\color{omniCyan}WebSocket Gateway (/live)}};
+    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=42mm, minimum height=18mm] (api) at (5.2, -0.6) {NestJS 10 Core API\\{\tiny\color{omniSlate}19 Modules $\bullet$ 140+ REST Endpoints}\\{\tiny\color{omniCyan}LiveStreamGateway (Socket.IO /live)}};
 
-    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (db) at (10.5, 0.8) {Supabase PostgreSQL\\{\tiny\color{omniSlate}21 Prisma Models $\bullet$ Seoul Pooler}};
-    \node[draw=omniSlate, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (grpc) at (10.5, -1.8) {Audit-Logger Microservice\\{\tiny\color{omniSlate}gRPC Proto $\bullet$ Render Cloud}};
+    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (db) at (10.5, 0.8) {Supabase PostgreSQL\\{\tiny\color{omniSlate}21 Prisma Models $\bullet$ Pooler :6543}};
+    \node[draw=omniSlate, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (grpc) at (10.5, -1.8) {Audit-Logger Microservice\\{\tiny\color{omniSlate}gRPC :50051 $\bullet$ audit\_logger.proto}};
 
     \draw[-{Latex}, omniCyan, line width=1pt] (web) -- node[above, font=\tiny, text=omniSlate]{REST/WSS} (api.155);
     \draw[-{Latex}, omniPurple, line width=1pt] (mob) -- node[below, font=\tiny, text=omniSlate]{REST/WSS} (api.195);
-    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (web) -- node[above, font=\tiny, text=omniSlate]{WHIP Ingest} (mtx);
-    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (mob) -- node[above, font=\tiny, text=omniSlate, sloped]{WHEP/HLS} (mtx);
+    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (web) -- node[above, font=\tiny, text=omniSlate]{WHIP / HLS} (mtx);
+    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (mob) -- node[above, font=\tiny, text=omniSlate, sloped]{WHIP / WHEP / HLS} (mtx);
     \draw[-{Latex}, omniGreen, line width=1pt] (api) -- node[above, font=\tiny, text=omniSlate]{Prisma ORM} (db.west);
-    \draw[-{Latex}, omniSlate, line width=1pt] (api) -- node[below, font=\tiny, text=omniSlate]{gRPC:50051} (grpc.west);
+    \draw[-{Latex}, omniSlate, line width=1pt] (api) -- node[below, font=\tiny, text=omniSlate]{gRPC} (grpc.west);
   \end{tikzpicture}
   \end{center}
   \vspace*{-2mm}
   \begin{center}
-    \tiny\color{omniSlate}A unified monorepo architecture bridging broadcast automation, low-latency distribution, and dual-client interaction.
+    \tiny\color{omniSlate}A unified monorepo architecture developed at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} under Mentor \textbf{Mr. Huỳnh Vang}.
+  \end{center}
+\end{frame}
+
+% ============================================================
+% SLIDE 5: End-to-End LiveStream & Live Studio Real-Time Architecture
+% ============================================================
+\begin{frame}{LiveStream \& Live Studio Architecture}{Bi-Directional WebRTC WHIP/WHEP, MediaMTX HLS \& Socket.IO \texttt{/live} Pipeline}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.78, every node/.style={transform shape, align=center}]
+    % Left: 4 Studio Modes
+    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t1) at (0, 2.4) {Tab 1: Curated Live\\{\tiny\color{omniSlate}VOD Lineup + Anti-Piracy Guard}};
+    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t2) at (0, 1.0) {Tab 2: Self-Record / Camera\\{\tiny\color{omniSlate}WHIP WebRTC + Screen + Dropzone}};
+    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t3) at (0,-0.4) {Tab 3: Public Catalog\\{\tiny\color{omniSlate}Verified HLS/MP4 + HEAD Probe}};
+    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t4) at (0,-1.8) {Tab 4: Host Control Console\\{\tiny\color{omniSlate}Pinned Banner + Switch + Stop}};
+
+    % Middle: Orchestration
+    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=12mm] (svc) at (5.2, 1.8) {LiveStudioService\\{\tiny\color{omniCyan}Atomic Event Transition}\\{\tiny\color{omniSlate}\texttt{switchProgramOnLiveEvent}}};
+    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=11mm] (media) at (5.2, 0.2) {MediaMTX + Direct Drive\\{\tiny\color{omniSlate}WHIP :8889 $\rightarrow$ HLS :8888 (\texttt{.m3u8})}\\{\tiny\color{omniSlate}Cloudinary Signed Direct Upload}};
+    \node[draw=omniTeal, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=12mm] (gw) at (5.2,-1.5) {LiveStreamGateway (\texttt{/live})\\{\tiny\color{omniCyan}Rooms: \texttt{event:id} \& \texttt{channel:id}}\\{\tiny\color{omniSlate}CCU $\cdot$ Chat $\cdot$ Reactions $\cdot$ Donations}};
+
+    % Right: Viewer Rooms
+    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (wroom) at (10.6, 1.8) {Web Live Room (\texttt{/live/[id]})\\{\tiny\color{omniSlate}7 Genre Themes $\cdot$ Join Lobby}\\{\tiny\color{omniSlate}Cinema Mode $\cdot$ Lineup Switcher}};
+    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (mroom) at (10.6, 0.1) {Mobile \texttt{LiveWatchScreen}\\{\tiny\color{omniSlate}OmniPlayer + Wi-Fi LAN Discovery}\\{\tiny\color{omniSlate}Zero-Cartoon Retry (10x Backoff)}};
+    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (ops) at (10.6,-1.6) {Real-Time Viewer Operations\\{\tiny\color{omniSlate}Threaded Chat $\cdot$ 0ms Haptic Emoji}\\{\tiny\color{omniSlate}6-Tier Super Chat $\cdot$ Host Toast}};
+
+    \draw[-{Latex}, omniBlue, line width=0.8pt] (t1.east) -- (svc.west);
+    \draw[-{Latex}, omniBlue, line width=0.8pt] (t2.east) -- (svc.west);
+    \draw[-{Latex}, omniAmber, line width=0.8pt] (t2.east) -- (media.west);
+    \draw[-{Latex}, omniBlue, line width=0.8pt] (t3.east) -- (svc.west);
+    \draw[-{Latex}, omniTeal, line width=0.8pt] (t4.east) -- (gw.west);
+    \draw[-{Latex}, omniTeal, line width=0.8pt] (svc) -- (gw);
+    \draw[-{Latex}, omniAmber, line width=0.8pt] (media.east) -- (wroom.west);
+    \draw[-{Latex}, omniAmber, line width=0.8pt] (media.east) -- (mroom.west);
+    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (wroom.west);
+    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (mroom.west);
+    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (ops.west);
+  \end{tikzpicture}
   \end{center}
 \end{frame}
 
 % ============================================================
 % PART 1 DIVIDER
 % ============================================================
-\section{PRN232 Back-End}
+\section{PRN232 Back-End \& Web}
 {
 \setbeamertemplate{headline}{}
 \begin{frame}[plain]
@@ -229,28 +310,29 @@
   \end{tikzpicture}
   \begin{center}
     \vspace{10mm}
-    {\scriptsize\bfseries\color{omniCyan}MODULE 1 OF 2}\\[3mm]
+    {\scriptsize\bfseries\color{omniCyan}MODULE 1 OF 2 $\bullet$ FPTU QUY NHON AI CAMPUS --- FU CAHATA}\\[3mm]
     {\Huge\bfseries\color{white}PART 1: PRN232}\\[3mm]
-    {\Large\bfseries\color{omniBlue}Building Cross-Platform Back-End Application}\\[4mm]
+    {\Large\bfseries\color{omniBlue}Building Cross-Platform Back-End Application \& Web Portal}\\[4mm]
     {\color{omniBorder}\rule{0.5\linewidth}{1pt}}\\[4mm]
-    {\footnotesize\color{omniSlate}NestJS 10 $\bullet$ Next.js 15 $\bullet$ PostgreSQL Supabase $\bullet$ gRPC Microservices $\bullet$ AI Curator}
+    {\footnotesize\color{omniSlate}NestJS 10 $\bullet$ Next.js 15 (33 Routes) $\bullet$ Live Studio \& Live Room $\bullet$ Supabase PostgreSQL $\bullet$ gRPC $\bullet$ AI Curator}
   \end{center}
 \end{frame}
 }
 
 % ============================================================
-% SLIDE 4: PRN232 Backend Modular Design & RBAC
+% SLIDE 6: PRN232 Backend Modular Design, RBAC & 5-Domain DB
 % ============================================================
-\begin{frame}{Backend Architecture \& Security}{NestJS 10 Modular Core \& Three-Tier RBAC}
+\begin{frame}{Backend Architecture, Security \& 5-Domain Database}{NestJS 10 (19 Modules), 4-Role RBAC \& 21 Prisma Models}
   \begin{columns}[t]
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniBlue}{MODULAR DOMAIN DESIGN (19 MODULES)}{
+      \card{\linewidth}{omniBlue}{19 MODULES \& 5-DOMAIN DATABASE (21 MODELS)}{
         \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Core Business Modules:} \texttt{Channels}, \texttt{Programs}, \texttt{Epg}, \texttt{Live}, \texttt{Recordings}, \texttt{Billing}.
-          \item \textbf{High-Volume Endpoints:} 140+ REST endpoints adhering to strict OpenAPI 3.0 / Swagger specifications.
-          \item \textbf{Database Persistence:} 21 Prisma models on Supabase PostgreSQL with connection pooling.
-          \item \textbf{Global Validation:} ValidationPipe with class-validator \& class-transformer for strict input sanitization.
+          \setlength\itemsep{1mm}
+          \item \textbf{1. Identity \& Security:} \texttt{User}, \texttt{Role}, \texttt{RefreshToken}, \texttt{PasswordResetToken} (JWT 60m + 90d rotation).
+          \item \textbf{2. Broadcast Core:} \texttt{LiveChannel}, \texttt{LiveEvent}, \texttt{Recording}, \texttt{ProductionTag}.
+          \item \textbf{3. Social \& Live Monetization:} \texttt{Comment}, \texttt{CommentLike}, \texttt{Reaction}, \texttt{Follow}, \texttt{Watchlist}, \texttt{WatchHistory}, \texttt{StreamDonation}.
+          \item \textbf{4. Operations \& gRPC Audit:} \texttt{AuditLog}, \texttt{Notification}, \texttt{DeviceToken}, \texttt{NewsletterSubscriber}.
+          \item \textbf{5. AI Intelligence:} \texttt{AiCuratorReport} (1-to-1 with provenance).
         \end{itemize}
       }
     \end{column}
@@ -259,14 +341,14 @@
       \card{\linewidth}{omniTeal}{SECURITY PIPELINE \& RBAC MATRIX}{
         \begin{itemize}
           \setlength\itemsep{1.2mm}
-          \item \textbf{Authentication Guard:} Dual-token JWT (1h Access Token + 90d Refresh Token rotation).
-          \item \textbf{Role-Based Access Control (RBAC):}
+          \item \textbf{Role-Based Access Control (4 Roles):}
             \begin{itemize}
-              \item \texttt{ADMIN}: Full governance, user control, audit telemetry.
-              \item \texttt{STAFF}: Broadcaster studio, AI curation, schedule management.
-              \item \texttt{VIEWER}: Live playback, interactive chat, donations, watchlist.
+              \item \texttt{ADMIN}: System governance, user RBAC, gRPC audit log explorer.
+              \item \texttt{STAFF}: Live Studio 4-mode broadcasting, on-the-fly program switch, AI curation, schedule management.
+              \item \texttt{VIEWER}: Live room chat, floating reactions, 6-tier Super Chat donations, watchlist \& history.
+              \item \texttt{GUEST}: Public EPG grid, channel catalog \& VOD discovery.
             \end{itemize}
-          \item \textbf{Defense in Depth:} Helmet security headers, CORS origin whitelisting, Bcrypt (12 salt rounds).
+          \item \textbf{Defense in Depth:} Helmet, CORS whitelist, Bcrypt (12 rounds), \texttt{safe-log} secret redaction.
         \end{itemize}
       }
     \end{column}
@@ -274,68 +356,35 @@
 \end{frame}
 
 % ============================================================
-% SLIDE 5: Algorithmic Core 1 - Airtime Collision Prevention
+% SLIDE 7: Algorithmic Core 1 & 2 - Airtime Collision & 24/7 EPG
 % ============================================================
-\begin{frame}{Algorithmic Contribution 1: Collision Prevention}{Mathematical Airtime Overlap Detection via Raw SQL Interval}
+\begin{frame}{Algorithmic Core: Collision Prevention \& 24/7 EPG Filler}{Raw SQL Effective-End Interval Check \& Seeded Deterministic Playout}
   \begin{columns}[t]
-    \begin{column}{0.52\textwidth}
-      \card{\linewidth}{omniCyan}{THE INTERVAL COLLISION PRINCIPLE}{
-        Two broadcasts $A$ and $B$ collide if and only if:
-        $$\max(\text{start}_A, \text{start}_B) < \min(\text{end}_A, \text{end}_B)$$
-        \textbf{Key Engineering Breakthrough:}
-        \begin{itemize}
-          \setlength\itemsep{1mm}
-          \item In live broadcasting, an active event's \texttt{endTime} may be \texttt{NULL} (broadcast ongoing).
-          \item We compute \textbf{effective end time} on-the-fly using \texttt{COALESCE(p."endTime", p."startTime" + INTERVAL '2 hours')}.
-          \item Executed via atomic SQL raw query inside a Prisma transaction to eliminate race conditions under concurrent bookings.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.44\textwidth}
-      \card{\linewidth}{omniGreen}{ATOMIC SQL IMPLEMENTATION}{
+    \begin{column}{0.50\textwidth}
+      \card{\linewidth}{omniCyan}{1. ATOMIC SQL SCHEDULE CONFLICT DETECTION}{
+        Two broadcasts $A$ and $B$ collide iff $\max(\text{start}_A, \text{start}_B) < \min(\text{end}_A, \text{end}_B)$.
         \begin{tcolorbox}[colback=omniDark, colframe=omniBorder, boxrule=0.5pt, arc=2pt, left=2mm, right=2mm, top=1mm, bottom=1mm]
         \tiny\ttfamily\color{omniCyan}
-        SELECT id FROM "Program" p\\
-        WHERE p."channelId" = \$1\\
-        \ \ AND p."id" != \$2\\
-        \ \ AND p."startTime" < \$effectiveEnd\\
-        \ \ AND COALESCE(p."endTime",\\
-        \ \ \ \ \ \ p."startTime" + INTERVAL '2h')\\
-        \ \ \ \ \ \ > \$effectiveStart\\
-        LIMIT 1;
+        SELECT id, title FROM "LiveEvent"\\
+        WHERE "channelId" = \$1::uuid\\
+        \ \ AND status IN ('SCHEDULED', 'LIVE')\\
+        \ \ AND "scheduledAt" < \$newEnd\\
+        \ \ AND COALESCE("endedAt",\\
+        \ \ \ \ "scheduledAt" + ("duration" || ' min')::interval)\\
+        \ \ \ \ > \$newStart;
         \end{tcolorbox}
-        \vspace{1mm}
-        {\scriptsize\color{omniSlate}$\bullet$ Validated by \texttt{programs.conflict.spec.ts} with 14 boundary test cases (100\% PASS).}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 6: Algorithmic Core 2 - Seeded 24/7 EPG Auto-Filler
-% ============================================================
-\begin{frame}{Algorithmic Contribution 2: 24/7 EPG Auto-Filler}{Deterministic Seeded Fallback for Zero Dead-Air Guarantee}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniTeal}{THE 24/7 BROADCAST GRID CHALLENGE}{
-        \begin{itemize}
-          \setlength\itemsep{1.5mm}
-          \item Linear TV channels require an uninterrupted 24-hour timeline (00:00:00 to 23:59:59).
-          \item Original programming typically covers only 2--6 hours per day.
-          \item \textbf{Requirement:} Fill schedule holes automatically without user intervention, ensuring exact duration boundaries and non-repeating content.
-        \end{itemize}
+        {\scriptsize\color{omniSlate}$\bullet$ Handles \texttt{NULL endedAt} on active events and returns HTTP \texttt{409 Conflict} with colliding event details.}
       }
     \end{column}
 
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniPurple}{THE SEEDED REPRODUCIBILITY ENGINE}{
+    \begin{column}{0.46\textwidth}
+      \card{\linewidth}{omniPurple}{2. SEEDED 24/7 EPG AUTO-FILLER ENGINE}{
         \begin{itemize}
-          \setlength\itemsep{1.5mm}
-          \item \textbf{Seeded PRNG Function:} $\text{Seed} = \text{CRC32}(\text{ChannelId}) \oplus \text{EpochDay}$.
-          \item \textbf{Deterministic Output:} Every client querying the same channel and date receives the identical generated grid.
-          \item \textbf{Proportional Time Fitting:} Auto-adjusts filler programs to match exact gap bounds without clipping or drifting.
-          \item \textbf{Zero Storage Overhead:} Generated on-the-fly and cached via in-memory cache, saving database space.
+          \setlength\itemsep{1.2mm}
+          \item \textbf{Zero Empty Days:} Guarantees full 24-hour (00:00--23:59) coverage for every channel and date.
+          \item \textbf{Seeded PRNG:} Keyed on \texttt{(date, channelId)} so every client renders the exact same schedule.
+          \item \textbf{Genre-Aware \& Episode Splitting:} Prioritizes matching channel category, splits long VODs into episodes, and caps daily repeats (\texttt{MAX\_REPEATS\_PER\_ITEM\_PER\_DAY}).
+          \item \textbf{Pure Function:} Zero I/O side effects, verified by 18 unit tests.
         \end{itemize}
       }
     \end{column}
@@ -343,24 +392,24 @@
 \end{frame}
 
 % ============================================================
-% SLIDE 7: Algorithmic Core 3 - Enterprise AI Curator Pipeline
+% SLIDE 8: Algorithmic Core 3 - Enterprise AI Curator & gRPC Audit
 % ============================================================
-\begin{frame}{Algorithmic Contribution 3: Enterprise AI Curator}{LLM Structured Curation with Zod Schema Validation}
+\begin{frame}{AI Broadcast Curator \& gRPC Audit Microservice}{Single-Call GPT-4o + Zod Schema Validation + Binary HTTP/2 gRPC Telemetry}
   \begin{columns}[c]
     \begin{column}{\textwidth}
       \centering
-      \begin{tikzpicture}[scale=0.78, every node/.style={transform shape, align=center}]
-        \node[draw=omniCyan, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=26mm, minimum height=9mm] (in) at (0,0) {Broadcast Media\\{\tiny Title, Description}};
-        \node[draw=omniAmber, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=28mm, minimum height=9mm] (llm) at (3.5,0) {OpenAI GPT-4o\\{\tiny Single Prompt Call}};
-        \node[draw=omniGreen, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=30mm, minimum height=9mm] (zod) at (7.4,0) {Zod Schema Validation\\{\tiny Type-Safe JSON Parse}};
-        \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=28mm, minimum height=9mm] (audit) at (11.2,0) {Prisma Audit Log\\{\tiny Version Provenance}};
+      \begin{tikzpicture}[scale=0.76, every node/.style={transform shape, align=center}]
+        \node[draw=omniCyan, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=26mm, minimum height=8.5mm] (in) at (0,0) {Program Input\\{\tiny Title, Description, Tags}};
+        \node[draw=omniAmber, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=30mm, minimum height=8.5mm] (llm) at (3.6,0) {OpenAI GPT-4o\\{\tiny curator-prompt-v4.0.0}};
+        \node[draw=omniGreen, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=30mm, minimum height=8.5mm] (zod) at (7.4,0) {Zod Schema Check\\{\tiny Strict Type Validation}};
+        \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, font=\scriptsize\bfseries, text=white, minimum width=32mm, minimum height=8.5mm] (audit) at (11.3,0) {AiCuratorReport + gRPC\\{\tiny Provenance \& AuditLog}};
 
         \draw[-{Latex}, omniCyan, line width=1pt] (in) -- (llm);
         \draw[-{Latex}, omniAmber, line width=1pt] (llm) -- (zod);
         \draw[-{Latex}, omniGreen, line width=1pt] (zod) -- (audit);
 
-        \node[draw=omniSlate, dashed, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=omniSlate] (fall) at (7.4,-1.2) {Rule-Based Heuristic Fallback Engine};
-        \draw[-{Latex}, omniSlate, dashed] (zod) -- node[right, font=\tiny]{On Parse Error} (fall);
+        \node[draw=omniSlate, dashed, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=omniSlate] (fall) at (7.4,-1.1) {Local Rule-Based Heuristic Fallback (Sentiment / Compliance / Editorial)};
+        \draw[-{Latex}, omniSlate, dashed] (zod) -- node[right, font=\tiny]{No Key / Parse Fail} (fall);
         \draw[-{Latex}, omniSlate, dashed] (fall) -| (audit);
       \end{tikzpicture}
     \end{column}
@@ -368,129 +417,50 @@
   \vspace{1mm}
   \begin{columns}[t]
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniGreen}{STRICT SCHEMA ENFORCEMENT}{
+      \card{\linewidth}{omniGreen}{CONSOLIDATED AI CURATOR (\texttt{v4.0.0})}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item Merges description, tags, compliance \& suitability into 1 LLM call (\texttt{temp=0.3}, \texttt{top\_p=0.95}), cutting latency by 66\%.
+          \item Records \texttt{promptVersion}, \texttt{aiModelVersion}, \texttt{openaiCallMs} and \texttt{openaiRetries}.
+        \end{itemize}
+      }
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniPurple}{STANDALONE gRPC AUDIT MICROSERVICE}{
+        \begin{itemize}
+          \setlength\itemsep{0.8mm}
+          \item Exposes \texttt{LogAudit}, \texttt{GetLogsByUser}, \texttt{GetLogsByAction}, \texttt{GetLogsByEntity}, \texttt{GetLogStats} over port \texttt{50051}.
+          \item Non-blocking fire-and-forget RPC keeps main API latency unaffected.
+        \end{itemize}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ============================================================
+% SLIDE 9: Web Portal (33 Routes), Live Room (/live/[id]) & Studio (/studio/live)
+% ============================================================
+\begin{frame}{Next.js 15 Web Portal: LiveStream Room \& Live Studio}{33 Routes, 7 Genre-Themed Live Lounges \& 4-Tab Broadcast Control Console}
+  \begin{columns}[t]
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniCyan}{INTERACTIVE LIVESTREAM ROOM (\texttt{/live} \& \texttt{/live/[id]})}{
         \begin{itemize}
           \setlength\itemsep{1mm}
-          \item Validates tags, target demographics, age ratings (G, PG, PG-13, R).
-          \item Generates 3 catchy promotional headlines and EPG summaries.
+          \item \textbf{Live Hub (\texttt{/live}):} Auto-refreshes every 15s, displays total LIVE events \& aggregate CCU pills, trending/newest sort.
+          \item \textbf{7 Genre-Themed Lounges:} Dynamically styles room into \emph{Kids}, \emph{Podcast}, \emph{Music Stage}, \emph{Academy}, \emph{Sports Arena}, \emph{Obsidian Theater} or \emph{Broadcast Lounge}.
+          \item \textbf{Viewer Operations:} \texttt{JoinLobbyCard} entry, \textbf{Cinema Mode} (lights-off focus), multi-item \textbf{lineup program switcher}, real-time Socket.IO chat, \textbf{4 floating reactions} ($\heartsuit$, Fire, Clap, Wow) \& pinned host banner.
         \end{itemize}
       }
     \end{column}
+
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniPurple}{PRODUCTION RELIABILITY \& PROVENANCE}{
+      \card{\linewidth}{omniBlue}{4-TAB WEB LIVE STUDIO CONSOLE (\texttt{/studio/live})}{
         \begin{itemize}
           \setlength\itemsep{1mm}
-          \item Zero downtime: In case of API quota exhaustion, heuristic fallback engages.
-          \item Full version history recorded: Every curation run tracks previous vs new tags.
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 8: gRPC Microservices & Realtime Streaming Ingest
-% ============================================================
-\begin{frame}{Microservices \& Streaming Ingest}{High-Speed Audit Logging \& MediaMTX WebRTC Pipeline}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniPurple}{gRPC AUDIT-LOGGER MICROSERVICE}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Technology:} NestJS Microservice + Protocol Buffers v3 (\texttt{audit.proto}).
-          \item \textbf{Transport:} High-performance binary HTTP/2 transport over port \texttt{50051}.
-          \item \textbf{Zero Main-Thread Blocking:} Asynchronously logs critical events:
-            \begin{itemize}
-              \item Program schedule additions and cancellations.
-              \item Admin user role escalations.
-              \item AI curation executions and manual overrides.
-            \end{itemize}
-          \item \textbf{Cloud Deployment:} Render Cloud Container.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniAmber}{MEDIAMTX REALTIME STREAMING NODE}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Ingest Protocol (WHIP):} WebRTC HTTP Ingestion Protocol allows web studio browsers to broadcast directly from webcams.
-          \item \textbf{Distribution Protocol (WHEP \& HLS):} Sub-500ms ultra-low latency WebRTC streaming with HLS fallback for constrained networks.
-          \item \textbf{Interactive WebSocket Gateway:}
-            \begin{itemize}
-              \item Real-time viewer counter (CCU calculation).
-              \item Floating emoji reactions broadcasting.
-              \item Live chat room pub/sub with message moderation.
-            \end{itemize}
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 9: Web Portal Architecture (Next.js 15 App Router)
-% ============================================================
-\begin{frame}{Web Portal Architecture}{Next.js 15 App Router, React 19 \& Cinema Dark UI}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniBlue}{MODERN NEXT.JS 15 APP ROUTER}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{33 Application Routes:} Clean division into public portal, authenticated studio, and admin console.
-          \item \textbf{Server Component Performance:} Zero client bundle weight for static metadata, EPG grids, and SEO indexing.
-          \item \textbf{Optimized Client Hydration:} Dynamic interactive widgets only where necessary (OmniVideoPlayer, LiveChat).
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniCyan}{KEY USER FACING MODULES}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Broadcast Studio (\texttt{/studio}):} Ingests webcam stream, manages active live events, and edits program schedules.
-          \item \textbf{Live Curator Workspace (\texttt{/studio/curator}):} Interactive AI inspection, tagging overrides, and history comparison.
-          \item \textbf{Admin Telemetry (\texttt{/admin}):} Real-time spline curves monitoring CCU, CDN bandwidth, and audit trails.
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 10: PRN232 Verification & Quality Assurance
-% ============================================================
-\begin{frame}{PRN232 Verification \& Testing}{391 Automated Tests Across Back-End \& Web Portal}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniGreen}{BACK-END AUTOMATED TEST SUITE (163 TESTS)}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Framework:} Node.js native test runner (\texttt{node:test}).
-          \item \textbf{Core Coverage:}
-            \begin{itemize}
-              \item Airtime collision interval edge cases (14 tests).
-              \item Seeded EPG generator determinism (12 tests).
-              \item JWT authentication \& RBAC guard enforcement (38 tests).
-              \item AI Curator fallback and validation error handling (19 tests).
-            \end{itemize}
-          \item \textbf{Status:} 163/163 PASS (100\% Success Rate).
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniBlue}{WEB PORTAL \& E2E TESTING (228+8 TESTS)}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Component Unit Testing:} 228 Vitest tests validating UI components, forms, and client API states.
-          \item \textbf{End-to-End Browser Testing:} 8 comprehensive Playwright E2E scenarios with verified screenshots:
-            \begin{itemize}
-              \item Authentication flow (Login, Register, Invalid creds).
-              \item Channel catalog browsing \& category filtering.
-              \item EPG 24-hour timeline rendering and live viewing.
-            \end{itemize}
-          \item \textbf{Status:} 100\% Verified in CI/CD Pipeline.
+          \item \textbf{Tab 1 (Curated Live):} Pick 1 or more VOD recordings (\texttt{lineup}) with Anti-Piracy Guard \& atomic transition.
+          \item \textbf{Tab 2 (Camera / Screen / Upload):} \texttt{WebcamLiveBroadcaster} (WebRTC WHIP to MediaMTX), Screen Share (\texttt{getDisplayMedia}), or \texttt{UploadDropzone} (Signed Direct-to-Cloudinary upload with speed/ETA \& canvas thumbnail).
+          \item \textbf{Tab 3 (Verified Public Catalog):} 1-click import of verified HLS/MP4 streams with server \texttt{HEAD} probe.
+          \item \textbf{Tab 4 (Host Console):} Broadcast pinned announcements (\texttt{broadcaster:message}) \& stop live (\texttt{keepAsVod}).
         \end{itemize}
       }
     \end{column}
@@ -510,160 +480,38 @@
   \end{tikzpicture}
   \begin{center}
     \vspace{10mm}
-    {\scriptsize\bfseries\color{omniCyan}MODULE 2 OF 2}\\[3mm]
+    {\scriptsize\bfseries\color{omniCyan}MODULE 2 OF 2 $\bullet$ FPTU QUY NHON AI CAMPUS --- FU CAHATA}\\[3mm]
     {\Huge\bfseries\color{white}PART 2: PRM393}\\[3mm]
-    {\Large\bfseries\color{omniPurple}Mobile Applications Development}\\[4mm]
+    {\Large\bfseries\color{omniPurple}Mobile Applications Development (Flutter 3.x \& Dart)}\\[4mm]
     {\color{omniBorder}\rule{0.5\linewidth}{1pt}}\\[4mm]
-    {\footnotesize\color{omniSlate}Flutter 3.x $\bullet$ Dart $\bullet$ Clean Architecture $\bullet$ BLoC Pattern $\bullet$ Offline SQLite $\bullet$ OmniPlayer}
+    {\footnotesize\color{omniSlate}31 Screens $\bullet$ 12 BLoCs $\bullet$ OmniPlayer + LAN Discovery $\bullet$ Mobile Live Studio \& Recorder $\bullet$ Offline SQLite}
   \end{center}
 \end{frame}
 }
 
 % ============================================================
-% SLIDE 11: Mobile Architecture & Clean Architecture Pattern
+% SLIDE 11: Mobile Architecture & 31-Screen Hierarchy
 % ============================================================
-\begin{frame}{Mobile Architecture \& Patterns}{Four-Tier Clean Architecture with 12 BLoC State Machines}
+\begin{frame}{Mobile Clean Architecture \& 31-Screen Hierarchy}{4-Tier Clean Architecture, 12 BLoC/Cubits \& Declarative GoRouter Topology}
   \begin{columns}[t]
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniPurple}{FOUR-TIER CLEAN ARCHITECTURE}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{1. Core Layer:} Dependency Injection via \texttt{get\_it}, HTTP Dio client with JWT interceptors, Theme constants, Network info.
-          \item \textbf{2. Data Layer:} Repositories, DTO models with JSON serialization, local SQLite \texttt{DatabaseHelper}.
-          \item \textbf{3. Logic Layer:} 12 BLoC and Cubit modules managing asynchronous reactive state streams.
-          \item \textbf{4. Presentation Layer:} 31 screens, modular UI components, OmniPlayer, GoRouter navigation.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniCyan}{REACTIVE BLOC STATE MANAGEMENT}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Predictable State Machine:} Strict separation between Events, Business Logic, and Immutable UI States.
-          \item \textbf{12 Specialized BLoCs:}
-            \begin{itemize}
-              \item \texttt{AuthBloc}: JWT session, biometric token storage.
-              \item \texttt{ChannelsBloc} \& \texttt{EpgBloc}: Catalog \& grid state.
-              \item \texttt{WatchlistBloc}: Offline bookmarking \& sync.
-              \item \texttt{OmniPlayerCubit}: Streaming playback control.
-              \item \texttt{LiveChatCubit}: WebSocket messaging \& donation.
-            \end{itemize}
-          \item \textbf{Zero Memory Leaks:} Proper stream lifecycle closure.
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 12: Mobile Contribution 1 - Offline-First SQLite Engine
-% ============================================================
-\begin{frame}{Mobile Contribution 1: Offline-First SQLite Engine}{Local Caching with Asynchronous Mutation Replay Queue}
-  \begin{columns}[t]
-    \begin{column}{0.52\textwidth}
-      \card{\linewidth}{omniGreen}{DUAL-LAYER DATA SYNCHRONIZATION}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Offline Availability:} Users can browse cached channels, read EPG schedules, and check program details with zero connectivity.
-          \item \textbf{Local SQLite Schema:}
-            \begin{itemize}
-              \item \texttt{cached\_channels}: Fast cold-start catalog display.
-              \item \texttt{cached\_programs}: 24-hour schedule storage.
-              \item \texttt{watchlist}: Saved user favorites.
-              \item \texttt{offline\_mutations}: Pending queued mutations.
-            \end{itemize}
-          \item \textbf{Advance Local Alarms:} Exact 15-minute advance broadcast notification alerts scheduled locally via OS alarm manager.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.44\textwidth}
-      \card{\linewidth}{omniTeal}{MUTATION REPLAY QUEUE}{
-        \begin{center}
-        \begin{tikzpicture}[scale=0.72, every node/.style={transform shape, align=center}]
-          \node[draw=omniPurple, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=white] (act) at (0,2.1) {User Action Offline\\(Bookmark/Watchlist)};
-          \node[draw=omniAmber, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=white] (sql) at (0,1.1) {Persist to SQLite\\\texttt{pending\_mutations}};
-          \node[draw=omniCyan, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=white] (net) at (0,0.1) {Network Listener\\Detects Reconnection};
-          \node[draw=omniGreen, fill=omniDark, rounded corners=3pt, font=\tiny\bfseries, text=white] (sync) at (0,-0.9) {FIFO Replay Queue\\Dispatches to NestJS API};
-
-          \draw[-{Latex}, omniSlate] (act) -- (sql);
-          \draw[-{Latex}, omniSlate] (sql) -- (net);
-          \draw[-{Latex}, omniGreen, line width=1pt] (net) -- (sync);
-        \end{tikzpicture}
-        \end{center}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 13: Mobile Contribution 2 - OmniPlayer & Dynamic LAN Discovery
-% ============================================================
-\begin{frame}{Mobile Contribution 2: OmniPlayer Streaming}{Multi-Engine WebRTC/HLS with Dynamic In-App LAN Discovery}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniAmber}{MULTI-ENGINE OMNIPLAYER}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Ultra-Low Latency WebRTC:} Directly connects to MediaMTX WHEP endpoint for real-time live video (<500ms).
-          \item \textbf{Adaptive HLS Fallback:} Seamlessly falls back to HLS \texttt{.m3u8} stream if WebRTC signaling fails.
-          \item \textbf{Mobile Controls:} Aspect ratio toggling (16:9, fit, cover), Picture-in-Picture (PiP), and hardware-accelerated rendering.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniCyan}{DYNAMIC LAN HOST DISCOVERY}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{The Mobile Testing Challenge:} Android physical devices cannot reach \texttt{localhost:8888} of the development machine.
-          \item \textbf{Dynamic In-App Configuration:}
-            \begin{itemize}
-              \item Built-in host discovery sheet allows overriding MediaMTX host IP on-the-fly without rebuilding APK.
-              \item Automatically resolves host IP for zero-fallback camera playback during live grading and testing.
-            \end{itemize}
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 14: Mobile Contribution 3 - Interactive Real-Time Ecosystem
-% ============================================================
-\begin{frame}{Mobile Contribution 3: Interactive Streaming}{Live Chat, Floating Particle Reactions \& Virtual Donations}
-  \begin{columns}[t]
-    \begin{column}{0.32\textwidth}
-      \card{\linewidth}{omniCyan}{REAL-TIME LIVE CHAT}{
+      \card{\linewidth}{omniPurple}{4-TIER CLEAN ARCHITECTURE \& 12 BLOCS}{
         \begin{itemize}
           \setlength\itemsep{1mm}
-          \item Socket.IO client connected to \texttt{/live} gateway.
-          \item Fast optimistic message rendering.
-          \item User avatar, role badges (VIP, Mod, Admin).
-          \item System announcement broadcast banners.
+          \item \textbf{Presentation (31 Screens, 22 Widgets):} 6-tab \texttt{MainNavigationShell} (\texttt{Home}, \texttt{Channels}, \texttt{Schedule}, \texttt{Saved}, \texttt{History}, \texttt{Profile}) + Auth, Live, Studio \& Admin clusters.
+          \item \textbf{Logic (12 BLoC/Cubits):} \texttt{AuthBloc}, \texttt{ChannelBloc}, \texttt{EpgBloc}, \texttt{WatchlistBloc}, \texttt{LiveEventsCubit}, \texttt{ThemeCubit}, \texttt{LanguageCubit} with \texttt{droppable}/\texttt{restartable} transformers.
+          \item \textbf{Data \& Core:} 10 Repositories, Dio \texttt{AuthInterceptor} (401 queue lock \& refresh), SQLite \texttt{omnicast\_local.db}.
         \end{itemize}
       }
     \end{column}
 
-    \begin{column}{0.32\textwidth}
-      \card{\linewidth}{omniPurple}{FLOATING REACTIONS}{
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniGreen}{OFFLINE-FIRST SQLITE \& LOCAL ALARMS}{
         \begin{itemize}
           \setlength\itemsep{1mm}
-          \item GPU-accelerated canvas particle physics.
-          \item Tap reaction button produces floating hearts, fires, claps.
-          \item Real-time broadcast sync across all connected viewers.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.32\textwidth}
-      \card{\linewidth}{omniAmber}{SANDBOX LIVE DONATIONS}{
-        \begin{itemize}
-          \setlength\itemsep{1mm}
-          \item 6 Virtual Gift Tiers (Coffee, Mic, Camera, Trophy, Star, Crown).
-          \item Mock payment modal with instant celebratory confetti.
-          \item 100\% risk-free educational sandbox gateway.
+          \item \textbf{Offline Watchlist \& EPG Cache:} Reads seamlessly from local SQLite when network drops.
+          \item \textbf{Pending Mutation Queue (\texttt{pending\_ops}):} Queues offline add/remove actions and replays FIFO upon reconnection.
+          \item \textbf{15-Minute Advance Reminders:} Schedules exact local OS notifications 15 minutes before a bookmarked show airs.
         \end{itemize}
       }
     \end{column}
@@ -671,28 +519,30 @@
 \end{frame}
 
 % ============================================================
-% SLIDE 15: Mobile Navigation, UI/UX & PRM393 Testing
+% SLIDE 12: Mobile LiveWatchScreen, OmniPlayer & LAN Host Discovery
 % ============================================================
-\begin{frame}{Navigation \& Verification}{GoRouter 31 Screens \& 91 Automated Tests (100\% Pass)}
+\begin{frame}{Mobile LiveStream Experience: \texttt{LiveWatchScreen} \& \texttt{OmniPlayer}}{Wi-Fi LAN Host Discovery, Zero-Cartoon Retry \& 6 Interactive Live Operations}
   \begin{columns}[t]
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniBlue}{GOROUTER DECLARATIVE ROUTING}{
+      \card{\linewidth}{omniAmber}{MULTI-ENGINE \texttt{OmniPlayer} \& LAN DISCOVERY}{
         \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{31 Distinct Screens:} Spanning Auth, Catalog, EPG, Player, Creator Studio, Watchlist, Settings.
-          \item \textbf{Auth Guard Redirects:} Automatic redirection if JWT token expires or required roles are missing.
-          \item \textbf{Cinema Dark Aesthetic:} High-contrast UI optimized for OLED screens, haptic feedback on touch gestures.
+          \setlength\itemsep{1mm}
+          \item \textbf{Automatic Wi-Fi LAN Discovery (\texttt{LanDiscoveryService}):} Scans the local \texttt{/24} subnet on port \texttt{8888} to auto-replace \texttt{localhost}/\texttt{10.0.2.2} with the real MediaMTX host IP on physical phones.
+          \item \textbf{Zero-Cartoon-Fallback Live Retry:} For live camera feeds (\texttt{/live/webcam\_*}), performs up to 10 exponential-backoff retries without falling back to sample VODs.
+          \item \textbf{Direct Drive \& VIP Paywall:} Rewrites Google Drive URLs to \texttt{drive.usercontent.google.com} and enforces \texttt{SubscriptionPaymentSheet} on VIP streams.
         \end{itemize}
       }
     \end{column}
 
     \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniGreen}{91 AUTOMATED TESTS (100\% PASS)}{
+      \card{\linewidth}{omniCyan}{\texttt{LiveWatchScreen} (\texttt{/live/:id}) OPERATIONS}{
         \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{Unit Tests (56 tests):} BLoC state transition testing (\texttt{bloc\_test}), SQLite repository operations, DTO serialization.
-          \item \textbf{Widget Tests (35 tests):} UI component rendering, button interactions, mock network failure handlers.
-          \item \textbf{CI/CD Integration:} Tested automatically on every git commit via GitHub Actions.
+          \setlength\itemsep{1mm}
+          \item \textbf{1. Lobby \& Live CCU:} \texttt{LiveJoinPromptBanner} + real-time \texttt{live:viewerCount} badge.
+          \item \textbf{2. Threaded Live Chat \& Moderation:} Nested replies (\texttt{parentId}), comment likes \& instant \texttt{STAFF}/\texttt{ADMIN} deletion (\texttt{chat:delete}).
+          \item \textbf{3. 0ms Haptic Floating Reactions:} \texttt{HapticFeedback.lightImpact()} + optimistic delta + rising particle overlay ($\heartsuit$, Fire, Clap, Wow/Party).
+          \item \textbf{4. 6-Tier Super Chat (\texttt{LiveDonationModal}):} Preset gift tiers, custom message \& celebratory banner.
+          \item \textbf{5. Pinned Host Toast \& Instant Program Switch:} Handles \texttt{broadcaster:message} \& \texttt{live:program:changed}.
         \end{itemize}
       }
     \end{column}
@@ -700,36 +550,69 @@
 \end{frame}
 
 % ============================================================
-% PART 3: SYNERGY & DEPLOYMENT
+% SLIDE 13: Mobile Live Studio (4 Tabs) & MobileStudioRecorderScreen
 % ============================================================
-\section{Synergy \& Deployment}
-\begin{frame}{Cross-Platform Synergy Matrix}{Side-by-Side Comparison: PRN232 Back-End vs PRM393 Mobile}
+\begin{frame}{Mobile Live Studio \& Field Reporter Camera Viewfinder}{\texttt{LiveStudioScreen} (4 Tabs) \& \texttt{MobileStudioRecorderScreen} (WebRTC WHIP)}
+  \begin{columns}[t]
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniPurple}{\texttt{LiveStudioScreen} (4 BROADCAST TABS)}{
+        \begin{itemize}
+          \setlength\itemsep{1.2mm}
+          \item \textbf{Tab 1 --- Curated Live:} Select channel, title/description, and pick 1 or more VOD recordings (\texttt{lineup}) to go live immediately.
+          \item \textbf{Tab 2 --- Self-Record \& Upload:} Launch \texttt{MobileStudioRecorderScreen} or upload device video to Cloudinary via signed parameters (\texttt{IMMEDIATE}, \texttt{SCHEDULED}, \texttt{PRIVATE}).
+          \item \textbf{Tab 3 --- Verified Public Catalog:} Browse \& 1-click import verified HLS/MP4 streams or custom URLs.
+          \item \textbf{Tab 4 --- Host Console:} Send pinned announcements (\texttt{broadcaster:message}) \& stop active broadcast (\texttt{keepAsVod}).
+        \end{itemize}
+      }
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \card{\linewidth}{omniGreen}{\texttt{MobileStudioRecorderScreen} VIEWFINDER}{
+        \begin{itemize}
+          \setlength\itemsep{1.2mm}
+          \item \textbf{Dual Broadcast Modes:}
+            \begin{itemize}
+              \item \texttt{Push-to-Live}: Real-time WebRTC WHIP streaming via \texttt{WebRTCPublisherService} with flashing red \texttt{ON-AIR} tally border.
+              \item \texttt{Record-then-Live}: 1080p MP4 capture + post-record \textbf{Master QC Review} player.
+            \end{itemize}
+          \item \textbf{Professional Broadcast HUD:} Real-time \textbf{SMPTE Timecode} (\texttt{HH:MM:SS:FF}), dual-channel \textbf{Stereo VU Audio Meter}, \textbf{Rule-of-Thirds} \& \textbf{Safe Area} guides, \textbf{Lower Third} overlay, \texttt{1x--5x} zoom, torch \& auto-scrolling \textbf{Reporter Teleprompter HUD}.
+        \end{itemize}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ============================================================
+% PART 3: SYNERGY, VERIFICATION & DEPLOYMENT
+% ============================================================
+\section{Synergy \& Verification}
+\begin{frame}{Cross-Platform Synergy \& Verification Matrix}{142,897 Physical LOC $\bullet$ 482/482 Automated Tests (100\% Pass)}
   \begin{center}
   \footnotesize
-  \renewcommand{\arraystretch}{1.2}
-  \begin{tabularx}{0.95\linewidth}{lXX}
+  \renewcommand{\arraystretch}{1.18}
+  \begin{tabularx}{0.96\linewidth}{lXX}
     \toprule
-    \textbf{Dimension} & \textbf{\color{omniCyan}PRN232 (Back-End \& Web)} & \textbf{\color{omniPurple}PRM393 (Mobile App)} \\
+    \textbf{Dimension} & \textbf{\color{omniCyan}PRN232 (Back-End, gRPC \& Web)} & \textbf{\color{omniPurple}PRM393 (Flutter Mobile Client)} \\
     \midrule
-    \textbf{Core Framework} & NestJS 10 + Next.js 15 App Router & Flutter 3.x + Dart 3 \\
-    \textbf{Architecture} & Layered Clean Modules + gRPC & 4-Tier Clean Architecture + BLoC \\
-    \textbf{Database / Cache} & Supabase PostgreSQL (21 models) & SQLite Local (\texttt{sqflite}) + SharedPrefs \\
-    \textbf{Streaming Role} & Ingest (WHIP), Signaling, EPG & Player (WHEP/HLS), Floating UI \\
-    \textbf{Realtime Engine} & Socket.IO Gateway Server (\texttt{/live}) & Socket.IO Client + Particle Canvas \\
-    \textbf{Code Volume} & \textbf{79,568 Physical LOC} & \textbf{53,922 Physical LOC} \\
-    \textbf{Automated Tests} & \textbf{391 Tests} (163 API + 228 Web) & \textbf{91 Tests} (Unit + Widgets) \\
-    \textbf{Verification Rate} & \textbf{100\% PASS} & \textbf{100\% PASS} \\
+    \textbf{Core Stack} & NestJS 10 + gRPC + Next.js 15 (33 Routes) & Flutter 3.x + Dart 3 (31 Screens, 22 Widgets) \\
+    \textbf{Architecture} & 19 Domain Modules + Standalone gRPC Service & 4-Tier Clean Architecture + 12 BLoC/Cubits \\
+    \textbf{Database / Cache} & Supabase PostgreSQL (21 Prisma models) & SQLite (\texttt{omnicast\_local.db} + \texttt{pending\_ops}) \\
+    \textbf{LiveStream \& Studio} & 7-Theme Live Room + 4-Tab Web Studio (WHIP) & \texttt{LiveWatchScreen} + 4-Tab Studio + ENG Recorder \\
+    \textbf{Realtime Operations} & Socket.IO \texttt{/live}: Chat, Emoji, Super Chat, Switch & 0ms Haptic Emoji, 6-Tier Super Chat, LAN Scan \\
+    \textbf{Code Volume} & \textbf{79,568 Physical LOC} & \textbf{53,922 Physical LOC} (+ 9,407 Ops/Docs) \\
+    \textbf{Automated Tests} & \textbf{391 Tests} (163 Backend + 228 Web Vitest) & \textbf{91 Tests} (56 Unit + 35 Widget Tests) \\
+    \textbf{Pass Rate} & \textbf{\color{omniGreen}100\% PASS} (+ 8 Playwright E2E) & \textbf{\color{omniGreen}100\% PASS} \\
     \bottomrule
   \end{tabularx}
   \end{center}
   \vspace*{-1mm}
   \begin{center}
-    \scriptsize\color{omniGreen}\textbf{TOTAL SYSTEM SCALE: 142,897 Lines of Code $\bullet$ 482 Automated Tests $\bullet$ 100\% Pass}
+    \scriptsize\color{omniGreen}\textbf{TOTAL SYSTEM SCALE: 142,897 Lines of Code $\bullet$ 482/482 Automated Tests PASS $\bullet$ Live on Vercel \& Supabase}
   \end{center}
 \end{frame}
 
 % ============================================================
-% SLIDE 17: Live Production Deployment & Demo Accounts
+% SLIDE 15: Live Production Deployment & Demo Accounts
 % ============================================================
 \begin{frame}{Live Deployment \& Evaluation}{Production Cloud Infrastructure \& Pre-Seeded Test Credentials}
   \begin{columns}[t]
@@ -757,9 +640,9 @@
           \setlength\itemsep{1.5mm}
           \item \textbf{Admin Account (Full RBAC):}\\
             \texttt{admin@omnicast.tv}
-          \item \textbf{Staff Account (Studio Broadcaster):}\\
+          \item \textbf{Staff Account (Live Studio Broadcaster):}\\
             \texttt{staff@omnicast.tv}
-          \item \textbf{Viewer Account (Consumer):}\\
+          \item \textbf{Viewer Account (Live Chat \& Super Chat):}\\
             \texttt{viewer1@omnicast.tv}
         \end{itemize}
       }
@@ -768,37 +651,7 @@
 \end{frame}
 
 % ============================================================
-% SLIDE 18: Project Milestones & Lessons Learned
-% ============================================================
-\begin{frame}{Project Milestones \& Lessons Learned}{Engineering Takeaways from Joint Capstone Implementation}
-  \begin{columns}[t]
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniCyan}{KEY TECHNICAL ACHIEVEMENTS}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item Successfully bridged complex broadcast engineering with cloud-native web and native mobile clients.
-          \item Eliminated airtime overlap risks through atomic SQL interval calculation.
-          \item Solved the 24/7 dead air dilemma using deterministic seeded pseudo-random filling.
-          \item Provided seamless offline resilience for mobile users through SQLite mutation queuing.
-        \end{itemize}
-      }
-    \end{column}
-
-    \begin{column}{0.48\textwidth}
-      \card{\linewidth}{omniAmber}{LESSONS LEARNED \& FUTURE EXTENSIONS}{
-        \begin{itemize}
-          \setlength\itemsep{1.2mm}
-          \item \textbf{gRPC Efficiency:} Binary proto serialization drastically reduces latency compared to conventional REST.
-          \item \textbf{BLoC Event Isolation:} Strict event streams prevent UI stuttering during heavy network calls.
-          \item \textbf{Future Work:} Distributed MediaMTX clustering across edge nodes, AI auto-dubbing, and adaptive multi-bitrate transcoding.
-        \end{itemize}
-      }
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ============================================================
-% SLIDE 19: Conclusion & Q&A
+% SLIDE 16: Conclusion & Q&A
 % ============================================================
 \section{Conclusion}
 {
@@ -811,15 +664,17 @@
     \draw[omniBorder, line width=1.2pt] ($(current page.north west) + (12mm,-12mm)$) rectangle ($(current page.south east) + (-12mm,12mm)$);
   \end{tikzpicture}
   \begin{center}
-    \vspace{8mm}
-    {\Huge\bfseries\color{white}Thank You for Your Attention!}\\[3mm]
-    {\large\bfseries\color{omniCyan}OmniCast: Enterprise Media \& Broadcast Intelligence Network}\\[4mm]
-    {\color{omniBorder}\rule{0.6\linewidth}{1pt}}\\[5mm]
+    \vspace{4mm}
+    {\scriptsize\bfseries\color{omniCyan}FPTU QUY NHON AI CAMPUS --- FU CAHATA $\bullet$ MENTOR: THẦY HUỲNH VANG}\\[2mm]
+    {\Huge\bfseries\color{white}Thank You for Your Attention!}\\[2mm]
+    {\large\bfseries\color{omniCyan}OmniCast: Enterprise Media \& Broadcast Intelligence Network}\\[3mm]
+    {\color{omniBorder}\rule{0.65\linewidth}{1pt}}\\[3mm]
 
-    {\normalsize\bfseries\color{white}We are ready for Live Demonstration \& Committee Q\&A}\\[6mm]
+    {\footnotesize\color{white}\textbf{Nguyễn Bình An} \ $\bullet$ \ \textbf{Trần Thanh Sơn} (\texttt{QE170080}) \ $\bullet$ \ \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}) \ $\bullet$ \ \textbf{Đồng Hoàng Nguyên}}\\[3mm]
+    {\normalsize\bfseries\color{omniAmber}We are ready for Live Demonstration \& Committee Q\&A}\\[4mm]
 
     \begin{tikzpicture}
-      \node[draw=omniCyan, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize] (w1) at (-4,0) {
+      \node[draw=omniCyan, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize] (w1) at (-4.2,0) {
         \textbf{Web:} \texttt{omnicast-fe.vercel.app}
       };
       \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize] (w2) at (0,0) {
@@ -829,9 +684,9 @@
         \textbf{GitHub:} \texttt{github.com/TomOutfit/OmniCast}
       };
     \end{tikzpicture}
-    \vspace{5mm}
+    \vspace{4mm}
 
-    {\scriptsize\color{omniSlate}Department of Software Engineering $\bullet$ FPT University $\bullet$ Fall 2026}
+    {\scriptsize\color{omniSlate}FPTU Quy Nhon AI Campus --- FU Cahata $\bullet$ Faculty of Information Technology, FPT University $\bullet$ Fall 2026}
   \end{center}
 \end{frame}
 }

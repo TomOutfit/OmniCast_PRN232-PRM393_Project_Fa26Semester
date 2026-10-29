@@ -1,0 +1,115 @@
+% ============================================================
+% PRM393 - Section 3: State Management with BLoC (Bilingual)
+% ============================================================
+\section{\bi{Quản lý trạng thái với mô hình BLoC}{State Management with BLoC}}
+\label{sec:bloc}
+
+\bi{
+OmniCast Mobile lựa chọn mẫu thiết kế BLoC (\emph{Business Logic Component})
+làm nền tảng quản lý trạng thái chính. BLoC tận dụng các luồng phản ứng
+(Reactive Streams) trong Dart để thực thi luồng dữ liệu một chiều nghiêm ngặt
+(Unidirectional Data Flow): giao diện phát sinh sự kiện (\texttt{Event}),
+BLoC xử lý logic nghiệp vụ và phát ra trạng thái (\texttt{State}) tương ứng.
+}{
+OmniCast Mobile adopts the Business Logic Component (BLoC) architectural
+pattern as its core state management strategy. BLoC leverages reactive Dart
+Streams to enforce strict unidirectional data flow: the UI dispatches
+an \texttt{Event}, the BLoC processes asynchronous business logic, and
+emits an immutable \texttt{State} reflecting the outcome.
+}
+
+\subsection{\bi{Danh mục 12 Module BLoC / Cubit}{Inventory of the 12 BLoC / Cubit Modules}}
+
+\bi{
+Toàn bộ logic nghiệp vụ của ứng dụng được chia thành 12 module độc lập đặt
+trong thư mục \texttt{lib/logic/}:
+}{
+The application's business logic is modularized into 12 dedicated units
+situated under \texttt{lib/logic/}:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{AuthBloc:} \bi{Quản lý trạng thái phiên đăng nhập, đăng ký,
+  đăng xuất và làm mới token ngầm.}{Manages user authentication lifecycle,
+  login, registration, logout, and silent token rotation.}
+  \item \textbf{WatchlistBloc:} \bi{Điều phối danh sách theo dõi, tích hợp
+  đồng bộ cơ sở dữ liệu SQLite ngoại tuyến và lên lịch thông báo nhắc
+  nhở.}{Coordinates personal watchlist items, offline SQLite cache syncing,
+  and local notification scheduling.}
+  \item \textbf{EpgBloc:} \bi{Tải và lọc lịch phát sóng EPG theo kênh và
+  theo ngày được chọn, áp dụng cơ chế điền lịch 24/7.}{Fetches and filters
+  electronic programme guides per channel and date, consuming 24/7 seeded
+  filler data.}
+  \item \textbf{ChannelBloc:} \bi{Quản lý danh mục kênh truyền hình, theo
+  dõi kênh yêu thích và lọc kênh theo thể loại.}{Maintains broadcast channel
+  catalogue, channel subscriptions, and category filters.}
+  \item \textbf{LiveBloc:} \bi{Điều khiển trạng thái phát sóng trực tiếp,
+  đồng bộ URL luồng MediaMTX và trạng thái phát lại.}{Governs live broadcast
+  playback, dynamic MediaMTX stream URL resolution, and player state.}
+  \item \textbf{AiCuratorBloc:} \bi{Giao tiếp với dịch vụ trợ lý biên tập
+  AI, kiểm tra tuân thủ đạo đức phát thanh và gợi ý nội dung.}{Interfaces
+  with the AI curator service, validating broadcasting compliance and
+  generating editorial suggestions.}
+  \item \textbf{ProgramsBloc:} \bi{Quản lý danh sách chương trình gốc, chi
+  tiết tập phát và siêu dữ liệu gắn thẻ.}{Handles program catalogues, episode
+  breakdowns, and production tags.}
+  \item \textbf{RecordingsBloc:} \bi{Truy xuất kho video bản ghi đã phát
+  sóng (VOD).}{Queries published on-demand broadcast recordings (VOD).}
+  \item \textbf{SearchBloc:} \bi{Tìm kiếm tổng hợp trên kênh, chương trình
+  và bản ghi với cơ chế chống rung (debounce).}{Executes cross-entity
+  searches across channels, events, and recordings with input debouncing.}
+  \item \textbf{NotificationsBloc:} \bi{Quản lý thông báo trong ứng dụng và
+  đồng bộ thông báo đẩy Firebase Cloud Messaging.}{Handles in-app alerts and
+  synchronizes Firebase Cloud Messaging push payloads.}
+  \item \textbf{NewsletterBloc:} \bi{Đăng ký và quản lý bản tin thông tin
+  kênh.}{Manages channel newsletter subscriptions.}
+  \item \textbf{StreamsBloc:} \bi{Điều phối danh sách các luồng phát đang
+  hoạt động trên toàn hệ thống.}{Aggregates currently active broadcast
+  transmissions across all channels.}
+\end{enumerate}
+
+\subsection{\bi{Biến đổi luồng đồng thời (Concurrency Transformers)}{Concurrency Transformers}}
+
+\bi{
+Để xử lý các tương tác người dùng phức tạp, OmniCast Mobile tích hợp gói
+\texttt{bloc\_concurrency} nhằm kiểm soát cách các sự kiện cùng loại được xử
+lý:
+}{
+To manage high-frequency user interactions, OmniCast Mobile incorporates
+the \texttt{bloc\_concurrency} package, enforcing custom event transformers:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{droppable:} \bi{Áp dụng cho các thao tác gửi dữ liệu nhạy
+  cảm như thêm vào Watchlist hoặc quyên góp. Nếu sự kiện trước đó đang trong
+  quá trình xử lý (chờ mạng), các sự kiện kích hoạt liên tiếp sẽ bị bỏ qua
+  nhằm chống việc gửi trùng lặp (anti-double-submission).}{%
+  Applied to mutations like watchlist toggling or live donation dispatch. If
+  an operation is already in-flight, subsequent duplicate user taps are
+  safely dropped to prevent idempotent violations.}
+
+  \item \textbf{restartable:} \bi{Áp dụng cho thanh tìm kiếm trong
+  \texttt{SearchBloc}. Khi người dùng gõ ký tự mới, tác vụ tìm kiếm cho chuỗi
+  ký tự cũ sẽ bị hủy ngay lập tức và tiến trình tìm kiếm mới được khởi chạy,
+  giúp tiết kiệm băng thông và tài nguyên CPU.}{%
+  Applied to \texttt{SearchBloc}. When a new query is typed, previous
+  pending network requests are immediately cancelled, giving precedence to
+  the latest user input.}
+\end{itemize}
+
+\subsection{\bi{Loại bỏ việc vẽ lại không cần thiết qua Equatable}{Eliminating Redundant Rebuilds via Equatable}}
+
+\bi{
+Mọi lớp Trạng thái (\texttt{State}) đều kế thừa từ \texttt{Equatable}. Khi
+BLoC phát ra một đối tượng trạng thái mới, Flutter BLoC sẽ so sánh sâu các
+trường giá trị (\emph{value-based comparison}) thay vì so sánh tham chiếu
+vùng nhớ. Nếu giá trị không thay đổi, widget sẽ không bị kích hoạt vẽ lại
+(\texttt{rebuild}), duy trì tỷ lệ khung hình 60fps mượt mà ngay cả trên các
+thiết bị cấu hình thấp.
+}{
+All state representations extend the \texttt{Equatable} class. Whenever a
+BLoC emits a state instance, Flutter BLoC performs deep value-based equality
+checks instead of default object reference comparisons. Unchanged state
+emissions are discarded at the presentation boundary, completely avoiding
+redundant widget rebuilds and maintaining a fluid 60fps rendering budget.
+}

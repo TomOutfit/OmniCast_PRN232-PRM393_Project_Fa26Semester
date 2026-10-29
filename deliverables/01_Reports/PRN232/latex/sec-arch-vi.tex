@@ -1,5 +1,5 @@
 % ============================================================
-% PRN232 - Section 3: System Architecture (Vietnamese)
+% PRN232 - Section 3: System Architecture (Vietnamese & English)
 % ============================================================
 \section{\bi{Kiến trúc hệ thống}{System Architecture}}
 \label{sec:arch}
@@ -8,29 +8,29 @@
 
 \bi{
 Hệ thống được tổ chức theo bốn tầng, mỗi tầng chỉ giao tiếp với tầng
-ngay bên dưới. Tầng trình bày gồm cổng web Next.js 15 và ứng dụng di
-động Flutter; tầng API là một tiến trình NestJS duy nhất với 19 module
-nghiệp vụ; tầng thời gian thực xử lý phát sóng trực tiếp, chat và tín
-hiệu WebRTC; tầng dữ liệu gồm PostgreSQL, dịch vụ phát trực tuyến
-MediaMTX, dịch vụ lưu trữ Cloudinary và các API bên ngoài.
+ngay bên dưới. Tầng trình bày gồm cổng web Next.js 15 (33 route) và ứng dụng di
+động Flutter (31 màn hình); tầng API là một tiến trình NestJS duy nhất với 19 module
+nghiệp vụ và hơn 140 endpoint REST; tầng thời gian thực xử lý phát sóng trực tiếp (LiveStream), điều phối phòng Studio, trò chuyện, cảm xúc nổi, quyên góp Super Chat và tín
+hiệu WebRTC; tầng dữ liệu gồm PostgreSQL (21 model Prisma), máy chủ phát trực tuyến
+MediaMTX, dịch vụ lưu trữ đám mây Cloudinary và các API bên ngoài.
 }{
 The system is organised into four layers, each communicating only with
 the layer immediately below it. The presentation layer comprises the
-Next.js 15 web portal and the Flutter mobile application; the API
-layer is a single NestJS process with 19 business modules; the
-real-time layer handles live broadcasting, chat and WebRTC signalling;
-and the data layer consists of PostgreSQL, the MediaMTX streaming
+Next.js 15 web portal (33 routes) and the Flutter mobile application (31 screens); the API
+layer is a single NestJS process with 19 business modules and 140+ REST endpoints; the
+real-time layer handles live broadcasting (LiveStream), studio room orchestration, live chat, floating reactions, Super Chat donations and WebRTC signalling;
+and the data layer consists of PostgreSQL (21 Prisma models), the MediaMTX streaming
 server, Cloudinary storage and external APIs.
 }
 
 \begin{figure*}[t]
 \centering
 \fitfull{\figArchitecture}
-\caption{\bi{Kiến trúc phân tầng tổng thể của OmniCast. Cả cổng web và
-ứng dụng di động đều tiêu thụ cùng một API REST; nhật ký kiểm toán
+\caption{\bi{Kiến trúc phân tầng tổng thể của OmniCast. Cả cổng web Next.js 15 và
+ứng dụng di động Flutter đều tiêu thụ cùng một API REST và cổng WebSocket \texttt{/live}; nhật ký kiểm toán
 được tách sang microservice gRPC riêng.}{Overall layered architecture
-of OmniCast. Both the web portal and the mobile application consume
-the same REST API; audit logging is separated into a dedicated gRPC
+of OmniCast. Both the Next.js 15 web portal and the Flutter mobile application consume
+the same REST API and \texttt{/live} WebSocket gateway; audit logging is separated into a dedicated gRPC
 microservice.}}
 \label{fig:architecture}
 \end{figure*}
@@ -53,6 +53,37 @@ programmes on the same channel must not overlap" is enforced in
 \texttt{ProgramsService.checkScheduleConflict} and behaves identically
 whether the schedule is created from the web administration portal or
 from the mobile application.
+}
+
+\subsection{\bi{Kiến trúc Truyền phát Trực tiếp (LiveStream) \& Bàn điều khiển Live Studio}{End-to-End LiveStream \& Live Studio Architecture}}
+
+\bi{
+Để đáp ứng yêu cầu phát sóng trực tiếp với độ trễ cực thấp và khả năng tương tác hai chiều giữa đạo diễn (\texttt{STAFF}/\texttt{ADMIN}) và khán giả (\texttt{VIEWER}), OmniCast thiết kế một kiến trúc truyền phát đa luồng chuyên biệt như minh hoạ tại Hình~\ref{fig:livestream_arch}.
+}{
+To satisfy ultra-low-latency live broadcasting and bi-directional interaction between studio producers (\texttt{STAFF}/\texttt{ADMIN}) and audiences (\texttt{VIEWER}), OmniCast implements a dedicated multi-pipeline live streaming architecture as shown in Fig.~\ref{fig:livestream_arch}.
+}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figLiveStreamArch}
+\caption{\bi{Kiến trúc truyền phát trực tiếp (LiveStream) và bàn điều khiển Live Studio đầu-cuối: kết hợp 4 chế độ thu nhận luồng phát (Curated VOD, Camera/Screen WHIP WebRTC, Kho nội dung công khai, Điều hành tương tác) qua \texttt{LiveStudioService}, máy chủ MediaMTX và cổng Socket.IO \texttt{/live}.}{End-to-end LiveStream and Live Studio architecture: combining 4 studio ingestion modes (Curated VOD, Camera/Screen WHIP WebRTC, Verified Public Catalog, Host Control Console) through \texttt{LiveStudioService}, MediaMTX and the Socket.IO \texttt{/live} gateway.}}
+\label{fig:livestream_arch}
+\end{figure*}
+
+\bi{
+Kiến trúc LiveStream vận hành trên ba trụ cột kỹ thuật đồng bộ:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Bốn đường thu nhận luồng phát (Ingestion Pipelines) tại Live Studio:} Đạo diễn trên Web (\texttt{/studio/live}) hoặc Mobile (\texttt{LiveStudioScreen} \& \texttt{MobileStudioRecorderScreen}) có thể khởi tạo sóng trực tiếp qua 4 chế độ: (i) \emph{Curated Live} — chọn một hoặc nhiều bản ghi từ thư viện VOD nội bộ kèm bộ lọc chống vi phạm bản quyền (\emph{Anti-Piracy Guard}); (ii) \emph{Self-Record / Device Camera} — đẩy luồng trực tiếp từ ống kính máy quay phần cứng hoặc chia sẻ màn hình qua giao thức WebRTC WHIP tới MediaMTX (cổng \texttt{:8889/whip}) hoặc tải tệp ghi hình trực tiếp lên Cloudinary qua chữ ký số (\emph{Signed Direct Upload}); (iii) \emph{Verified Public Catalog} — nhập một chạm từ danh mục luồng HLS/MP4 công khai đã xác thực kèm kiểm tra \texttt{HEAD} probe; và (iv) \emph{Host Control Console} — gửi thông báo ghim, kiểm duyệt bình luận và chuyển chương trình đang phát tức thời.
+  \item \textbf{Chuyển mã và Phân phối Đa giao thức (MediaMTX \& Direct Stream Engine):} Luồng WebRTC WHIP từ thiết bị quay được máy chủ MediaMTX chuyển đổi tức thời sang WHEP và HLS phân đoạn fMP4 độ trễ thấp (\texttt{:8888/<streamKey>/index.m3u8}). Ngoài ra, đối với các tệp lưu trên Google Drive, tầng backend và trình phát tự động phân giải đường dẫn sang \texttt{drive.usercontent.google.com/download?id=...\&confirm=t} để phát trực tiếp qua bộ đệm phần cứng mà không yêu cầu đăng nhập tài khoản Google.
+  \item \textbf{Điều phối Phòng Live Thời gian thực qua Socket.IO (\texttt{/live}):} Cổng \texttt{LiveStreamGateway} quản lý các phòng theo sự kiện (\texttt{event:<eventId>}) và theo kênh (\texttt{channel:<channelId>}), đồng bộ tức thời số người đang xem thực tế (\texttt{live:viewerCount}), tin nhắn trò chuyện phân nhánh (\texttt{live:chat:new}), hiệu ứng biểu cảm nổi 0ms (\texttt{live:reaction:new}), thông báo ghim từ đạo diễn (\texttt{broadcaster:message}), quyên góp Super Chat (\texttt{live:donation:received}) và tín hiệu đổi luồng video tức thời (\texttt{live:program:changed}).
+\end{enumerate}
+}{
+The LiveStream architecture operates across three synchronised technical pillars:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Four Studio Ingestion Pipelines:} Producers on Web (\texttt{/studio/live}) or Mobile (\texttt{LiveStudioScreen} \& \texttt{MobileStudioRecorderScreen}) can initiate broadcasts across four modes: (i) \emph{Curated Live} — selecting one or more recordings from the internal VOD library guarded by an Anti-Piracy filter; (ii) \emph{Self-Record / Device Camera} — pushing real-time camera or screen-share streams via WebRTC WHIP to MediaMTX (port \texttt{:8889/whip}) or uploading local recordings directly to Cloudinary using signed parameters; (iii) \emph{Verified Public Catalog} — one-click importing of verified public HLS/MP4 streams with server-side \texttt{HEAD} probing; and (iv) \emph{Host Control Console} — broadcasting pinned announcements, moderating chat and switching active programmes on the fly.
+  \item \textbf{Multi-Protocol Transcoding \& Delivery (MediaMTX \& Direct Stream Engine):} Incoming WebRTC WHIP streams are remuxed by MediaMTX into WHEP and low-latency fMP4 HLS (\texttt{:8888/<streamKey>/index.m3u8}). Additionally, for Google Drive-hosted assets, the stream resolver rewrites share URLs to \texttt{drive.usercontent.google.com/download?id=...\&confirm=t}, enabling direct hardware-accelerated streaming without Google account prompts.
+  \item \textbf{Real-Time Room Orchestration via Socket.IO (\texttt{/live}):} \texttt{LiveStreamGateway} manages per-event (\texttt{event:<eventId>}) and per-channel (\texttt{channel:<channelId>}) rooms, synchronising concurrent viewer counts (\texttt{live:viewerCount}), threaded chat (\texttt{live:chat:new}), 0ms floating emoji reactions (\texttt{live:reaction:new}), pinned host banners (\texttt{broadcaster:message}), Super Chat donations (\texttt{live:donation:received}) and zero-downtime stream switches (\texttt{live:program:changed}).
+\end{enumerate}
 }
 
 \subsection{\bi{Cấu trúc module của NestJS}{NestJS Module Structure}}
@@ -83,7 +114,7 @@ structure.}}
 \midrule
 \texttt{auth}         & \bi{Đăng nhập, JWT, refresh, đăng nhập Google}{Login, JWT, refresh, Google sign-in} & \texttt{auth} \\
 \texttt{channels}     & \bi{Kênh phát sóng, danh mục}{Broadcast channels, catalogue} & \texttt{channels} \\
-\texttt{programs}     & \bi{Chương trình, EPG, live studio}{Programmes, EPG, live studio} & \texttt{programs} \\
+\texttt{programs}     & \bi{Chương trình, EPG, Live Studio, Social}{Programmes, EPG, Live Studio, Social} & \texttt{programs} \\
 \texttt{search}       & \bi{Tìm kiếm liên thực thể}{Cross-entity search} & \texttt{search} \\
 \texttt{ai-curator}   & \bi{Biên tập AI, thống kê}{AI curation, statistics} & \texttt{ai-curator} \\
 \texttt{audit-logger} & \bi{Nhật ký kiểm toán (gRPC)}{Audit logging (gRPC)} & \texttt{audit-logger} \\
@@ -93,7 +124,7 @@ structure.}}
 \texttt{billing}      & \bi{Gói dịch vụ, thanh toán}{Plans, payments} & \texttt{billing} \\
 \texttt{notifications} & \bi{Thông báo, đẩy FCM}{Notifications, FCM push} & \texttt{notifications} \\
 \texttt{newsletter}   & \bi{Đăng ký bản tin}{Newsletter subscription} & \texttt{newsletter} \\
-\texttt{websocket}    & \bi{Cổng thời gian thực}{Realtime gateway} & --- \\
+\texttt{websocket}    & \bi{Cổng thời gian thực \texttt{/live}}{Realtime gateway \texttt{/live}} & --- \\
 \texttt{cloudinary}   & \bi{Lưu trữ phương tiện}{Media storage} & \texttt{cloudinary} \\
 \texttt{prisma}       & \bi{Kết nối cơ sở dữ liệu}{Database access} & --- \\
 \texttt{health}       & \bi{Kiểm tra tình trạng}{Health probe} & \texttt{health} \\
@@ -106,10 +137,10 @@ structure.}}
 
 \bi{
 Backend phục vụ bốn loại giao thức độc lập, mỗi loại phục vụ một nhóm
-nhu cầu khác nhau.
+nhu cầu khác nhau:
 }{
 The back end serves four independent protocols, each serving a
-distinct group of needs.
+distinct group of needs:
 }
 
 \begin{itemize}[leftmargin=*,itemsep=1pt]
@@ -125,15 +156,14 @@ distinct group of needs.
   to \texttt{/api/v1/*}, so older clients never receive a 404 when the
   API version is upgraded.}
 
-  \item \bi{\textbf{WebSocket.} Cổng thời gian thực dùng Socket.IO với
-  namespace \texttt{/live}, phục vụ 12 sự kiện: theo dõi và bỏ theo dõi
-  sự kiện/kênh, chat trực tiếp, biểu cảm, thông báo từ người phát,
-  xoá tin nhắn, và bắt tay WebRTC (offer/answer/ICE candidate).}{
-  \textbf{WebSocket.} The realtime gateway uses Socket.IO on namespace
-  \texttt{/live} and exposes 12 events: event and channel
-  subscribe/unsubscribe, live chat, reactions, broadcaster messages,
-  message deletion, and the WebRTC handshake (offer/answer/ICE
-  candidate).}
+  \item \bi{\textbf{WebSocket (Socket.IO \texttt{/live}).} Cổng thời gian thực dùng Socket.IO với
+  namespace \texttt{/live}, phục vụ đầy đủ các sự kiện điều hành phòng Live: theo dõi và bỏ theo dõi
+  sự kiện/kênh (\texttt{subscribe:event}, \texttt{unsubscribe:event}, \texttt{subscribe:channel}, \texttt{unsubscribe:channel}), đếm mắt xem trực tiếp (\texttt{live:viewerCount}), chat trực tiếp (\texttt{live:chat} $\rightarrow$ \texttt{live:chat:new}), biểu cảm hạt nổi (\texttt{live:reaction} $\rightarrow$ \texttt{live:reaction:new}), thông báo ghim từ người phát (\texttt{broadcaster:message}),
+  xoá tin nhắn vi phạm (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}), chuyển đổi chương trình tức thời (\texttt{live:program:changed}), quyên góp Super Chat (\texttt{live:donation:received}) và bắt tay WebRTC (\texttt{webrtc:offer}, \texttt{webrtc:answer}, \texttt{webrtc:ice-candidate}).}{
+  \textbf{WebSocket (Socket.IO \texttt{/live}).} The realtime gateway uses Socket.IO on namespace
+  \texttt{/live} and exposes full live room orchestration events: event and channel
+  subscribe/unsubscribe (\texttt{subscribe:event}, \texttt{unsubscribe:event}, \texttt{subscribe:channel}, \texttt{unsubscribe:channel}), concurrent viewer tracking (\texttt{live:viewerCount}), live chat (\texttt{live:chat} $\rightarrow$ \texttt{live:chat:new}), floating reactions (\texttt{live:reaction} $\rightarrow$ \texttt{live:reaction:new}), broadcaster pinned messages (\texttt{broadcaster:message}),
+  message moderation (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}), on-the-fly program switching (\texttt{live:program:changed}), Super Chat donations (\texttt{live:donation:received}) and the WebRTC handshake (\texttt{webrtc:offer}, \texttt{webrtc:answer}, \texttt{webrtc:ice-candidate}).}
 
   \item \bi{\textbf{gRPC.} Microservice ghi nhật ký kiểm toán nhận yêu
   cầu \texttt{LogAudit}, \texttt{GetLogsByUser},
@@ -199,7 +229,7 @@ user, action, entity and aggregate statistics.
 \subsection{\bi{Cấu hình tích hợp ngoài}{External Integrations}}
 
 \bi{
-Bốn tích hợp bên ngoài được hỗ trợ, tất cả đều tự khoáng chạy khi thiếu
+Bốn tích hợp bên ngoài được hỗ trợ, tất cả đều tự giáng cấp an toàn khi thiếu
 khóa API: YouTube Data API v3 (lịch phát kênh), Twitch Helix (lịch phát
 kênh), TMDB (làm giàu dữ liệu phim) và OpenAI (biên tập nội dung).
 Cơ chế này cho phép toàn bộ hệ thống chạy đầy đủ chức năng trong môi

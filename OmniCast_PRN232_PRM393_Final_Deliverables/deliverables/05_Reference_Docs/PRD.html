@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - PRD</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS</div>
+    <div class="fptu-tag">FU CAHATA • REFERENCE DOCS</div>
+  </div>
+  <div class="content">
+<h1 id="product-requirements-document-omnicast-omni">📺 Product
+Requirements Document: OmniCast (OMNI)</h1>
+<h1 id="enterprise-media-broadcast-intelligence-network">Enterprise
+Media &amp; Broadcast Intelligence Network</h1>
+<p><strong>Tên Dự Án (Project Name):</strong> OmniCast Enterprise Media
+&amp; Broadcast Intelligence Network<br />
+<strong>Mã Dự Án (Project Code):</strong> OMNI<br />
+<strong>Phiên Bản Tài Liệu (Document Version):</strong> 4.1 (gRPC
+Microservices &amp; Mobile VIP Edition)<br />
+<strong>Môn Học Áp Dụng (Target Courses):</strong> PRN232 (Modern Web
+API Core &amp; Web Application) &amp; PRM393 (Mobile App Development
+with Flutter)<br />
+<strong>Khung Công Nghệ (Target Frameworks):</strong><br />
+- 💻 <strong>Backend Web API:</strong> NestJS 11+ (TypeScript) — Modular
+Architecture, Prisma ORM, <code>@nestjs/swagger</code><br />
+- 🌐 <strong>Web Front-End:</strong> Next.js 15 (App Router, React 19,
+TypeScript, Modern CSS/Tailwind Cinema Dark)<br />
+- 📱 <strong>Mobile Front-End:</strong> Flutter 3.x / Dart 3.x — BLoC
+Pattern + Offline-First SQLite Local Storage<br />
+<strong>Cơ Sở Dữ Liệu &amp; Storage:</strong> PostgreSQL &amp; Supabase
+Storage (Triển khai trên Cloud Supabase)<br />
+<strong>Hạ Tầng Triển Khai (Cloud Deployment):</strong><br />
+- 🚀 <strong>Backend Web API (NestJS):</strong> Triển khai trên
+<strong>Vercel</strong>
+(<code>https://omnicast-api.vercel.app/swagger</code>)<br />
+- ⚡ <strong>Web Front-End (Next.js):</strong> Triển khai Production
+trên <strong>Vercel</strong>
+(<code>https://omnicast-fe.vercel.app</code>)<br />
+- 📱 <strong>Mobile App (Flutter):</strong> Bản cài đặt chính thức
+<code>app-release.apk</code> chạy trên thiết bị Android thật<br />
+<strong>Thời Gian &amp; Quy Mô (Timeline &amp; Team):</strong> 8 - 10
+Tuần | <strong>2 Đợt Review Tiến độ</strong> (Review 1 Tuần 5-6: Thiết
+kế &amp; MVP, bắt đầu code từ Tuần 1-4 | Review 2 Tuần 8: Sản phẩm hoàn
+chỉnh) | Nhóm 4 thành viên<br />
+<strong>Cập Nhật Lần Cuối (Last Updated):</strong> 2026</p>
+<hr />
+<h2 id="mục-lục-table-of-contents">📑 Mục Lục (Table of Contents)</h2>
+<ol type="1">
+<li><a
+href="#-tổng-quan-sản-phẩm--định-danh-hệ-thống-quyền-hạn-system-roles">🎯
+Tổng Quan Sản Phẩm &amp; Định Danh Hệ Thống Quyền Hạn (System
+Roles)</a></li>
+<li><a
+href="#-chân-dung-người-dùng--phân-định-vai-trò-theo-mã-số-role">👥 Chân
+Dung Người Dùng &amp; Phân Định Vai Trò Theo Mã Số Role</a></li>
+<li><a
+href="#-ma-trận-yêu-cầu-tính-năng-chi-tiết-feature-requirements-matrix">📋
+Ma Trận Yêu Cầu Tính Năng Chi Tiết (Feature Requirements
+Matrix)</a></li>
+<li><a
+href="#-luồng-người-dùng-nghiệp-vụ--sơ-đồ-kiến-trúc-hệ-thống-user-flows--architecture">🔄
+Luồng Người Dùng Nghiệp Vụ &amp; Sơ Đồ Kiến Trúc Hệ Thống (User Flows
+&amp; Architecture)</a></li>
+<li><a
+href="#️-lộ-trình-2-đợt-review-tiến-độ-chuẩn-review-milestones">🗓️ Lộ
+Trình 2 Đợt Review Tiến Độ Chuẩn (Review Milestones)</a></li>
+<li><a
+href="#-phân-chia-đầu-việc-cân-bằng-4-người--member-4-chuyên-trách-prn232">👥
+Phân Chia Đầu Việc Cân Bằng (4 Người — Member 4 Chuyên Trách
+PRN232)</a></li>
+<li><a href="#️-yêu-cầu-phi-chức-năng-non-functional-requirements">🛡️
+Yêu Cầu Phi Chức Năng (Non-Functional Requirements)</a></li>
+<li><a href="#️-đặc-tả-kỹ-thuật-các-phân-hệ-technical-specifications">🏗️
+Đặc Tả Kỹ Thuật Các Phân Hệ (Technical Specifications)</a></li>
+<li><a href="#-đặc-tả-ai-thẩm-định--grpc-protocol-ai--grpc-specs">🤖 Đặc
+Tả AI Thẩm Định &amp; gRPC Protocol (AI &amp; gRPC Specs)</a></li>
+<li><a
+href="#-nguồn-dữ-liệu-chương-trình-từ-bên-ngoài-external-ingest-sources">🌐
+Nguồn Dữ Liệu Chương Trình Từ Bên Ngoài (External Ingest
+Sources)</a></li>
+<li><a
+href="#️-thiết-kế-cơ-sở-dữ-liệu-chi-tiết-database-schema-specifications">🗄️
+Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema
+Specifications)</a></li>
+<li><a
+href="#️-chiến-lược-triển-khai-cloud-vercel--supabase-deployment-strategy">☁️
+Chiến Lược Triển Khai Cloud: Vercel &amp; Supabase (Deployment
+Strategy)</a></li>
+<li><a href="#-đo-lường--giám-sát-hệ-thống-analytics--monitoring">📊 Đo
+Lường &amp; Giám Sát Hệ Thống (Analytics &amp; Monitoring)</a></li>
+<li><a href="#-kế-hoạch-phát-hành--nghiệm-thu-release-planning">🚀 Kế
+Hoạch Phát Hành &amp; Nghiệm Thu (Release Planning)</a></li>
+<li><a
+href="#-câu-hỏi-mở--giả-định-thiết-kế-open-questions--assumptions">❓
+Câu Hỏi Mở &amp; Giả Định Thiết Kế (Open Questions &amp;
+Assumptions)</a></li>
+<li><a href="#-phụ-lục--bảng-thuật-ngữ-appendix--glossary">📚 Phụ Lục
+&amp; Bảng Thuật Ngữ (Appendix &amp; Glossary)</a></li>
+</ol>
+<hr />
+<h2 id="tổng-quan-sản-phẩm-định-danh-hệ-thống-quyền-hạn-system-roles">🎯
+Tổng Quan Sản Phẩm &amp; Định Danh Hệ Thống Quyền Hạn (System
+Roles)</h2>
+<h3
+id="bối-cảnh-thực-tế-ngành-truyền-hình-tập-đoàn-truyền-thông-industry-background-real-world-context">1.1.
+Bối Cảnh Thực Tế Ngành Truyền Hình &amp; Tập Đoàn Truyền Thông (Industry
+Background &amp; Real-World Context)</h3>
+<p>Trong kỷ nguyên chuyển đổi số, các đài phát thanh - truyền hình số
+(VTV, HTV, BBC…) và các tập đoàn truyền thông đa phương tiện lớn
+(VTVcab, FPT Play, Viettel Media, K+, Netflix, Warner Bros. Discovery)
+đang đối mặt với sự dịch chuyển mạnh mẽ từ mô hình truyền hình tuyến
+tính (Linear TV) sang mô hình lai đa nền tảng (<strong>Hybrid OTT / IPTV
+/ FAST — Free Ad-supported Streaming TV</strong>).</p>
+<p>Quá trình vận hành trung tâm phát sóng thực tế tại các doanh nghiệp
+này gặp phải <strong>4 thách thức cốt lõi (Core Pain Points)</strong>:
+1. <strong>Xung đột lịch phát sóng &amp; nguy cơ gián đoạn luồng phát
+(EPG Overlap &amp; Airtime Collision):</strong> Vận hành hàng chục kênh
+truyền hình phát sóng liên tục 24/7 với hàng ngàn giờ nội dung mỗi tuần
+khiến việc lập lịch thủ công dễ xảy ra lỗi giao thoa thời gian chiếu
+(<code>Airtime Conflict</code>), gây sự cố đè sóng, gián đoạn truyền dẫn
+và thiệt hại hợp đồng quảng cáo giờ vàng. 2. <strong>Điểm nghẽn kiểm
+duyệt nội dung &amp; tuân thủ pháp lý (Content Compliance &amp;
+Censorship Bottleneck):</strong> Khối lượng phim và chương trình nhập
+khẩu khổng lồ đòi hỏi quy trình kiểm duyệt gắt gao theo Luật Báo chí
+&amp; Phát thanh Truyền hình (phân loại lứa tuổi P, K, T13, T16, T18,
+sàng lọc yếu tố bạo lực, nhạy cảm). Thẩm định thủ công gây quá tải biên
+tập viên và tiềm ẩn rủi ro vi phạm pháp lý nghiêm trọng. 3. <strong>Tối
+ưu hóa doanh thu khung giờ vàng (Prime-Time Scheduling
+Optimization):</strong> Biên tập viên đài truyền hình thiếu công cụ phân
+tích thị hiếu khán giả theo thời gian thực để xếp các chương trình có
+sức hút lớn (High-Buzz) vào đúng khung giờ vàng
+(<code>PRIME TIME 20:00 - 22:00</code>), dẫn đến lãng phí tài nguyên
+phát sóng. 4. <strong>Phân mảnh trải nghiệm đa nền tảng của khán giả
+(Omnichannel Audience Experience Gap):</strong> Người xem hiện đại liên
+tục chuyển đổi giữa Web Portal (trên máy tính/Smart TV) và Mobile App
+(trên điện thoại thông minh). Khán giả yêu cầu thông tin lịch phát sóng
+EPG phải tức thì, có cơ chế hẹn giờ thông minh trước giờ phát và xem
+được danh sách lưu trữ cá nhân ngay cả khi mất kết nối mạng.</p>
+<p>👉 <strong>OmniCast (OMNI)</strong> được thiết kế như một
+<strong>Enterprise Media &amp; Broadcast Intelligence Network</strong>
+chuẩn doanh nghiệp, giải quyết toàn diện chuỗi giá trị: <em>Tự động hóa
+chống trùng lịch EPG
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+Trợ lý AI Curator thẩm định nội dung 3 Agent
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+Vết kiểm toán độc lập gRPC
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+Trải nghiệm Web &amp; Mobile Offline-First.</em></p>
+<h3 id="tầm-nhìn-sản-phẩm-product-vision">1.2. Tầm Nhìn Sản Phẩm
+(Product Vision)</h3>
+<p>Hệ sinh thái OmniCast vận hành đồng bộ trên 4 trụ cột công nghệ hiện
+đại: 1. <strong>Core Back-End API:</strong> <strong>NestJS 11+
+(TypeScript)</strong> kiến trúc Modular Enterprise, Prisma ORM, tích hợp
+<code>@nestjs/swagger</code>, thuật toán chống xung đột lịch chiếu,
+triển khai trên <strong>Vercel</strong> kết nối <strong>Supabase Cloud
+PostgreSQL</strong>. 2. <strong>AI Intelligence &amp; Audit
+Logger:</strong> Tích hợp OpenAI GPT-4o &amp; TMDB API thẩm định nội
+dung 3 Agent (Sentiment, Compliance, Editorial), kèm microservice gRPC
+ghi vết kiểm toán Supabase. 3. <strong>Web Front-End Portal:</strong>
+Ứng dụng <strong>Next.js 15</strong> (App Router, React 19, TypeScript,
+Tailwind Cinema Dark) triển khai trên <strong>Vercel</strong> phục vụ
+Trung tâm Điều hành Phát sóng (Curator Studio) và Khán giả Web. 4.
+<strong>Mobile Front-End App:</strong> Ứng dụng <strong>Flutter
+3.x</strong> cho khán giả di động với cơ chế <strong>Offline-First
+SQLite</strong> (<code>omnicast_local.db</code>) và thông báo đẩy Native
+hẹn giờ xem trước 15 phút.</p>
+<h3
+id="bảng-định-danh-mã-số-role-chuẩn-toàn-hệ-thống-system-roles-specification">1.3.
+🛡️ BẢNG ĐỊNH DANH MÃ SỐ ROLE CHUẨN TOÀN HỆ THỐNG (SYSTEM ROLES
+SPECIFICATION)</h3>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã Số Role (<code>int</code>)</th>
+<th style="text-align: left;">Định Danh Role (<code>string</code>)</th>
+<th style="text-align: left;">Tên Vai Trò Thực Tế</th>
+<th style="text-align: left;">Phạm Vi Quyền Hạn (Permission Scope)</th>
+<th style="text-align: left;">Điểm Đến Sau Đăng Nhập (Login
+Redirect)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 1</code></strong></td>
+<td style="text-align: left;"><strong><code>Staff</code></strong></td>
+<td style="text-align: left;"><strong>Biên Tập Viên Phát Sóng (Editorial
+Staff / Curator)</strong></td>
+<td style="text-align: left;">- CRUD Kênh truyền hình
+(<code>BroadcastChannels</code>)<br>- CRUD Chương trình &amp; Lập lịch
+EPG (<code>BroadcastPrograms</code>)<br>- <strong>Kích hoạt thẩm định AI
+nội dung</strong><br>- Xuất bản/Hạ lịch phát sóng trên EPG</td>
+<td style="text-align: left;"><strong>Web Next.js:</strong>
+<code>/studio/curator</code> (Editorial Studio)<br><strong>Mobile
+Flutter:</strong> <code>StaffCuratorScreen</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 2</code></strong></td>
+<td style="text-align: left;"><strong><code>Viewer</code></strong></td>
+<td style="text-align: left;"><strong>Khán Giả Đã Đăng Ký (Registered
+Audience)</strong></td>
+<td style="text-align: left;">- Xem lịch phát sóng EPG thời gian thực
+(<code>LIVE NOW</code>)<br>- Tìm kiếm, lọc chương trình động theo thể
+loại, thời lượng<br>- Xem video trailer HD<br>- <strong>Lưu Watchlist cá
+nhân ngoại tuyến (SQLite)</strong><br>- <strong>Hẹn giờ thông báo native
+trước 15 phút</strong></td>
+<td style="text-align: left;"><strong>Web Next.js:</strong>
+<code>/epg</code> (EPG Timeline Grid)<br><strong>Mobile
+Flutter:</strong> <code>HomeScreen</code></td>
+</tr>
+<tr>
+<td
+style="text-align: center;"><strong><code>Role = 3</code></strong></td>
+<td style="text-align: left;"><strong><code>Admin</code></strong></td>
+<td style="text-align: left;"><strong>Quản Trị Viên Hệ Thống (System
+Administrator)</strong></td>
+<td style="text-align: left;">- Quản lý tài khoản toàn hệ thống
+(<code>UserAccounts</code> CRUD)<br>- Cấp quyền/Đổi vai trò giữa Staff
+(1) và Viewer (2)<br>- <strong>Giám sát nhật ký kiểm toán gRPC
+(<code>AuditLogs</code>)</strong><br>- Giám sát kết nối Supabase Cloud
+&amp; Vercel API</td>
+<td style="text-align: left;"><strong>Web Next.js:</strong>
+<code>/admin/dashboard</code> (Admin Hub)<br><strong>Mobile
+Flutter:</strong> <code>AdminHubScreen</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>Role = 0</code></strong>
+<em>(Khách)</em></td>
+<td style="text-align: left;"><strong><code>Guest</code></strong></td>
+<td style="text-align: left;"><strong>Khách Vãng Lai (Unauthenticated
+Visitor)</strong></td>
+<td style="text-align: left;">- Xem trước danh mục kênh và lịch EPG công
+khai<br>- Xem trailer chương trình<br>- <em>Không thể kích hoạt AI,
+không thể tạo lịch, không thể lưu Watchlist đám mây</em></td>
+<td style="text-align: left;"><strong>Web Next.js:</strong>
+<code>/</code> (Trang Landing Page)<br><strong>Mobile Flutter:</strong>
+<code>LoginScreen</code> / <code>GuestFeed</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔒 <strong>Nguyên Tắc Bảo Mật RBAC:</strong> 1. Mã số Role được nhúng
+trực tiếp vào JWT Payload dưới dạng Claim: <code>role</code> =
+<code>1</code> | <code>2</code> | <code>3</code>. 2. Backend NestJS kiểm
+tra quyền bằng Guards chặt chẽ: <code>@Roles('Staff')</code>
+(<code>Role = 1</code>), <code>@Roles('Admin')</code>
+(<code>Role = 3</code>), <code>@Roles('Staff', 'Admin')</code>. 3. Cấm
+tuyệt đối việc Admin tự xóa tài khoản của chính mình hoặc tạo thêm một
+tài khoản Admin khác từ giao diện.</p>
+</blockquote>
+<hr />
+<h2 id="chân-dung-người-dùng-phân-định-vai-trò-theo-mã-số-role">👥 Chân
+Dung Người Dùng &amp; Phân Định Vai Trò Theo Mã Số Role</h2>
+<h3 id="persona-1-admin-role-3-system-administrator">👤 Persona 1: Admin
+(<code>Role = 3</code> — System Administrator)</h3>
+<ul>
+<li><strong>Thông tin:</strong> Kỹ sư hệ thống hoặc trưởng phòng công
+nghệ đài truyền hình; thành thạo quản trị hệ thống; quản lý bảo mật và
+tính toàn vẹn của dữ liệu.</li>
+<li><strong>Mục tiêu:</strong> Quản trị tài khoản người dùng; giám sát
+vết kiểm toán gRPC <code>AuditLogs</code>.</li>
+<li><strong>Hành trình Người dùng:</strong> Mở Web Portal Next.js → Đăng
+nhập <code>admin@omnicast.tv</code> → Hệ thống nhận diện
+<code>Role = 3</code> chuyển thẳng <code>/admin/dashboard</code> → Xem
+vết kiểm toán &amp; quản lý User.</li>
+</ul>
+<h3 id="persona-2-staff-role-1-broadcast-editorial-staff">👤 Persona 2:
+Staff (<code>Role = 1</code> — Broadcast Editorial Staff)</h3>
+<ul>
+<li><strong>Thông tin:</strong> Biên tập viên chương trình truyền hình;
+chịu trách nhiệm xếp lịch phát sóng EPG, phân loại thể loại và kiểm định
+nội dung.</li>
+<li><strong>Mục tiêu:</strong> Quản lý danh mục Kênh &amp; Lịch chiếu
+(có chống trùng giờ); Kích hoạt thẩm định AI; Xuất bản EPG.</li>
+<li><strong>Hành trình Người dùng:</strong> Đăng nhập Staff → Vào
+<code>/studio/curator</code> → Tạo chương trình → Bấm “Kích hoạt Thẩm
+định AI” → Nhận kết quả và xuất bản EPG.</li>
+</ul>
+<h3 id="persona-3-viewer-role-2-registered-audience">👤 Persona 3:
+Viewer (<code>Role = 2</code> — Registered Audience)</h3>
+<ul>
+<li><strong>Thông tin:</strong> Khán giả yêu thích truyền hình và điện
+ảnh trên thiết bị di động và máy tính.</li>
+<li><strong>Mục tiêu:</strong> Xem lịch EPG 24h <code>LIVE NOW</code>;
+Xem trailer HD; Lưu Watchlist xem ngoại tuyến (SQLite); Đặt thông báo
+nhắc trước 15 phút.</li>
+</ul>
+<hr />
+<h2
+id="ma-trận-yêu-cầu-tính-năng-chi-tiết-feature-requirements-matrix">📋
+Ma Trận Yêu Cầu Tính Năng Chi Tiết (Feature Requirements Matrix)</h2>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Mã Tính Năng</th>
+<th style="text-align: left;">Tên Tính Năng</th>
+<th style="text-align: left;">Mô Tả Nghiệp Vụ &amp; Kỹ Thuật</th>
+<th style="text-align: center;">Phân Quyền Phù Hợp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>FR-01</strong></td>
+<td style="text-align: left;"><strong>Xác Thực &amp; Phân
+Quyền</strong></td>
+<td style="text-align: left;">Băm mật khẩu Argon2/PBKDF2, sinh cặp
+Access Token (JWT) &amp; Refresh Token, cấp quyền RBAC số hóa (1, 2,
+3)</td>
+<td style="text-align: center;">Toàn hệ thống</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-02</strong></td>
+<td style="text-align: left;"><strong>Quản Lý Kênh &amp; EPG
+Grid</strong></td>
+<td style="text-align: left;">CRUD Kênh, lập lịch chương trình, bảng
+lưới EPG 24h và huy hiệu <code>LIVE NOW</code> nhấp nháy đỏ</td>
+<td style="text-align: center;">Staff (1), Viewer (2)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-03</strong></td>
+<td style="text-align: left;"><strong>Chống Xung Đột Lịch
+Chiếu</strong></td>
+<td style="text-align: left;">Thuật toán chặn trùng giờ:
+<code>[airDateTime, airDateTime + durationMinutes]</code> trên cùng kênh
+➔ HTTP 409 Conflict</td>
+<td style="text-align: center;">Staff (1)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-04</strong></td>
+<td style="text-align: left;"><strong>Tìm Kiếm &amp; Dynamic
+Filter</strong></td>
+<td style="text-align: left;">Dynamic Query Builder lọc theo thời lượng,
+thể loại, khoảng ngày chiếu</td>
+<td style="text-align: center;">Viewer (2), Guest (0)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-05</strong></td>
+<td style="text-align: left;"><strong>AI Curator Thẩm Định</strong></td>
+<td style="text-align: left;">Quy trình thẩm định (Sentiment ➔
+Compliance ➔ Editorial JSON) + TMDB Reviews + OpenAI</td>
+<td style="text-align: center;">Staff (1)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-06</strong></td>
+<td style="text-align: left;"><strong>gRPC Audit Logger</strong></td>
+<td style="text-align: left;">Dịch vụ gRPC ghi nhật ký kiểm toán các
+thao tác nhạy cảm vào Supabase</td>
+<td style="text-align: center;">Admin (3)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-07</strong></td>
+<td style="text-align: left;"><strong>Offline SQLite
+Watchlist</strong></td>
+<td style="text-align: left;">Lưu danh sách yêu thích vào database
+SQLite nội bộ <code>omnicast_local.db</code>, Offline Banner khi mất
+mạng</td>
+<td style="text-align: center;">Viewer (2)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>FR-08</strong></td>
+<td style="text-align: left;"><strong>Native Alarm Reminder
+15p</strong></td>
+<td style="text-align: left;">Thông báo Native trước giờ chiếu 15 phút
+(<code>AirDateTime - 15m</code>), tap thông báo mở màn hình chi
+tiết</td>
+<td style="text-align: center;">Viewer (2)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="lộ-trình-2-đợt-review-tiến-độ-chuẩn-review-milestones">🗓️ Lộ
+Trình 2 Đợt Review Tiến Độ Chuẩn (Review Milestones)</h2>
+<ol type="1">
+<li><strong>🚩 REVIEW 1 (Tuần 3): THIẾT KẾ &amp; MVP (BẮT ĐẦU
+CODE)</strong>
+<ul>
+<li>Thẩm định tài liệu PRD v4.0, WBS phân công 3 thành viên, thiết kế cơ
+sở dữ liệu Prisma Supabase (6 Models), Wireframes UI Cinema Dark,
+Protobuf gRPC specs, 52 Test Cases và kế hoạch nghiệm thu.</li>
+<li>Khởi tạo mã nguồn (Tuần 3), Migrate DB Supabase, Auth
+JWT/Argon2/RBAC, Seed Data mẫu (<code>seed.ts</code>), CRUD Kênh &amp;
+Chương trình + Thuật toán chống trùng lịch phát sóng, Web EPG Grid 24h,
+Flutter EPG Timeline <code>LIVE NOW</code>, Video Trailer Player, Deploy
+Live Backend API &amp; Frontend Web lên Vercel.</li>
+</ul></li>
+<li><strong>🚩 REVIEW 2 (Tuần 8): SẢN PHẨM HOÀN CHỈNH &amp; BẢO VỆ ĐỒ ÁN
+(FINAL RELEASE)</strong>
+<ul>
+<li>Dynamic Search &amp; Filter, AI Curator thẩm định phát sóng, gRPC
+AuditLogger Dashboard, SQLite Offline-First
+(<code>omnicast_local.db</code>), Native Local Notification hẹn giờ 15p,
+Rate Limiting, Stress Test k6, Đóng gói file cài đặt
+<code>app-release.apk</code> và bảo vệ trước Hội đồng Giảng viên.</li>
+</ul></li>
+</ol>
+<hr />
+<h2 id="phân-chia-đầu-việc-cân-bằng-3-người-team-3-members">👥 Phân Chia
+Đầu Việc Cân Bằng (3 Người — Team 3 Members)</h2>
+<blockquote>
+<p>⚖️ <strong>Nguyên Tắc Phân Bổ Công Bằng &amp; Hợp Lý:</strong><br />
+- <strong>Member 1, 2, 3:</strong> Đảm nhận cân bằng <strong>50%
+PRN232</strong> (NestJS / Next.js) và <strong>50% PRM393</strong>
+(Flutter Mobile App) — mỗi người ~66 tasks. - Mỗi thành viên phụ trách
+đầy đủ cả Backend lẫn Frontend để đảm bảo hiểu biết toàn diện về hệ
+thống.</p>
+</blockquote>
+<ul>
+<li><strong>👤 Member 1 (Tech Lead &amp; Search Engine | 66
+tasks):</strong>
+<ul>
+<li>💻 <em>Backend &amp; Web (PRN232):</em> NestJS Setup, Prisma Schema
+Supabase (6 Models), Auth Module JWT/Argon2/RBAC, Search/Filter Engine
+(<code>$filter</code>, <code>$orderby</code>), Next.js Base Auth + Trang
+Tìm Kiếm (<code>app/search</code>).</li>
+<li>📱 <em>Flutter Mobile (PRM393):</em> Flutter BLoC Architecture, Auth
+Flow, <code>DioClient</code>, Secure Storage, Search BLoC &amp; Màn hình
+Tìm kiếm Nâng cao.</li>
+</ul></li>
+<li><strong>👤 Member 2 (Broadcast Content &amp; Notifications | 66
+tasks):</strong>
+<ul>
+<li>💻 <em>Backend &amp; Web (PRN232):</em> CRUD Kênh &amp; Chương
+trình, <strong>Thuật toán chống trùng lịch</strong>
+(<code>ConflictException</code>), DTOs, Next.js EPG Grid Schedule 24h
+&amp; Trailer Player.</li>
+<li>📱 <em>Flutter Mobile (PRM393):</em> Flutter EPG Timeline
+<code>LIVE NOW</code>, Featured Carousel, <strong>Native Local
+Notification hẹn giờ trước 15 phút</strong>, Hero Animation.</li>
+</ul></li>
+<li><strong>👤 Member 3 (AI Integration &amp; Mobile Offline Storage |
+66 tasks):</strong>
+<ul>
+<li>💻 <em>Backend &amp; Web (PRN232):</em> NestJS
+<code>AiCuratorModule</code> (kết nối OpenAI/TMDB &amp; lưu Supabase
+Transaction), Next.js AI Curator Studio
+(<code>app/studio/curator</code>), Profile Page &amp; AI Badges, gRPC
+AuditLogger.</li>
+<li>📱 <em>Flutter Mobile (PRM393):</em> Flutter AI Curator Studio,
+<strong>SQLite Local Storage (<code>omnicast_local.db</code>)</strong>,
+Watchlist BLoC, Offline Banner Alert, <strong>Đóng gói bản cài đặt APK
+Release (<code>app-release.apk</code>)</strong>.</li>
+</ul></li>
+</ul>
+<hr />
+<h2 id="yêu-cầu-phi-chức-năng-non-functional-requirements">🛡️ Yêu Cầu
+Phi Chức Năng (Non-Functional Requirements)</h2>
+<ol type="1">
+<li><strong>Hiệu Năng (Performance):</strong> Mọi API thông thường phản
+hồi <strong>≤ 200ms</strong>. Toàn bộ chuỗi AI Thẩm định hoàn tất và lưu
+DB trong <strong>≤ 25 giây</strong>.</li>
+<li><strong>An Toàn &amp; Bảo Mật (Security):</strong> Mật khẩu băm an
+toàn (Argon2 / PBKDF2), Token lưu an toàn (Secure Storage trên Mobile,
+HTTP-only Cookie trên Web), Parameterized Queries chống SQL Injection
+100%.</li>
+<li><strong>Độ Tin Cậy &amp; Ngoại Tuyến (Reliability &amp;
+Offline-First):</strong> Khi mất mạng, Mobile chuyển sang chế độ
+Offline, đọc Watchlist từ SQLite trơn tru không gây crash.</li>
+</ol>
+<hr />
+<h2 id="đặc-tả-kỹ-thuật-các-phân-hệ-technical-specifications">🏗️ Đặc Tả
+Kỹ Thuật Các Phân Hệ (Technical Specifications)</h2>
+<ol type="1">
+<li><strong><code>backend/</code>:</strong> NestJS 11+ (TypeScript),
+Prisma ORM, <code>@nestjs/swagger</code>, PostgreSQL Supabase, Vercel
+Serverless / Cloud API
+(<code>https://omnicast-api.vercel.app/swagger</code>).</li>
+<li><strong><code>frontend/</code>:</strong> Next.js 15 (App Router,
+React 19, TypeScript, Tailwind CSS Cinema Dark), Vercel Live Deployment
+(<code>https://omnicast-fe.vercel.app</code>).</li>
+<li><strong><code>mobile/</code>:</strong> Flutter 3.x / Dart 3.x, BLoC
+Pattern, SQLite (<code>sqflite</code>), Native Scheduled Notifications
+(<code>flutter_local_notifications</code>), Build
+<code>app-release.apk</code>.</li>
+</ol>
+<hr />
+<h2 id="đặc-tả-ai-thẩm-định-grpc-protocol-ai-grpc-specs">🤖 Đặc Tả AI
+Thẩm Định &amp; gRPC Protocol (AI &amp; gRPC Specs)</h2>
+<h3 id="danh-mục-công-cụ-dịch-vụ-ai-tech-stack">1. Danh Mục Công Cụ
+&amp; Dịch Vụ AI (Tech Stack)</h3>
+<ul>
+<li><strong>LLM Engine:</strong> OpenAI GPT-4o (kết nối qua OpenAI API
+SDK / <code>@nestjs/config</code> và <code>openai</code> package).</li>
+<li><strong>Data Enrichment:</strong> TMDB API (The Movie Database) cung
+cấp tóm tắt gốc, thể loại, điểm rating và user reviews thực tế làm
+Ground Truth đầu vào.</li>
+<li><strong>Backend Orchestrator:</strong> NestJS
+<code>AiCuratorModule</code> (<code>AiCuratorService</code>,
+<code>AiCuratorController</code>) điều phối chuỗi prompt, xử lý
+transaction và kiểm soát rate limiting.</li>
+<li><strong>Data Formatting:</strong> OpenAI Structured Outputs / JSON
+Schema đảm bảo định dạng JSON 100% không bị lệch schema.</li>
+<li><strong>Kiểm toán &amp; Lưu trữ:</strong> Prisma ORM
+<code>$transaction</code> lưu vào PostgreSQL Supabase
+(<code>BroadcastAiReport</code>) và kích hoạt gRPC AuditLogger ghi vết
+kiểm toán.</li>
+</ul>
+<h3 id="chuỗi-3-agent-thẩm-định-ai-multi-agent-pipeline">2. Chuỗi 3
+Agent Thẩm Định AI (Multi-Agent Pipeline)</h3>
+<ol type="1">
+<li><strong>Agent 1 (Sentiment Analyst - Phân tích thị hiếu &amp; cảm
+xúc):</strong>
+<ul>
+<li><strong>Đầu vào:</strong> Tên chương trình, synopsis, danh sách
+reviews người dùng thực tế lấy từ TMDB API.</li>
+<li><strong>Nhiệm vụ:</strong> Phân tích cảm xúc, mức độ thu hút
+(hype/buzz) và dự đoán đối tượng khán giả quan tâm.</li>
+</ul></li>
+<li><strong>Agent 2 (Compliance Auditor - Kiểm toán viên tuân thủ &amp;
+kiểm duyệt):</strong>
+<ul>
+<li><strong>Đầu vào:</strong> Báo cáo từ Agent 1, thể loại
+(<code>ProductionTag</code>), thời lượng và khung giờ dự kiến.</li>
+<li><strong>Nhiệm vụ:</strong> Đánh giá kiểm duyệt nội dung (bạo lực,
+ngôn từ, nhạy cảm), phân loại độ tuổi và xếp hạng khung giờ phát sóng
+(<code>PRIME TIME</code>, <code>STANDARD</code>,
+<code>RESTRICTED</code>).</li>
+</ul></li>
+<li><strong>Agent 3 (Editorial Director - Tổng biên tập &amp; Chuẩn hóa
+cấu trúc):</strong>
+<ul>
+<li><strong>Đầu vào:</strong> Tổng hợp dữ liệu từ Agent 1 &amp; Agent
+2.</li>
+<li><strong>Nhiệm vụ:</strong> Ra quyết định biên tập cuối cùng và ép
+khuôn JSON nghiêm ngặt:</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;broadcastSuitability&quot;</span><span class="fu">:</span> <span class="st">&quot;PRIME TIME | STANDARD | RESTRICTED&quot;</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;suggestedTimeSlot&quot;</span><span class="fu">:</span> <span class="st">&quot;20:00 - 22:00&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;targetAudienceVibe&quot;</span><span class="fu">:</span> <span class="st">&quot;Gia đình và giới trẻ yêu thích phiêu lưu&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;riskWarnings&quot;</span><span class="fu">:</span> <span class="st">&quot;Phù hợp mọi lứa tuổi (PG)&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;aiModelVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;gpt-4o-omnicast-v3&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+</ol>
+<h3 id="cơ-chế-fallback-hiệu-năng">3. Cơ Chế Fallback &amp; Hiệu
+Năng</h3>
+<ul>
+<li><strong>Fallback Metadata Nội bộ:</strong> Khi TMDB API không có
+reviews hoặc chương trình nội bộ, hệ thống tự động fallback sử dụng
+metadata (<code>Title + Synopsis + Duration + Tags</code>) để phân tích
+mà không làm gián đoạn luồng.</li>
+<li><strong>Hiệu năng (NFR):</strong> Toàn bộ chuỗi 3 Agent xử lý và
+hoàn tất lưu cơ sở dữ liệu trong <strong>≤ 25 giây</strong>.</li>
+</ul>
+<h3 id="tích-hợp-giao-diện-uiux">4. Tích Hợp Giao Diện (UI/UX)</h3>
+<ul>
+<li><strong>Web Next.js (<code>/studio/curator</code>):</strong> Nút
+“Kích hoạt Thẩm định AI” cho Staff, hiệu ứng Shimmer Loading khi AI đang
+chạy, Modal xem chi tiết và huy hiệu phát sáng <code>AiBadge.tsx</code>
+(Vàng Gold cho Prime Time, Xanh Cyan cho Standard, Đỏ Ruby cho
+Restricted).</li>
+<li><strong>Mobile Flutter (<code>StaffCuratorScreen</code> &amp;
+<code>ProgramDetailScreen</code>):</strong> Quản lý trạng thái qua BLoC
+(<code>AiCuratorBloc</code>), thẻ nhận định AI
+<code>AiReportCard.dart</code> hiển thị trực quan cho người dùng.</li>
+</ul>
+<hr />
+<h2
+id="thiết-kế-cơ-sở-dữ-liệu-chi-tiết-database-schema-specifications">🗄️
+Thiết Kế Cơ Sở Dữ Liệu Chi Tiết (Database Schema Specifications)</h2>
+<p><strong>Tên Cơ Sở Dữ Liệu:</strong> <code>OmniCastDb</code>
+(PostgreSQL trên Supabase Cloud)<br />
+<strong>ORM:</strong> Prisma ORM, 6 Models: 1. <code>UserAccount</code>:
+<code>accountId</code>, <code>fullName</code>, <code>email</code>,
+<code>passwordHash</code>, <code>role</code> (1, 2, 3),
+<code>refreshToken</code>, <code>refreshTokenExpiry</code>,
+<code>createdAt</code>. 2. <code>BroadcastChannel</code>:
+<code>channelId</code>, <code>channelName</code>,
+<code>channelCode</code>, <code>description</code>,
+<code>logoUrl</code>, <code>isActive</code>, <code>createdById</code>.
+3. <code>BroadcastProgram</code>: <code>programId</code>,
+<code>externalApiId</code>, <code>title</code>, <code>synopsis</code>,
+<code>bannerUrl</code>, <code>videoTrailerUrl</code>,
+<code>durationMinutes</code>, <code>airDateTime</code>,
+<code>channelId</code>, <code>createdById</code>,
+<code>isPublished</code>. 4. <code>ProductionTag</code> &amp;
+<code>ProgramTag</code>: Phân loại thể loại chương trình (Quan hệ N-N).
+5. <code>BroadcastAiReport</code>: <code>reportId</code>,
+<code>programId</code> (1-1 với BroadcastProgram),
+<code>broadcastSuitability</code>, <code>suggestedTimeSlot</code>,
+<code>targetAudienceVibe</code>, <code>riskWarnings</code>,
+<code>aiModelVersion</code>, <code>createdAt</code>. 6.
+<code>AuditLog</code>: <code>logId</code>, <code>userId</code>,
+<code>action</code>, <code>targetEntity</code>,
+<code>detailPayload</code>, <code>timestamp</code>.</p>
+<hr />
+<h2
+id="nguồn-dữ-liệu-chương-trình-từ-bên-ngoài-external-ingest-sources">🌐
+Nguồn Dữ Liệu Chương Trình Từ Bên Ngoài (External Ingest Sources)</h2>
+<p>OmniCast hỗ trợ đồng bộ lịch phát sóng và metadata chương trình từ 3
+nguồn trực tuyến miễn phí (free tier) để giảm phụ thuộc vào việc nhập
+liệu thủ công. Tất cả worker chạy trong NestJS với
+<code>@nestjs/schedule</code> và ghi log qua
+<code>AuditLoggerService</code>.</p>
+<h3 id="youtube-data-api-v3-lịch-live-stream-thực">1. YouTube Data API
+v3 — Lịch live stream thực</h3>
+<ul>
+<li><strong>Endpoint:</strong>
+<code>GET /youtube/v3/videos?part=snippet,liveStreamingDetails&amp;id=...</code></li>
+<li><strong>Cron:</strong> <code>0 */15 * * * *</code> (mỗi 15
+phút).</li>
+<li><strong>Idempotency:</strong>
+<code>@@unique([channelId, externalPlatform, externalId])</code> trên
+bảng <code>LiveEvent</code>.</li>
+<li><strong>Ánh xạ trường:</strong> <code>scheduledStartTime</code> →
+<code>scheduledAt</code>, <code>actualStartTime</code> →
+<code>startedAt</code>, <code>actualEndTime</code> →
+<code>endedAt</code>, <code>concurrentViewers</code> →
+<code>viewerCount</code>, <code>snippet.thumbnails.maxres</code> →
+<code>thumbnailUrl</code>, <code>snippet.title</code> →
+<code>title</code>.</li>
+<li><strong>ENV:</strong> <code>YOUTUBE_API_KEY</code> (Google Cloud
+Console → YouTube Data API v3).</li>
+<li><strong>Skip an toàn:</strong> Nếu key không được cấu hình, worker
+ghi audit log <code>INGEST_YOUTUBE_SKIPPED</code> và thoát — không
+throw.</li>
+</ul>
+<h3 id="twitch-helix-lịch-segments-của-broadcaster">2. Twitch Helix —
+Lịch segments của broadcaster</h3>
+<ul>
+<li><strong>OAuth:</strong> Client Credentials Grant tại
+<code>https://id.twitch.tv/oauth2/token</code>, token cache cho đến khi
+còn 5 phút trước khi hết hạn.</li>
+<li><strong>Endpoint:</strong>
+<code>GET /helix/schedule?broadcaster_id=...&amp;start_time=YYYY-MM-DDT00:00:00Z</code></li>
+<li><strong>Cron:</strong> <code>0 */30 * * * *</code> (mỗi 30
+phút).</li>
+<li><strong>Ánh xạ kênh:</strong> Cột
+<code>LiveChannel.twitchBroadcasterId</code> (VARCHAR 100, nullable,
+indexed) — admin nhập khi tạo/sửa kênh.</li>
+<li><strong>Ánh xạ segments:</strong> Mỗi segment → một bản ghi
+<code>LiveEvent</code> với <code>externalPlatform = TWITCH</code>,
+<code>externalId = segmentId</code>,
+<code>duration = (end - start) / 60s</code>,
+<code>tags = [category.name]</code>.</li>
+<li><strong>ENV:</strong> <code>TWITCH_CLIENT_ID</code>,
+<code>TWITCH_CLIENT_SECRET</code>.</li>
+</ul>
+<h3 id="tmdb-themoviedb.org-metadata-enrichment-cho-phimseries">3. TMDB
+(themoviedb.org) — Metadata enrichment cho phim/series</h3>
+<ul>
+<li><strong>Endpoint:</strong>
+<code>GET /3/search/movie?query=...&amp;year=...&amp;language=vi-VN</code>
+(fallback sang <code>search/tv</code>).</li>
+<li><strong>Trigger:</strong> On-demand — fire-and-forget sau
+<code>POST /programs/live-events</code> và
+<code>POST /programs/recordings</code>. Có thể tắt bằng
+<code>INGEST_TMDB_AUTO_ENRICH=false</code>.</li>
+<li><strong>Heuristic:</strong> Bỏ qua tiêu đề listicle
+(<code>Top 10</code>, <code>Tổng Hợp</code>, <code>Trực Tiếp</code>);
+trích năm trong ngoặc <code>(YYYY)</code> để tăng độ chính xác tìm
+kiếm.</li>
+<li><strong>Ánh xạ:</strong> <code>overview</code> →
+<code>description</code>, <code>poster_path</code> (URL
+<code>https://image.tmdb.org/t/p/w500{path}</code>) →
+<code>thumbnailUrl</code>.</li>
+<li><strong>ENV:</strong> <code>TMDB_API_KEY</code>
+(themoviedb.org/settings/api, free tier 50 req/giây).</li>
+</ul>
+<h3 id="admin-trigger">4. Admin Trigger</h3>
+<p>Các endpoint thủ công (yêu cầu JWT + role <code>ADMIN</code>): -
+<code>POST /api/programs/ingest/youtube</code> — chạy ngay 1 lần YouTube
+ingest. - <code>POST /api/programs/ingest/twitch</code> — chạy ngay 1
+lần Twitch ingest. - <code>POST /api/programs/ingest/tmdb/event</code>
+(body: <code>{ eventId }</code>) — enrich 1 LiveEvent. -
+<code>POST /api/programs/ingest/tmdb/recording</code> (body:
+<code>{ recordingId }</code>) — enrich 1 Recording.</p>
+<h3 id="nguồn-không-dùng">5. Nguồn KHÔNG dùng</h3>
+<ul>
+<li>Scraper HTML từ vtv.vn / htv.com.vn / vieon.vn (vi phạm TOS).</li>
+<li>Pirate IPTV XMLTV feed (rủi ro pháp lý cho đồ án học thuật).</li>
+<li>Telegram bot scrape EPG (không ổn định).</li>
+</ul>
+<h3 id="bảng-mới-chỉ-mục-migration-002">6. Bảng mới &amp; chỉ mục
+(Migration 002)</h3>
+<ul>
+<li><code>LiveChannel.twitchBroadcasterId VARCHAR(100) NULL</code> +
+index.</li>
+<li><code>LiveChannel.youtubeChannelId VARCHAR(100) NULL</code> + index
+(cho tương lai — mapping kênh YouTube thật sang Omni channel).</li>
+<li><code>LiveEvent</code> unique index
+<code>(channelId, externalPlatform, externalId)</code> tên
+<code>channel_platform_external_unique</code> — cho phép NULL externalId
+không vi phạm unique.</li>
+</ul>
+<hr />
+<h2
+id="chiến-lược-triển-khai-cloud-vercel-supabase-deployment-strategy">☁️
+Chiến Lược Triển Khai Cloud: Vercel &amp; Supabase (Deployment
+Strategy)</h2>
+<ul>
+<li><strong>NestJS Core API:</strong> Triển khai trên Vercel
+(<code>https://omnicast-api.vercel.app/swagger</code>).</li>
+<li><strong>Next.js Web Portal:</strong> Triển khai trên Vercel
+(<code>https://omnicast-fe.vercel.app</code>).</li>
+<li><strong>Supabase Cloud:</strong> Quản lý cơ sở dữ liệu PostgreSQL và
+lưu trữ media.</li>
+<li><strong>Flutter Mobile:</strong> Build <code>app-release.apk</code>
+(≤ 25MB), cài đặt trực tiếp trên thiết bị Android thật.</li>
+</ul>
+<hr />
+<p><em>Tài liệu PRD v4.1 bổ sung: standalone gRPC
+<code>audit-logger</code> microservice (Deploy qua Render/Railway),
+Google Play VIP subscription trên Flutter, FCM push notifications với
+deep-link, Supabase Realtime cho comments/reactions, server-rendered
+<code>/help</code> &amp; <code>/docs</code> portal, password reset flow
+chuẩn OWASP, và 3 migrations mới (008-010).</em></p>
+
+  </div>
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Reference Documentation</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

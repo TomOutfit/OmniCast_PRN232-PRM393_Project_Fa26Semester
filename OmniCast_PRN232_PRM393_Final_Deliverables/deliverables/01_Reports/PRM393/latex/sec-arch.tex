@@ -1,0 +1,148 @@
+% ============================================================
+% PRM393 - Section 2: Architecture & Foundation (Bilingual)
+% ============================================================
+\section{\bi{Kiến trúc ứng dụng di động}{Mobile System Architecture}}
+\label{sec:arch}
+
+\bi{
+OmniCast Mobile tuân thủ triệt để nguyên lý phân tách trách nhiệm (Separation
+of Concerns) và kiến trúc Clean Architecture được điều chỉnh cho hệ sinh thái
+Flutter. Cấu trúc mã nguồn được phân chia thành bốn tầng độc lập:
+Presentation, Logic (BLoC), Data và Core, bảo đảm tính độc lập khi kiểm thử
+(testability), khả năng tái sử dụng mã nguồn và tính dễ bảo trì.
+}{
+OmniCast Mobile strictly adheres to the Separation of Concerns and Clean
+Architecture principles adapted for the Flutter framework. The codebase is
+organized into four distinct layers: Presentation, Logic (BLoC), Data, and
+Core, ensuring high testability, modular reusability, and long-term
+maintainability.
+}
+
+\begin{figure}[t]
+\centering
+\fitcol{\figMobileArchitecture}
+\caption{\bi{Sơ đồ kiến trúc phân tầng 4 lớp của ứng dụng di động OmniCast:
+tầng Presentation điều hướng qua GoRouter (31 màn hình, 22 widget), tầng Logic với 12 BLoC/Cubit, tầng
+Data giao tiếp đồng thời với REST API, Socket.IO \texttt{/live} và SQLite ngoại tuyến.}{The 4-tier
+layered architecture of OmniCast Mobile: Presentation routed by GoRouter (31 screens, 22 widgets),
+Logic driven by 12 BLoC/Cubits, and Data communicating concurrently with
+NestJS REST APIs, Socket.IO \texttt{/live} and local SQLite storage.}}
+\label{fig:mob_arch}
+\end{figure}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figLiveStreamArch}
+\caption{\bi{Kiến trúc truyền phát trực tiếp (LiveStream) và bàn điều khiển Live Studio đầu-cuối giữa ứng dụng di động Flutter, cổng Web Next.js 15, máy chủ MediaMTX (WHIP/WHEP/HLS) và cổng Socket.IO \texttt{/live}.}{End-to-end LiveStream and Live Studio architecture bridging the Flutter mobile client, Next.js 15 web portal, MediaMTX (WHIP/WHEP/HLS) and the Socket.IO \texttt{/live} gateway.}}
+\label{fig:mob_livestream_arch}
+\end{figure*}
+
+\subsection{\bi{Phân tầng trách nhiệm}{Layered Organization}}
+
+\bi{
+Bốn tầng kiến trúc được tổ chức như sau:
+}{
+The four architectural tiers are defined as follows:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Presentation Layer:} \bi{Gồm 31 màn hình (screens) và 22
+  thành phần giao diện tái sử dụng (widgets). Tầng này hoàn toàn không chứa
+  logic nghiệp vụ phức tạp mà chỉ chịu trách nhiệm hiển thị trạng thái và
+  phát sinh các sự kiện người dùng (User Events).}{%
+  Encompasses 31 screens and 22 reusable widgets. This tier is completely free
+  of business computations, focusing solely on state rendering and event
+  dispatching.}
+
+  \item \textbf{Logic Layer (BLoC / Cubit):} \bi{Gồm 12 module điều phối
+  nghiệp vụ. BLoC tiếp nhận sự kiện từ Presentation, giao tiếp với tầng Data
+  qua các Repository và phát ra các trạng thái mới (States) thông qua các
+  Stream bất đồng bộ.}{%
+  Hosts 12 state-management modules. BLoCs accept incoming events from UI
+  widgets, invoke domain repositories, and emit reactive state streams.}
+
+  \item \textbf{Data Layer:} \bi{Chứa 10 Repository, Data Sources và 10 Model
+  dữ liệu. Tầng này trừu tượng hóa nguồn gốc dữ liệu: tự động quyết định đọc
+  từ bộ nhớ đệm SQLite hay gọi mạng từ xa qua Dio Client.}{%
+  Encapsulates 10 Repositories, Data Sources, and 10 Data Transfer Objects (DTOs).
+  It abstracts data origins, transparently querying SQLite or fetching
+  remotely via Dio.}
+
+  \item \textbf{Core Layer:} \bi{Cung cấp các tiện ích dùng chung: bộ định
+  tuyến \texttt{GoRouter}, bộ tiêm phụ thuộc \texttt{get\_it}, dịch vụ khám phá máy chủ phát sóng nội bộ \texttt{LanDiscoveryService}, dịch vụ đẩy luồng \texttt{WebRTCPublisherService}, cấu hình
+  giao diện (theme), chuỗi bản địa hóa (i18n), dịch vụ thông báo cục bộ và
+  quản lý token bảo mật.}{%
+  Supplies cross-cutting concerns: \texttt{GoRouter} navigation definitions,
+  \texttt{get\_it} dependency injection, \texttt{LanDiscoveryService} Wi-Fi subnet scanner, \texttt{WebRTCPublisherService} WHIP streamer, UI theme styling, i18n
+  localization, and secure token storage.}
+\end{enumerate}
+
+\subsection{\bi{Bộ tiêm phụ thuộc (Dependency Injection)}{Dependency Injection with GetIt}}
+
+\bi{
+Toàn bộ các thực thể Repository, Data Source, HTTP Client và BLoC được khởi
+tạo và quản lý vòng đời thông qua thư viện \texttt{get\_it}. Trong tệp
+\texttt{injection\_container.dart}, cơ chế đăng ký được phân định rõ ràng
+giữa Lazy Singleton (cho các dịch vụ mạng, cơ sở dữ liệu và repository) và
+Factory (cho các BLoC cần tạo mới theo vòng đời màn hình):
+}{
+All Repositories, Data Sources, Network Clients, and BLoC instances have
+their lifecycles managed via the \texttt{get\_it} service locator. In
+\texttt{injection\_container.dart}, registrations are strictly partitioned
+between Lazy Singletons (for stateless services, DB helpers, and repositories)
+and Factories (for transient BLoC instances tied to screen lifecycles):
+}
+
+\begin{lstlisting}[language=Dart, caption={\bi{Cấu hình tiêm phụ thuộc trong \texttt{injection\_container.dart}.}{Dependency injection configuration in \texttt{injection\_container.dart}.}}]
+final sl = GetIt.instance;
+
+Future<void> init() async {
+  // BLoCs (Factory)
+  sl.registerFactory(() => AuthBloc(sl()));
+  sl.registerFactory(() => WatchlistBloc(sl()));
+  sl.registerFactory(() => EpgBloc(sl()));
+
+  // Repositories (Lazy Singleton)
+  sl.registerLazySingleton<WatchlistRepository>(
+    () => WatchlistRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+    ),
+  );
+
+  // Core & Drivers
+  sl.registerLazySingleton(() => DioClient(sl()));
+  sl.registerLazySingleton(() => DatabaseHelper());
+}
+\end{lstlisting}
+
+\subsection{\bi{Tầng mạng và xoay vòng Token bảo mật}{Networking and JWT Token Rotation}}
+
+\bi{
+Giao tiếp HTTP được thực hiện qua thư viện \texttt{Dio} với lớp đánh chặn
+\texttt{AuthInterceptor}. Khi ứng dụng nhận mã lỗi \texttt{HTTP 401
+Unauthorized}, bộ đánh chặn sẽ tự động kích hoạt tiến trình làm mới token
+thông qua Refresh Token lưu trong \texttt{flutter\_secure\_storage}:
+}{
+Remote HTTP communications are powered by \texttt{Dio} enriched with a custom
+\texttt{AuthInterceptor}. Upon intercepting an \texttt{HTTP 401 Unauthorized}
+response, the interceptor transparently initiates a background token refresh
+using the refresh token persisted in \texttt{flutter\_secure\_storage}:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{Tạm dừng hàng đợi các yêu cầu đang chờ (request queue lock).}{%
+  Locks the active request queue to prevent cascading 401 errors.}
+  \item \bi{Gửi yêu cầu làm mới tới \texttt{/api/v1/auth/refresh} với Refresh
+  Token hợp lệ.}{%
+  Dispatches a refresh request to \texttt{/api/v1/auth/refresh} with the
+  existing refresh token.}
+  \item \bi{Lưu trữ cặp Access/Refresh token mới và phát lại các yêu cầu bị
+  tạm dừng với Bearer token mới.}{%
+  Persists the refreshed token pair and replays pending requests with the
+  new Bearer token.}
+  \item \bi{Nếu Refresh Token hết hạn hoặc bị thu hồi, chuyển hướng người
+  dùng về màn hình Đăng nhập một cách an toàn.}{%
+  If the refresh token itself is invalid or revoked, safely clears the session
+  and redirects the user to the Login screen.}
+\end{enumerate}

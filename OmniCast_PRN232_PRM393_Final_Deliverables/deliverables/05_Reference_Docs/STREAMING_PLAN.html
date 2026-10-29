@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - STREAMING_PLAN</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS</div>
+    <div class="fptu-tag">FU CAHATA • REFERENCE DOCS</div>
+  </div>
+  <div class="content">
+<h1 id="plan-xử-lý-video-streaming-omnicast-prn232-prm393">📺 Plan Xử Lý
+Video Streaming — OmniCast (PRN232 + PRM393)</h1>
+<blockquote>
+<p><strong>Mục tiêu:</strong> Tổng hợp 12 góp ý từ Review 1 về video
+streaming thành một kế hoạch triển khai có thứ tự ưu tiên rõ ràng, phân
+chia task theo đúng phạm vi PRN232 (Backend + Web) và PRM393 (Mobile
+Flutter).<br />
+<strong>Phạm vi áp dụng:</strong> MVP cho Demo nhiều người xem cùng lúc
+(≥ 50 viewers), 5-7 kênh chạy tuần tự, gói Subscription mô phỏng, phân
+quyền minh bạch theo Role RBAC.<br />
+<strong>Cập nhật:</strong> Oct 2026 — dựa trên codebase hiện tại
+(OmniPlayer, VideoPlayer, StitchLivePlayer, ChannelTiers đã có sẵn).</p>
+</blockquote>
+<hr />
+<h2 id="tổng-quan-12-góp-ý-trạng-thái-xử-lý">🎯 1. Tổng Quan 12 Góp Ý
+&amp; Trạng Thái Xử Lý</h2>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th style="text-align: left;">Góp Ý</th>
+<th style="text-align: left;">Hiện trạng Code</th>
+<th style="text-align: left;">Hành động Cần làm</th>
+<th style="text-align: center;">Mức ưu tiên</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: left;">AI phát video</td>
+<td style="text-align: left;">❌ Chưa có — AI chỉ thẩm định nội
+dung</td>
+<td style="text-align: left;">Tích hợp Auto-Curator AI chọn video + lập
+lịch phát tuần tự</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: left;">Nguyên nhân Lag &amp; luồng dữ liệu</td>
+<td style="text-align: left;">⚠️ Mobile dùng <code>video_player</code>
+gốc, Web dùng <code>hls.js</code> — chưa có CDN/edge</td>
+<td style="text-align: left;">Dựng kiến trúc CDN + Adaptive Bitrate</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td style="text-align: left;">Ghi log</td>
+<td style="text-align: left;">⚠️ Backend có <code>AuditLogger</code>
+(gRPC) cho CRUD, chưa log stream</td>
+<td style="text-align: left;">Mở rộng audit + log view metric cho
+streaming</td>
+<td style="text-align: center;">🟡 Trung bình</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td style="text-align: left;">Kỹ thuật Streaming phù hợp</td>
+<td style="text-align: left;">⚠️ HLS qua CDN, chưa có ABR đầy đủ</td>
+<td style="text-align: left;">Chọn <strong>HLS + ABR</strong> làm chuẩn,
+bổ sung fallback MP4</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td style="text-align: left;">Nguồn Video</td>
+<td style="text-align: left;">⚠️ Đang dùng YouTube embed + Mux test
+stream</td>
+<td style="text-align: left;">Chuyển sang <strong>CDN self-hosted
+(Cloudflare/Bunny)</strong> + ingest từ nguồn công khai</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">6</td>
+<td style="text-align: left;">Học VTVGo &amp; áp dụng</td>
+<td style="text-align: left;">❌ Chưa nghiên cứu</td>
+<td style="text-align: left;">Reverse-engineer flow VTVGo → apply</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">7</td>
+<td style="text-align: left;">5-7 kênh tuần tự</td>
+<td style="text-align: left;">⚠️ Đã có 25 channel tier (5 free, 20
+VIP)</td>
+<td style="text-align: left;">Roster gọn: 5-7 kênh, chạy sequential
+playlist</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">8</td>
+<td style="text-align: left;">Live</td>
+<td style="text-align: left;">⚠️ Có <code>LIVE NOW</code> UI, chưa
+pipeline thật</td>
+<td style="text-align: left;">Pipeline RTMP ingest → HLS packager</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">9</td>
+<td style="text-align: left;">Share</td>
+<td style="text-align: left;">⚠️ Có <code>ShareHelper</code> cơ bản</td>
+<td style="text-align: left;">Mở rộng share kiểu VTVGo (Deep link + QR +
+Social)</td>
+<td style="text-align: center;">🟡 Trung bình</td>
+</tr>
+<tr>
+<td style="text-align: center;">10</td>
+<td style="text-align: left;">Phân quyền rõ ràng</td>
+<td style="text-align: left;">⚠️ Có RBAC 1/2/3, chưa map chi tiết ở tầng
+stream</td>
+<td style="text-align: left;">Bổ sung <code>streamPermission</code> cho
+từng kênh + middleware kiểm tra</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+<tr>
+<td style="text-align: center;">11</td>
+<td style="text-align: left;">Pay Subscription</td>
+<td style="text-align: left;">⚠️ Có VIP Demo Mock QR, chưa có payment
+thật</td>
+<td style="text-align: left;">Mock payment gateway (Sandbox) +
+webhook</td>
+<td style="text-align: center;">🟡 Trung bình</td>
+</tr>
+<tr>
+<td style="text-align: center;">12</td>
+<td style="text-align: left;">Demo nhiều người xem</td>
+<td style="text-align: left;">❌ Chưa có kế hoạch</td>
+<td style="text-align: left;">Kiến trúc scale: CDN edge + WebSocket
+realtime</td>
+<td style="text-align: center;">🟢 Cao</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="nghiên-cứu-vtvgo-rút-ra-bài-học-áp-dụng">🔬 3. Nghiên cứu VTVGo
+— Rút ra bài học áp dụng</h2>
+<h3 id="vtvgo-hoạt-động-như-thế-nào-quan-sát-thực-tế">3.1. VTVGo hoạt
+động như thế nào (quan sát thực tế)</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Tầng</th>
+<th style="text-align: left;">VTVGo làm gì</th>
+<th style="text-align: left;">Áp dụng cho OmniCast</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Ingest</strong></td>
+<td style="text-align: left;">Thu tín hiệu từ VTV1, VTV3… qua
+<strong>RTMP từ studio</strong> → server nội bộ VTV</td>
+<td style="text-align: left;">Demo: dùng <strong>OBS Studio + RTMP
+server</strong> (MediaMTX / nginx-rtmp) local → đẩy lên CDN</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Packager</strong></td>
+<td style="text-align: left;"><strong>FFmpeg + HLS segmenter</strong>
+cắt luồng thành <code>.ts</code> 4-6s, tạo <code>.m3u8</code> master với
+nhiều rendition (ABR)</td>
+<td style="text-align: left;">Dùng <strong>shaka-packager</strong> hoặc
+<strong>unrealstreaming</strong> để generate multi-bitrate HLS</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>CDN</strong></td>
+<td style="text-align: left;">CDN nội bộ VTV + Cloudflare edge</td>
+<td style="text-align: left;">Dùng <strong>Cloudflare Stream</strong>
+hoặc <strong>Bunny Stream</strong> (free tier ủng hộ sinh viên)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Player</strong></td>
+<td style="text-align: left;">ExoPlayer (Android) + AVPlayer (iOS) +
+video.js (Web) có <strong>DVR scrubber</strong> tua lại 3h</td>
+<td style="text-align: left;">Bổ sung DVR 30 phút cho cả Mobile +
+Web</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Auth</strong></td>
+<td style="text-align: left;">Token JWT riêng cho mỗi phiên stream, có
+thời hạn 5 phút, refresh liên tục</td>
+<td style="text-align: left;">Cấp <strong>signed URL HLS</strong> hết
+hạn 60s, có middleware NestJS verify</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Subscription</strong></td>
+<td style="text-align: left;">Gói VTVGo Premium 30k/tháng, khoá kênh
+VTVCab+</td>
+<td style="text-align: left;">Mock với bảng <code>Subscription</code> +
+flag <code>isVipUser</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Share</strong></td>
+<td style="text-align: left;">Deep link
+<code>vtvgo.vn/live/{slug}</code>, “Xem lại từ đầu”</td>
+<td style="text-align: left;">Deep link
+<code>omnicast-fe.vercel.app/channels/{slug}?t={seconds}</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chat realtime</strong></td>
+<td style="text-align: left;">Polling mỗi 3s (VTVGo không có WS)</td>
+<td style="text-align: left;">Dùng <strong>WebSocket</strong> (tốt hơn
+VTVGo)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Multi-camera</strong></td>
+<td style="text-align: left;">Chỉ có Main + 1-2 góc cam (chỉ sự cỏ bóng
+đá lớn)</td>
+<td style="text-align: left;">Mở rộng: 4 camera angles cho event thể
+thao</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bài-học-rút-ra">3.2. Bài học rút ra</h3>
+<ol type="1">
+<li><strong>Không cần tự dựng CDN:</strong> Cloudflare/Bunny xử lý ABR
+tốt hơn tự host.</li>
+<li><strong>Signed URL là chìa khóa chống leech:</strong> Bắt buộc cho
+cả kênh Free &amp; VIP.</li>
+<li><strong>DVR scrubber 30 phút</strong> là tính năng “ăn tiền” — làm
+khác biệt so với VTVGo (chỉ có ở sự cỏ lớn).</li>
+<li><strong>Chat polling không scale:</strong> Nên dùng WebSocket từ
+đầu.</li>
+</ol>
+<hr />
+<h2 id="kiến-trúc-streaming-đề-xuất">🏗️ 4. Kiến trúc Streaming đề
+xuất</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────────────┐
+│                     NGUỒN VIDEO (Ingest Layer)                       │
+│  OBS Studio / FFmpeg → RTMP push → MediaMTX / nginx-rtmp           │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                  PACKAGER (Transcode + ABR)                          │
+│  FFmpeg / shaka-packager                                             │
+│  Output: 1080p / 720p / 480p → HLS (.m3u8 + .ts segments)        │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                   CDN / STREAMING HOST                              │
+│  Option A: Cloudflare Stream (đơn giản, $$)                        │
+│  Option B: Bunny Stream (rẻ, có ABR sẵn)                            │
+│  Option C: Tự host trên Vercel Blob + Edge (miễn phí cho demo)     │
+│  → Signed URL expire 60s                                          │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                OMNICAST BACKEND API (NestJS)                        │
+│  - GET /api/streams/:channelId/url   (trả về signed URL)            │
+│  - POST /api/streams/:id/log-view   (ghi log view)                  │
+│  - WebSocket /ws/chat/:eventId       (live chat realtime)           │
+│  - JWT middleware kiểm tra quyền (RBAC + Subscription)              │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                          CLIENTS                                    │
+│  📱 Flutter Mobile: better_player (HLS + ABR + cache)               │
+│  🌐 Next.js Web: hls.js + shaka-player (HLS + ABR)                │
+└──────────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="kỹ-thuật-streaming-chọn">4.1. Kỹ thuật Streaming chọn</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Kỹ thuật</th>
+<th style="text-align: left;">Ưu điểm</th>
+<th style="text-align: left;">Nhược điểm</th>
+<th style="text-align: left;">Quyết định</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>HLS + ABR</strong></td>
+<td style="text-align: left;">Tương thích mọi browser/iOS/Android, scale
+tốt qua CDN</td>
+<td style="text-align: left;">Latency ~6-10s</td>
+<td style="text-align: left;">✅ <strong>Chọn làm chuẩn</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>DASH</strong></td>
+<td style="text-align: left;">ABR tốt hơn HLS, ít overhead</td>
+<td style="text-align: left;">Không support iOS native</td>
+<td style="text-align: left;">❌ Không dùng cho mobile</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>WebRTC</strong></td>
+<td style="text-align: left;">Latency &lt; 1s (sub-second)</td>
+<td style="text-align: left;">Tốn bandwidth server, không scale</td>
+<td style="text-align: left;">❌ Chỉ dùng cho chat/talk-show</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>LL-HLS (Low Latency
+HLS)</strong></td>
+<td style="text-align: left;">Latency 2-3s</td>
+<td style="text-align: left;">Cần CDN hỗ trợ đặc biệt</td>
+<td style="text-align: left;">🟡 Cân nhắc giai đoạn 2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MP4 progressive</strong></td>
+<td style="text-align: left;">Đơn giản, fallback</td>
+<td style="text-align: left;">Không ABR, dễ lag trên 4G</td>
+<td style="text-align: left;">🟡 Giữ làm <strong>fallback</strong> khi
+HLS lỗi</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="plan-xử-lý-từng-góp-ý-task-breakdown">🛠️ 5. Plan Xử Lý Từng Góp
+Ý (Task Breakdown)</h2>
+<h3 id="góp-ý-1-ai-phát-video-auto-curator-playlist"><strong>GÓP Ý #1:
+AI Phát Video (Auto-Curator Playlist)</strong></h3>
+<p><strong>Mô tả:</strong> AI tự động chọn video nào phát tiếp theo
+trong khi chờ event live thật, đảm bảo 5-7 kênh lúc nào cũng có nội
+dung.</p>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 1.1 | Tạo bảng <code>Playlist</code> +
+<code>AiPlaylistDecision</code> trong Prisma | Member 3 (PRN232) |
+Prisma migration | 🔴 | | 1.2 | Service <code>AutoCuratorService</code>
+chạy cron 5 phút: lấy event LIVE → nếu rỗng → gọi OpenAI gợi ý 1-3
+chương trình từ <code>BroadcastProgram</code> để fill | Member 3
+(PRN232) | OpenAI GPT-4o-mini (tiết kiệm chi phí) | 🔴 | | 1.3 | API
+<code>GET /api/ai/playlist/:channelId/next</code> trả về programId tiếp
+theo | Member 3 (PRN232) | NestJS endpoint | 🔴 | | 1.4 | Mobile
+<code>ProgramDetailScreen</code> polling mỗi 60s khi event LIVE kết thúc
+→ tự switch sang playlist tiếp | Member 3 (PRM393) | Bloc timer +
+auto-navigation | 🔴 |</p>
+<p><strong>Acceptance Criteria:</strong> - Khi 1 kênh hết live, trong
+vòng 30s hệ thống tự fill chương trình mới. - Có audit log mỗi lần AI
+quyết định.</p>
+<hr />
+<h3 id="góp-ý-2-nguyên-nhân-lag-luồng-dữ-liệu"><strong>GÓP Ý #2: Nguyên
+nhân Lag &amp; Luồng Dữ Liệu</strong></h3>
+<p><strong>Nguyên nhân lag phổ biến:</strong> 1. <strong>Network
+bottleneck:</strong> Client không có ABR → bắt buộc tải 1080p dù 3G. 2.
+<strong>CDN miss:</strong> Origin server xa → request đi vòng. 3.
+<strong>Player buffer:</strong> Buffer chưa đủ → re-buffering liên tục.
+4. <strong>Backend proxy:</strong> Backend forward video → tốn double
+hop.</p>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 2.1 | Thiết lập CDN edge (Cloudflare hoặc Bunny)
+cho <code>.m3u8</code> + <code>.ts</code> | Member 1 (PRN232) |
+Cloudflare Stream API | 🔴 | | 2.2 | Backend <strong>KHÔNG proxy
+video</strong> — chỉ trả signed URL | Member 1 (PRN232) | NestJS return
+URL only | 🔴 | | 2.3 | Mobile: <code>better_player</code> thay cho
+<code>video_player</code> (hỗ trợ HLS + ABR + cache) | Member 2 (PRM393)
+| <code>better_player: ^0.0.84</code> | 🔴 | | 2.4 | Mobile: thêm
+prefetch 10s segments tiếp theo | Member 2 (PRM393) |
+<code>prefetchData: true</code> | 🟡 | | 2.5 | Web: <code>hls.js</code>
+config <code>maxBufferLength: 30</code>,
+<code>maxMaxBufferLength: 600</code>, ABR enabled | Member 1 (PRN232) |
+Next.js VideoPlayer tweak | 🟡 | | 2.6 | Monitoring latency: ping CDN
+mỗi 30s, log lên AuditLog | Member 1 (PRN232) | NestJS Scheduler | 🟢
+|</p>
+<p><strong>Acceptance Criteria:</strong> - Video khởi động &lt; 2s trên
+Wi-Fi. - Không re-buffer trên kết nối 4G ổn định.</p>
+<hr />
+<h3 id="góp-ý-3-ghi-log-cho-streaming"><strong>GÓP Ý #3: Ghi Log cho
+Streaming</strong></h3>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 3.1 | Mở rộng <code>AuditLogger</code> (gRPC) thêm
+action: <code>STREAM_PLAY</code>, <code>STREAM_PAUSE</code>,
+<code>STREAM_ERROR</code>, <code>STREAM_BUFFER</code>,
+<code>STREAM_COMPLETE</code> | Member 3 (PRN232) | gRPC + Supabase | 🔴
+| | 3.2 | API <code>POST /api/streams/log</code> nhận event từ client
+(debounce 5s) | Member 3 (PRN232) | NestJS endpoint | 🔴 | | 3.3 |
+Mobile <code>OmniPlayer</code> thêm listener: ghi log khi
+play/pause/error | Member 3 (PRM393) | Callback to API | 🟡 | | 3.4 |
+Web <code>VideoPlayer</code> thêm listener tương tự | Member 1 (PRN232)
+| Next.js event handler | 🟡 | | 3.5 | Dashboard Admin hiển thị: top
+kênh xem nhiều nhất, error rate, viewer peak | Member 3 (PRN232) |
+<code>/admin/analytics</code> | 🟢 |</p>
+<p><strong>Acceptance Criteria:</strong> - Mỗi lượt xem đều có log trong
+<code>AuditLog</code> với <code>userId</code>, <code>timestamp</code>,
+<code>eventType</code>. - Admin có thể xem report trong dashboard.</p>
+<hr />
+<h3
+id="góp-ý-4-kỹ-thuật-streaming-đã-chọn-ở-mục-4.1-hls-abr"><strong>GÓP Ý
+#4: Kỹ thuật Streaming</strong> <em>(đã chọn ở mục 4.1 — HLS +
+ABR)</em></h3>
+<hr />
+<h3 id="góp-ý-5-nguồn-video"><strong>GÓP Ý #5: Nguồn Video</strong></h3>
+<p><strong>Phân loại nguồng video cho 5-7 kênh:</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Kênh</th>
+<th style="text-align: left;">Nội dung</th>
+<th style="text-align: left;">Nguồn</th>
+<th style="text-align: left;">Bản quyền</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Omni Sport 1</td>
+<td style="text-align: left;">Bóng đá quốc tế</td>
+<td style="text-align: left;">Highlight từ YouTube Creative Commons +
+FFmpeg pack lại HLS</td>
+<td style="text-align: left;">✅ OK (CC)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni Sport 2</td>
+<td style="text-align: left;">Bóng rổ / Esports</td>
+<td style="text-align: left;">✅ KO</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni Show</td>
+<td style="text-align: left;">Gameshow VN</td>
+<td style="text-align: left;">Re-cut từ VTV archive (có bản quyền
+demo)</td>
+<td style="text-align: left;">✅ Mock</td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni Entertain</td>
+<td style="text-align: left;">Phim sitcom</td>
+<td style="text-align: left;">TMDB API + trailer clips</td>
+<td style="text-align: left;">✅ OK</td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni Cine</td>
+<td style="text-align: left;">Phim chiếu rạp</td>
+<td style="text-align: left;">TMDB sample video</td>
+<td style="text-align: left;">✅ OK</td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni News</td>
+<td style="text-align: left;">Tin tức 24h</td>
+<td style="text-align: left;">NASA/YouTube public livestream</td>
+<td style="text-align: left;">✅ OK</td>
+</tr>
+<tr>
+<td style="text-align: left;">Omni Doc</td>
+<td style="text-align: left;">Documentary</td>
+<td style="text-align: left;">BBC Creative Commons</td>
+<td style="text-align: left;">✅ OK</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 5.1 | Chuẩn bị 5-7 kênh playlist (mỗi kênh 20-50
+video ngắn 5-15 phút) | Member 2 (PRN232) | FFmpeg transcode sang HLS 3
+rendition | 🔴 | | 5.2 | Upload lên Cloudflare Stream hoặc Bunny Stream
+(5GB free) | Member 2 (PRN232) | API upload | 🔴 | | 5.3 | Cập nhật
+<code>BroadcastChannel.streamUrl</code> trong DB trỏ tới CDN URL |
+Member 1 (PRN232) | Prisma seed update | 🔴 | | 5.4 | Cho phép Admin
+chỉnh sửa <code>streamUrl</code> qua CMS <code>/studio/curator</code> |
+Member 1 (PRN232) | UI form | 🟡 |</p>
+<p><strong>Acceptance Criteria:</strong> - Mỗi kênh có ít nhất 10 video
+backup chạy tuần tự (sequential). - Có thể tắt/bật source qua Admin.</p>
+<hr />
+<h3 id="góp-ý-6-học-vtvgo-đã-trình-bày-ở-mục-3"><strong>GÓP Ý #6: Học
+VTVGo</strong> <em>(đã trình bày ở mục 3)</em></h3>
+<hr />
+<h3 id="góp-ý-7-5-7-kênh-tuần-tự-sequential-playlist"><strong>GÓP Ý #7:
+5-7 Kênh Tuần Tự (Sequential Playlist)</strong></h3>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 7.1 | Quyết định roster cuối: <strong>5 kênh
+Free</strong> (đủ demo) + <strong>2 kênh VIP</strong> | =6,16 (Tech
+Lead) | PRD update | 🔴 | | 7.2 | Update
+<code>ChannelTiers.freeChannelSlugs</code> trong
+<code>mobile/lib/core/constants/channel_tiers.dart</code> | Member 2
+(PRM393) | Hard-code list | 🔴 | | 7.3 | Backend
+<code>SequentialPlaylistService</code> round-robin trong cùng channel
+khi hết live | Member 2 (PRN232) | NestJS service | 🔴 | | 7.4 | Mobile
+<code>OmniPlayer</code> tự động next video khi kết thúc (loop playlist)
+| Member 2 (PRM393) | VideoPlayerController listener | 🔴 | | 7.5 | Web
+<code>VideoPlayer</code> xử lý <code>ended</code> event → call API lấy
+URL tiếp | Member 1 (PRN232) | React effect | 🔴 |</p>
+<p><strong>Acceptance Criteria:</strong> - 5 kênh luôn có nội dung 24/7
+không downtime. - Khi hết 1 video, chuyển sang cái tiếp theo trong
+3s.</p>
+<hr />
+<h3 id="góp-ý-8-live-streaming-pipeline"><strong>GÓP Ý #8: Live
+Streaming Pipeline</strong></h3>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 8.1 | Dựng RTMP server bằng MediaMTX (Docker) cho
+demo nội bộ | Member 1 (PRN232) | Docker compose | 🔴 | | 8.2 | FFmpeg
+pipeline: nhận RTMP → segment HLS 4s → upload Cloudflare Stream | Member
+1 (PRN232) | FFmpeg + Watch API | 🔴 | | 8.3 | Khi demo thật: dùng OBS
+Studio push RTMP từ máy local | Member 1 (PRN232) | OBS | 🔴 | | 8.4 |
+Mobile/Web player check <code>event.isLive</code> → fallback sequential
+nếu offline | Member 2 (PRM393) + Member 1 (PRN232) | State management |
+🟡 |</p>
+<p><strong>Acceptance Criteria:</strong> - Có thể live stream từ máy
+tính demo lên Cloudflare. - App tự động detect khi live và switch
+UI.</p>
+<hr />
+<h3 id="góp-ý-9-share"><strong>GÓP Ý #9: Share</strong></h3>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 9.1 | Mở rộng <code>ShareHelper</code> (đã có) thêm
+options: copy URL, Zalo, Messenger, QR code | Member 2 (PRM393) |
+<code>share_plus</code> package | 🔴 | | 9.2 | Web
+<code>ShareButton</code> (đã có trong <code>StitchLivePlayer</code>) →
+dùng <code>navigator.share</code> Web Share API | Member 1 (PRN232) |
+Web API | 🟡 | | 9.3 | QR code chứa deep link
+<code>omnicast://live/{programId}</code> | Member 2 (PRM393) |
+<code>qr_flutter</code> package | 🟡 | | 9.4 | Backend tracking share
+event → bump <code>LiveEvent.shareCount</code> | Member 3 (PRN232) | API
+endpoint | 🟡 | | 9.5 | Deep link handler mở đúng màn hình khi tap từ
+mobile | Member 2 (PRM393) | <code>app_links</code> package | 🟢 |</p>
+<p><strong>Acceptance Criteria:</strong> - Share được 1 click ra Zalo,
+Messenger, copy URL, QR code. - Track được share event trong admin
+dashboard.</p>
+<hr />
+<h3 id="góp-ý-10-phân-quyền-rõ-ràng"><strong>GÓP Ý #10: Phân Quyền Rõ
+Ràng</strong></h3>
+<p><strong>Ma trận quyền mới cho Streaming:</strong></p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Role</th>
+<th style="text-align: center;">Xem Free Channel</th>
+<th style="text-align: center;">Xem VIP Channel</th>
+<th style="text-align: center;">Tạo Stream</th>
+<th style="text-align: center;">Quản lý Playlist</th>
+<th style="text-align: center;">Xem Audit Log</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Guest</strong> (0)</td>
+<td style="text-align: center;">✅ Preview 30s</td>
+<td style="text-align: center;">❌ Blocked (paywall)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Viewer</strong> (2)</td>
+<td style="text-align: center;">✅ Full</td>
+<td style="text-align: center;">⚠️ Cần VIP</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌ (chỉ xem cá nhân)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP Viewer</strong> (2 + sub)</td>
+<td style="text-align: center;">✅ Full</td>
+<td style="text-align: center;">✅ Full</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Staff</strong> (1)</td>
+<td style="text-align: center;">✅ Full</td>
+<td style="text-align: center;">✅ Full (bypass)</td>
+<td style="text-align: center;">✅ Upload</td>
+<td style="text-align: center;">✅ CRUD</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Admin</strong> (3)</td>
+<td style="text-align: center;">✅ Full</td>
+<td style="text-align: center;">✅ Full (bypass)</td>
+<td style="text-align: center;">✅ All</td>
+<td style="text-align: center;">✅ All</td>
+<td style="text-align: center;">✅ Xem tất cả</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 10.1 | Thêm cột <code>subscriptionTier</code> +
+<code>subscriptionExpiry</code> vào <code>UserAccount</code> | Member 3
+(PRN232) | Prisma migration | 🔴 | | 10.2 | Backend middleware
+<code>StreamAccessGuard</code> kiểm tra:
+<code>user.subscriptionTier === 'PREMIUM' \|\| user.role !== 'VIEWER'</code>
+| Member 1 (PRN232) | NestJS Guard | 🔴 | | 10.3 | API
+<code>GET /api/streams/:channelId/url</code> trả về signed URL nếu đủ
+quyền, 403 nếu không | Member 1 (PRN232) | NestJS | 🔴 | | 10.4 | Mobile
+<code>OmniPlayer</code> UI: hiển thị paywall overlay nếu VIP mà user
+không có sub (đã có) | Member 2 (PRM393) | Flutter | 🟡 | | 10.5 | Web
+<code>VideoPlayer</code>: cùng logic với localStorage VIP demo flag |
+Member 1 (PRN232) | Next.js | 🟡 |</p>
+<p><strong>Acceptance Criteria:</strong> - VIP channel không thể truy
+cập nếu không có subscription active. - Audit log ghi lại mọi lần truy
+cập bị từ chối.</p>
+<hr />
+<h3 id="góp-ý-11-pay-subscription"><strong>GÓP Ý #11: Pay
+Subscription</strong></h3>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 11.1 | Tạo bảng <code>Subscription</code>:
+<code>id</code>, <code>userId</code>, <code>tier</code> (FREE/PREMIUM),
+<code>startDate</code>, <code>endDate</code>, <code>status</code>,
+<code>paymentRef</code> | Member 3 (PRN232) | Prisma migration | 🔴 | |
+11.2 | Mock payment gateway: API <code>POST /api/payments/create</code>
+→ trả về QR code (giả lập VNPay/MoMo) | Member 1 (PRN232) | NestJS
+endpoint | 🔴 | | 11.3 | Mock webhook:
+<code>POST /api/payments/webhook</code> (gọi từ admin test) → tự động
+active subscription | Member 1 (PRN232) | NestJS | 🔴 | | 11.4 | Mobile:
+trang <code>/subscription</code> với QR code + nút “Đã thanh toán” (giả
+lập) | Member 3 (PRM393) | Flutter | 🔴 | | 11.5 | Web: trang
+<code>/subscription</code> tương tự | Member 1 (PRN232) | Next.js | 🟡 |
+| 11.6 | Auto-expire subscription sau 30 ngày (cron job) | Member 3
+(PRN232) | NestJS Scheduler | 🟡 |</p>
+<p><strong>Acceptance Criteria:</strong> - User có thể kích hoạt VIP
+demo chỉ với 1 click. - Sau khi kích hoạt, có thể xem tất cả kênh VIP. -
+Cron job tự động hạ cấp sau khi hết hạn.</p>
+<hr />
+<h3 id="góp-ý-12-demo-nhiều-người-xem-cùng-lúc"><strong>GÓP Ý #12: Demo
+Nhiều Người Xem Cùng Lúc</strong></h3>
+<p><strong>Mục tiêu demo:</strong> ≥ 50 viewers đồng thời trong 1 phiên
+live.</p>
+<p><strong>Task:</strong> | # | Task | Phân công | Kỹ thuật | Ưu tiên |
+|:–:|:—|:—|:—|:—:| | 12.1 | <strong>CDN edge caching</strong> là chìa
+khóa: 50 viewers cùng kéo 1 file <code>.m3u8</code> từ edge gần nhất |
+Member 1 (PRN232) | Cloudflare/Bunny | 🔴 | | 12.2 | Backend: rate-limit
+<code>/api/streams/url</code> 60 req/min/user | Member 3 (PRN232) |
+<code>@nestjs/throttler</code> | 🔴 | | 12.3 | WebSocket chat scale:
+dùng <strong>Supabase Realtime</strong> thay vì tự host WS | Member 3
+(PRN232) | Supabase channel | 🔴 | | 12.4 | Stress test với
+<strong>k6</strong> hoặc <strong>Artillery</strong>: 100 concurrent
+connections, đo latency, error rate | Member 1 (PRN232) | k6 script | 🟡
+| | 12.5 | Load test mobile: cài APK trên 2-3 máy thật cùng lúc | Member
+2 (PRM393) | Manual test | 🟡 | | 12.6 | Chuẩn bị script demo: 1 máy
+live (OBS) + 5 máy xem (Web + Mobile) | Member 1 + 2 + 3 | Demo runbook
+| 🟢 |</p>
+<p><strong>Acceptance Criteria:</strong> - 50 viewers xem cùng lúc,
+latency &lt; 3s. - Không crash backend khi peak load.</p>
+<hr />
+<h2 id="phân-công-tổng-thể-timeline">📋 6. Phân Công Tổng Thể &amp;
+Timeline</h2>
+<h3 id="phase-a-tuần-1-ngay-lập-tức-foundation">Phase A — Tuần 1 (Ngay
+lập tức — Foundation)</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Member</th>
+<th style="text-align: left;">Công việc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Member 1</strong> (PRN232)</td>
+<td style="text-align: left;">Chọn CDN, setup Cloudflare/Bunny Stream,
+thiết lập <code>StreamAccessGuard</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 2</strong> (PRN232)</td>
+<td style="text-align: left;">Chuẩn bị 5-7 kênh playlist, transcode
+video, setup sequential playlist logic</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 3</strong> (PRN232)</td>
+<td style="text-align: left;">Migration DB: bảng
+<code>Subscription</code>, <code>Playlist</code>, mở rộng
+<code>AuditLog</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 2</strong> (PRM393)</td>
+<td style="text-align: left;">Tích hợp <code>better_player</code> cho
+HLS + ABR, fallback</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 3</strong> (PRM393)</td>
+<td style="text-align: left;">Mở rộng <code>OmniPlayer</code> log event
++ auto-next</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-b-tuần-2-core-features">Phase B — Tuần 2 (Core
+Features)</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Member</th>
+<th style="text-align: left;">Công việc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Member 1</strong> (PRN232)</td>
+<td style="text-align: left;">API
+<code>/api/streams/:channelId/url</code> + signed URL + RTMP
+MediaMTX</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 2</strong> (PRN232)</td>
+<td
+style="text-align: left;"><code>/api/ai/playlist/:channelId/next</code>
+cho AI auto-fill</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 3</strong> (PRN232)</td>
+<td style="text-align: left;">Mock payment + webhook + subscription
+cron</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 1</strong> (PRM393)</td>
+<td style="text-align: left;">Share UI: QR code, Zalo, copy link</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 2</strong> (PRM393)</td>
+<td style="text-align: left;">Auto-next video khi sequential playlist
+kết thúc</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-c-tuần-3-polish-demo">Phase C — Tuần 3 (Polish &amp;
+Demo)</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Member</th>
+<th style="text-align: left;">Công việc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Member 1</strong> (PRN232)</td>
+<td style="text-align: left;">Admin analytics dashboard + stress test
+k6</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 3</strong> (PRN232)</td>
+<td style="text-align: left;">VIP paywall overlay + webhook payment</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 1</strong> (PRM393)</td>
+<td style="text-align: left;">Deep link share
+<code>app_links</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Member 3</strong> (PRM393)</td>
+<td style="text-align: left;">Subscription UI mobile</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tất cả</strong></td>
+<td style="text-align: left;">Demo nội bộ + fix bug + đóng gói APK</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ma-trận-ưu-tiên-tổng-hợp-task-kỹ-thuật-ưu-tiên">📊 7. Ma Trận Ưu
+Tiên Tổng Hợp (Task → Kỹ Thuật → Ưu Tiên)</h2>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 23%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Góp ý</th>
+<th style="text-align: left;">Task chính</th>
+<th style="text-align: left;">Kỹ thuật</th>
+<th style="text-align: center;">Mức ưu tiên</th>
+<th style="text-align: left;">Timeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>#1 AI phát video</strong></td>
+<td style="text-align: left;">AutoCuratorService + playlist API</td>
+<td style="text-align: left;">NestJS + OpenAI</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#2 Chống lag</strong></td>
+<td style="text-align: left;">CDN edge + ABR +
+<code>better_player</code></td>
+<td style="text-align: left;">Cloudflare + HLS.js</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#3 Ghi log</strong></td>
+<td style="text-align: left;">AuditLog mở rộng + log API</td>
+<td style="text-align: left;">gRPC + Supabase</td>
+<td style="text-align: center;">🟡 Trung bình</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#4 Kỹ thuật
+streaming</strong></td>
+<td style="text-align: left;">HLS + ABR + MP4 fallback</td>
+<td style="text-align: left;">Shaka / hls.js</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#5 Nguồn video</strong></td>
+<td style="text-align: left;">5-7 kênh + upload CDN</td>
+<td style="text-align: left;">FFmpeg + Cloudflare</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1-2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#6 Học VTVGo</strong></td>
+<td style="text-align: left;">Reverse-engineer + apply</td>
+<td style="text-align: left;">(Nghiên cứu)</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#7 Kênh tuần tự</strong></td>
+<td style="text-align: left;">Sequential playlist service</td>
+<td style="text-align: left;">NestJS service</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#8 Live pipeline</strong></td>
+<td style="text-align: left;">RTMP + FFmpeg + CDN</td>
+<td style="text-align: left;">MediaMTX + FFmpeg</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#9 Share</strong></td>
+<td style="text-align: left;">Mở rộng ShareHelper + QR + Zalo</td>
+<td style="text-align: left;"><code>share_plus</code>,
+<code>qr_flutter</code></td>
+<td style="text-align: center;">🟡 Trung bình</td>
+<td style="text-align: left;">Tuần 2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#10 Phân quyền</strong></td>
+<td style="text-align: left;">StreamAccessGuard + RBAC</td>
+<td style="text-align: left;">NestJS Guard</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#11 Pay</strong></td>
+<td style="text-align: left;">Mock payment + subscription</td>
+<td style="text-align: left;">VNPay mock API</td>
+<td style="text-align: center;">🟡 Trung bình</td>
+<td style="text-align: left;">Tuần 2</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>#12 Demo nhiều người</strong></td>
+<td style="text-align: left;">CDN + WS Supabase + stress test</td>
+<td style="text-align: left;">k6</td>
+<td style="text-align: center;">🔴 Cao</td>
+<td style="text-align: left;">Tuần 3</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2
+id="epg-driven-player-chạy-đúng-theo-thời-gian-thực-bổ-sung-quan-trọng">🔍
+6.5. EPG-Driven Player — Chạy đúng theo thời gian thực (Bổ sung quan
+trọng)</h2>
+<blockquote>
+<p><strong>Góp ý #13 (rất quan trọng):</strong> “Dựa vào tên chương
+trình, phải học cách lấy link video và chạy chính xác theo thời gian
+thực”<br />
+<strong>Quan trọng:</strong> OmniCast có <strong>25 kênh sáng
+tạo</strong> (do AI Curator tạo nội dung), <strong>VTVGo chỉ là case
+study</strong> tham khảo pattern — KHÔNG scrape/reverse-engineer API
+thật của VTV/VTVGo.</p>
+</blockquote>
+<h3 id="bối-cảnh-25-kênh-sáng-tạo">6.5.1. Bối cảnh: 25 kênh sáng
+tạo</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Đặc điểm</th>
+<th style="text-align: left;">Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>25 kênh</strong> = nội dung do AI
+Curator sinh ra</td>
+<td style="text-align: left;">Không phải live TV thật, không có nguồn
+stream thật từ broadcaster</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VTVGo = case study</strong></td>
+<td style="text-align: left;">Học pattern: EPG grid, signed URL,
+sequential playlist, DVR scrubber</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Content pipeline tự
+dựng</strong></td>
+<td style="text-align: left;">Tự chọn nguồn video, tự upload lên CDN, tự
+quản lý playlist</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EPG-driven
+simulation</strong></td>
+<td style="text-align: left;">Giả lập “đang phát theo lịch” bằng cách
+loop video trong playlist + seek offset</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nguồn video được phép dùng (royalty-free):</strong> - ✅
+<strong>Pexels API</strong> (CC0) — 40,000+ video stock miễn phí - ✅
+<strong>Pixabay API</strong> (CC0) — video stock miễn phí<br />
+- ✅ <strong>Coverr.co</strong> (CC0) — video nền chuyên nghiệp - ✅
+<strong>NASA API</strong> (Public Domain) — video thiên văn, khoa học -
+✅ <strong>YouTube Creative Commons</strong> (qua API) - ✅
+<strong>AI-generated</strong> (Runway, Pika Labs) — giai đoạn 2 nếu có
+API key - ❌ <strong>KHÔNG</strong> scrape VTV, HTV, VTVGo, YouTube
+premium - ❌ <strong>KHÔNG</strong> reverse-engineer API thương mại</p>
+<h3 id="vấn-đề-cần-giải-quyết">6.5.2. Vấn đề cần giải quyết</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th style="text-align: left;">Vấn đề</th>
+<th style="text-align: left;">Ví dụ cụ thể</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">A</td>
+<td style="text-align: left;"><strong>Từ tên chương trình → Link
+video</strong></td>
+<td style="text-align: left;">“Khám phá đại dương” → URL video từ Pexels
+về biển</td>
+</tr>
+<tr>
+<td style="text-align: center;">B</td>
+<td style="text-align: left;"><strong>Chạy đúng khung giờ
+EPG</strong></td>
+<td style="text-align: left;">19:00-19:30 phát “Thời sự không gian”,
+19:30-20:00 phát “Phim tài liệu”</td>
+</tr>
+<tr>
+<td style="text-align: center;">C</td>
+<td style="text-align: left;"><strong>User mở giữa chương trình → vào
+đúng phần đang chạy</strong></td>
+<td style="text-align: left;">Mở app lúc 19:15 → vào thẳng “Thời sự
+không gian” đang ở phút thứ 15</td>
+</tr>
+</tbody>
+</table>
+<h3 id="source-resolver-3-nguồn-thay-vì-5">6.5.3. Source Resolver (3
+nguồn thay vì 5)</h3>
+<pre><code>┌──────────────────────────────────────────────────────────────────┐
+│                   SOURCE RESOLVER SERVICE                       │
+│              (Backend NestJS - SourceResolverService)          │
+└──────────────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  CDN Playlist   │ │  Hard-coded Map │ │  AI Auto-Fill   │
+│  (Bunny/Cloud.) │ │  (DB)           │ │  (GPT-4o-mini)  │
+└────────┬────────┘ └────────┬────────┘ └────────┬────────┘
+         │                   │                   │
+         └───────────────────┼───────────────────┘
+                             ▼
+                  ┌─────────────────────┐
+                  │  Priority Resolver   │
+                  │  (fallback chain)    │
+                  └──────────┬──────────┘
+                             ▼
+                  ┌─────────────────────┐
+                  │  Return Signed URL   │
+                  │  (HLS m3u8)         │
+                  └─────────────────────┘</code></pre>
+<p><strong>3 Nguồn theo độ ưu tiên (đơn giản hóa):</strong></p>
+<table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Priority</th>
+<th style="text-align: left;">Nguồn</th>
+<th style="text-align: left;">Cách dùng</th>
+<th style="text-align: left;">Code path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>1</strong></td>
+<td style="text-align: left;"><strong>CDN Sequential
+Playlist</strong></td>
+<td style="text-align: left;">Mỗi kênh có 1 playlist <code>.m3u8</code>
+chứa 10-20 video sáng tạo, đã upload lên Bunny/Cloudflare</td>
+<td
+style="text-align: left;"><code>bunnyCdn.getPlaylist(slug)</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>2</strong></td>
+<td style="text-align: left;"><strong>Hard-coded Map (DB)</strong></td>
+<td style="text-align: left;">Bảng <code>ChannelStreamSource</code> lưu
+<code>streamUrl</code> cho mỗi kênh (override CDN)</td>
+<td
+style="text-align: left;"><code>prisma.channelStreamSource.findFirst()</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>3</strong></td>
+<td style="text-align: left;"><strong>AI Auto-Fill</strong></td>
+<td style="text-align: left;">Khi playlist hết → GPT-4o-mini gợi ý video
+mới từ Pexels/Pixabay API</td>
+<td
+style="text-align: left;"><code>aiFillService.suggest(slug, topic)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>BỎ QUA so với plan cũ:</strong> - ❌ YouTube Live API (vì
+kênh sáng tạo không có live thật) - ❌ VTV/VTVGo API reverse-engineer
+(vi phạm TOS) - ❌ AI browse web (không ổn định, tốn tiền)</p>
+<p><strong>Database Schema (giữ nguyên từ plan cũ):</strong></p>
+<pre class="prisma"><code>model ChannelStreamSource {
+  id           String   @id @default(uuid())
+  channelSlug  String   @unique  // &quot;sport-1&quot;, &quot;show&quot;, &quot;cine&quot;...
+  sourceType   String   // CDN_PLAYLIST | HARDCODED | AI_FILL
+  streamUrl    String   // .m3u8 URL trên Bunny CDN
+  fallbackUrls String[] // backup URLs nếu primary lỗi
+  priority     Int      @default(1)
+  isActive     Boolean  @default(true)
+  lastResolved String?
+  validFrom    DateTime?
+  validTo      DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}</code></pre>
+<h3 id="content-pipeline-quan-trọng-tạo-nội-dung-cho-25-kênh">6.5.4.
+Content Pipeline (Quan trọng — tạo nội dung cho 25 kênh)</h3>
+<p><strong>Quy trình tạo video cho 1 kênh (VD: Omni Sport
+1):</strong></p>
+<pre><code>Bước 1: AI sinh lịch phát sóng
+─────────────────────────────
+GPT-4o-mini sinh JSON EPG 24h:
+{
+  &quot;channel&quot;: &quot;sport-1&quot;,
+  &quot;programs&quot;: [
+    { &quot;title&quot;: &quot;Bóng đá quốc tế - Real Madrid vs Man City&quot;, 
+      &quot;topic&quot;: &quot;football match highlights&quot;, 
+      &quot;startTime&quot;: &quot;19:00&quot;, &quot;duration&quot;: 30 },
+    { &quot;title&quot;: &quot;Phỏng vấn HLV Pep Guardiola&quot;, 
+      &quot;topic&quot;: &quot;football coach interview&quot;, 
+      &quot;startTime&quot;: &quot;19:30&quot;, &quot;duration&quot;: 20 },
+    ...
+  ]
+}
+
+Bước 2: Tìm video nguồn (Python script)
+─────────────────────────────
+Dùng Pexels API:
+GET https://api.pexels.com/videos/search?query=football+match&amp;per_page=10
+→ Trả về danh sách video URLs
+
+Bước 3: Download + xử lý (FFmpeg)
+─────────────────────────────
+ffmpeg -i source1.mp4 -ss 00:00:10 -t 00:05:00 -c copy clip1.mp4
+ffmpeg -i source2.mp4 -ss 00:00:30 -t 00:05:00 -c copy clip2.mp4
+# Thêm intro/outro
+ffmpeg -i clip1.mp4 -i intro.mp4 -filter_complex &quot;[0:v][1:v]concat=n=2:v=1&quot; final1.mp4
+
+Bước 4: Tạo HLS playlist (FFmpeg)
+─────────────────────────────
+ffmpeg -i final1.mp4 -profile:v baseline -level 3.0 -s 1920x1080 
+       -start_number 0 -hls_time 4 -hls_list_size 0 -f hls 
+       sport1_segment_00001.ts
+# Tạo master.m3u8 với 3 rendition
+ffmpeg -i sport1_playlist.mp4 \
+  -map 0:v -map 0:a -map 0:v -map 0:a -map 0:v -map 0:a \
+  -c:v libx264 -crf 22 -c:a aac \
+  -s:v:0 1920x1080 -s:v:1 1280x720 -s:v:2 854x480 \
+  -var_stream_map &quot;v:0,a:0 v:1,a:1 v:2,a:2&quot; \
+  -master_pl_name master.m3u8 \
+  -f hls -hls_time 4 -hls_playlist_type vod \
+  sport1_%v/playlist.m3u8
+
+Bước 5: Upload lên Bunny CDN
+─────────────────────────────
+POST https://api.bunny.net/videolibrary/{libraryId}/videos
+→ Trả về video ID + playback URL
+
+Bước 6: Lưu mapping vào DB
+─────────────────────────────
+prisma.channelStreamSource.upsert({
+  where: { channelSlug: &#39;sport-1&#39; },
+  update: { streamUrl: &#39;https://cdn.bunny.net/.../master.m3u8&#39; },
+  create: { channelSlug: &#39;sport-1&#39;, sourceType: &#39;CDN_PLAYLIST&#39;, 
+            streamUrl: &#39;https://cdn.bunny.net/.../master.m3u8&#39; }
+})</code></pre>
+<p><strong>Roster 25 kênh — Chia theo thể loại:</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Tier</th>
+<th style="text-align: left;">Channel</th>
+<th style="text-align: left;">Chủ đề</th>
+<th style="text-align: left;">Nguồn video ưu tiên</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Free</strong></td>
+<td style="text-align: left;">sport-1</td>
+<td style="text-align: left;">Bóng đá quốc tế</td>
+<td style="text-align: left;">Pexels “football match”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Free</strong></td>
+<td style="text-align: left;">sport-2</td>
+<td style="text-align: left;">Bóng rổ / Esports</td>
+<td style="text-align: left;">Pexels “basketball” + “esports”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Free</strong></td>
+<td style="text-align: left;">show</td>
+<td style="text-align: left;">Gameshow / Talkshow</td>
+<td style="text-align: left;">Pexels “tv studio”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Free</strong></td>
+<td style="text-align: left;">entertain</td>
+<td style="text-align: left;">Phim sitcom</td>
+<td style="text-align: left;">Pexels “comedy scene”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Free</strong></td>
+<td style="text-align: left;">cine</td>
+<td style="text-align: left;">Phim chiếu rạp</td>
+<td style="text-align: left;">Pexels “cinema movie”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">news-1</td>
+<td style="text-align: left;">Tin tức 24h</td>
+<td style="text-align: left;">NASA API + Pexels “news anchor”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">doc-1</td>
+<td style="text-align: left;">Khoa học vũ trụ</td>
+<td style="text-align: left;">NASA API</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">doc-2</td>
+<td style="text-align: left;">Lịch sử thế giới</td>
+<td style="text-align: left;">Pexels “history”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">travel-1</td>
+<td style="text-align: left;">Du lịch Châu Á</td>
+<td style="text-align: left;">Pexels “travel asia”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">travel-2</td>
+<td style="text-align: left;">Du lịch Châu Âu</td>
+<td style="text-align: left;">Pexels “travel europe”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">food-1</td>
+<td style="text-align: left;">Ẩm thực Việt</td>
+<td style="text-align: left;">Pexels “vietnam food”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">food-2</td>
+<td style="text-align: left;">Ẩm thực thế giới</td>
+<td style="text-align: left;">Pexels “cooking”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">music-1</td>
+<td style="text-align: left;">Music video</td>
+<td style="text-align: left;">Pexels “concert”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">music-2</td>
+<td style="text-align: left;">Acoustic / Cover</td>
+<td style="text-align: left;">Pexels “musician”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">tech-1</td>
+<td style="text-align: left;">Tech review</td>
+<td style="text-align: left;">Pexels “technology”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">tech-2</td>
+<td style="text-align: left;">AI &amp; Future</td>
+<td style="text-align: left;">Pexels “artificial intelligence”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">fashion-1</td>
+<td style="text-align: left;">Fashion show</td>
+<td style="text-align: left;">Pexels “fashion runway”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">gaming-1</td>
+<td style="text-align: left;">Gameplay</td>
+<td style="text-align: left;">Pexels “gaming setup”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">anime-1</td>
+<td style="text-align: left;">Anime highlights</td>
+<td style="text-align: left;">Pexels “anime”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">nature-1</td>
+<td style="text-align: left;">Thiên nhiên hoang dã</td>
+<td style="text-align: left;">Pexels “wildlife”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">nature-2</td>
+<td style="text-align: left;">Đại dương</td>
+<td style="text-align: left;">Pexels “ocean”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">art-1</td>
+<td style="text-align: left;">Hội họa / Nghệ thuật</td>
+<td style="text-align: left;">Pexels “art gallery”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">lifestyle-1</td>
+<td style="text-align: left;">Wellness / Yoga</td>
+<td style="text-align: left;">Pexels “yoga”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">education-1</td>
+<td style="text-align: left;">Lịch sử khoa học</td>
+<td style="text-align: left;">Pexels “education”</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIP</strong></td>
+<td style="text-align: left;">cocktail-1</td>
+<td style="text-align: left;">Bartending</td>
+<td style="text-align: left;">Pexels “cocktail”</td>
+</tr>
+</tbody>
+</table>
+<h3 id="epg-sync-service-chạy-đúng-giờ">6.5.5. EPG Sync Service (Chạy
+đúng giờ)</h3>
+<p><strong>API mới:</strong></p>
+<pre><code>GET /api/epg/now?channelSlug={slug}
+→ Trả về chương trình đang phát tại thời điểm now()
+{
+  &quot;programId&quot;: &quot;abc123&quot;,
+  &quot;title&quot;: &quot;Khám phá đại dương&quot;,
+  &quot;channelSlug&quot;: &quot;nature-2&quot;,
+  &quot;scheduledAt&quot;: &quot;2026-10-06T19:00:00+07:00&quot;,
+  &quot;duration&quot;: 1800,           // 30 phút (seconds)
+  &quot;now&quot;: &quot;2026-10-06T19:15:00+07:00&quot;,
+  &quot;currentOffset&quot;: 900,        // 15 phút đã trôi qua
+  &quot;nextProgramId&quot;: &quot;def456&quot;,   // chương trình kế tiếp
+  &quot;streamUrl&quot;: &quot;https://cdn.bunny.net/omnicast/nature-2/playlist.m3u8&quot;,
+  &quot;isLive&quot;: true
+}</code></pre>
+<p><strong>Backend Service:</strong></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>@<span class="fu">Injectable</span>()</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">class</span> EpgNowService {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">async</span> <span class="fu">getNowPlaying</span>(channelSlug<span class="op">:</span> <span class="dt">string</span>)<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span>NowPlayingDto<span class="op">&gt;</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> now <span class="op">=</span> <span class="kw">new</span> <span class="bu">Date</span>()<span class="op">;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 1. Tìm chương trình có [scheduledAt, scheduledAt + duration] chứa now</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> program <span class="op">=</span> <span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="at">prisma</span><span class="op">.</span><span class="at">broadcastProgram</span><span class="op">.</span><span class="fu">findFirst</span>({</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      where<span class="op">:</span> {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        channel<span class="op">:</span> { slug<span class="op">:</span> channelSlug }<span class="op">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        scheduledAt<span class="op">:</span> { lte<span class="op">:</span> now }<span class="op">,</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      }<span class="op">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      orderBy<span class="op">:</span> { scheduledAt<span class="op">:</span> <span class="st">&#39;desc&#39;</span> }<span class="op">,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 2. Resolve stream URL từ SourceResolverService</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> streamUrl <span class="op">=</span> <span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="at">sourceResolver</span><span class="op">.</span><span class="fu">resolve</span>(channelSlug<span class="op">,</span> program<span class="op">?.</span><span class="at">title</span>)<span class="op">;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>program) {</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>      <span class="co">// 3. Không có gì phát → fallback sequential CDN playlist</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> {</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>        programId<span class="op">:</span> <span class="dt">null</span><span class="op">,</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>        title<span class="op">:</span> <span class="st">&#39;OmniCast 24/7&#39;</span><span class="op">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        scheduledAt<span class="op">:</span> now<span class="op">,</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        duration<span class="op">:</span> <span class="dv">3600</span><span class="op">,</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        now<span class="op">,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>        currentOffset<span class="op">:</span> now<span class="op">.</span><span class="fu">getSeconds</span>()<span class="op">,</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>        streamUrl<span class="op">,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>        isLive<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>      }<span class="op">;</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> elapsed <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">floor</span>((now<span class="op">.</span><span class="fu">getTime</span>() <span class="op">-</span> program<span class="op">.</span><span class="at">scheduledAt</span><span class="op">.</span><span class="fu">getTime</span>()) <span class="op">/</span> <span class="dv">1000</span>)<span class="op">;</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> durationSec <span class="op">=</span> program<span class="op">.</span><span class="at">duration</span> <span class="op">*</span> <span class="dv">60</span><span class="op">;</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>      programId<span class="op">:</span> program<span class="op">.</span><span class="at">id</span><span class="op">,</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>      title<span class="op">:</span> program<span class="op">.</span><span class="at">title</span><span class="op">,</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>      scheduledAt<span class="op">:</span> program<span class="op">.</span><span class="at">scheduledAt</span><span class="op">,</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>      duration<span class="op">:</span> durationSec<span class="op">,</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>      now<span class="op">,</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>      currentOffset<span class="op">:</span> elapsed <span class="op">%</span> durationSec<span class="op">,</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>      streamUrl<span class="op">,</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>      isLive<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    }<span class="op">;</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>Source Resolver đơn giản:</strong></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>@<span class="fu">Injectable</span>()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">class</span> SourceResolverService {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">async</span> <span class="fu">resolve</span>(channelSlug<span class="op">:</span> <span class="dt">string</span><span class="op">,</span> programTitle<span class="op">?:</span> <span class="dt">string</span>)<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 1. Check DB hard-coded map</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> source <span class="op">=</span> <span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="at">prisma</span><span class="op">.</span><span class="at">channelStreamSource</span><span class="op">.</span><span class="fu">findFirst</span>({</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      where<span class="op">:</span> { channelSlug<span class="op">,</span> isActive<span class="op">:</span> <span class="kw">true</span> }<span class="op">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (source<span class="op">?.</span><span class="at">streamUrl</span>) <span class="cf">return</span> source<span class="op">.</span><span class="at">streamUrl</span><span class="op">;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 2. CDN playlist theo convention: {CDN_BASE}/{slug}/master.m3u8</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cdnUrl <span class="op">=</span> <span class="vs">`</span><span class="sc">${</span><span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="fu">get</span>(<span class="st">&#39;CDN_BASE_URL&#39;</span>)<span class="sc">}</span><span class="vs">/</span><span class="sc">${</span>channelSlug<span class="sc">}</span><span class="vs">/master.m3u8`</span><span class="op">;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="fu">urlExists</span>(cdnUrl)) <span class="cf">return</span> cdnUrl<span class="op">;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 3. AI fill - gợi ý video mới từ Pexels</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (programTitle) {</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> <span class="cf">await</span> <span class="kw">this</span><span class="op">.</span><span class="at">aiFillService</span><span class="op">.</span><span class="fu">suggest</span>(channelSlug<span class="op">,</span> programTitle)<span class="op">;</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 4. Default fallback - kênh demo</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="vs">`</span><span class="sc">${</span><span class="kw">this</span><span class="op">.</span><span class="at">config</span><span class="op">.</span><span class="fu">get</span>(<span class="st">&#39;CDN_BASE_URL&#39;</span>)<span class="sc">}</span><span class="vs">/default/playlist.m3u8`</span><span class="op">;</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="mobile-client-time-sync-player">6.5.6. Mobile Client — Time-Sync
+Player</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// mobile/lib/logic/streams/epg_sync_bloc.dart</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> EpgSyncBloc <span class="kw">extends</span> Bloc<span class="op">&lt;</span>EpgSyncEvent<span class="op">,</span> EpgSyncState<span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  Timer<span class="op">?</span> _pollingTimer;</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">void</span> startSync(<span class="dt">String</span> channelSlug) <span class="op">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    _pollingTimer<span class="op">?.</span>cancel();</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    _pollingTimer <span class="op">=</span> Timer<span class="op">.</span>periodic(Duration(seconds<span class="op">:</span> <span class="dv">60</span>)<span class="op">,</span> (_) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">final</span> nowPlaying <span class="op">=</span> <span class="at">await</span> api<span class="op">.</span>getEpgNow(channelSlug);</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Nếu đổi chương trình → reload player</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (state<span class="op">.</span>currentProgramId <span class="op">!=</span> nowPlaying<span class="op">.</span>programId) <span class="op">{</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        emit(state<span class="op">.</span>copyWith(</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>          currentProgramId<span class="op">:</span> nowPlaying<span class="op">.</span>programId<span class="op">,</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>          streamUrl<span class="op">:</span> nowPlaying<span class="op">.</span>streamUrl<span class="op">,</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>          title<span class="op">:</span> nowPlaying<span class="op">.</span>title<span class="op">,</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>        ));</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">await</span> player<span class="op">.</span>changeSource(nowPlaying<span class="op">.</span>streamUrl);</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Seek tới đúng offset hiện tại (đề phòng user mở muộn)</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">final</span> offset <span class="op">=</span> nowPlaying<span class="op">.</span>currentOffset;</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">await</span> player<span class="op">.</span>seekTo(Duration(seconds<span class="op">:</span> offset));</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>);</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  <span class="kw">@override</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> close() <span class="op">{</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    _pollingTimer<span class="op">?.</span>cancel();</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">super</span><span class="op">.</span>close();</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Cập nhật OmniPlayer:</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// mobile/lib/presentation/widgets/omni_player.dart</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">// Thêm vào _OmniPlayerState:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>Timer<span class="op">?</span> _epgSyncTimer;</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> _startEpgSync(<span class="dt">String</span> channelSlug) <span class="op">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  _epgSyncTimer<span class="op">?.</span>cancel();</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  _epgSyncTimer <span class="op">=</span> Timer<span class="op">.</span>periodic(Duration(seconds<span class="op">:</span> <span class="dv">60</span>)<span class="op">,</span> (_) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> nowPlaying <span class="op">=</span> <span class="at">await</span> context</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span>read<span class="op">&lt;</span>EpgSyncBloc<span class="op">&gt;</span>()</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span>getNow(channelSlug);</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (nowPlaying<span class="op">.</span>programId <span class="op">!=</span> _currentProgramId) <span class="op">{</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Đổi chương trình → reset player</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>      _currentProgramId <span class="op">=</span> nowPlaying<span class="op">.</span>programId;</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">await</span> _disposeController();</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">await</span> _initialize(nowPlaying<span class="op">.</span>streamUrl);</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>      _showToast(<span class="st">&#39;Đã chuyển sang: ${nowPlaying.title}&#39;</span>);</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span>);</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="acceptance-criteria-cho-time-sync-25-kênh-sáng-tạo">6.5.7.
+Acceptance Criteria cho Time-Sync + 25 kênh sáng tạo</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th style="text-align: left;">Tiêu chí</th>
+<th style="text-align: left;">Cách verify</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: left;">Mở app lúc 19:15 → vào thẳng chương trình
+đang ở phút 15</td>
+<td style="text-align: left;">Manual test</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: left;">Đợi tới 19:30 → tự động chuyển sang chương
+trình mới</td>
+<td style="text-align: left;">Đợi polling 60s</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td style="text-align: left;">Mở lại app sau khi đổi chương trình → load
+đúng chương trình mới</td>
+<td style="text-align: left;">Reload test</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td style="text-align: left;">Kênh không có EPG → fallback sequential
+CDN playlist</td>
+<td style="text-align: left;">Test với channel chưa có lịch</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td style="text-align: left;">Mỗi kênh trong 25 kênh đều có video phát
+được (không lỗi 404)</td>
+<td style="text-align: left;">Manual test all 25</td>
+</tr>
+<tr>
+<td style="text-align: center;">6</td>
+<td style="text-align: left;">Vòng lặp playlist chạy mượt khi video ngắn
+hơn duration</td>
+<td style="text-align: left;">Test loop</td>
+</tr>
+<tr>
+<td style="text-align: center;">7</td>
+<td style="text-align: left;">Nguồn video royalty-free
+(Pexels/Pixabay/NASA), KHÔNG có bản quyền</td>
+<td style="text-align: left;">Check URL sources</td>
+</tr>
+<tr>
+<td style="text-align: center;">8</td>
+<td style="text-align: left;">Log mỗi lần resolver chuyển nguồn</td>
+<td style="text-align: left;">Check AuditLog</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="acceptance-criteria-tổng-thể-cho-review-2">✅ 8. Acceptance
+Criteria Tổng Thể (Cho Review 2)</h2>
+<ol type="1">
+<li>✅ <strong>Streaming ổn định:</strong> Video không re-buffer trên
+Wi-Fi &amp; 4G.</li>
+<li>✅ <strong>5-7 kênh chạy tuần tự 24/7</strong> không downtime.</li>
+<li>✅ <strong>AI tự động fill playlist</strong> khi hết live.</li>
+<li>✅ <strong>Phân quyền rõ ràng:</strong> Guest xem preview, Viewer
+cần VIP cho kênh premium.</li>
+<li>✅ <strong>Paywall hoạt động:</strong> Mock subscription kích hoạt
+trong 1 click.</li>
+<li>✅ <strong>Share đầy đủ:</strong> Zalo, Messenger, copy link, QR
+code.</li>
+<li>✅ <strong>Log đầy đủ:</strong> Mỗi view đều có audit log, admin xem
+được.</li>
+<li>✅ <strong>Demo ≥ 50 viewers đồng thời</strong> không crash.</li>
+<li>✅ <strong>APK release</strong> cài được trên máy thật, không crash
+trong 24h chạy liên tục.</li>
+<li>✅ <strong>Dashboard admin</strong> hiển thị analytics: viewer,
+error rate, top channels.</li>
+</ol>
+<hr />
+<h2 id="phụ-lục-tham-khảo-công-nghệ">📎 9. Phụ Lục — Tham Khảo Công
+Nghệ</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Công nghệ</th>
+<th style="text-align: left;">Vai trò</th>
+<th style="text-align: left;">Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Cloudflare Stream</strong></td>
+<td style="text-align: left;">CDN + ABR tự động</td>
+<td
+style="text-align: left;">https://www.cloudflare.com/products/stream/</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Bunny Stream</strong></td>
+<td style="text-align: left;">CDN rẻ cho demo</td>
+<td style="text-align: left;">https://bunny.net/stream/</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MediaMTX</strong></td>
+<td style="text-align: left;">RTMP server self-host</td>
+<td
+style="text-align: left;">https://github.com/bluenviron/mediamtx</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>better_player</strong></td>
+<td style="text-align: left;">Flutter HLS + ABR player</td>
+<td
+style="text-align: left;">https://pub.dev/packages/better_player</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>hls.js</strong></td>
+<td style="text-align: left;">Web HLS player</td>
+<td style="text-align: left;">https://github.com/video-dev/hls.js</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>FFmpeg</strong></td>
+<td style="text-align: left;">Transcode + RTMP push</td>
+<td style="text-align: left;">https://ffmpeg.org/</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>OBS Studio</strong></td>
+<td style="text-align: left;">Live stream từ desktop</td>
+<td style="text-align: left;">https://obsproject.com/</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>k6</strong></td>
+<td style="text-align: left;">Load testing</td>
+<td style="text-align: left;">https://k6.io/</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Supabase Realtime</strong></td>
+<td style="text-align: left;">WebSocket scale</td>
+<td style="text-align: left;">https://supabase.com/realtime</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<blockquote>
+<p><strong>Tài liệu này là input cho buổi họp nhóm tiếp theo. Sau khi
+team thống nhất phân công, cập nhật
+<code>Document/Work_Breakdown.md</code> và bắt đầu Phase A từ tuần
+sau.</strong></p>
+</blockquote>
+
+  </div>
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Reference Documentation</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

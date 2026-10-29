@@ -1,0 +1,147 @@
+% ============================================================
+% PRM393 - Section 1: Introduction (Bilingual)
+% ============================================================
+\section{\bi{Mở đầu}{Introduction}}
+\label{sec:intro}
+
+\bi{
+Trong kỷ nguyên phân phối nội dung số hiện đại, ứng dụng di động đã trở
+thành điểm tiếp xúc chính yếu giữa người dùng và các dịch vụ truyền thông
+trực tuyến. Khác với môi trường máy tính để bàn (web desktop) có đường
+truyền mạng ổn định và nguồn năng lượng dồi dào, môi trường di động đặt ra
+những thách thức kỹ thuật nghiêm ngặt: độ trễ mạng biến động liên tục, kết
+nối thường xuyên bị gián đoạn khi chuyển vùng (cell tower handover / Wi-Fi
+to cellular), hạn chế về bộ nhớ RAM và thời lượng pin thiết bị.
+
+Để giải quyết toàn diện các thách thức trên, bài báo này trình bày thiết
+kế và hiện thực ứng dụng di động \textbf{OmniCast Mobile} --- một ứng dụng
+phát thanh truyền hình, truyền phát trực tiếp (LiveStream) và phân phối nội dung số đa nền tảng được nghiên cứu và phát triển tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata}
+cho môn học \textbf{PRM393 --- Mobile Applications Development} dưới sự hướng dẫn chuyên môn của giảng viên (\emph{Mentor}) \textbf{Thầy Huỳnh Vang}. Ứng dụng
+được xây dựng trên nền tảng Flutter 3.x với ngôn ngữ Dart (53.922 dòng mã Dart), áp dụng kiến trúc
+phân tầng Clean Architecture 4 lớp kết hợp mô hình quản lý trạng thái BLoC (Business Logic
+Component) điều phối 31 màn hình và 22 thành phần giao diện chuyên dụng.
+}{
+In the modern era of digital content delivery, mobile applications have
+become the primary touchpoint connecting viewers with broadcast media
+services. Unlike desktop environments with steady broadband connectivity
+and continuous power supplies, mobile devices present stringent technical
+challenges: highly fluctuating network latency, frequent network drops during
+roaming transitions (cell tower handovers or Wi-Fi to cellular switches),
+constrained memory footprints, and battery budget limits.
+
+To comprehensively address these demands, this paper presents the
+architectural design and implementation of \textbf{OmniCast Mobile} --- an
+enterprise cross-platform digital broadcast, LiveStream and multimedia streaming client
+developed at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} for the course \textbf{PRM393 --- Mobile Applications Development} under the academic mentorship of \textbf{Mr. Huỳnh Vang}.
+Built upon Flutter 3.x with the Dart language (53,922 Dart LOC), the client adopts a clean
+four-tier layered architecture coupled with the Business Logic Component
+(BLoC) state management pattern across 31 screens and 22 custom widgets.
+}
+
+\subsection{\bi{Động lực và bài toán kỹ thuật}{Motivation and Engineering Challenges}}
+
+\bi{
+Quá trình xây dựng ứng dụng di động OmniCast tập trung vào việc giải quyết năm
+bài toán kỹ thuật cốt lõi:
+}{
+The engineering of OmniCast Mobile resolves five pivotal technical
+challenges:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{\textbf{Khả năng hoạt động khi mất mạng (Offline-First):}
+  Người dùng thường xuyên tra cứu lịch phát sóng (EPG) và danh sách theo
+  dõi (Watchlist) trong điều kiện mất kết nối. Ứng dụng phải hỗ trợ lưu
+  trữ cục bộ bằng cơ sở dữ liệu SQLite, xếp hàng các thao tác phát sinh khi
+  ngoại tuyến và tự động phát lại (replay) đồng bộ lên máy chủ khi có mạng
+  trở lại.}{%
+  \textbf{Offline-First Resilience:} Viewers frequently consult electronic
+  programme guides (EPG) and their personal watchlists in poor or nonexistent
+  connectivity conditions. The application must store structured data in a
+  local SQLite database, queue pending mutations while offline, and seamlessly
+  replay them to the central cloud upon reconnection.}
+
+  \item \bi{\textbf{Luồng phát đa phương tiện độ trễ thấp và tự động khám phá mạng LAN:}
+  Hệ sinh thái OmniCast phát sóng qua nhiều giao thức: WebRTC / HLS thông
+  qua MediaMTX, luồng trực tiếp Google Drive và luồng nhúng video ngoài. Trình phát \texttt{OmniPlayer}
+  phải tự động quét và khám phá địa chỉ IP máy chủ MediaMTX trong mạng Wi-Fi cục bộ (\texttt{LanDiscoveryService}) và tự phục hồi
+  khi luồng video bị đứt quãng.}{%
+  \textbf{Low-Latency Adaptive Streaming and LAN Host Discovery:} The OmniCast broadcast pipeline
+  emits ultra-low-latency WebRTC/HLS streams via MediaMTX, direct Google Drive streams, and external
+  curated feeds. The embedded \texttt{OmniPlayer} must dynamically scan and discover
+  local Wi-Fi MediaMTX hosts (\texttt{LanDiscoveryService}) and recover transparently during transient
+  network drops.}
+
+  \item \bi{\textbf{Phòng xem LiveStream tương tác hai chiều \& Bàn điều khiển Mobile Live Studio:}
+  Người xem không chỉ thụ động tiếp nhận luồng phát mà còn tham gia sảnh chờ, gửi bình luận phân nhánh,
+  thả biểu cảm hạt nổi có phản hồi xúc giác 0ms, nhận thông báo ghim từ đạo diễn và quyên góp Super Chat 6 mệnh giá. Đồng thời, phóng viên hiện trường cần một bàn điều khiển \texttt{LiveStudioScreen} 4 tab và ống kính máy quay \texttt{MobileStudioRecorderScreen} hỗ trợ đẩy sóng WebRTC WHIP trực tiếp từ điện thoại.}{%
+  \textbf{Bi-Directional Interactive LiveStream \& Mobile Live Studio:} Viewers expect rich interactive
+  rooms with lobby prompts, threaded live chat, 0ms haptic floating reactions, pinned host banners, and 6-tier Super Chat donations. Meanwhile, field reporters require a 4-tab \texttt{LiveStudioScreen} and hardware camera viewfinder (\texttt{MobileStudioRecorderScreen}) capable of real-time WebRTC WHIP publishing.}
+
+  \item \bi{\textbf{Quản lý trạng thái phân tán và bảo mật phiên:}
+  Việc điều hướng 31 màn hình với 12 module BLoC yêu cầu cơ chế kiểm soát
+  trạng thái chặt chẽ, cùng với việc lưu trữ token JWT an toàn trong
+  Keystore/Keychain để tự động gia hạn phiên làm việc ngầm mà không làm phiền
+  người dùng.}{%
+  \textbf{Distributed State Management and Session Security:}
+  Navigating 31 screens powered by 12 BLoC modules requires predictable
+  unidirectional data flows, paired with hardware-backed secure storage
+  (Keystore/Keychain) for transparent JWT token rotation.}
+\end{enumerate}
+
+\subsection{\bi{Tổ chức nhóm nghiên cứu và Phân công nhiệm vụ}{Project Team Organization and Role Allocation}}
+
+\bi{
+Dự án được thực hiện bởi nhóm 4 sinh viên tại \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} dưới sự hướng dẫn của giảng viên \textbf{Thầy Huỳnh Vang}, như trình bày tại Bảng~\ref{tab:team_prm}.
+}{
+The project was executed by a four-member student engineering team at \textbf{FPTU Quy Nhon AI Campus --- FU Cahata} under the supervision of Mentor \textbf{Mr. Huỳnh Vang}, as detailed in Table~\ref{tab:team_prm}.
+}
+
+\begin{table}[t]
+\caption{\bi{Danh sách 4 thành viên nhóm dự án OmniCast (FPTU Quy Nhon AI Campus --- FU Cahata, Mentor: Thầy Huỳnh Vang).}{The 4 project team members of OmniCast (FPTU Quy Nhon AI Campus --- FU Cahata, Mentor: Mr. Huỳnh Vang).}}
+\label{tab:team_prm}
+\centering
+\scriptsize
+\begin{tabular}{@{}p{2.3cm}p{1.5cm}p{4.3cm}@{}}
+\toprule
+\textbf{\bi{Họ và tên}{Full Name}} & \textbf{\bi{Vai trò / MSSV}{Role / ID}} & \textbf{\bi{Phụ trách kỹ thuật chính}{Primary Engineering Ownership}} \\
+\midrule
+\textbf{Nguyễn Bình An} (\texttt{TomOutfit}) & \bi{Nhóm trưởng}{Team Leader} & \bi{Kiến trúc lõi NestJS 19 module, Bảo mật JWT \& RBAC 4 vai trò, Thuật toán chống xung đột lịch EPG, Direct Stream Engine, CI/CD \& Triển khai}{NestJS 19-module core architecture, JWT \& 4-role RBAC security, EPG conflict detection SQL, Direct Stream Engine, CI/CD \& Release} \\
+\addlinespace[2pt]
+\textbf{Trần Thanh Sơn} & \texttt{QE170080} & \bi{Kiến trúc vi dịch vụ gRPC Audit Logger (\texttt{audit\_logger.proto}), Cơ sở dữ liệu PostgreSQL Supabase (21 Prisma models), Telemetry \& Seed}{Standalone gRPC Audit Logger microservice (\texttt{audit\_logger.proto}), Supabase PostgreSQL (21 Prisma models), Telemetry \& Seeding} \\
+\addlinespace[2pt]
+\textbf{Nguyễn Vĩnh Phú} & \texttt{QE180136} & \bi{Trưởng nhóm Mobile Flutter (31 màn hình, 12 BLoC), Trình phát \texttt{OmniPlayer}, \texttt{MobileStudioRecorderScreen} (WebRTC WHIP), Offline SQLite}{Mobile Flutter Lead (31 screens, 12 BLoCs), \texttt{OmniPlayer} engine, \texttt{MobileStudioRecorderScreen} (WebRTC WHIP), Offline SQLite} \\
+\addlinespace[2pt]
+\textbf{Đồng Hoàng Nguyên} (\texttt{teng122}) & Full-Stack \& AI & \bi{Cổng Web Next.js 15 Cinema Dark (33 route), Cổng Socket.IO \texttt{/live}, Phòng Live 7 chủ đề, Bàn điều khiển Live Studio \& Module AI Curator}{Next.js 15 Cinema Dark Web Portal (33 routes), Socket.IO \texttt{/live} gateway, 7-theme Live Room, Live Studio Console \& AI Curator module} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\bi{Đóng góp chính của báo cáo}{Principal Contributions}}
+
+\bi{
+Báo cáo này phân tích chi tiết năm đóng góp công nghệ của ứng dụng:
+}{
+This paper details five principal technical contributions:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \bi{Kiến trúc Clean Architecture 4 tầng (Presentation, Logic/BLoC,
+  Data, Core) với cơ chế Service Locator qua \texttt{get\_it}.}{%
+  A 4-tier Clean Architecture (Presentation, Logic/BLoC, Data, Core)
+  orchestrated through \texttt{get\_it} service locator.}
+  \item \bi{Hệ sinh thái \texttt{OmniPlayer}, \texttt{LiveWatchScreen}, \texttt{LiveStudioScreen} (4 tab) và máy quay \texttt{MobileStudioRecorderScreen} (WebRTC WHIP, SMPTE Timecode, Stereo VU Meter, Teleprompter HUD).}{%
+  A complete mobile live broadcast ecosystem comprising \texttt{OmniPlayer}, \texttt{LiveWatchScreen}, the 4-tab \texttt{LiveStudioScreen} and the \texttt{MobileStudioRecorderScreen} field viewfinder (WebRTC WHIP, SMPTE timecode, Stereo VU meter, Teleprompter HUD).}
+  \item \bi{Mô hình quản lý trạng thái luồng (Stream-based BLoC) với các
+  concurrency transformer như \texttt{droppable} và \texttt{restartable}.}{%
+  A stream-based reactive state architecture employing custom BLoC
+  concurrency transformers such as \texttt{droppable} and \texttt{restartable}.}
+  \item \bi{Động cơ ngoại tuyến SQLite với hàng đợi \texttt{pending\_ops} và cơ chế tự
+  động giải quyết xung đột dữ liệu.}{%
+  An offline-first SQLite synchronization engine featuring an asynchronous
+  mutation queue (\texttt{pending\_ops}) and conflict resolution heuristics.}
+  \item \bi{Bộ kiểm thử tự động toàn diện gồm 91 test đạt tỷ lệ vượt qua
+  100\% trên quy trình CI/CD GitHub Actions.}{%
+  A test suite of 91 automated unit and widget tests achieving a 100\%
+  pass rate in a GitHub Actions continuous integration matrix.}
+\end{itemize}

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniCast - Cấu Trúc Kho Mã Nguồn & Hướng Dẫn Phát Triển - OmniCast</title>
+  <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #f0f9ff;
+  --secondary: #0f172a;
+  --fptu-orange: #f26f21;
+  --fptu-blue: #004b91;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --accent-amber: #d97706;
+  --bg-slate: #f8fafc;
+  --border-color: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-sub: #64748b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-main);
+  background: #ffffff;
+  line-height: 1.55;
+  font-size: 9.5pt;
+  padding: 24px;
+}
+
+/* Header & Banner */
+.fptu-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fptu-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: var(--fptu-blue);
+  letter-spacing: -0.2px;
+}
+
+.fptu-brand span {
+  color: var(--fptu-orange);
+}
+
+.fptu-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--fptu-orange), #ea580c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+/* Headings */
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1.25;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+p {
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* Metadata Card */
+.meta-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 9pt;
+}
+
+.meta-box ul, .meta-box ol {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+.meta-box li {
+  margin-bottom: 3px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 20px 0;
+  font-size: 8.5pt;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #cbd5e1;
+  page-break-inside: auto;
+}
+
+tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+th {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 8.5pt;
+  letter-spacing: 0.2px;
+  border-right: 1px solid #334155;
+}
+
+th:last-child {
+  border-right: none;
+}
+
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Badges */
+strong {
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+/* Highlight status cells */
+td:has(strong:contains("PASS")),
+td:has(strong:contains("ĐẠT")),
+td:has(strong:contains("ĐÃ SỬA")),
+td:has(strong:contains("Thành công")),
+td:has(strong:contains("Hoạt động")) {
+  background: #ecfdf5;
+}
+
+/* Code blocks */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #334155;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 8pt;
+  background: #f1f5f9;
+  color: #0369a1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 22px;
+  margin-bottom: 10px;
+}
+
+li {
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    padding: 0;
+  }
+  .fptu-header {
+    margin-top: 0;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="fptu-header">
+    <div class="fptu-brand">
+      FPT UNIVERSITY <span>|</span> FPTU QUY NHON AI CAMPUS
+    </div>
+    <div class="fptu-tag">FU CAHATA • PRN232 &amp; PRM393</div>
+  </div>
+
+  <div class="content">
+<h1
+id="omnicast-cấu-trúc-kho-mã-nguồn-hướng-dẫn-phát-triển-repository-guide">📁
+OmniCast — Cấu Trúc Kho Mã Nguồn &amp; Hướng Dẫn Phát Triển (Repository
+Guide)</h1>
+<h2
+id="tổ-chức-monorepo-quy-ước-mã-nguồn-quy-trình-đóng-góp-prn232-prm393">Tổ
+Chức Monorepo, Quy Ước Mã Nguồn &amp; Quy Trình Đóng Góp (PRN232 &amp;
+PRM393)</h2>
+<p><strong>Học viện Công nghệ FPT Quy Nhơn — FPTU Quy Nhon AI Campus -
+FU Cahata</strong><br />
+<em>Dự án: OmniCast — Nền tảng Truyền thông &amp; Trí tuệ Phát thanh
+Truyền hình Đa Phương tiện</em></p>
+<hr />
+<h3 id="thông-tin-dự-án-đội-ngũ-phát-triển">Thông Tin Dự Án &amp; Đội
+Ngũ Phát Triển</h3>
+<ul>
+<li><strong>Đơn vị đào tạo:</strong> Đại học FPT Quy Nhơn (FPTU Quy Nhon
+AI Campus)</li>
+<li><strong>Tổ chức / Câu lạc bộ:</strong> FU Cahata</li>
+<li><strong>Môn học:</strong> PRN232 &amp; PRM393</li>
+<li><strong>Học kỳ:</strong> Fall 2026 (Fa26)</li>
+<li><strong>Giảng viên hướng dẫn (Mentor):</strong> Thầy <strong>Huỳnh
+Vang</strong></li>
+<li><strong>Nhóm sinh viên thực hiện (4 thành viên):</strong>
+<ol type="1">
+<li><strong>Nguyễn Bình An</strong> (<code>TomOutfit</code> — Trưởng
+nhóm / Tech Lead: Kiến trúc Monorepo, NestJS Core, CI/CD Actions)</li>
+<li><strong>Trần Thanh Sơn</strong> (<code>TranThanhSonQE170080</code> —
+MSSV: <code>QE170080</code>: Standalone gRPC Service, Prisma Schema
+&amp; Seeding)</li>
+<li><strong>Nguyễn Vĩnh Phú</strong> (<code>phunvqe180136</code> — MSSV:
+<code>QE180136</code>: Mobile Lead Developer, Flutter Mobile App)</li>
+<li><strong>Đồng Hoàng Nguyên</strong> (<code>teng122</code>: Full-Stack
+&amp; Realtime Engineer, Next.js 15 Web Portal &amp; Socket.IO)</li>
+</ol></li>
+</ul>
+<hr />
+<h3 id="thông-tin-kho-mã-nguồn-github-repository">1. Thông Tin Kho Mã
+Nguồn (GitHub Repository)</h3>
+<ul>
+<li><p><strong>Đường dẫn Repository chính thức:</strong><br />
+👉 <strong><a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester">https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester</a></strong></p></li>
+<li><p><strong>Nhánh mặc định (Default Branch):</strong>
+<code>main</code></p></li>
+<li><p><strong>Phiên bản phát hành (Production Tag):</strong>
+<code>v1.2.0</code></p></li>
+<li><p><strong>Mã lệnh sao chép mã nguồn (Clone command):</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester.git</span></code></pre></div></li>
+</ul>
+<hr />
+<h3 id="cấu-trúc-thư-mục-monorepo-repository-layout">2. Cấu Trúc Thư Mục
+Monorepo (Repository Layout)</h3>
+<p>Kho mã nguồn OmniCast được tổ chức theo mô hình Monorepo hợp nhất
+chứa trọn vẹn cả 3 sản phẩm phần mềm và tài liệu bàn giao:</p>
+<pre><code>omnicast/
+├── backend/                       # PHÂN HỆ BACK-END (PRN232)
+│   ├── src/                       # 19 Modules nghiệp vụ NestJS
+│   │   ├── auth/                  # JWT, RBAC guards, decorators
+│   │   ├── channels/              # CRUD danh mục kênh phát sóng
+│   │   ├── programs/              # Lịch phát sóng &amp; thuật toán chống trùng lặp
+│   │   ├── epg/                   # Cơ chế điền lịch 24/7 có hạt giống
+│   │   ├── ai-curator/            # Quy trình gọi OpenAI, schema Zod, fallback
+│   │   ├── live/                  # WebSocket gateway (/live) &amp; WebRTC signaling
+│   │   ├── audit/                 # gRPC client kết nối microservice kiểm toán
+│   │   └── ...                    # Users, Billing, Recordings, Search, Watchlist...
+│   ├── prisma/
+│   │   └── schema.prisma          # 21 Models PostgreSQL (Supabase)
+│   ├── microservices/
+│   │   └── audit-logger/          # Microservice ghi nhật ký kiểm toán gRPC
+│   └── test/                      # 16 tệp spec kiểm thử (node:test, 163 tests)
+│
+├── frontend/                      # PHÂN HỆ CỔNG WEB (PRN232)
+│   ├── app/                       # Next.js 15 App Router (33 routes)
+│   │   ├── (public)/              # Trang chủ, kênh, epg, recordings, search
+│   │   ├── (auth)/                # Login, register, forgot-password
+│   │   ├── live/                  # Trình xem livestream trực tiếp
+│   │   ├── studio/                # Giao diện phát sóng WHIP &amp; chạy AI Curator
+│   │   └── admin/                 # Bảng điều khiển quản trị &amp; audit logs
+│   ├── components/                # UI components (Cinema Dark aesthetic)
+│   └── lib/                       # API clients, hooks, state management
+│
+├── mobile/                        # PHÂN HỆ ỨNG DỤNG DI ĐỘNG (PRM393)
+│   ├── lib/
+│   │   ├── core/                  # get_it DI, constants, theme, network interceptor
+│   │   ├── data/                  # Repositories, DTO models, SQLite DatabaseHelper
+│   │   ├── logic/                 # 12 Modules BLoC/Cubit (Auth, Watchlist, Epg...)
+│   │   └── presentation/          # 31 Màn hình, OmniPlayer, LiveChat, Donation modal
+│   └── test/                      # 8 suites kiểm thử (flutter test, 91 tests)
+│
+├── deliverables/                  # TÀI NGUYÊN NỘP BÀI CHÍNH THỨC
+│   ├── 00_README.md               # Bản chỉ dẫn nộp bài tổng quan
+│   ├── 01_Reports/                # Báo cáo IEEE (4 PDF + 4 DOCX) cho PRN232 &amp; PRM393
+│   ├── 02_Testing/                # Test cases, execution report, test-results, screenshots
+│   ├── 03_Deployment/             # Hướng dẫn triển khai live production (DEPLOYMENT.md)
+│   ├── 04_Repository/             # Hướng dẫn kho mã nguồn (REPOSITORY.md)
+│   ├── 05_Reference_Docs/         # Tài liệu gốc ban đầu kèm ghi chú hiệu chỉnh
+│   └── assets/                    # Shared TikZ, build scripts (build.ps1, env.bat)
+│
+├── Document/                      # Tài liệu thiết kế sơ khai của dự án
+└── playwright-tests/              # Kịch bản kiểm thử trình duyệt E2E tự động</code></pre>
+<hr />
+<h3 id="quy-mô-mã-nguồn-chi-tiết-source-code-scale">2. Quy Mô Mã Nguồn
+Chi Tiết (Source Code Scale)</h3>
+<p>Thống kê theo số dòng vật lý thực tế (Physical Lines of Code) bằng
+công cụ quét tự động:</p>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 29%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Thành phần</th>
+<th style="text-align: left;">Đường dẫn thư mục</th>
+<th style="text-align: center;">Số dòng mã (LOC)</th>
+<th style="text-align: left;">Loại tệp chính</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>NestJS Back-End Core</strong></td>
+<td style="text-align: left;"><code>backend/src/</code></td>
+<td style="text-align: center;"><strong>27.826</strong></td>
+<td style="text-align: left;">TypeScript (<code>.ts</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Back-End Automated
+Tests</strong></td>
+<td style="text-align: left;"><code>backend/test/</code></td>
+<td style="text-align: center;"><strong>4.512</strong></td>
+<td style="text-align: left;">TypeScript (<code>.ts</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>gRPC Microservice &amp;
+Proto</strong></td>
+<td style="text-align: left;"><code>backend/microservices/</code></td>
+<td style="text-align: center;"><strong>465</strong></td>
+<td style="text-align: left;"><code>.proto</code>, <code>.ts</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Prisma Database
+Schema</strong></td>
+<td style="text-align: left;"><code>backend/prisma/</code></td>
+<td style="text-align: center;"><strong>683</strong></td>
+<td style="text-align: left;"><code>.prisma</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Next.js 15 Web
+Portal</strong></td>
+<td style="text-align: left;"><code>frontend/</code></td>
+<td style="text-align: center;"><strong>51.742</strong></td>
+<td style="text-align: left;">TypeScript / React
+(<code>.tsx</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Flutter Mobile
+Application</strong></td>
+<td style="text-align: left;"><code>mobile/lib/</code></td>
+<td style="text-align: center;"><strong>53.922</strong></td>
+<td style="text-align: left;">Dart (<code>.dart</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Mobile Automated
+Tests</strong></td>
+<td style="text-align: left;"><code>mobile/test/</code></td>
+<td style="text-align: center;"><strong>2.529</strong></td>
+<td style="text-align: left;">Dart (<code>.dart</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Playwright E2E Tests</strong></td>
+<td style="text-align: left;"><code>playwright-tests/</code></td>
+<td style="text-align: center;"><strong>1.218</strong></td>
+<td style="text-align: left;">JavaScript (<code>.js</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>TỔNG CỘNG HỆ THỐNG</strong></td>
+<td style="text-align: left;"><strong>Toàn bộ dự án</strong></td>
+<td style="text-align: center;"><strong>142.897 LOC</strong></td>
+<td style="text-align: left;">Đa ngôn ngữ</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="quy-trình-nhánh-cam-kết-mã-nguồn-git-conventions">3. Quy Trình
+Nhánh &amp; Cam Kết Mã Nguồn (Git Conventions)</h3>
+<ul>
+<li><strong>Quy tắc phân nhánh (Branching Model):</strong>
+<ul>
+<li><code>main</code>: Nhánh sản xuất chính thức, tích hợp tự động qua
+CI/CD GitHub Actions.</li>
+<li><code>feat/*</code>: Phát triển tính năng mới.</li>
+<li><code>fix/*</code>: Sửa lỗi kỹ thuật và vá bảo mật.</li>
+<li><code>docs/*</code>: Cập nhật tài liệu kỹ thuật và báo cáo.</li>
+</ul></li>
+<li><strong>Quy chuẩn thông điệp Cam kết (Conventional
+Commits):</strong>
+<ul>
+<li><code>feat(...)</code>: Bổ sung tính năng mới (ví dụ:
+<code>feat(player): add dynamic LAN discovery</code>).</li>
+<li><code>fix(...)</code>: Sửa lỗi (ví dụ:
+<code>fix(mobile): resolve MediaMTX to home LAN IP</code>).</li>
+<li><code>test(...)</code>: Bổ sung hoặc cập nhật ca kiểm thử.</li>
+<li><code>docs(...)</code>: Soạn thảo tài liệu báo cáo học thuật.</li>
+</ul></li>
+</ul>
+<hr />
+<h3 id="hướng-dẫn-cài-đặt-môi-trường-phát-triển-cục-bộ-local-setup">4.
+Hướng Dẫn Cài Đặt Môi Trường Phát Triển Cục Bộ (Local Setup)</h3>
+<h4 id="yêu-cầu-tiên-quyết">Yêu cầu tiên quyết:</h4>
+<ul>
+<li>Node.js &gt;= 20.x</li>
+<li>Flutter SDK &gt;= 3.x (kèm Android SDK / Xcode)</li>
+<li>Docker Desktop (chạy MediaMTX và PostgreSQL nếu cần)</li>
+<li>MiKTeX + Pandoc (để biên dịch tài liệu LaTeX / Word)</li>
+</ul>
+<h4 id="các-lệnh-khởi-chạy-nhanh">Các lệnh khởi chạy nhanh:</h4>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Chạy Backend API (Cổng 3001)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> backend <span class="kw">&amp;&amp;</span> <span class="ex">npm</span> run start:dev</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Chạy Cổng Web (Cổng 3000)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> frontend <span class="kw">&amp;&amp;</span> <span class="ex">npm</span> run dev</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Chạy Ứng dụng Di động</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> mobile <span class="kw">&amp;&amp;</span> <span class="ex">flutter</span> run</span></code></pre></div>
+
+  </div>
+
+  <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b;">
+    <div>OmniCast Enterprise Broadcast Intelligence Ecosystem</div>
+    <div>FPTU Quy Nhon AI Campus - FU Cahata • Mentor: Thầy Huỳnh Vang</div>
+  </div>
+</body>
+</html>

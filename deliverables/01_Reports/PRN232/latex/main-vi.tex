@@ -26,10 +26,10 @@
 
 \title{\bi{Xây dựng ứng dụng phía sau đa nền tảng: Hệ thống lịch phát và phát sóng nội dung số OmniCast}{Building a Cross-Platform Back-End Application: The OmniCast Digital Broadcast Scheduling and Delivery System}}
 
-\author{\IEEEauthorblockN{\bi{Nhóm Kỹ Thuật OmniCast (OmniCast Team) --- PRN232 (Fa26)}{OmniCast Engineering Team --- PRN232 (Fa26)}}\\
-\IEEEauthorblockA{\bi{Bộ môn Kỹ thuật Phần mềm, Trường Đại học FPT}{Department of Software Engineering, FPT University}\\
-\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester}\\
-\bi{Hệ thống trực tuyến}{Live System}: \url{https://omnicast-fe.vercel.app}}}
+\author{\IEEEauthorblockN{\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn} (\texttt{QE170080}), \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}), \textbf{Đồng Hoàng Nguyên}}\\
+\IEEEauthorblockA{\bi{Giảng viên hướng dẫn (Mentor): \textbf{Thầy Huỳnh Vang}}{Mentor / Supervisor: \textbf{Mr. Huỳnh Vang}}\\
+\textbf{FPTU Quy Nhon AI Campus --- FU Cahata}, \bi{Khoa Công nghệ Thông tin, Trường Đại học FPT}{Faculty of Information Technology, FPT University}\\
+\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester} $\cdot$ \bi{Trực tuyến}{Live}: \url{https://omnicast-fe.vercel.app}}}
 \date{}
 
 \maketitle
@@ -37,43 +37,43 @@
 
 \begin{abstract}
 \bi{
-OmniCast là một hệ thống lịch phát và phát sóng nội dung số đa nền
-tảng, xây dựng cho môn PRN232. Hệ thống gồm một back-end NestJS với 19
-module nghiệp vụ và 140 endpoint REST, một cổng web Next.js 15 với 33
-route, và một microservice ghi nhật ký kiểm toán giao tiếp qua gRPC.
-Ba đóng góp chính được trình bày: thuật toán phát hiện xung đột lịch
+OmniCast là một hệ thống lịch phát, truyền phát trực tiếp (LiveStream) và phân phối nội dung số đa nền
+tảng, được thực hiện tại FPTU Quy Nhon AI Campus --- FU Cahata cho môn PRN232 dưới sự hướng dẫn của thầy Huỳnh Vang. Hệ thống gồm một back-end NestJS với 19
+module nghiệp vụ và hơn 140 endpoint REST, một cổng web Next.js 15 với 33
+route (bao gồm phòng xem LiveStream 7 chủ đề, bàn điều khiển Live Studio 4 chế độ phát sóng và cổng quản trị toàn diện), ứng dụng di động Flutter 31 màn hình và một microservice ghi nhật ký kiểm toán giao tiếp qua gRPC.
+Bốn đóng góp kiến trúc chính được trình bày: (1) kiến trúc truyền phát trực tiếp hai chiều kết hợp WebRTC WHIP/WHEP, MediaMTX HLS và cổng Socket.IO \texttt{/live} hỗ trợ trò chuyện trực tuyến, cảm xúc nổi 0ms, quyên góp Super Chat 6 mệnh giá, thông báo ghim từ đạo diễn và chuyển đổi chương trình phát sóng tức thời không gián đoạn phiên xem; (2) thuật toán phát hiện xung đột lịch
 phát thực hiện bằng một truy vấn SQL thô tính thời điểm kết thúc hiệu
-lực của sự kiện; cơ chế điền lịch EPG 24/7 với lựa chọn ngẫu nhiên có
+lực của sự kiện; (3) cơ chế điền lịch EPG 24/7 với lựa chọn ngẫu nhiên có
 hạt giống bảo đảm mỗi lưới kênh-ngày luôn đầy đủ và có tính tái lập;
-và quy trình biên tập AI gọi mô hình ngôn ngữ lớn một lần duy nhất,
+và (4) quy trình biên tập AI gọi mô hình ngôn ngữ lớn một lần duy nhất,
 kiểm tra đầu ra theo schema Zod, có đường dự phòng heuristic và dấu vết
 phiên bản đầy đủ. Lược đồ cơ sở dữ liệu gồm 21 model Prisma trên
 PostgreSQL. Toàn bộ hệ thống đã được triển khai trên Vercel và kiểm
 thử bằng 482 kiểm thử tự động trong quy trình tích hợp liên tục năm
-công việc; tất cả đều đạt.
+công việc; tất cả đều đạt 100\%.
 }{
-OmniCast is a multi-platform digital broadcast scheduling and delivery
-system built for the PRN232 course. It comprises a NestJS back end with
-19 business modules and 140 REST endpoints, a Next.js 15 web portal with
-33 routes, and a gRPC audit-logging microservice. Three principal
-contributions are presented: a broadcast-schedule conflict-detection
+OmniCast is a multi-platform digital broadcast scheduling, real-time LiveStream and content delivery
+system developed at FPTU Quy Nhon AI Campus --- FU Cahata for the PRN232 course under the supervision of Mentor Mr. Huỳnh Vang. It comprises a NestJS back end with
+19 business modules and 140+ REST endpoints, a Next.js 15 web portal with
+33 routes (including a 7-theme interactive LiveStream room, a 4-mode Live Studio console and a full administrative suite), a 31-screen Flutter mobile client, and a gRPC audit-logging microservice. Four principal architectural
+contributions are presented: (1) an end-to-end bi-directional LiveStream architecture combining WebRTC WHIP/WHEP, MediaMTX HLS and a Socket.IO \texttt{/live} gateway supporting live chat, floating reactions, 6-tier Super Chat donations, pinned broadcaster announcements and zero-downtime on-the-fly program switching; (2) a broadcast-schedule conflict-detection
 algorithm implemented as a single raw SQL query that computes the
-effective end time of an existing event; a 24/7 EPG filler whose seeded
+effective end time of an existing event; (3) a 24/7 EPG filler whose seeded
 selection guarantees that every channel-day grid is both complete and
-reproducible; and an AI curation pipeline that issues a single large
+reproducible; and (4) an AI curation pipeline that issues a single large
 language model call, validates the output against a Zod schema, offers
 a heuristic fallback path and records full version provenance. The
 database schema comprises 21 Prisma models on PostgreSQL. The complete
 system has been deployed on Vercel and validated by 482 automated tests
-inside a five-job continuous-integration pipeline, all of which pass.
+inside a five-job continuous-integration pipeline, all of which pass (100\%).
 }
 \end{abstract}
 
 \begin{IEEEkeywords}
-\bi{broadcast scheduling, EPG, NestJS, Prisma, Next.js, gRPC, RBAC,
-Flutter, AI curation, conflict detection, offline-first, CI/CD.}{broadcast
-scheduling, EPG, NestJS, Prisma, Next.js, gRPC, RBAC, Flutter, AI
-curation, conflict detection, offline-first, CI/CD.}
+\bi{broadcast scheduling, EPG, LiveStream, WebRTC WHIP/WHEP, Socket.IO, NestJS, Prisma, Next.js, gRPC, RBAC,
+Flutter, AI curation, conflict detection, FPTU Quy Nhon AI Campus, FU Cahata.}{broadcast
+scheduling, EPG, LiveStream, WebRTC WHIP/WHEP, Socket.IO, NestJS, Prisma, Next.js, gRPC, RBAC, Flutter, AI
+curation, conflict detection, FPTU Quy Nhon AI Campus, FU Cahata.}
 \end{IEEEkeywords}
 
 \input{sec-intro-vi}

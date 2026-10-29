@@ -1,0 +1,104 @@
+% ============================================================
+% PRM393 - Appendix (Bilingual)
+% ============================================================
+\appendix
+\section{\bi{Phụ lục A: Lược đồ SQLite chi tiết}{Appendix A: Detailed SQLite Schema}}
+\label{app:sqlite}
+
+\bi{
+Cơ sở dữ liệu cục bộ \texttt{omnicast\_local.db} được khởi tạo với 5 bảng
+chính và các chỉ mục tăng tốc truy vấn:
+}{
+The local \texttt{omnicast\_local.db} database is provisioned with five core
+tables and covering indices:
+}
+
+\begin{lstlisting}[language=SQL, caption={\bi{Cấu trúc DDL của các bảng trong SQLite cục bộ.}{DDL definitions of local SQLite tables.}}]
+-- Bang luu danh sach theo doi va trang thai dong bo
+CREATE TABLE watchlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  programId TEXT NOT NULL UNIQUE,
+  programTitle TEXT NOT NULL,
+  thumbnailUrl TEXT,
+  channelId TEXT,
+  channelName TEXT,
+  scheduledAt TEXT NOT NULL,
+  duration INTEGER,
+  reminderTime TEXT,
+  reminderEnabled INTEGER DEFAULT 0,
+  addedAt TEXT NOT NULL,
+  cloudId TEXT,
+  lastSyncedAt TEXT,
+  dirty INTEGER DEFAULT 0
+);
+CREATE INDEX idx_watchlist_scheduled ON watchlist(scheduledAt);
+
+-- Bang hang doi phat lai dot bien ngoai tuyen
+CREATE TABLE pending_ops (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL, -- 'add' hoac 'remove'
+  programId TEXT NOT NULL,
+  channelId TEXT,
+  note TEXT,
+  createdAt TEXT NOT NULL
+);
+CREATE INDEX idx_pending_ops_createdAt ON pending_ops(createdAt);
+
+-- Bang cache bo nho dem EPG theo ngay
+CREATE TABLE epg_cache (
+  date TEXT PRIMARY KEY,
+  payload TEXT NOT NULL,
+  fetchedAt TEXT NOT NULL
+);
+\end{lstlisting}
+
+\section{\bi{Phụ lục B: Bảng ánh xạ Màn hình và BLoC điều phối}{Appendix B: Screen to BLoC Coordination Matrix}}
+\label{app:mapping}
+
+\bi{
+Bảng dưới đây liệt kê các màn hình trọng tâm và BLoC phụ trách cung cấp trạng
+thái:
+}{
+The table below maps representative screens to their governing BLoC modules:
+}
+
+\begin{table}[h]
+\caption{\bi{Ánh xạ giữa Màn hình và BLoC phụ trách.}{Mapping between Screens and governing BLoCs.}}
+\label{tab:screen_bloc_matrix}
+\centering
+\scriptsize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{\bi{Màn hình}{Screen}} & \textbf{\bi{BLoC chính}{Primary BLoC}} & \textbf{\bi{Nguồn dữ liệu}{Data Source}} \\
+\midrule
+\texttt{LoginScreen} & \texttt{AuthBloc} & Remote REST API / SecureStorage \\
+\texttt{HomeScreen} & \texttt{ChannelBloc}, \texttt{EpgBloc} & Remote API + SQLite cache \\
+\texttt{ChannelsScreen} & \texttt{ChannelBloc} & Remote API + SQLite cache \\
+\texttt{EpgScreen} & \texttt{EpgBloc} & Remote API + \texttt{epg\_cache} \\
+\texttt{LivePlayerScreen} & \texttt{LiveBloc} & MediaMTX + Socket.IO \\
+\texttt{WatchlistScreen} & \texttt{WatchlistBloc} & SQLite \texttt{watchlist} + REST \\
+\texttt{AiCuratorScreen} & \texttt{AiCuratorBloc} & Remote AI Curator API \\
+\texttt{SearchScreen} & \texttt{SearchBloc} & Remote REST (Debounced) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{\bi{Phụ lục C: Quy mô mã nguồn di động}{Appendix C: Mobile Source Scale}}
+\label{app:loc}
+
+\bi{
+Dự án di động OmniCast gồm hơn 17.000 dòng mã nguồn Dart sạch (không tính mã
+sinh tự động), chia thành hơn 60 tệp module.
+}{
+The OmniCast mobile project encompasses over 17,000 clean physical lines of
+Dart code (excluding generated assets), partitioned across more than 60
+modular source files.
+}
+
+\begin{table}[h]
+\caption{\bi{Quy mô mã nguồn thành phần di động.}{Mobile source-code breakdown.}}
+\label{tab:mobile_loc}
+\centering
+\footnotesize
+\fitcol{\input{generated/table-loc.tex}}
+\end{table}

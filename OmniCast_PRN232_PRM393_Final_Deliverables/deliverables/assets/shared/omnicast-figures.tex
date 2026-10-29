@@ -1,0 +1,229 @@
+% ============================================================
+% OmniCast - Shared TikZ figures
+% Each macro takes no argument and draws a complete figure.
+% ============================================================
+
+% ------------------------------------------------------------
+% Figure: Overall layered architecture (PRN232)
+% ------------------------------------------------------------
+\newcommand{\figArchitecture}{%
+\begin{tikzpicture}[scale=0.92, transform shape]
+  % --- Presentation layer ---
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (web) at (0,4.6) {\textbf{Next.js 15 Web Portal}\\App Router $\cdot$ React 19\\Tailwind Cinema Dark};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (mob) at (4.0,4.6) {\textbf{Flutter 3.x Mobile}\\BLoC $\cdot$ Dio $\cdot$ Sqflite};
+
+  % --- API layer ---
+  \node[omniAccent, minimum width=5.4cm, minimum height=1.5cm] (api) at (2.0,2.5) {\textbf{NestJS 10 REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT + RBAC $\cdot$ Swagger/OpenAPI};
+  \node[omniTealNode] (gw) at (2.0,0.9) {\textbf{WebSocket Gateway}\\namespace \texttt{/live}\\Socket.IO $\cdot$ WebRTC signalling};
+  \node[omniTealNode] (grpc) at (5.6,0.9) {\textbf{gRPC Client}\\AuditLogger proto};
+
+  % --- Microservice ---
+  \node[omniAmberNode] (audit) at (5.6,-0.9) {\textbf{Audit-Logger Microservice}\\NestJS $\cdot$ gRPC server\\Render/own deployment};
+
+  % --- Data layer ---
+  \node[omniDarkNode, minimum width=3.0cm] (db) at (0.2,-0.9) {\textbf{PostgreSQL}\\Supabase\\20 Prisma models};
+  \node[omniDarkNode] (media) at (2.8,-0.9) {\textbf{MediaMTX}\\WHIP ingest\\HLS / WebRTC out};
+  \node[omniDarkNode] (cdn) at (5.0,-0.9) {\textbf{Cloudinary}\\media assets};
+  \node[omniDarkNode] (ext) at (7.2,-0.9) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB\\YouTube/Twitch/RSS};
+
+  % --- Flows ---
+  \draw[omniFlowAccent] (web) -- (api);
+  \draw[omniFlowAccent] (mob) -- (api);
+  \draw[omniFlow] (api) -- (gw);
+  \draw[omniFlow] (api) -- (grpc);
+  \draw[omniFlowTeal] (grpc) -- (audit);
+  \draw[omniFlow] (api) -- (db);
+  \draw[omniFlow] (api) -- (media);
+  \draw[omniFlow] (api) -- (cdn);
+  \draw[omniFlowAmber] (api) -- (ext);
+  \draw[omniFlow] (media) -- (mob);
+  \draw[omniFlow] (media) -- (web);
+
+  % --- Layer annotations ---
+  \node[omniLabel, anchor=west] at (-1.85,4.6) {\textbf{Tầng}};
+  \node[omniLabel, anchor=west] at (-1.85,2.5) {\textbf{API}};
+  \node[omniLabel, anchor=west] at (-1.85,0.9) {\textbf{Real-time}};
+  \node[omniLabel, anchor=west] at (-1.85,-0.9) {\textbf{Dữ liệu}};
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: EPG anti-conflict scheduling timeline
+% ------------------------------------------------------------
+\newcommand{\figScheduleConflict}{%
+\begin{tikzpicture}[x=0.95cm, y=0.75cm]
+  % Existing event on the channel
+  \filldraw[fill=omniBlue!22, draw=omniBlue, line width=0.8pt]
+    (1.0,1.6) rectangle (5.2,2.3);
+  \node at (3.1,1.95) {\footnotesize \textbf{Sự kiện đã có} (14:00--15:00)};
+
+  % Candidate event - overlapping head
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (0.4,0.45) rectangle (4.2,1.15);
+  \node at (2.3,0.8) {\footnotesize \textbf{Lịch mới} (13:30--14:30)};
+  \node[omniRose, font=\scriptsize\bfseries] at (2.3,0.15) {giao thoa đầu $\rightarrow$ 409};
+
+  % Candidate event - overlapping tail
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (4.0,2.85) rectangle (7.2,3.55);
+  \node at (5.6,3.2) {\footnotesize \textbf{Lịch mới} (14:30--15:30)};
+  \node[omniRose, font=\scriptsize\bfseries] at (5.6,2.6) {giao thoa đuôi $\rightarrow$ 409};
+
+  % Candidate event - fully contained
+  \filldraw[fill=omniRose!20, draw=omniRose, line width=0.8pt]
+    (0.9,3.4) rectangle (5.6,4.1);
+  \node at (3.25,3.75) {\footnotesize \textbf{Lịch mới} (13:00--16:00)};
+  \node[omniRose, font=\scriptsize\bfseries] at (3.25,3.15) {bao trùm toàn bộ $\rightarrow$ 409};
+
+  % Non-overlapping on another channel
+  \filldraw[fill=omniTeal!20, draw=omniTeal, line width=0.8pt]
+    (6.0,0.45) rectangle (9.4,1.15);
+  \node at (7.7,0.8) {\footnotesize \textbf{Kênh khác} (14:00--15:00)};
+  \node[omniTeal, font=\scriptsize\bfseries] at (7.7,0.15) {cho phép $\rightarrow$ 201};
+
+  % Time axis
+  \draw[-{Latex[length=2mm]}, line width=0.6pt] (0.2,0) -- (9.8,0);
+  \foreach \x/\lab in {1.0/13:00,2.6/14:00,4.2/15:00,5.8/16:00,7.4/17:00,9.0/18:00}{
+    \draw (\x,0) -- (\x,0.12);
+    \node[font=\scriptsize, below=2pt] at (\x,0) {\lab};
+  }
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: AI Curator pipeline (consolidated single call + fallback)
+% ------------------------------------------------------------
+\newcommand{\figAiPipeline}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.3cm]
+  \node[omniNode] (input) {\textbf{Đầu vào}\\title + description\\category + tags};
+  \node[omniAccent, right=of input] (norm) {\textbf Chuẩn hoá}\\\texttt{CuratorProgramInput}};
+  \node[omniAmberNode, right=of norm] (branch) {\textbf{Phân nhánh}}\\có \texttt{OPENAI\_API\_KEY}?};
+
+  \node[omniTealNode, above right=0.4cm and 1.6cm of branch] (prompt) {\textbf{buildConsolidatedPrompt}\\temperature 0.3 $\cdot$ top\_p 0.95};
+  \node[omniTealNode, right=of prompt] (call) {\textbf{Gọi OpenAI}\\gpt-4o $\cdot$ retry + backoff};
+  \node[omniDarkNode, right=of call] (valid) {\textbf{Kiểm tra schema}\\Zod validate};
+
+  \node[omniRoseNode, below right=0.4cm and 1.6cm of branch] (fallback) {\textbf{Heuristic fallback}\\\texttt{sentiment / compliance / editorial}};
+  \node[omniPurpleNode, right=of fallback] (conf) {\textbf{Tính confidence}\\heuristic $\cdot$ clamp 0..1};
+
+  \node[omniAccent, right=of valid, minimum width=2.4cm] (report) {\textbf{AiCuratorReport}\\\texttt{stored in PostgreSQL}};
+  \node[omniNode, below=of report] (stamp) {\textbf{Dấu vết}\\\texttt{promptVersion} $\cdot$ \texttt{aiModelVersion}\\\texttt{openaiCallMs} $\cdot$ \texttt{openaiRetries}};
+
+  \draw[omniFlowAccent] (input) -- (norm);
+  \draw[omniFlowAccent] (norm) -- (branch);
+  \draw[omniFlowTeal] (branch) -- node[above, font=\scriptsize] {có} (prompt);
+  \draw[omniFlowTeal] (prompt) -- (call);
+  \draw[omniFlowTeal] (call) -- (valid);
+  \draw[omniFlowRose] (branch) -- node[below, font=\scriptsize] {không} (fallback);
+  \draw[omniFlowRose] (fallback) -- (conf);
+  \draw[omniFlowTeal] (valid) -- (report);
+  \draw[omniFlowRose] (conf) -- (report);
+  \draw[omniFlow] (report) -- (stamp);
+  \draw[omniFlowRose, dashed] (valid) to[out=200,in=20] node[font=\scriptsize, text=omniRose] {validate fail} (fallback);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Mobile BLoC layered architecture (PRM393)
+% ------------------------------------------------------------
+\newcommand{\figMobileArchitecture}{%
+\begin{tikzpicture}[scale=0.95, transform shape]
+  \begin{scope}[local bounding box=pres]
+    \node[omniPurpleNode, minimum width=5.0cm, minimum height=1.4cm] (pres) at (0,3.4) {\textbf{Tầng Presentation}\\31 screens $\cdot$ 22 widgets\\GoRouter navigation};
+  \end{scope}
+
+  \begin{scope}[local bounding box=logic]
+    \node[omniAccent, minimum width=5.0cm, minimum height=1.4cm] (logic) at (0,1.5) {\textbf{Tầng Logic (BLoC)}\\11 BLoC/Cubit $\cdot$ 1 Cubit session\\events $\rightarrow$ states};
+  \end{scope}
+
+  \begin{scope}[local bounding box=data]
+    \node[omniTealNode, minimum width=5.0cm, minimum height=1.4cm] (data) at (0,-0.4) {\textbf{Tầng Data}\\10 repositories $\cdot$ 10 models\\Dio client $\cdot$ AuthInterceptor};
+  \end{scope}
+
+  \begin{scope}[local bounding box=core]
+    \node[omniDarkNode, minimum width=5.0cm, minimum height=1.4cm] (core) at (0,-2.3) {\textbf{Tầng Core}\\DI (get\_it) $\cdot$ theme $\cdot$ i18n\\constants $\cdot$ utils $\cdot$ services};
+  \end{scope}
+
+  \node[omniAmberNode, right=1.4cm of data] (local) {\textbf{Local Storage}\\\texttt{omnicast\_local.db}\\Sqflite offline-first};
+  \node[omniRoseNode, right=1.4cm of core] (remote) {\textbf{Remote}\\REST API (NestJS)\\FCM push $\cdot$ Supabase Realtime};
+
+  \draw[omniFlowAccent] (pres) -- node[right, font=\scriptsize] {dispatch} (logic);
+  \draw[omniFlowAccent] (logic) -- node[right, font=\scriptsize] {gọi} (data);
+  \draw[omniFlowTeal] (data) -- (local);
+  \draw[omniFlowRose] (data) -- (remote);
+  \draw[omniFlow, dashed] (core) -- (data);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: Offline-first watchlist sync flow
+% ------------------------------------------------------------
+\newcommand{\figOfflineSync}{%
+\begin{tikzpicture}[node distance=1.0cm and 1.4cm]
+  \node[omniNode] (ui) {\textbf{WatchlistScreen}\\SaveToWatchlistButton};
+  \node[omniAccent, right=of ui] (bloc) {\textbf{WatchlistBloc}\\\texttt{AddToWatchlist}\\\texttt{LoadWatchlist}};
+  \node[omniTealNode, right=of bloc] (repo) {\textbf{WatchlistRepository}};
+
+  \node[omniAmberNode, below=of repo] (sqlite) {\textbf{SQLite}\\\texttt{omnicast\_local.db}\\\texttt{WatchlistCache}};
+  \node[omniRoseNode, right=of sqlite] (api) {\textbf{REST}\\\texttt{GET/POST /me/watchlist}};
+  \node[omniDarkNode, right=of api] (notif) {\textbf{Local notification}\\schedule 15 phút trước};
+
+  \draw[omniFlowAccent] (ui) -- (bloc);
+  \draw[omniFlowAccent] (bloc) -- (repo);
+  \draw[omniFlowTeal] (repo) -- (sqlite);
+  \draw[omniFlowRose] (repo) -- (api);
+  \draw[omniFlow] (sqlite) -- (notif);
+  \draw[omniFlowRose, dashed] (api) to[out=0,in=180] node[above, font=\scriptsize] {sync online} (sqlite);
+  \draw[omniFlowAmber, dashed] (sqlite) to[out=200,in=20] node[below, font=\scriptsize, text=omniAmber] {đọc offline khi mất mạng} (ui);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: CI/CD pipeline
+% ------------------------------------------------------------
+\newcommand{\figCicd}{%
+\begin{tikzpicture}[node distance=0.85cm and 1.1cm]
+  \node[omniDarkNode] (push) {\textbf{git push main}};
+  \node[omniAccent, right=of push] (gha) {\textbf{GitHub Actions}\\\texttt{ci.yml}};
+
+  \node[omniNode, below=of gha] (be) {\textbf{backend job}\\npm ci $\cdot$ prisma generate\\node:test (163)\\prisma migrate $\cdot$ nest build};
+  \node[omniNode, right=of be] (fe) {\textbf{frontend job}\\npm ci $\cdot$ vitest run (228)\\tsc --noEmit $\cdot$ next build};
+  \node[omniNode, right=of fe] (mob) {\textbf{mobile job}\\flutter pub get\\flutter test (69)\\flutter build apk};
+
+  \node[omniTealNode, below=of be] (sum) {\textbf{test-summary job}\\merge artifacts $\cdot$ generate HTML report\\quality gate};
+  \node[omniPurpleNode, right=of sum] (dep) {\textbf{deploy job}\\Vercel backend\\Vercel frontend};
+
+  \draw[omniFlowAccent] (push) -- (gha);
+  \draw[omniFlow] (gha) -- (be);
+  \draw[omniFlow] (gha) -- (fe);
+  \draw[omniFlow] (gha) -- (mob);
+  \draw[omniFlowTeal] (be) -- (sum);
+  \draw[omniFlowTeal] (fe) -- (sum);
+  \draw[omniFlowTeal] (mob) -- (sum);
+  \draw[omniFlowAccent] (sum) -- (dep);
+\end{tikzpicture}%
+}
+
+% ------------------------------------------------------------
+% Figure: JWT authentication & RBAC flow
+% ------------------------------------------------------------
+\newcommand{\figAuthFlow}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.2cm]
+  \node[omniNode] (client) {\textbf{Client}\\Web hoặc Mobile};
+  \node[omniAccent, right=of client] (auth) {\textbf{AuthController}\\\texttt{/api/v1/auth/login}};
+  \node[omniTealNode, right=of auth] (svc) {\textbf{AuthService}\\bcrypt verify\\deactivated check};
+  \node[omniDarkNode, right=of svc] (db) {\textbf{PostgreSQL}\\\texttt{User} + \texttt{RefreshToken}};
+
+  \node[omniPurpleNode, below=of svc] (tok) {\textbf{Cấp token}\\\texttt{access} 60 phút\\\texttt{refresh} 90 ngày (xoay vòng)};
+  \node[omniAmberNode, right=of tok] (guard) {\textbf{RBAC Guards}\\\texttt{JwtAuthGuard}\\\texttt{RolesGuard}};
+  \node[omniRoseNode, right=of guard] (api) {\textbf{Endpoint có kiểm tra quyền}\\\texttt{@Roles(1,2,3)}};
+
+  \draw[omniFlowAccent] (client) -- (auth);
+  \draw[omniFlowAccent] (auth) -- (svc);
+  \draw[omniFlow] (svc) -- (db);
+  \draw[omniFlowTeal] (svc) -- (tok);
+  \draw[omniFlowTeal] (tok) -- (guard);
+  \draw[omniFlowRose] (guard) -- (api);
+  \draw[omniFlow, dashed] (client) to[out=0,in=180] node[above, font=\scriptsize] {Bearer token} (guard);
+\end{tikzpicture}%
+}

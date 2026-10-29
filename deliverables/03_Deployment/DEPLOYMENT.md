@@ -1,6 +1,23 @@
 # 🚀 OmniCast — Hướng Dẫn Triển Khai Hệ Thống (Deployment Guide)
 ## Kiến Trúc Triển Khai Thực Tế Nền Tảng Đa Dịch Vụ (PRN232 & PRM393)
 
+**Học viện Công nghệ FPT Quy Nhơn — FPTU Quy Nhon AI Campus - FU Cahata**  
+*Dự án: OmniCast — Nền tảng Truyền thông & Trí tuệ Phát thanh Truyền hình Đa Phương tiện*
+
+---
+
+### Thông Tin Dự Án & Đội Ngũ Triển Khai
+- **Đơn vị đào tạo:** Đại học FPT Quy Nhơn (FPTU Quy Nhon AI Campus)
+- **Tổ chức / Câu lạc bộ:** FU Cahata
+- **Môn học:** PRN232 & PRM393
+- **Học kỳ:** Fall 2026 (Fa26)
+- **Giảng viên hướng dẫn (Mentor):** Thầy **Huỳnh Vang**
+- **Nhóm sinh viên thực hiện (4 thành viên):**
+  1. **Nguyễn Bình An** (`TomOutfit` — Trưởng nhóm / Tech Lead: Kiến trúc NestJS, Docker Compose, CI/CD Actions & Vercel)
+  2. **Trần Thanh Sơn** (`TranThanhSonQE170080` — MSSV: `QE170080`: Standalone gRPC Microservice Render, Supabase PostgreSQL 21 Models)
+  3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136`: Mobile Lead Developer, Flutter Android APK Build & Local SQLite)
+  4. **Đồng Hoàng Nguyên** (`teng122`: Full-Stack & Realtime Engineer, Next.js 15 Web Portal Vercel, Socket.IO Gateway)
+
 ---
 
 ### 1. Tổng Quan Kiến Trúc Triển Khai (Deployment Topology)
