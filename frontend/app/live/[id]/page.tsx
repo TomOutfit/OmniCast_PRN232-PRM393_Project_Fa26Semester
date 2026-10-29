@@ -876,6 +876,8 @@ export default function LiveWatchPage() {
                   reactions={liveSession.reactions}
                   latestReaction={liveSession.latestReaction}
                   broadcastMessage={liveSession.broadcastMessage}
+                  latestDonation={liveSession.latestDonation}
+                  streamerWalletBalance={liveSession.streamerWalletBalance}
                   onSendMessage={liveSession.sendMessage}
                   onSendReaction={handleUserReaction}
                   onDeleteMessage={liveSession.deleteMessage}

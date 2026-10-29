@@ -37,6 +37,8 @@ import { useAuth } from '@/lib/auth-context';
 import {
   fetchStreamerPaymentInfo,
   sendSandboxDonation,
+  fetchUserWallet,
+  topupUserWallet,
   type StreamerPaymentInfo,
 } from '@/lib/api/billing';
 
@@ -97,6 +99,28 @@ export const MOCK_PAYMENT_METHODS = [
   },
 ];
 
+
+function getLiveQrImageUrl(
+  method: string,
+  streamerInfo: StreamerPaymentInfo | null,
+  amount: number,
+) {
+  const bankAccount = streamerInfo?.bankAccount || '19036888999';
+  const transfer = streamerInfo?.transferSyntax || 'OMNICAST';
+  const name = streamerInfo?.accountHolder || streamerInfo?.streamerName || 'OMNICAST STUDIO';
+  const momoPhone = streamerInfo?.momoPhone || '0988666777';
+
+  if (method === 'vnpay' || method === 'card') {
+    return `https://img.vietqr.io/image/MB-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transfer)}&accountName=${encodeURIComponent(name)}`;
+  } else if (method === 'momo') {
+    const momoData = `2|99|${momoPhone}|${name}|${amount}|0|0|${transfer}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(momoData)}`;
+  } else {
+    const zaloData = `https://zalopay.vn/pay?acc=${encodeURIComponent(name)}&amount=${amount}&msg=${encodeURIComponent(transfer)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(zaloData)}`;
+  }
+}
+
 export function LiveDonationDialog({
   isOpen,
   onClose,
@@ -111,6 +135,31 @@ export function LiveDonationDialog({
   const [selectedMethod, setSelectedMethod] = useState(MOCK_PAYMENT_METHODS[0].id);
   const [donorName, setDonorName] = useState('');
   const [scMessage, setScMessage] = useState('Ủng hộ buổi phát sóng xuất sắc! 🔥');
+
+  const [userWalletBalance, setUserWalletBalance] = useState<number | null>(null);
+  const [isTopupLoading, setIsTopupLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchUserWallet()
+        .then((w) => setUserWalletBalance(w.walletBalance))
+        .catch(() => {});
+    }
+  }, [isOpen, user]);
+
+  const handleQuickTopup = async () => {
+    if (isTopupLoading) return;
+    setIsTopupLoading(true);
+    try {
+      const res = await topupUserWallet(100000);
+      setUserWalletBalance(res.walletBalance);
+      toast.success(res.message);
+    } catch {
+      toast.error('Nạp tiền thử nghiệm thất bại');
+    } finally {
+      setIsTopupLoading(false);
+    }
+  };
 
   // Streamer payment details
   const [streamerInfo, setStreamerInfo] = useState<StreamerPaymentInfo | null>(null);
@@ -222,6 +271,14 @@ export function LiveDonationDialog({
       });
 
       setReceiptData(response);
+      if (response.donor?.walletBalance != null) {
+        setUserWalletBalance(response.donor.walletBalance);
+      }
+      if (response.streamer?.walletBalance != null) {
+        setStreamerInfo((prev) =>
+          prev ? { ...prev, walletBalance: response.streamer.walletBalance } : null,
+        );
+      }
       setStep('receipt');
 
       toast.success(response.notification || 'Nạp tiền mô phỏng thành công!', {
@@ -288,6 +345,37 @@ export function LiveDonationDialog({
         {/* STEP 1: CONFIGURE DONATION */}
         {step === 'configure' && (
           <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+            {/* Real-time Balances Hero Bar */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-2.5">
+                <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
+                  Quỹ Streamer nhận
+                </span>
+                <span className="text-sm font-black text-white font-mono">
+                  {formatVnd(streamerInfo?.walletBalance ?? 0)}
+                </span>
+              </div>
+              <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-2.5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-cyan-400 block tracking-wider">
+                    Số dư ví của bạn
+                  </span>
+                  <span className="text-sm font-black text-white font-mono">
+                    {formatVnd(userWalletBalance ?? 0)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickTopup}
+                  disabled={isTopupLoading}
+                  className="rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-2 py-1 text-[10px] font-bold text-cyan-300 hover:bg-cyan-500 hover:text-black transition cursor-pointer"
+                  title="Nạp thử nghiệm 100k vào ví"
+                >
+                  {isTopupLoading ? '...' : '+100k'}
+                </button>
+              </div>
+            </div>
+
             {/* Streamer Beneficiary Card */}
             <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-3">
               <div className="flex items-center gap-3">
@@ -461,102 +549,36 @@ export function LiveDonationDialog({
 
             {/* Realistic QR Matrix Card */}
             <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-inner">
-              <div className="relative flex flex-col items-center justify-center p-4 bg-white rounded-2xl shadow-xl">
-                {/* Stylized Simulated QR Matrix SVG */}
-                <svg
-                  viewBox="0 0 160 160"
-                  className="h-44 w-44 text-slate-950"
-                  fill="currentColor"
+              <div className="relative flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-[280px]">
+                {/* Method Brand Badge */}
+                <div
+                  className="mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white"
+                  style={{ backgroundColor: currentMethodObj.color }}
                 >
-                  {/* Finder Pattern Top-Left */}
-                  <rect x="10" y="10" width="40" height="40" rx="6" />
-                  <rect x="16" y="16" width="28" height="28" rx="3" fill="white" />
-                  <rect x="22" y="22" width="16" height="16" rx="2" fill="currentColor" />
+                  {currentMethodObj.bankLabel}
+                </div>
 
-                  {/* Finder Pattern Top-Right */}
-                  <rect x="110" y="10" width="40" height="40" rx="6" />
-                  <rect x="116" y="16" width="28" height="28" rx="3" fill="white" />
-                  <rect x="122" y="22" width="16" height="16" rx="2" fill="currentColor" />
+                {/* Official Scannable Dynamic QR Code */}
+                <div className="relative w-56 h-56 flex items-center justify-center bg-slate-50 rounded-xl overflow-hidden shadow-inner">
+                  <img
+                    src={getLiveQrImageUrl(selectedMethod, streamerInfo, selectedTier.amount)}
+                    alt="Mã QR Chuyển Tiền"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(streamerInfo?.transferSyntax || 'OMNICAST')}`;
+                    }}
+                  />
+                </div>
 
-                  {/* Finder Pattern Bottom-Left */}
-                  <rect x="10" y="110" width="40" height="40" rx="6" />
-                  <rect x="16" y="116" width="28" height="28" rx="3" fill="white" />
-                  <rect x="22" y="22" width="16" height="16" rx="2" fill="currentColor" />
-                  <rect x="22" y="122" width="16" height="16" rx="2" fill="currentColor" />
-
-                  {/* Realistic QR Data Blocks Simulation */}
-                  <rect x="58" y="14" width="6" height="6" />
-                  <rect x="70" y="14" width="6" height="6" />
-                  <rect x="82" y="14" width="6" height="6" />
-                  <rect x="94" y="14" width="6" height="6" />
-                  <rect x="58" y="26" width="18" height="6" />
-                  <rect x="82" y="26" width="12" height="6" />
-                  <rect x="64" y="38" width="6" height="6" />
-                  <rect x="76" y="38" width="18" height="6" />
-
-                  <rect x="14" y="58" width="18" height="6" />
-                  <rect x="38" y="58" width="6" height="6" />
-                  <rect x="50" y="58" width="12" height="6" />
-                  <rect x="98" y="58" width="18" height="6" />
-                  <rect x="122" y="58" width="24" height="6" />
-
-                  <rect x="14" y="70" width="12" height="6" />
-                  <rect x="32" y="70" width="6" height="6" />
-                  <rect x="44" y="70" width="18" height="6" />
-                  <rect x="98" y="70" width="12" height="6" />
-                  <rect x="116" y="70" width="6" height="6" />
-                  <rect x="128" y="70" width="18" height="6" />
-
-                  <rect x="14" y="82" width="6" height="6" />
-                  <rect x="26" y="82" width="18" height="6" />
-                  <rect x="50" y="82" width="12" height="6" />
-                  <rect x="98" y="82" width="24" height="6" />
-                  <rect x="134" y="82" width="12" height="6" />
-
-                  <rect x="14" y="94" width="24" height="6" />
-                  <rect x="44" y="94" width="18" height="6" />
-                  <rect x="98" y="94" width="12" height="6" />
-                  <rect x="116" y="94" width="18" height="6" />
-                  <rect x="140" y="94" width="6" height="6" />
-
-                  <rect x="58" y="110" width="12" height="6" />
-                  <rect x="76" y="110" width="18" height="6" />
-                  <rect x="100" y="110" width="6" height="6" />
-                  <rect x="112" y="110" width="18" height="6" />
-                  <rect x="136" y="110" width="10" height="6" />
-
-                  <rect x="58" y="122" width="18" height="6" />
-                  <rect x="82" y="122" width="6" height="6" />
-                  <rect x="94" y="122" width="18" height="6" />
-                  <rect x="118" y="122" width="12" height="6" />
-                  <rect x="136" y="122" width="10" height="6" />
-
-                  <rect x="58" y="134" width="6" height="6" />
-                  <rect x="70" y="134" width="12" height="6" />
-                  <rect x="88" y="134" width="6" height="6" />
-                  <rect x="100" y="134" width="18" height="6" />
-                  <rect x="124" y="134" width="22" height="6" />
-                </svg>
-
-                {/* Central Brand Badge on QR Code */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1.5 shadow-lg border border-slate-200"
-                    style={{ borderColor: currentMethodObj.color }}
-                  >
-                    <span
-                      className="text-xs font-black"
-                      style={{ color: currentMethodObj.color }}
-                    >
-                      {currentMethodObj.id === 'momo'
-                        ? 'MoMo'
-                        : currentMethodObj.id === 'vnpay'
-                        ? 'VNPAY'
-                        : currentMethodObj.id === 'zalopay'
-                        ? 'Zalo'
-                        : 'VISA'}
-                    </span>
-                  </div>
+                <div className="mt-2 text-center">
+                  <p className="text-[11px] font-extrabold text-slate-800">
+                    {streamerInfo?.accountHolder || 'OMNICAST STUDIO'}
+                  </p>
+                  <p className="text-[10px] font-mono text-slate-500 font-bold">
+                    {selectedMethod === 'momo'
+                      ? streamerInfo?.momoPhone || '0988666777'
+                      : streamerInfo?.bankAccount || '19036888999'}
+                  </p>
                 </div>
               </div>
 

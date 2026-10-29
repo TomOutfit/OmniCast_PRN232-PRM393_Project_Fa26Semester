@@ -21,6 +21,7 @@ export interface StreamerPaymentInfo {
   zaloPayAccount: string;
   transferSyntax: string;
   isSandbox: boolean;
+  walletBalance?: number;
 }
 
 export interface SandboxDonationPayload {
@@ -53,6 +54,11 @@ export interface SandboxDonationResponse {
     avatarUrl?: string;
     walletBalance: number;
   };
+  donor?: {
+    id: string;
+    fullName: string;
+    walletBalance: number;
+  } | null;
   notification: string;
 }
 
@@ -113,5 +119,12 @@ export async function sendSandboxDonation(
 
 export async function fetchUserWallet(): Promise<UserWalletData> {
   const { data } = await apiClient.get('/billing/wallet');
+  return data;
+}
+
+export async function topupUserWallet(
+  amount: number = 100000,
+): Promise<{ success: boolean; message: string; walletBalance: number }> {
+  const { data } = await apiClient.post('/billing/wallet/topup-sandbox', { amount });
   return data;
 }

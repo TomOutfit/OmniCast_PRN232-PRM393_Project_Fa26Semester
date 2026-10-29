@@ -18,6 +18,8 @@ export interface LiveChatPanelProps {
   reactions: Record<string, number>;
   latestReaction?: string | null;
   broadcastMessage?: BroadcasterAnnouncement | null;
+  latestDonation?: any | null;
+  streamerWalletBalance?: number | null;
   onSendMessage: (content: string) => void;
   onSendReaction: (type: string) => void;
   onDeleteMessage?: (commentId: string) => void;
@@ -37,6 +39,8 @@ export function LiveChatPanel({
   reactions,
   latestReaction,
   broadcastMessage,
+  latestDonation,
+  streamerWalletBalance,
   onSendMessage,
   onSendReaction,
   onDeleteMessage,
@@ -65,12 +69,48 @@ export function LiveChatPanel({
             TRÒ CHUYỆN TRỰC TIẾP
           </h3>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Thời gian thực</span>
+        <div className="flex items-center gap-2">
+          {streamerWalletBalance != null && (
+            <div className="flex items-center gap-1 rounded-lg bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-300 font-mono">
+              <span className="text-amber-400">Quỹ Streamer:</span>
+              <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(streamerWalletBalance)}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Trực tiếp</span>
+          </div>
         </div>
       </div>
 
+      {/* Real-time Super Chat Donation Highlight Banner */}
+      {latestDonation && (
+        <div className="mx-3 mt-2 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-950/80 via-orange-950/70 to-slate-900 p-2.5 shadow-lg shadow-amber-500/20 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl animate-bounce">{latestDonation.giftEmoji || '🎉'}</span>
+              <div>
+                <p className="text-xs font-black text-amber-300">
+                  {latestDonation.donorName}
+                  <span className="ml-1 text-[10px] text-white/80 font-normal">vừa ủng hộ</span>
+                </p>
+                <p className="text-xs font-mono font-extrabold text-white">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(latestDonation.amount)}
+                  <span className="ml-1 text-[10px] font-sans font-bold text-emerald-400">({latestDonation.giftTier || 'Super Chat'})</span>
+                </p>
+              </div>
+            </div>
+            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-black text-slate-950 uppercase">
+              SUPER CHAT
+            </span>
+          </div>
+          {latestDonation.message && (
+            <p className="mt-1 text-xs text-slate-200 italic pl-7 border-l-2 border-amber-400/40 ml-1">
+              &ldquo;{latestDonation.message}&rdquo;
+            </p>
+          )}
+        </div>
+      )}
       {/* Broadcaster Announcement Banner */}
       {broadcastMessage && (
         <div className="relative border-b border-rose-500/30 bg-rose-950/60 p-3 text-xs text-rose-200">

@@ -32,7 +32,26 @@ export interface ProgramChangePayload {
   timestamp: string;
 }
 
+export interface LiveDonationPayload {
+  eventId?: string;
+  donationId: string;
+  donorId?: string;
+  donorName: string;
+  streamerId: string;
+  streamerName: string;
+  amount: number;
+  paymentMethod: string;
+  giftEmoji: string;
+  giftTier?: string;
+  message?: string;
+  streamerWalletBalance: number;
+  donorWalletBalance?: number;
+  timestamp: string;
+}
+
 export interface UseLiveSessionReturn {
+  latestDonation: LiveDonationPayload | null;
+  streamerWalletBalance: number | null;
   isConnected: boolean;
   viewerCount: number;
   messages: LiveComment[];
@@ -67,6 +86,8 @@ export function useLiveSession(
     initialData?.reactions ?? {},
   );
   const [latestReaction, setLatestReaction] = useState<string | null>(null);
+  const [latestDonation, setLatestDonation] = useState<LiveDonationPayload | null>(null);
+  const [streamerWalletBalance, setStreamerWalletBalance] = useState<number | null>(null);
   const [broadcastMessage, setBroadcastMessage] =
     useState<BroadcasterAnnouncement | null>(null);
   const [programChange, setProgramChange] = useState<ProgramChangePayload | null>(null);
@@ -223,7 +244,17 @@ export function useLiveSession(
       }
     });
 
-    socket.on('live:program:changed', (payload: ProgramChangePayload) => {
+        socket.on('live:donation:received', (payload: LiveDonationPayload) => {
+      if (!payload.eventId || payload.eventId === eventId) {
+        setLatestDonation(payload);
+        if (typeof payload.streamerWalletBalance === 'number') {
+          setStreamerWalletBalance(payload.streamerWalletBalance);
+        }
+        setTimeout(() => setLatestDonation(null), 18000);
+      }
+    });
+
+socket.on('live:program:changed', (payload: ProgramChangePayload) => {
       if (payload.eventId === eventId) {
         setProgramChange(payload);
       }
@@ -373,5 +404,7 @@ export function useLiveSession(
     broadcastAnnouncement,
     deleteMessage,
     dismissAnnouncement,
+    latestDonation,
+    streamerWalletBalance,
   };
 }
