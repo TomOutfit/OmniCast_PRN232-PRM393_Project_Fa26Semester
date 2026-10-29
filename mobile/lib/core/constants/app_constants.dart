@@ -31,8 +31,13 @@ class AppConstants {
     return _defaultBaseUrl;
   }
 
+  static String get discoveredMediaHost => _discoveredMediaHost;
+
   static String get mediaHost {
     if (_customMediaHost.isNotEmpty) return _customMediaHost;
+    if (_discoveredMediaHost.isNotEmpty && _discoveredMediaHost != '192.168.1.88') {
+      return _discoveredMediaHost;
+    }
     final apiUri = Uri.tryParse(baseUrl);
     if (apiUri != null &&
         apiUri.host.isNotEmpty &&
@@ -41,7 +46,6 @@ class AppConstants {
         apiUri.host != '127.0.0.1') {
       return apiUri.host;
     }
-    if (_discoveredMediaHost.isNotEmpty) return _discoveredMediaHost;
     // Dynamic default: auto-updated by LanDiscoveryService on Wi-Fi connect
     return '172.9.8.239';
   }

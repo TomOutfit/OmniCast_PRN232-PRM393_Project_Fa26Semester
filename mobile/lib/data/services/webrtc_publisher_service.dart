@@ -224,10 +224,15 @@ class WebRTCPublisherService {
         },
       });
 
-      await _peerConnection!.setLocalDescription(offer);
+      // Prioritize H264 codec in SDP so MediaMTX can remux to HLS for viewers
+      final rawSdp = offer.sdp ?? '';
+      final modifiedSdp = _preferH264InSdp(rawSdp);
+      final modifiedOffer = RTCSessionDescription(modifiedSdp, offer.type);
+
+      await _peerConnection!.setLocalDescription(modifiedOffer);
 
       // Send offer to MediaMTX via WHIP protocol
-      final answerSdp = await _sendWhipOffer(offer.sdp!);
+      final answerSdp = await _sendWhipOffer(modifiedSdp);
 
       if (answerSdp == null) {
         _updateState(BroadcastState.error);
@@ -510,5 +515,36 @@ class WebRTCPublisherService {
     _localStream = null;
 
     _localDescription = null;
+  }
+
+  /// Prioritize H264 payload types in m=video line so MediaMTX can remux to HLS
+  String _preferH264InSdp(String sdp) {
+    if (sdp.isEmpty) return sdp;
+    final h264Regex = RegExp(r'a=rtpmap:(\d+)\s+H264\/', caseSensitive: false);
+    final h264Pts = h264Regex.allMatches(sdp).map((m) => m.group(1)!).toList();
+    if (h264Pts.isEmpty) return sdp;
+
+    final lines = sdp.split(RegExp(r'\r?\n'));
+    final result = <String>[];
+    for (final line in lines) {
+      if (line.startsWith('m=video ')) {
+        final parts = line.split(' ');
+        if (parts.length > 3) {
+          final prefix = parts.sublist(0, 3);
+          final pts = parts.sublist(3);
+          final orderedPts = <String>[];
+          for (final pt in h264Pts) {
+            if (pts.contains(pt)) orderedPts.add(pt);
+          }
+          for (final pt in pts) {
+            if (!orderedPts.contains(pt)) orderedPts.add(pt);
+          }
+          result.add('${prefix.join(' ')} ${orderedPts.join(' ')}');
+          continue;
+        }
+      }
+      result.add(line);
+    }
+    return result.join('\r\n');
   }
 }

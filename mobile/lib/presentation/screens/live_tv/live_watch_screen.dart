@@ -33,6 +33,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/services/share_helper.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/services/live_socket_service.dart';
+import '../../../core/services/lan_discovery_service.dart';
 import '../../widgets/omni_player.dart';
 import '../../widgets/social/comments_section.dart';
 import '../../widgets/social/live_donation_modal.dart';
@@ -136,6 +137,50 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         }
       }),
     );
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onLiveStarted.listen((data) {
+        final newStreamUrl = data['streamUrl']?.toString() ?? data['hlsUrl']?.toString();
+        final eventId = data['eventId']?.toString();
+        if (mounted && (eventId == widget.eventId || eventId == _event?.id || _event == null)) {
+          setState(() {
+            if (_event != null) {
+              _event = _event!.copyWith(
+                status: 'LIVE',
+                streamUrl: newStreamUrl ?? _event!.streamUrl,
+                title: data['title']?.toString() ?? _event!.title,
+              );
+            }
+          });
+          _toast('🔴 Kênh đang phát sóng trực tiếp từ camera!', accent: _accent);
+        }
+      }),
+    );
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onProgramSwitched.listen((data) {
+        final newStreamUrl = data['streamUrl']?.toString();
+        if (mounted && _event != null && newStreamUrl != null) {
+          setState(() {
+            _event = _event!.copyWith(
+              streamUrl: newStreamUrl,
+              title: data['title']?.toString() ?? _event!.title,
+            );
+          });
+        }
+      }),
+    );
+
+    _socketSubscriptions.add(
+      LiveSocketService.instance.onLiveStopped.listen((data) {
+        if (mounted && _event != null) {
+          setState(() {
+            _event = _event!.copyWith(status: 'ENDED');
+          });
+          _toast('⏹ Buổi phát sóng trực tiếp đã kết thúc', accent: _warn);
+        }
+      }),
+    );
   }
 
   void _spawnReactionParticles(String type) {
@@ -157,6 +202,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       s.cancel();
     }
     LiveSocketService.instance.unsubscribeEvent(widget.eventId);
+    if (_event?.channel?.slug != null && _event!.channel!.slug.isNotEmpty) {
+      LiveSocketService.instance.unsubscribeChannel(_event!.channel!.slug);
+    }
     super.dispose();
   }
 
@@ -176,6 +224,14 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         setState(() => _myBalance = (uWallet['walletBalance'] as num).toInt());
       }
     }).catchError((_) {});
+
+    // Auto-discover local MediaMTX streaming server in Wi-Fi background
+    LanDiscoveryService().autoDiscoverMediaHost().then((res) {
+      if (res.success && res.host != null && mounted) {
+        debugPrint('[LiveWatchScreen] ⚡ Discovered MediaMTX host: ${res.host}');
+        setState(() {});
+      }
+    });
 
     _initSocket();
     await _loadEvent();
@@ -230,6 +286,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           _event = LiveEventModel.fromJson(body);
           _isLoading = false;
         });
+        if (_event?.channel?.slug != null && _event!.channel!.slug.isNotEmpty) {
+          LiveSocketService.instance.subscribeChannel(_event!.channel!.slug);
+        }
       }
     } catch (e) {
       if (e is DioException && e.response?.statusCode == 404) {

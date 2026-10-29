@@ -40,6 +40,7 @@ class LiveSocketService {
   final _liveStartedController = StreamController<Map<String, dynamic>>.broadcast();
   final _liveStoppedController = StreamController<Map<String, dynamic>>.broadcast();
   final _donationController = StreamController<Map<String, dynamic>>.broadcast();
+  final _programSwitchedController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get onChatNew => _chatController.stream;
   Stream<Map<String, dynamic>> get onReactionNew => _reactionController.stream;
@@ -49,6 +50,7 @@ class LiveSocketService {
   Stream<Map<String, dynamic>> get onLiveStarted => _liveStartedController.stream;
   Stream<Map<String, dynamic>> get onLiveStopped => _liveStoppedController.stream;
   Stream<Map<String, dynamic>> get onDonationReceived => _donationController.stream;
+  Stream<Map<String, dynamic>> get onProgramSwitched => _programSwitchedController.stream;
 
   /// Connect to the `/live` WebSocket namespace with JWT authentication
   Future<void> connect({String? customToken}) async {
@@ -145,6 +147,12 @@ class LiveSocketService {
       _socket?.on('live:donation:received', (data) {
         if (data is Map) {
           _donationController.add(data.cast<String, dynamic>());
+        }
+      });
+
+      _socket?.on('live:program:switched', (data) {
+        if (data is Map) {
+          _programSwitchedController.add(data.cast<String, dynamic>());
         }
       });
 
