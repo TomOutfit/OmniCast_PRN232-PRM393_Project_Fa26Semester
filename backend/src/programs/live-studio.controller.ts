@@ -180,6 +180,28 @@ export class LiveStudioController {
   // browser the ingest URLs and manage the `LiveEvent` row so the
   // existing viewer room (chat / reactions / viewer count) works.
 
+  @Public()
+  @Get('lan-discovery')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Public Wi-Fi / LAN stream discovery endpoint: returns auto-detected LAN IP ' +
+      'and MediaMTX ports for zero-configuration playback on local networks.',
+  })
+  @ApiResponse({ status: 200, description: '200 OK — LAN discovery config' })
+  async getLanDiscovery() {
+    const config = this.studioService.getIngestConfig();
+    return {
+      status: 'ok',
+      lanIp: (config as any).lanIp || config.publicHost,
+      publicHost: config.publicHost,
+      hlsUrl: config.hlsUrl,
+      whipUrl: config.whipUrl,
+      webrtcUrl: config.webrtcUrl,
+      autoDiscovered: true,
+    };
+  }
+
   @Get('live/ingest-config')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

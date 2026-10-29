@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/lan_discovery_service.dart';
 import 'payment/subscription_payment_sheet.dart';
 
 // Demo fallback stream. Big Buck Bunny — Creative Commons MP4 hosted
@@ -201,13 +202,27 @@ class _OmniPlayerState extends State<OmniPlayer> {
       return fallbackOrUrl();
     }
     if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
-      final host = AppConstants.mediaHost;
       var target = trimmed;
+
+      // Wi-Fi Stream Optimization: If URL already contains an active LAN IP (10.*, 192.168.*),
+      // preserve it and auto-adopt it as the verified mediaHost!
+      final ipMatch = RegExp(r'^(?:https?:\/\/)?(10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(?:1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+):8888\/').firstMatch(target);
+      if (ipMatch != null) {
+        final discoveredLanIp = ipMatch.group(1);
+        if (discoveredLanIp != null && !AppConstants.hasCustomMediaHost) {
+          AppConstants.setCustomMediaHost(discoveredLanIp);
+        }
+      }
+
+      final host = AppConstants.mediaHost;
       if (lower.contains(':8888/')) {
-        target = target.replaceFirst(
-          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
-          'http://$host:8888/',
-        );
+        // Rewrite localhost / 127.0.0.1 or stale IP to the active Wi-Fi mediaHost
+        if (lower.contains('localhost:8888/') || lower.contains('127.0.0.1:8888/')) {
+          target = target.replaceFirst(
+            RegExp(r'^(?:https?:\/\/)?(localhost|127\.0\.0\.1):8888\/'),
+            'http://$host:8888/',
+          );
+        }
       } else {
         final cleanPath = target.startsWith('/') ? target.substring(1) : target;
         target = 'http://$host:8888/$cleanPath';
@@ -278,7 +293,17 @@ class _OmniPlayerState extends State<OmniPlayer> {
       // ── Live Stream Reconnection Flow ─────────────────────────
       // Live camera broadcasts must NEVER swap to Big Buck Bunny cartoon!
       // They retry with backoff to give MediaMTX time to remux the first chunk.
-      if (_isLiveStream) {
+      if (_isLiveStream || videoUrl.contains(':8888/')) {
+        // Wi-Fi Auto-Discovery: on initial connection failure, immediately scan the local Wi-Fi
+        // in background to discover if MediaMTX is broadcasting on another IP in the same network!
+        if (_retryCount == 0) {
+          LanDiscoveryService().autoDiscoverMediaHost().then((res) {
+            if (res.success && res.host != null && mounted) {
+              debugPrint('[OmniPlayer] ⚡ Wi-Fi Auto-Discovery resolved mediaHost to: ${res.host}');
+            }
+          });
+        }
+
         if (_retryCount < _maxLiveRetries) {
           _retryCount++;
           if (mounted) {
@@ -1449,85 +1474,163 @@ class _LiveStandbyState extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
   final ctrl = TextEditingController(text: AppConstants.mediaHost);
+  bool isScanning = false;
+  String? scanMessage;
+
   showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: const Color(0xFF0F172A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Row(
-        children: [
-          Icon(Icons.settings_ethernet_rounded,
-              color: Color(0xFF00E5FF), size: 22),
-          SizedBox(width: 8),
-          Text(
-            'IP Máy Chủ Studio',
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Nhập địa chỉ IP Wi-Fi của máy tính đang chạy Studio (MediaMTX) để điện thoại kết nối trực tiếp:',
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: ctrl,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF1E293B),
-              hintText: 'Ví dụ: 192.168.1.88',
-              hintStyle: const TextStyle(color: Colors.white38),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF334155)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF334155)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+    builder: (ctx) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.wifi_tethering_rounded,
+                color: Color(0xFF00E5FF), size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Kết Nối Wi-Fi Nội Bộ',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chỉ cần máy tính và điện thoại cùng mạng Wi-Fi, hệ thống sẽ tự động bắt luồng phát trực tiếp:',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            // Auto Scan Button
+            InkWell(
+              onTap: isScanning
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        isScanning = true;
+                        scanMessage = 'Đang quét mạng Wi-Fi…';
+                      });
+                      final res = await LanDiscoveryService().autoDiscoverMediaHost();
+                      setDialogState(() {
+                        isScanning = false;
+                        if (res.success && res.host != null) {
+                          ctrl.text = res.host!;
+                          scanMessage = '✓ Đã tìm thấy máy chủ: ${res.host} (${res.source})';
+                        } else {
+                          scanMessage = 'Chưa thấy máy chủ phát. Bạn có thể nhập IP thủ công:';
+                        }
+                      });
+                    },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isScanning)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF00E5FF),
+                        ),
+                      )
+                    else
+                      const Icon(Icons.bolt_rounded,
+                          color: Color(0xFF00E5FF), size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      isScanning ? 'Đang tự động quét…' : '⚡ Tự Động Quét Wi-Fi (Auto Scan)',
+                      style: const TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+            if (scanMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                scanMessage!,
+                style: TextStyle(
+                  color: scanMessage!.startsWith('✓') ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF1E293B),
+                labelText: 'Địa chỉ IP MediaMTX',
+                labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                hintText: 'Ví dụ: 10.12.2.162',
+                hintStyle: const TextStyle(color: Colors.white38),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF334155)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF334155)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF00E5FF)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text('Đóng', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final newHost = ctrl.text.trim();
+              if (newHost.isNotEmpty) {
+                AppConstants.setCustomMediaHost(newHost);
+                Navigator.pop(ctx);
+                onSaved?.call();
+              }
+            },
+            child: const Text('Lưu & Kết nối ngay',
+                style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child:
-              const Text('Hủy', style: TextStyle(color: Color(0xFF64748B))),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00E5FF),
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-          ),
-          onPressed: () {
-            final newHost = ctrl.text.trim();
-            if (newHost.isNotEmpty) {
-              AppConstants.setCustomMediaHost(newHost);
-              Navigator.pop(ctx);
-              onSaved?.call();
-            }
-          },
-          child: const Text('Lưu & Kết nối lại',
-              style: TextStyle(fontWeight: FontWeight.w800)),
-        ),
-      ],
     ),
   );
 }

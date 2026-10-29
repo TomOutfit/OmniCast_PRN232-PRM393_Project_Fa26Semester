@@ -29,6 +29,8 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import {
   ContentLicense,
@@ -43,6 +45,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { EpgNowService } from './epg-now.service';
+import * as os from 'os';
+import * as dgram from 'dgram';
 import { LiveStreamGateway } from '../websocket/live-stream.gateway';
 import {
   AddToLibraryDto,
@@ -387,9 +391,120 @@ function enforcePublishGate(
   };
 }
 
+/**
+ * Detect the host's active local Wi-Fi / LAN IPv4 address so that devices
+ * on the same Wi-Fi network can auto-connect to MediaMTX / OmniCast with zero configuration.
+ */
+export function detectLanIpv4(): string {
+  try {
+    const interfaces = os.networkInterfaces();
+    let fallbackIp: string | null = null;
+
+    // Pass 1: Prioritize Wi-Fi, WLAN, Ethernet
+    for (const [name, list] of Object.entries(interfaces)) {
+      if (!list) continue;
+      const lowerName = name.toLowerCase();
+      if (
+        lowerName.includes('loopback') ||
+        lowerName.includes('vethernet') ||
+        lowerName.includes('wsl') ||
+        lowerName.includes('docker') ||
+        lowerName.includes('vbox') ||
+        lowerName.includes('vmware')
+      ) {
+        continue;
+      }
+
+      for (const iface of list) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          if (
+            lowerName.includes('wi-fi') ||
+            lowerName.includes('wifi') ||
+            lowerName.includes('wlan') ||
+            lowerName.includes('ethernet') ||
+            lowerName.includes('eth') ||
+            lowerName.includes('en')
+          ) {
+            return iface.address;
+          }
+          if (!fallbackIp) {
+            fallbackIp = iface.address;
+          }
+        }
+      }
+    }
+
+    if (fallbackIp) return fallbackIp;
+
+    // Pass 2: Any non-internal IPv4
+    for (const list of Object.values(interfaces)) {
+      if (!list) continue;
+      for (const iface of list) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return 'localhost';
+}
+
 @Injectable()
-export class LiveStudioService {
+export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveStudioService.name);
+  private udpServer: dgram.Socket | null = null;
+
+  onModuleInit() {
+    this.startUdpDiscoveryResponder();
+  }
+
+  onModuleDestroy() {
+    if (this.udpServer) {
+      try {
+        this.udpServer.close();
+      } catch {
+        // ignore
+      }
+      this.udpServer = null;
+    }
+  }
+
+  private startUdpDiscoveryResponder() {
+    try {
+      const server = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+      server.on('error', (err) => {
+        this.logger.warn(`[LAN Discovery UDP] Server error: ${err.message}`);
+      });
+
+      server.on('message', (msg, rinfo) => {
+        const text = msg.toString().trim();
+        if (text.includes('OMNICAST_DISCOVER')) {
+          const lanIp = detectLanIpv4();
+          const response = Buffer.from(
+            JSON.stringify({
+              app: 'omnicast',
+              type: 'stream_hub',
+              lanIp,
+              hlsPort: 8888,
+              whipPort: 8889,
+              apiPort: 3000,
+            }),
+          );
+          server.send(response, rinfo.port, rinfo.address, () => {});
+        }
+      });
+
+      server.bind(8880, () => {
+        this.logger.log('[LAN Discovery UDP] Listening on UDP port 8880 for Wi-Fi auto-discovery beacons');
+      });
+      this.udpServer = server;
+    } catch (e: any) {
+      this.logger.warn(`[LAN Discovery UDP] Could not bind UDP socket: ${e?.message}`);
+    }
+  }
+
 
   constructor(
     private readonly prisma: PrismaService,
@@ -712,7 +827,13 @@ export class LiveStudioService {
    *   WHEP playback : {webrtcUrl}/{channelSlug}
    */
   getIngestConfig() {
-    const publicHost = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
+    const lanIp = detectLanIpv4();
+    const publicHost =
+      process.env.MEDIAMTX_PUBLIC_HOST &&
+      process.env.MEDIAMTX_PUBLIC_HOST !== 'localhost' &&
+      process.env.MEDIAMTX_PUBLIC_HOST !== '127.0.0.1'
+        ? process.env.MEDIAMTX_PUBLIC_HOST
+        : lanIp;
     const hlsBase = (
       process.env.MEDIAMTX_HLS_URL || `http://${publicHost}:8888`
     ).replace(/\/$/, '');
@@ -728,6 +849,7 @@ export class LiveStudioService {
 
     return {
       publicHost,
+      lanIp,
       hlsUrl: hlsBase,
       hlsIndexUrlTemplate: `${hlsBase}/{slug}/index.m3u8`,
       webrtcUrl: webrtcBase,
@@ -741,6 +863,12 @@ export class LiveStudioService {
        */
       supportedVideoCodecs: ['H264', 'VP9', 'AV1'],
       supportedAudioCodecs: ['opus'],
+      lanDiscovery: {
+        enabled: true,
+        ip: lanIp,
+        hlsPort: 8888,
+        whipPort: 8889,
+      },
     };
   }
 

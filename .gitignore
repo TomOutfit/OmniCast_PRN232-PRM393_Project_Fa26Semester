@@ -18,6 +18,12 @@ out/
 .next/
 *.apk
 *.aab
+*.zip
+*.tar.gz
+*.aux
+*.nav
+*.snm
+*.toc
 
 # Flutter / Dart
 .dart_tool/

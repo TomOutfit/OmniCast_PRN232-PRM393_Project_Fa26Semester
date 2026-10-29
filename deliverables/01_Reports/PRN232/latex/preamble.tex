@@ -1,0 +1,192 @@
+% ============================================================
+% OmniCast - Shared preamble for IEEEtran conference reports
+%   PRN232 (VN / EN) and PRM393 (VN / EN)
+%
+% Requires: XeLaTeX (MiKTeX / TeX Live)
+%   xelatex main-vi.tex && xelatex main-vi.tex
+%   xelatex main-en.tex && xelatex main-en.tex
+%
+% NOTE: IEEEtran already defines its own caption machinery, so the
+% `caption` / `subcaption` / `float` packages are intentionally NOT
+% loaded here (they clash with IEEEtran). Figure and table labels are
+% switched with \renewcommands{\figurename} in the main files.
+% ============================================================
+
+% ---------- Language switch ----------
+% \bi{Vietnamese text}{English text} picks the right string.
+% main-vi.tex calls \omniENfalse (default), main-en.tex calls \omniENtrue.
+\newif\ifomniEN
+\omniENfalse
+\newcommand{\bi}[2]{\ifomniEN#2\else#1\fi}
+
+% ---------- Fonts (Windows system fonts, full Vietnamese coverage) ----------
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Consolas}
+\XeTeXlinebreaklocale "vi"
+\XeTeXlinebreakskip = 0pt plus 1pt
+
+% ---------- Core packages ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{url}
+\usepackage{siunitx}
+\usepackage[most]{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+% ---------- Page numbering & Running headers/footers ----------
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{14pt}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\footnotesize\textsf{\bi{OmniCast --- Báo Cáo Kỹ Thuật Đồ Án PRN232}{OmniCast --- PRN232 Technical Report}}}
+\fancyhead[R]{\footnotesize\textsf{\bi{Học Kỳ Fall 2026 (FA26)}{Fall 2026 Semester (FA26)}}}
+\fancyfoot[L]{\footnotesize\textsf{\bi{Trường Đại học FPT}{FPT University}}}
+\fancyfoot[R]{\footnotesize\textsf{\textbf{\bi{Trang \thepage\ / \pageref{LastPage}}{Page \thepage\ of \pageref{LastPage}}}}}
+
+
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,backgrounds,calc,shadows,decorations.pathmorphing}
+
+% ---------- Hyperref setup ----------
+\usepackage{hyperref}
+% \bi{...}{...} appears inside section titles; tell hyperref how to
+% stringify it for PDF bookmarks and the table of contents.
+\pdfstringdefDisableCommands{%
+  \ifomniEN\def\bi#1#2{#2}\else\def\bi#1#2{#1}\fi
+}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=omniBlue,
+  citecolor=omniTeal,
+  urlcolor=omniPurple,
+  pdftitle={OmniCast Project Report},
+  pdfauthor={OmniCast Team},
+  pdfsubject={PRN232 / PRM393},
+  pdfkeywords={OmniCast, EPG, broadcast, NestJS, Flutter, Next.js}
+}
+
+% ---------- OmniCast brand palette ----------
+\definecolor{omniBlue}{HTML}{0E7490}
+\definecolor{omniDark}{HTML}{0F172A}
+\definecolor{omniTeal}{HTML}{0D9488}
+\definecolor{omniPurple}{HTML}{7C3AED}
+\definecolor{omniAmber}{HTML}{D97706}
+\definecolor{omniRose}{HTML}{E11D48}
+\definecolor{omniSlate}{HTML}{475569}
+\definecolor{omniLight}{HTML}{F1F5F9}
+\definecolor{omniBorder}{HTML}{CBD5E1}
+
+% ---------- Typography tweaks ----------
+\renewcommand{\familydefault}{\rmdefault}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\renewcommand{\arraystretch}{1.12}
+\setcounter{secnumdepth}{3}
+
+% ---------- Caption / listing labels ----------
+% Overridden by the main files so that Vietnamese reports show
+% "Hình"/"Bảng" and English reports show "Figure"/"Table".
+\newcommand{\figName}{Fig.}
+\newcommand{\tabName}{TABLE}
+\renewcommand{\figurename}{\figName}
+\renewcommand{\tablename}{\tabName}
+\providecommand{\lstlistname}{Listing}
+\renewcommand{\lstlistname}{Listing}
+
+% ---------- Code listings ----------
+\lstdefinestyle{omnicode}{
+  backgroundcolor=\color{omniLight},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{omniBlue}\bfseries,
+  stringstyle=\color{omniTeal},
+  commentstyle=\color{omniSlate}\itshape,
+  numbers=left,
+  numberstyle=\tiny\color{omniSlate},
+  numbersep=6pt,
+  frame=leftline,
+  framerule=1.2pt,
+  rulecolor=\color{omniBorder},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=2,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+  xleftmargin=10pt,
+  framexleftmargin=8pt,
+  captionpos=b
+}
+\lstset{style=omnicode}
+
+% ---------- TikZ shared styles ----------
+\tikzset{
+  omniNode/.style={
+    draw=omniBorder, fill=white, rounded corners=2pt,
+    minimum height=9mm, align=center, font=\footnotesize,
+    inner sep=4pt, drop shadow={shadow xshift=0.4pt, shadow yshift=-0.4pt, opacity=0.12}
+  },
+  omniAccent/.style={omniNode, draw=omniBlue, fill=omniBlue!10, line width=0.8pt},
+  omniTealNode/.style={omniNode, draw=omniTeal, fill=omniTeal!10},
+  omniAmberNode/.style={omniNode, draw=omniAmber, fill=omniAmber!12},
+  omniPurpleNode/.style={omniNode, draw=omniPurple, fill=omniPurple!10},
+  omniRoseNode/.style={omniNode, draw=omniRose, fill=omniRose!10},
+  omniDarkNode/.style={omniNode, draw=omniDark, fill=omniDark!8},
+  omniFlow/.style={-{Latex[length=2.2mm]}, line width=0.7pt, draw=omniSlate},
+  omniFlowAccent/.style={-{Latex[length=2.2mm]}, line width=0.9pt, draw=omniBlue},
+  omniFlowTeal/.style={-{Latex[length=2.2mm]}, line width=0.9pt, draw=omniTeal},
+  omniFlowAmber/.style={-{Latex[length=2.2mm]}, line width=0.9pt, draw=omniAmber},
+  omniFlowRose/.style={-{Latex[length=2.2mm]}, line width=0.9pt, draw=omniRose},
+  omniLabel/.style={font=\scriptsize\itshape, text=omniSlate}
+}
+
+% ---------- Info boxes (tcolorbox) ----------
+\newtcolorbox{infobox}[1]{
+  enhanced, breakable,
+  colback=omniLight!60, colframe=omniBlue,
+  fonttitle=\bfseries\small, title={#1},
+  boxrule=0.6pt, arc=2pt,
+  left=5pt, right=5pt, top=3pt, bottom=3pt
+}
+
+\newtcolorbox{warnbox}[1]{
+  enhanced, breakable,
+  colback=omniAmber!8, colframe=omniAmber,
+  fonttitle=\bfseries\small, title={#1},
+  boxrule=0.6pt, arc=2pt,
+  left=5pt, right=5pt, top=3pt, bottom=3pt
+}
+
+\newtcolorbox{keybox}[1]{
+  enhanced, breakable,
+  colback=omniTeal!7, colframe=omniTeal,
+  fonttitle=\bfseries\small, title={#1},
+  boxrule=0.6pt, arc=2pt,
+  left=5pt, right=5pt, top=3pt, bottom=3pt
+}
+
+% ---------- Convenience macros ----------
+\newcommand{\omnitag}[1]{\textcolor{omniBlue}{\textbf{#1}}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\filepath}[1]{\textcolor{omniSlate}{\textit{\small #1}}}
+\newcommand{\vn}[1]{#1}
+
+% ---------- Width fitting ----------
+% IEEEtran is a two-column layout, so wide TikZ pictures and wide
+% tables must be scaled explicitly. \fitcol scales to the current
+% column, \fitfull scales to the full page width (use inside
+% figure* / table*).
+\newcommand{\fitcol}[1]{\resizebox{\columnwidth}{!}{#1}}
+\newcommand{\fitfull}[1]{\resizebox{\textwidth}{!}{#1}}

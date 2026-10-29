@@ -10,7 +10,9 @@ import 'core/i18n/app_locale.dart';
 import 'core/i18n/strings.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/fcm_service.dart';
+import 'dart:async';
 import 'core/services/billing_service.dart';
+import 'core/services/lan_discovery_service.dart';
 import 'core/services/supabase_realtime_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/token_storage_helper.dart';
@@ -56,6 +58,8 @@ void main() async {
   FcmService.instance.navigatorKey = AppRouter.rootNavigatorKey;
   await FcmService.instance.initialise(navigatorKey: AppRouter.rootNavigatorKey);
   await BillingService.instance.initialise();
+  // Zero-Config: Auto-discover local MediaMTX streaming server on the same Wi-Fi
+  unawaited(LanDiscoveryService().autoDiscoverMediaHost());
 
   // Hydrate theme + locale from secure storage
   final storage = TokenStorageHelper();

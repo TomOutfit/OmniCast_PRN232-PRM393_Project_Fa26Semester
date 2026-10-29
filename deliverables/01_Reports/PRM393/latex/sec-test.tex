@@ -1,0 +1,103 @@
+% ============================================================
+% PRM393 - Section 7: Testing & Quality Assurance (Bilingual)
+% ============================================================
+\section{\bi{Kiểm thử tự động và đảm bảo chất lượng}{Automated Testing \& Quality Assurance}}
+\label{sec:test}
+
+\bi{
+Chất lượng và độ ổn định của ứng dụng di động OmniCast được bảo đảm thông qua
+chiến lược kiểm thử tự động đa tầng. Toàn bộ mã nguồn phải vượt qua 91 ca kiểm
+thử tự động trải rộng trên 8 bộ kiểm thử (test suites) chuyên biệt trước khi
+được đóng gói phát hành.
+}{
+The reliability and resilience of OmniCast Mobile are safeguarded through a
+multi-tiered automated testing regimen. The codebase undergoes rigorous
+validation across 91 automated tests distributed over 8 dedicated suites
+prior to continuous integration packaging.
+}
+
+\subsection{\bi{Phân loại các tầng kiểm thử}{Testing Methodology and Layering}}
+
+\bi{
+Hệ thống kiểm thử bao gồm ba hình thức kiểm thử chính:
+}{
+The test architecture spans three principal testing tiers:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{\bi{Kiểm thử đơn vị BLoC (BLoC Unit Tests):}{BLoC Unit Testing:}}
+  \bi{Sử dụng gói \texttt{bloc\_test} để kiểm thử luồng phát sự kiện và nhận
+  trạng thái một cách độc lập. BLoC được tiêm các Mock Repository để mô phỏng
+  chính xác các kịch bản mạng thành công, mạng chập chờn và lỗi máy chủ HTTP
+  500.}{Employs \texttt{bloc\_test} to verify reactive event-to-state
+  sequences. Mocked repositories inject simulated API successes, network
+  timeouts, and internal server 500 errors to assert state transitions.}
+
+  \item \textbf{\bi{Kiểm thử kho dữ liệu (Repository \& SQLite Tests):}{Data Layer Integration:}}
+  \bi{Kiểm thử logic chuyển đổi dữ liệu (serialization/deserialization) của
+  các Model và hành vi lưu trữ của cơ sở dữ liệu SQLite: kiểm tra việc ghi
+  nhận bản ghi vào \texttt{pending\_ops}, tính toán thông số
+  \texttt{CacheStats} và khôi phục dữ liệu ngoại tuyến.}{Validates DTO JSON
+  serialization and verifies SQLite behaviors: inserting mutation records
+  into \texttt{pending\_ops}, computing \texttt{CacheStats}, and recovering
+  cached records offline.}
+
+  \item \textbf{\bi{Kiểm thử giao diện Widget (Widget Component Tests):}{Widget Component Testing:}}
+  \bi{Sử dụng hàm \texttt{testWidgets} để kiểm tra khả năng tương tác của các
+  nút bấm (ví dụ: \texttt{SaveToWatchlistButton}), kiểm tra việc hiển thị biểu
+  tượng loading và thông báo lỗi Snackbar khi tác vụ thất bại.}{Uses
+  \texttt{testWidgets} to exercise interactive widgets (such as
+  \texttt{SaveToWatchlistButton}), verifying correct loading spinners and error
+  snackbars upon failed operations.}
+\end{enumerate}
+
+\subsection{\bi{Bảng kết quả kiểm thử thực tế}{Empirical Test Results Breakdown}}
+
+\begin{table}[t]
+\caption{\bi{Kết quả thực thi 91 bài kiểm thử tự động của ứng dụng di động.}{Execution
+results of the 91 automated mobile tests.}}
+\label{tab:mobile_tests}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrr@{}}
+\toprule
+\textbf{\bi{Bộ kiểm thử (Suite)}{Test Suite}} & \textbf{\bi{Phạm vi kiểm thử}{Scope}} & \textbf{\bi{Số test}{Tests}} & \textbf{\bi{Tỷ lệ}{Rate}} \\
+\midrule
+\texttt{ai\_curator\_repository\_test} & Repository / Mock API & 26 & 100\% \\
+\texttt{ai\_curator\_screen\_test} & Widget / Studio UI & 13 & 100\% \\
+\texttt{auth\_bloc\_test} & State / Session & 14 & 100\% \\
+\texttt{watchlist\_bloc\_test} & State / Offline & 13 & 100\% \\
+\texttt{watchlist\_item\_model\_test} & Data model / JSON & 9 & 100\% \\
+\texttt{save\_to\_watchlist\_test} & Interactive Widget & 7 & 100\% \\
+\texttt{epg\_bloc\_test} & State / Schedule & 6 & 100\% \\
+\texttt{onboarding\_screen\_test} & Presentation / Flow & 3 & 100\% \\
+\midrule
+\textbf{\bi{Tổng cộng}{Total}} & \textbf{8 \bi{bộ kiểm thử}{suites}} & \textbf{91} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\bi{Tích hợp trong quy trình CI/CD}{Continuous Integration Pipeline}}
+
+\bi{
+Trong tệp cấu hình GitHub Actions \texttt{ci.yml}, công việc \texttt{mobile}
+được thực thi độc lập song song với các công việc của backend và web. Công việc
+này thực hiện:
+}{
+Within the project's GitHub Actions workflow (\texttt{ci.yml}), the
+\texttt{mobile} job executes concurrently alongside backend and web runners:
+}
+
+\begin{lstlisting}[language=bash, caption={\bi{Quy trình kiểm thử mobile trong GitHub Actions.}{Mobile CI step sequence in GitHub Actions.}}]
+- name: Setup Flutter
+  uses: subosito/flutter-action@v2
+  with:
+    flutter-version: '3.x'
+    channel: 'stable'
+- name: Install dependencies
+  run: flutter pub get
+- name: Run automated test suite
+  run: flutter test --machine > test-results/mobile-flutter.json
+- name: Build release APK
+  run: flutter build apk --split-per-abi
+\end{lstlisting}

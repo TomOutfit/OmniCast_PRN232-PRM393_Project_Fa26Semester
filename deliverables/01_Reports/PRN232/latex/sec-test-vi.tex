@@ -1,0 +1,211 @@
+% ============================================================
+% PRN232 - Section 7: Testing (Vietnamese)
+% ============================================================
+\section{\bi{Kiểm thử và đánh giá}{Testing and Evaluation}}
+\label{sec:test}
+
+\subsection{\bi{Chiến lược kiểm thử}{Test Strategy}}
+
+\bi{
+Dự án áp dụng chiến lược kiểm thử theo tầng, trong đó trọng tâm là
+kiểm thử đơn vị cho logic nghiệp vụ vì đây là phần chứa nhiều quy tắc
+tinh vi nhất. Điểm đặc biệt của dự án là \emph{toàn bộ bộ kiểm thử
+back-end chạy được mà không cần cơ sở dữ liệu}: mỗi spec file tiêm
+một đối tượng Prisma giả (fake client), nhờ vậy chu kỳ kiểm thử rất
+ngắn và hoàn toàn xác định.
+}{
+The project applies a layered test strategy, with unit testing of the
+business rules taking priority because that layer holds the most
+subtle logic. A distinctive property of this project is that the
+\emph{entire back-end suite runs without a database}: each spec file
+injects a fake Prisma client, so the test cycle is short and fully
+deterministic.
+}
+
+\subsection{\bi{Kết quả thực thi}{Execution Results}}
+
+\bi{
+Các bộ kiểm thử được chạy thật trên máy dự án ngày 28 tháng 10 năm
+2026. Toàn bộ 482 kiểm thử đều đạt, không có kiểm thử nào bị bỏ qua
+hoặc lỗi.
+}{
+All suites were executed on the project machine on 28 October 2026.
+All 482 tests pass, with no skipped or errored test.
+}
+
+\begin{table}[t]
+\caption{\bi{Kết quả kiểm thử tự động của ba bộ kiểm thử.}{Automated
+test results across the three suites.}}
+\label{tab:tests}
+\centering
+\footnotesize
+\fitcol{\input{generated/table-tests.tex}}
+\end{table}
+
+\subsection{\bi{Bộ kiểm thử back-end}{Back-End Test Suite}}
+
+\bi{
+Bộ kiểm thử back-end dùng trình chạy \texttt{node:test} tích hợp sẵn
+của Node.js 20, đi kèm một runner tự viết
+(\texttt{backend/test/runner.js}) biên dịch các spec bằng
+\texttt{tsc} rồi thực thi tuần tự. Việc chọn trình chạy tích hợp
+thay vì Jest hay Vitest giúp loại bỏ hoàn toàn phụ thuộc bên thứ ba
+trong bộ kiểm thử, giảm bề mặt lỗi và giữ cho quy trình CI ổn định.
+}{
+The back-end suite uses Node.js 20's built-in \texttt{node:test}
+runner together with a custom runner (\texttt{backend/test/runner.js})
+that compiles the specs with \texttt{tsc} and executes them
+sequentially. Choosing the built-in runner over Jest or Vitest removes
+every third-party dependency from the test path, shrinking the failure
+surface and keeping the CI pipeline stable.
+}
+
+\begin{table}[t]
+\caption{\bi{Phân bố kiểm thử back-end theo tệp spec.}{Back-end test
+distribution per spec file.}}
+\label{tab:backend-specs}
+\centering
+\scriptsize
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Tệp spec} & \textbf{\bi{Kiểm thử đạt}{Tests passed}} & \textbf{\bi{Tỉ lệ đạt}{Pass rate}} \\
+\midrule
+\texttt{ai-curator.service.spec.ts}       & 19 & 100\% \\
+\texttt{epg-filler.spec.ts}               & 18 & 100\% \\
+\texttt{live-studio.service.spec.ts}      & 18 & 100\% \\
+\texttt{auth.service.spec.ts}             & 17 & 100\% \\
+\texttt{ai-curator.e2e.spec.ts}           & 13 & 100\% \\
+\texttt{watchlist.service.spec.ts}        & 11 & 100\% \\
+\texttt{ingest-sources.spec.ts}           & 11 & 100\% \\
+\texttt{ai-curator-stats.service.spec.ts} & 10 & 100\% \\
+\texttt{channels.service.spec.ts}         &  7 & 100\% \\
+\texttt{programs.conflict.spec.ts}        &  7 & 100\% \\
+\texttt{programs.counter.spec.ts}         &  8 & 100\% \\
+\texttt{audit-logger.service.spec.ts}     &  8 & 100\% \\
+\texttt{epg-timeline.spec.ts}             &  5 & 100\% \\
+\texttt{search.service.spec.ts}           &  4 & 100\% \\
+\texttt{users.service.spec.ts}            &  4 & 100\% \\
+\texttt{billing.service.spec.ts}          &  3 & 100\% \\
+\midrule
+\textbf{Tổng} & \textbf{163} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\bi{
+Hai tệp kiểm thử đáng chú ý nhất vì chúng bảo vệ trực tiếp các thuật
+toán nghiệp vụ cốt lõi. \texttt{programs.conflict.spec.ts} kiểm tra
+thuật toán phát hiện xung đột trên cả ba dạng giao thoa, trường hợp
+giá trị thời lượng bằng \texttt{NULL}, và trường hợp loại trừ chính
+sự kiện đang cập nhật. \texttt{epg-filler.spec.ts} kiểm tra tính
+đầy đủ 24 giờ của lưới, tính xác định của lựa chọn ngẫu nhiên có
+hạt giống, giới hạn số lần phát lại, và hành vi tách tập.
+}{
+Two spec files deserve particular mention because they directly
+protect the core algorithms. \texttt{programs.conflict.spec.ts}
+exercises the conflict detector across all three overlap forms, the
+\texttt{NULL}-duration case and the self-exclusion case used when
+updating an event. \texttt{epg-filler.spec.ts} verifies the
+completeness of the 24-hour grid, the determinism of the seeded
+selection, the repeat limit and the episode-splitting behaviour.
+}
+
+\subsection{\bi{Bộ kiểm thử web}{Web Test Suite}}
+
+\bi{
+228 kiểm thử Vitest trong 76 bộ kiểm thử bao phủ cả ba loại đối
+tượng: hàm thuần, hook React và thành phần giao diện. Các hàm thuần
+được kiểm thử với đầy đủ trường hợp biên (chuỗi rỗng, không phân biệt
+hoa thường, tham số không hợp lệ); các hook được kiểm thử với trạng
+thái tải, thành công và lỗi; các thành phần được kiểm thử bằng
+\texttt{React Testing Library} với các truy vấn theo vai trò người
+dùng thay vì kiểm tra cấu trúc DOM thô.
+}{
+228 Vitest tests in 76 suites cover three kinds of subject: pure
+functions, React hooks and interface components. Pure functions are
+tested at their boundaries (empty strings, case-insensitivity,
+invalid parameters); hooks are tested across loading, success and
+error states; components are tested with \texttt{React Testing
+Library} using user-facing queries rather than raw DOM structure
+assertions.
+}
+
+\subsection{\bi{Bộ kiểm thử di động và kiểm thử E2E}{Mobile Suite and End-to-End Tests}}
+
+\bi{
+Bộ kiểm thử Flutter gồm 91 kiểm thử trong 8 bộ, tổ chức theo cùng
+cấu trúc thư mục với mã nguồn: \texttt{test/data},
+\texttt{test/logic}, \texttt{test/presentation}. Bộ này chạy với
+\texttt{flutter test --coverage}, sinh báo cáo phủ \texttt{lcov.info}
+được tải lên dưới dạng artefact của CI.
+
+Bên cạnh đó, một bộ kiểm thử E2E dựa trên Playwright \cite{test}
+thực hiện tám kịch bản trên trình duyệt Chromium: biểu mẫu đăng nhập
+từ chối email không hợp lệ, mật khẩu sai hiển thị thông báo lỗi,
+trang EPG không lỗi, trang kênh hiển thị nội dung, trang tìm kiếm
+nhận và hiển thị kết quả, trang chủ hiển thị mặt đất công khai, và hai
+kịch bản kiểm tra hành vi chuyển hướng khi chưa đăng nhập.
+}{
+The Flutter suite contains 91 tests in 8 suites, organised with the
+same directory layout as the source: \texttt{test/data},
+\texttt{test/logic}, \texttt{test/presentation}. It runs with
+\texttt{flutter test --coverage} and produces an \texttt{lcov.info}
+report uploaded as a CI artefact.
+
+Alongside it, a Playwright-based end-to-end suite \cite{test}
+executes eight scenarios in Chromium: the login form rejects an
+invalid email, a wrong password surfaces an error toast, the EPG page
+renders without crashing, the channels page displays content, the
+search page accepts input and renders results, the root URL shows a
+public landing surface, and two scenarios verify unauthenticated
+redirect behaviour.
+}
+
+\begin{keybox}{\bi{Nhận xét về hai lỗi E2E còn lại}{Note on the two
+remaining E2E failures}}
+\bi{
+Trong lần chạy E2E gần nhất, sáu trong tám kịch bản đạt và hai kịch
+bản thất bại: một kịch bản đăng nhập STAFF không thoát khỏi
+\texttt{/login} trong thời hạn chờ, và một kịch bản chuyển hướng từ
+\texttt{/studio} khi chưa đăng nhập. Cả hai đều phụ thuộc vào dữ liệu
+seed sẵn có của môi trường kiểm thử chứ không phải vào lỗi logic của
+ứng dụng: kịch bản thứ hai nhận mã trạng thái HTTP 401 thay vì bị
+chuyển hướng, tức là chính sách bảo vệ quyền đã hoạt động đúng nhưng
+điều kiện kiểm thử chỉ chấp nhận một trong ba dạng phản hồi. Kịch
+bản thứ nhất phụ thuộc tài khoản STAFF có sẵn trong cơ sở dữ liệu
+kiểm thử. Các trường hợp này được ghi nhận đầy đủ trong
+\texttt{TEST\_EXECUTION\_REPORT.md} đi kèm.
+}{
+In the most recent end-to-end run, six of eight scenarios passed and
+two failed: a STAFF login that did not leave \texttt{/login} within
+the wait timeout, and an unauthenticated redirect from \texttt{/studio}.
+Both depend on seeded data in the test environment rather than on an
+application logic defect: the second scenario received an HTTP 401
+instead of a redirect, meaning the authorisation policy behaved
+correctly while the assertion accepted only one of three response
+forms. The first depends on a STAFF account existing in the test
+database. Both are documented in full in the accompanying
+\texttt{TEST\_EXECUTION\_REPORT.md}.
+}
+\end{keybox}
+
+\subsection{\bi{Đánh giá chất lượng}{Quality Assessment}}
+
+\bi{
+Dựa trên kết quả trên, hệ thống đạt mức độ tin cậy phù hợp với môi
+trường triển khai giáo dục. Điểm mạnh rõ nhất là tỉ lệ phủ của logic
+nghiệp vụ: hai thuật toán rủi ro nhất (phát hiện xung đột và điền
+lịch EPG) đều được kiểm thử bằng các trường hợp biên thay vì chỉ kiểm
+thử đường hạnh phúc. Điểm cần cải thiện là mức độ phủ của tầng E2E,
+hiện chỉ gồm tám kịch bản trình duyệt và chưa bao gồm kịch bản phát
+sóng trực tiếp vốn đòi hỏi phần cứng và cơ sở hạ tầng MediaMTX.
+}{
+Based on these results, the system reaches a reliability level
+appropriate for an educational deployment. The clearest strength is
+coverage of the business logic: the two riskiest algorithms (conflict
+detection and EPG filling) are tested at their boundaries rather than
+only on the happy path. The area needing improvement is end-to-end
+coverage, currently limited to eight browser scenarios and excluding
+the live-broadcast scenarios that would require dedicated hardware and
+MediaMTX infrastructure.
+}

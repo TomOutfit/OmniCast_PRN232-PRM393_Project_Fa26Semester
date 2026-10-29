@@ -1,0 +1,28 @@
+% Auto-generated from backend/prisma/schema.prisma - do not edit by hand.
+\begin{tabular}{@{}llrr@{}}
+\toprule
+\textbf{\bi{Model}{Model}} & \textbf{\bi{Vai trò nghiệp vụ}{Business role}} & \textbf{\bi{Scalar}{Scalar}} & \textbf{\bi{Quan hệ}{Relation}} \\
+\midrule
+\texttt{User} & \bi{Tài khoản người dùng + RBAC}{User account + RBAC} & 14 & 13 \\
+\texttt{RefreshToken} & \bi{Xoay vòng phiên đăng nhập}{Rotating login sessions} & 6 & 1 \\
+\texttt{PasswordResetToken} & \bi{Đặt lại mật khẩu (TTL 1h)}{Password reset (1h TTL)} & 7 & 1 \\
+\texttt{ProductionTag} & \bi{Thẻ nội dung theo chương trình}{Content tag per production} & 5 & 0 \\
+\texttt{LiveChannel} & \bi{Kênh phát sóng trực tiếp}{Broadcast channel} & 29 & 5 \\
+\texttt{LiveEvent} & \bi{Sự kiện phát sóng / chương trình}{Live event / programme} & 32 & 7 \\
+\texttt{Recording} & \bi{Bản ghi đã phát}{Published recording} & 42 & 5 \\
+\texttt{Podcast} & \bi{Chuyên mục podcast}{Podcast collection} & 12 & 3 \\
+\texttt{PodcastEpisode} & \bi{Tập podcast}{Podcast episode} & 12 & 1 \\
+\texttt{Follow} & \bi{Theo dõi kênh}{Channel follow} & 4 & 2 \\
+\texttt{Comment} & \bi{Bình luận}{Comment} & 11 & 6 \\
+\texttt{CommentLike} & \bi{Like bình luận}{Comment like} & 4 & 2 \\
+\texttt{Reaction} & \bi{Cảm xúc realtime}{Realtime reaction} & 6 & 3 \\
+\texttt{WatchHistory} & \bi{Lịch sử xem}{Watch history} & 8 & 2 \\
+\texttt{Notification} & \bi{Thông báo trong ứng dụng}{In-app notification} & 13 & 2 \\
+\texttt{AuditLog} & \bi{Nhật ký kiểm toán (gRPC)}{Audit log (gRPC)} & 11 & 0 \\
+\texttt{Watchlist} & \bi{Danh sách theo dõi}{Watchlist} & 7 & 1 \\
+\texttt{AiCuratorReport} & \bi{Báo cáo AI Curator}{AI Curator report} & 15 & 1 \\
+\texttt{DeviceToken} & \bi{Token thiết bị FCM}{FCM device token} & 8 & 1 \\
+\texttt{NewsletterSubscriber} & \bi{Người đăng ký newsletter}{Newsletter subscriber} & 14 & 1 \\
+\texttt{StreamDonation} & \bi{Quyên góp trong livestream}{Livestream donation} & 14 & 3 \\
+\bottomrule
+\end{tabular}

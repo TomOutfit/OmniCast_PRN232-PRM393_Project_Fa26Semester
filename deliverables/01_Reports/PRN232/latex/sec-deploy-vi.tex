@@ -1,0 +1,134 @@
+% ============================================================
+% PRN232 - Section 8: Deployment (Vietnamese)
+% ============================================================
+\section{\bi{Triển khai và tích hợp liên tục}{Deployment and Continuous Integration}}
+\label{sec:deploy}
+
+\subsection{\bi{Kiến trúc triển khai}{Deployment Architecture}}
+
+\bi{
+Hệ thống được triển khai trên Vercel dưới dạng ứng dụng serverless, tách
+thành ba dự án độc lập: back-end NestJS, cổng web Next.js và một dịch
+vụ cố định. Ba URL sản xuất đã được kiểm tra trả về HTTP 200.
+}{
+The system is deployed on Vercel as a serverless setup, split into
+three independent projects: the NestJS back end, the Next.js portal
+and a static service. All three production URLs have been verified to
+return HTTP 200.
+}
+
+\begin{table}[t]
+\caption{\bi{Các điểm cuối sản xuất và trạng thái kiểm tra ngày 28/10/2026.}{Production endpoints and verification status as of 28 October 2026.}}
+\label{tab:deploy}
+\centering
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{\bi{Dịch vụ}{Service}} & \textbf{URL} & \textbf{\bi{Trạng thái}{Status}} \\
+\midrule
+\texttt{omnicast.vercel.app}      & \texttt{https://omnicast.vercel.app}      & HTTP 200 \\
+\texttt{omnicast-fe.vercel.app}    & \texttt{https://omnicast-fe.vercel.app}    & HTTP 200 \\
+\texttt{omnicast-api.vercel.app}   & \texttt{https://omnicast-api.vercel.app}   & HTTP 200 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\bi{Quy trình CI/CD}{The CI/CD Pipeline}}
+
+\bi{
+Tệp \texttt{.github/workflows/ci.yml} định nghĩa năm công việc chạy
+song song và một cổng chất lượng. Ba công việc kiểm thử chạy độc lập
+trên nền \texttt{ubuntu-latest} với Node.js 20, Java 17 và Flutter
+ổn định. Công việc tổng hợp gom artefact của cả ba, sinh báo cáo HTML
+tương tác, và dừng pipeline nếu bất kỳ bộ kiểm thử nào thất bại.
+}{
+The file \texttt{.github/workflows/ci.yml} defines five jobs running
+in parallel plus a quality gate. Three test jobs run independently on
+\texttt{ubuntu-latest} with Node.js 20, Java 17 and stable Flutter. The
+aggregation job downloads all three artefact sets, generates the
+interactive HTML report, and fails the pipeline if any suite fails.
+}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figCicd}
+\caption{\bi{Quy trình CI/CD năm công việc. Ba công việc kiểm thử chạy
+song song, hợp nhất tại công việc tổng hợp và chỉ triển khai khi cổng
+chất lượng đạt.}{The five-job CI/CD pipeline. Three test jobs run in
+parallel, merge at the summary job, and deployment only proceeds once
+the quality gate passes.}}
+\label{fig:cicd}
+\end{figure*}
+
+\bi{
+Công việc triển khai chỉ chạy khi nhánh là \texttt{main} và sự kiện
+là \texttt{push}; nó dùng \texttt{vercel-action} để đẩy back-end và
+cổng web, truyền \texttt{NEXT\_PUBLIC\_API\_URL} từ secret của kho.
+Nhờ đặt \texttt{continue-on-error} cho công việc triển khai, một sự cố
+triển khai không xoá artefact kiểm thử đã tạo.
+}{
+The deploy job runs only on the \texttt{main} branch on a
+\texttt{push} event; it uses \texttt{vercel-action} to push the back
+end and the portal, passing \texttt{NEXT\_PUBLIC\_API\_URL} from a
+repository secret. Because the deploy job sets
+\texttt{continue-on-error}, a deployment failure does not destroy the
+test artefacts already produced.
+}
+
+\subsection{\bi{Cấu hình biến môi trường}{Environment Configuration}}
+
+\bi{
+Mẫu biến môi trường nằm ở \texttt{backend/.env.example} và gồm
+bốn nhóm: kết nối cơ sở dữ liệu Supabase kèm mật khẩu cần thay thế,
+khóa \texttt{JWT\_SECRET} cùng thời hạn token, các khóa API bên thứ
+ba (OpenAI, TMDB, YouTube, Twitch, Cloudinary), và cấu hình MediaMTX
+cho môi trường cục bộ. Tệp \texttt{.env} thực sự không bao giờ được
+đưa vào kiểm soát phiên bản.
+}{
+The environment template lives at \texttt{backend/.env.example} and
+covers four groups: the Supabase database connection with a password
+placeholder, the \texttt{JWT\_SECRET} and token lifetimes, the
+third-party API keys (OpenAI, TMDB, YouTube, Twitch, Cloudinary), and
+the local MediaMTX configuration. The real \texttt{.env} file is
+never committed.
+}
+
+\subsection{\bi{Bảo mật triển khai}{Deployment Security}}
+
+\bi{
+Tám biện pháp bảo mật được áp dụng ở tầng ứng dụng: \texttt{Helmet}
+thiết lập các tiêu đề bảo mật HTTP; \texttt{ThrottlerModule} giới hạn
+100 yêu cầu mỗi phút; CORS dùng danh sách cho phép tường minh kèm
+kiểm tra miền Vercel và mạng nội bộ; \texttt{ValidationPipe} loại bỏ
+trường không khai báo; \texttt{HttpExceptionFilter} chuẩn hoá lỗi;
+mật khẩu được băm bằng bcrypt 12 vòng; refresh token được xoay vòng
+và thu hồi được lưu trong cơ sở dữ liệu; và phương thức bất đồng bộ
+được bọc trong \texttt{promise} không chặn để tránh lỗi nghiệp vụ do
+lỗi hạ tầng ghi log.
+}{
+Eight application-layer security measures are in place: \texttt{Helmet}
+sets the HTTP security headers; \texttt{ThrottlerModule} caps traffic at
+100 requests per minute; CORS uses an explicit allow-list together
+with Vercel-domain and private-network checks; \texttt{ValidationPipe}
+strips undeclared fields; \texttt{HttpExceptionFilter} normalises
+errors; passwords are hashed with 12-round bcrypt; refresh tokens are
+rotated and revocations are persisted; and the asynchronous audit
+write is wrapped in a non-awaited promise so an infrastructure
+failure cannot break a business operation.
+}
+
+\subsection{\bi{Kiểm thử tải và độ bền}{Load and Resilience Testing}}
+
+\bi{
+Bộ kiểm thử tải k6 được sử dụng để kiểm tra hành vi dưới tải đồng
+thời của nhiều người xem, tập trung vào các endpoint EPG vì đây là
+đường đi nóng nhất của hệ thống. Kết quả cho thấy các endpoint đọc
+giữ được độ trễ ổn định trong khi endpoint ghi vẫn đáp ứng thời gian
+ghi nhật ký kiểm toán ở mức không chặn luồng.
+}{
+A k6 load-test suite exercises the system under concurrent viewers,
+focusing on the EPG endpoints because they are the hottest path.
+The results show that read endpoints maintain stable latency while
+write endpoints still meet their response-time target thanks to the
+non-blocking audit write.
+}

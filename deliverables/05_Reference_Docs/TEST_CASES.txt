@@ -1,0 +1,42 @@
+# 🧪 OmniCast (OMNI) — Bộ Kịch Bản Kiểm Thử Hoàn Chỉnh (Test Cases Matrix)
+# Đặc Tả 52 Test Cases Cho 2 Môn Học: PRN232 (NestJS + Next.js 15) & PRM393 (Flutter 3.x)
+
+**Tên Dự Án:** OmniCast Enterprise Media & Broadcast Intelligence Network  
+**Mã Dự Án:** OMNI  
+**Mục Đích Tài Liệu:** Đặc tả chi tiết 52 kịch bản kiểm thử (32 Test Cases Web API / Web Frontend PRN232 và 20 Test Cases Mobile App PRM393), bao gồm các bước thực hiện, dữ liệu đầu vào và kết quả kỳ vọng làm căn cứ nghiệm thu đồ án trước Hội đồng Giảng viên.
+
+---
+
+## 💻🌐 PHẦN 1: KỊCH BẢN KIỂM THỬ BACKEND API & NEXT.JS WEB PORTAL (PRN232) — 32 TEST CASES
+
+| Mã Kịch Bản | Tên Kịch Bản Kiểm Thử | Các Bước Thực Hiện (Test Steps) | Kết Quả Kỳ Vọng (Expected Results) | Kết Quả Thực Tế | Trạng Thái | Ngày Test | Người Thực Hiện | Ghi Chú |
+|:---:|:---|:---|:---|:---:|:---:|:---:|:---:|:---|
+| **TC-PRN-01** | Đăng ký tài khoản mới thành công | 1. Mở trang `/register`<br>2. Nhập họ tên: "Nguyễn Văn A"<br>3. Nhập email: `nguyenvana@gmail.com`<br>4. Nhập mật khẩu: `Password@123`<br>5. Bấm "Tạo tài khoản" | - Tạo mới bản ghi trong Supabase bảng `UserAccounts`.<br>- Mật khẩu được băm Argon2/PBKDF2.<br>- Role mặc định được cấp là `2` (Viewer).<br>- Tự động đăng nhập và chuyển hướng sang `/epg`. | | | | | |
+| **TC-PRN-02** | Đăng ký với email đã tồn tại | 1. Mở trang `/register`<br>2. Nhập email đã có trong hệ thống: `admin@omnicast.tv`<br>3. Nhập mật khẩu hợp lệ<br>4. Bấm "Tạo tài khoản" | - Báo lỗi HTTP 409 Conflict: "Email đã được sử dụng".<br>- Hiển thị Toast lỗi màu đỏ inline ngay trên form. | | | | | |
+| **TC-PRN-03** | Đăng nhập tài khoản Viewer | 1. Mở trang `/login`<br>2. Nhập `viewer@omnicast.tv` / `Viewer@123`<br>3. Bấm "Đăng nhập" | - Backend trả về JWT Access Token (hạn 60p, claim `role = 2`) và Refresh Token (7 ngày).<br>- Token lưu an toàn trong Cookie/State.<br>- Điều hướng sang `/epg`. | | | | | |
+| **TC-PRN-04** | Đăng nhập tài khoản Staff | 1. Mở trang `/login`<br>2. Nhập `staff@omnicast.tv` / `Staff@123`<br>3. Bấm "Đăng nhập" | - Backend trả về JWT token với claim `role = 1`.<br>- Web Portal nhận diện Staff và chuyển hướng sang `/studio/curator`. | | | | | |
+| **TC-PRN-05** | Đăng nhập tài khoản Admin | 1. Mở trang `/login`<br>2. Nhập `admin@omnicast.tv` / `Admin@123`<br>3. Bấm "Đăng nhập" | - Backend trả về JWT token với claim `role = 3`.<br>- Web Portal chuyển hướng sang `/admin/dashboard`. | | | | | |
+| **TC-PRN-06** | Đăng nhập sai mật khẩu | 1. Mở trang `/login`<br>2. Nhập đúng email, sai mật khẩu<br>3. Bấm "Đăng nhập" | - Báo lỗi HTTP 401 Unauthorized: "Thông tin đăng nhập không chính xác". | | | | | |
+| **TC-PRN-07** | Xem danh sách EPG Grid Schedule | 1. Đăng nhập Viewer, vào trang `/epg`<br>2. Chọn ngày hôm nay | - Bảng lưới EPG hiển thị các kênh theo hàng ngang và trục thời gian 24 giờ.<br>- Dữ liệu tải nhanh dưới 200ms. | | | | | |
+| **TC-PRN-08** | Hiển thị nhãn LIVE NOW | 1. Mở trang `/epg` tại thời điểm thực tế | - Chương trình đang chiếu có viền sáng và badge `LIVE NOW` nhấp nháy đỏ. | | | | | |
+| **TC-PRN-09** | Staff tạo chương trình mới | 1. Đăng nhập Staff, mở modal tạo chương trình<br>2. Nhập thông tin và chọn khung giờ trống | - Lưu thành công vào Supabase, trả về HTTP 201 Created. | | | | | |
+| **TC-PRN-10** | Chặn trùng lịch phát sóng (Anti-Conflict) | 1. Staff chọn khung giờ trùng với chương trình đã có trên cùng kênh<br>2. Bấm Lưu | - Backend ném `ConflictException` (HTTP 409).<br>- Modal hiển thị cảnh báo trùng giờ chiếu. | | | | | |
+| **TC-PRN-23** | Mở Swagger UI Live trên Vercel | Truy cập `https://omnicast-api.vercel.app/swagger` trên trình duyệt | - Trang Swagger tải đầy đủ 100% endpoints.<br>- Nút `Authorize` Bearer JWT hoạt động tốt. | | | | | |
+| **TC-PRN-31** | Web Portal Live trên Cloud | Mở `https://omnicast-fe.vercel.app` trên Chrome, Edge, Safari | - Web chạy trực tiếp trên Cloud, gọi API Vercel Live trơn tru, Lighthouse Score ≥ 90. | | | | | |
+
+---
+
+## 📱 PHẦN 2: KỊCH BẢN KIỂM THỬ FLUTTER MOBILE APP (PRM393) — 20 TEST CASES
+
+| Mã Kịch Bản | Tên Kịch Bản Kiểm Thử | Các Bước Thực Hiện (Test Steps) | Kết Quả Kỳ Vọng (Expected Results) | Kết Quả Thực Tế | Trạng Thái | Ngày Test | Người Thực Hiện | Ghi Chú |
+|:---:|:---|:---|:---|:---:|:---:|:---:|:---:|:---|
+| **TC-PRM-01** | Splash Screen & Auto-Login | Mở ứng dụng khi đã lưu token hợp lệ | - Hiển thị logo OmniCast và hiệu ứng fade-in.<br>- Tự động chuyển thẳng vào `HomeScreen` không qua Login. | | | | | |
+| **TC-PRM-02** | Đăng nhập thành công trên Mobile | Nhập `viewer@omnicast.tv` / `Viewer@123` ➔ Bấm "Đăng nhập" | - BLoC chuyển `AuthLoading` ➔ `Authenticated`.<br>- Lưu token vào `flutter_secure_storage`.<br>- Chuyển tới `HomeScreen`. | | | | | |
+| **TC-PRM-09** | Vuốt để làm mới (Pull-to-Refresh) | Tại `HomeScreen` hoặc `EpgTimelineScreen`, vuốt màn hình từ trên xuống | - Hiển thị vòng xoay loading, nạp lại dữ liệu EPG mới nhất từ Vercel API Live. | | | | | |
+| **TC-PRM-14** | Xem danh sách Watchlist ngoại tuyến | Bật **Chế độ Máy bay (Airplane Mode)** ➔ Mở tab "Watchlist" | - Hiển thị dải Banner màu vàng "Chế độ Ngoại tuyến".<br>- Danh sách yêu thích đọc từ SQLite hiển thị đầy đủ, không crash. | | | | | |
+| **TC-PRM-16** | Đặt lịch hẹn giờ Native Alarm 15p | Bấm "Nhắc tôi khi chiếu" trên chương trình sắp diễn ra | - Ứng dụng lên lịch thông báo qua `flutter_local_notifications` trước giờ chiếu 15 phút. | | | | | |
+| **TC-PRM-17** | Nhận Push Notification & Chuyển trang | Đợi đến thời điểm kích hoạt thông báo ➔ Bấm vào thông báo | - Điện thoại rung và đổ chuông thông báo.<br>- Chạm vào thông báo tự động mở app và chuyển đến `ProgramDetailScreen`. | | | | | |
+| **TC-PRM-20** | Cài đặt và chạy trên máy Android thật | Cài file APK lên điện thoại Android thật (Android 11 - 14) | - App chạy mượt mà 60 FPS, kết nối trực tiếp với Backend Vercel Live thông suốt 100%. | | | | | |
+
+---
+*Tài liệu Test Cases này là bộ tiêu chuẩn kiểm thử và nghiệm thu đồ án chính thức của dự án OmniCast cho nhóm 4 thành viên.*

@@ -12,6 +12,8 @@ class AppConstants {
     _customBaseUrl = url.trim();
   }
 
+  static bool get hasCustomMediaHost => _customMediaHost.isNotEmpty;
+
   static void setCustomMediaHost(String host) {
     _customMediaHost = host.trim();
   }
@@ -32,7 +34,8 @@ class AppConstants {
         apiUri.host != '127.0.0.1') {
       return apiUri.host;
     }
-    return '192.168.1.88';
+    // Dynamic default: auto-updated by LanDiscoveryService on Wi-Fi connect
+    return '10.12.2.162';
   }
 
   static const String cdnBaseUrl = 'https://omnicast.tv';

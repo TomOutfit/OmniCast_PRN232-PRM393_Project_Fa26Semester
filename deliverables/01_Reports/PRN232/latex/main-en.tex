@@ -1,0 +1,118 @@
+% ============================================================
+% PRN232 - OmniCast project report (English version)
+%
+% Compile with:
+%   xelatex main-en.tex
+%   xelatex main-en.tex
+% ============================================================
+\documentclass[conference,a4paper]{IEEEtran}
+
+\input{preamble}
+\omniENtrue
+
+% English caption labels
+\renewcommand{\figName}{Figure}
+\renewcommand{\tabName}{Table}
+\renewcommand{\lstlistname}{Listing}
+
+\input{figures}
+
+\begin{document}
+
+\input{cover}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+\title{\bi{Xây dựng ứng dụng phía sau đa nền tảng: Hệ thống lịch phát và phát sóng nội dung số OmniCast}{Building a Cross-Platform Back-End Application: The OmniCast Digital Broadcast Scheduling and Delivery System}}
+
+\author{\IEEEauthorblockN{\bi{Nhóm Kỹ Thuật OmniCast (OmniCast Team) --- PRN232 (Fa26)}{OmniCast Engineering Team --- PRN232 (Fa26)}}\\
+\IEEEauthorblockA{\bi{Bộ môn Kỹ thuật Phần mềm, Trường Đại học FPT}{Department of Software Engineering, FPT University}\\
+\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester}\\
+\bi{Hệ thống trực tuyến}{Live System}: \url{https://omnicast-fe.vercel.app}}}
+\date{}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\bi{
+OmniCast là một hệ thống lịch phát và phát sóng nội dung số đa nền
+tảng, xây dựng cho môn PRN232. Hệ thống gồm một back-end NestJS với 19
+module nghiệp vụ và 140 endpoint REST, một cổng web Next.js 15 với 33
+route, và một microservice ghi nhật ký kiểm toán giao tiếp qua gRPC.
+Ba đóng góp chính được trình bày: thuật toán phát hiện xung đột lịch
+phát thực hiện bằng một truy vấn SQL thô tính thời điểm kết thúc hiệu
+lực của sự kiện; cơ chế điền lịch EPG 24/7 với lựa chọn ngẫu nhiên có
+hạt giống bảo đảm mỗi lưới kênh-ngày luôn đầy đủ và có tính tái lập;
+và quy trình biên tập AI gọi mô hình ngôn ngữ lớn một lần duy nhất,
+kiểm tra đầu ra theo schema Zod, có đường dự phòng heuristic và dấu vết
+phiên bản đầy đủ. Lược đồ cơ sở dữ liệu gồm 21 model Prisma trên
+PostgreSQL. Toàn bộ hệ thống đã được triển khai trên Vercel và kiểm
+thử bằng 482 kiểm thử tự động trong quy trình tích hợp liên tục năm
+công việc; tất cả đều đạt.
+}{
+OmniCast is a multi-platform digital broadcast scheduling and delivery
+system built for the PRN232 course. It comprises a NestJS back end with
+19 business modules and 140 REST endpoints, a Next.js 15 web portal with
+33 routes, and a gRPC audit-logging microservice. Three principal
+contributions are presented: a broadcast-schedule conflict-detection
+algorithm implemented as a single raw SQL query that computes the
+effective end time of an existing event; a 24/7 EPG filler whose seeded
+selection guarantees that every channel-day grid is both complete and
+reproducible; and an AI curation pipeline that issues a single large
+language model call, validates the output against a Zod schema, offers
+a heuristic fallback path and records full version provenance. The
+database schema comprises 21 Prisma models on PostgreSQL. The complete
+system has been deployed on Vercel and validated by 482 automated tests
+inside a five-job continuous-integration pipeline, all of which pass.
+}
+\end{abstract}
+
+\begin{IEEEkeywords}
+\bi{broadcast scheduling, EPG, NestJS, Prisma, Next.js, gRPC, RBAC,
+Flutter, AI curation, conflict detection, offline-first, CI/CD.}{broadcast
+scheduling, EPG, NestJS, Prisma, Next.js, gRPC, RBAC, Flutter, AI
+curation, conflict detection, offline-first, CI/CD.}
+\end{IEEEkeywords}
+
+\input{sec-intro-vi}
+\input{sec-related-vi}
+\input{sec-arch-vi}
+\input{sec-impl-vi}
+\input{sec-web-vi}
+\input{sec-db-vi}
+\input{sec-test-vi}
+\input{sec-deploy-vi}
+\input{sec-concl-vi}
+
+\begin{thebibliography}{99}
+\bibitem{nestjs} K. Mysliwiec, \emph{NestJS: A Progressive Node.js Framework}, \url{https://docs.nestjs.com/}, accessed Oct.\ 28, 2026.
+\bibitem{prisma} \emph{Prisma ORM}, \url{https://www.prisma.io/}, accessed Oct.\ 28, 2026.
+\bibitem{nextjs} \emph{Next.js Documentation}, \url{https://nextjs.org/docs}, accessed Oct.\ 28, 2026.
+\bibitem{flutter} \emph{Flutter: Build beautiful apps for every platform}, \url{https://flutter.dev/}, accessed Oct.\ 28, 2026.
+\bibitem{bloc} S. Lapan and F. Harvy, ``BLoC: (State Management) Library for Flutter,'' in \emph{Proc.\ 1st Int.\ Workshop on Flutter}, 2020, pp.\ 1--5.
+\bibitem{grpc} J. McCollum, \emph{gRPC: High Performance, Low Latency RPC}. Sebastopol, CA: O'Reilly Media, 2023.
+\bibitem{rest} R. Fielding, ``Representational State Transfer,'' Ph.D.\ dissertation, Univ.\ California, Irvine, 2000.
+\bibitem{openapi} \emph{The OpenAPI Specification 3.1.0}, \url{https://spec.openapis.org/oas/v3.1.0}, 2024.
+\bibitem{graphql} L. Byron, S. Evans, J. Goodman-Wood, and J. Morrison, \emph{GraphQL: A Query Language for APIs}, 2015. [Online]. Available: \url{https://graphql.org/}.
+\bibitem{odatapub} \emph{OData Version 4.01}, OData Consortium, 2023. [Online]. Available: \url{https://docs.oasis-open.org/odata/odata/v4.01/codata/v4.01.html}.
+\bibitem{webrtc} \emph{WebRTC: Real-Time Communication}, W3C / IETF, 2023. [Online]. Available: \url{https://webrtc.org/}.
+\bibitem{mediamtx} \emph{MediaMTX: Live video server for WebRTC, HLS and RTMP}, 2024. [Online]. Available: \url{https://github.com/bluenviron/mediamtx}.
+\bibitem{swagger} \emph{Swagger: The World's Most Popular API Toolkit}, SmartBear, 2024. [Online]. Available: \url{https://swagger.io/}.
+\bibitem{jwt} M. Jones, J. Bradley, and N. Sakimura, ``JSON Web Signature (JWT),'' RFC 7519, IETF, 2015.
+\bibitem{owasp} \emph{OWASP Top 10:2021}, OWASP Foundation, 2021. [Online]. Available: \url{https://owasp.org/Top10/}.
+\bibitem{postgresql} \emph{PostgreSQL Documentation}, PostgreSQL Global Development Group, 2024. [Online]. Available: \url{https://www.postgresql.org/docs/}.
+\bibitem{githubactions} \emph{GitHub Actions Documentation}, GitHub, 2024. [Online]. Available: \url{https://docs.github.com/actions}.
+\bibitem{supabase} \emph{Supabase Documentation}, 2024. [Online]. Available: \url{https://supabase.com/docs}.
+\bibitem{swaggerui} \emph{Socket.IO: Real-Time bidirectional communication}, 2024. [Online]. Available: \url{https://socket.io/}.
+\bibitem{firebase} \emph{Firebase Cloud Messaging}, Google, 2024. [Online]. Available: \url{https://firebase.google.com/docs/cloud-messaging}.
+\bibitem{openai} \emph{OpenAI API Documentation}, 2024. [Online]. Available: \url{https://platform.openai.com/docs}.
+\bibitem{zod} C. McDonnell, \emph{Zod: TypeScript-first schema validation}, 2024. [Online]. Available: \url{https://github.com/colinhacks/zod}.
+\bibitem{test} \emph{Playwright: Reliable end-to-end testing for modern web apps}, Microsoft, 2024. [Online]. Available: \url{https://playwright.dev/}.
+\end{thebibliography}
+
+\input{appendix-vi}
+
+\end{document}

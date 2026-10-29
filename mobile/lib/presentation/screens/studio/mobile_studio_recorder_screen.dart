@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/lan_discovery_service.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/services/webrtc_publisher_service.dart';
 import '../../../data/services/live_studio_api_service.dart';
@@ -343,6 +344,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   Future<void> _startLiveStreaming() async {
     HapticFeedback.heavyImpact();
+
+    // Wi-Fi Auto-Discovery: ensure mediaHost is resolved to local Wi-Fi broadcaster
+    await LanDiscoveryService().autoDiscoverMediaHost(timeout: const Duration(milliseconds: 600));
 
     var whipUrl = await _liveApiService?.getWhipUrl();
     if (whipUrl != null && whipUrl.isNotEmpty) {

@@ -143,7 +143,35 @@ export interface WebcamLiveStopResult {
 
 export async function fetchIngestConfig(): Promise<IngestConfig> {
   const res = await apiClient.get('/programs/studio/live/ingest-config');
-  return res.data;
+  const data = res.data;
+
+  // Wi-Fi Stream Optimization: If accessed from another device on the same LAN,
+  // adapt any localhost URLs to the active LAN hostname
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    const lanHost = window.location.hostname;
+    const rewrite = (u?: string) =>
+      u ? u.replace(/\b(localhost|127\.0\.0\.1)\b/g, lanHost) : u;
+
+    return {
+      ...data,
+      publicHost:
+        data.publicHost === 'localhost' || data.publicHost === '127.0.0.1'
+          ? lanHost
+          : data.publicHost,
+      hlsUrl: rewrite(data.hlsUrl)!,
+      hlsIndexUrlTemplate: rewrite(data.hlsIndexUrlTemplate)!,
+      webrtcUrl: rewrite(data.webrtcUrl)!,
+      whipUrl: rewrite(data.whipUrl)!,
+      whipUrlTemplate: rewrite(data.whipUrlTemplate)!,
+    };
+  }
+
+  return data;
 }
 
 export async function startWebcamLive(

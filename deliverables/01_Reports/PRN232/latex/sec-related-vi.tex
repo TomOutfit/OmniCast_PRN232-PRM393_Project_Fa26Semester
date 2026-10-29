@@ -1,0 +1,153 @@
+% ============================================================
+% PRN232 - Section 2: Related Work (Vietnamese)
+% ============================================================
+\section{\bi{Công trình liên quan}{Related Work}}
+\label{sec:related}
+
+\bi{
+Bài báo này định vị OmniCast trong bối cảnh ba hướng tiếp cận chính:
+khung ứng dụng phía sau, giao thức truy cập dữ liệu, và hệ thống lịch
+phát truyền thông.
+}{
+This paper positions OmniCast against three main lines of work:
+back-end application frameworks, data-access protocols, and broadcast
+scheduling systems.
+}
+
+\subsection{\bi{Khung ứng dụng phía sau}{Back-end Application Frameworks}}
+
+\bi{
+NestJS \cite{nestjs} chọn mô hình Dependency Injection dựa trên decorator
+và mô hình module phân cấp, cho phép mỗi miền nghiệp vụ (kênh, chương
+trình, người dùng) được đóng gói thành một module độc lập với vòng đời
+riêng. So với Express thuần, framework này cung cấp sẵn lớp định tuyến
+có phiên bản (\texttt{VersioningType.URI}), \texttt{ValidationPipe} với
+chế độ \texttt{forbidNonWhitelisted}, \texttt{ExceptionFilter} và
+\texttt{Interceptor} --- bốn thành phần mà bài toán phát sóng đòi hỏi
+để mọi endpoint trả về cùng một định dạng phản hồi và mọi đầu vào
+đều được kiểm tra nghiêm ngặt. Prisma \cite{prisma} đóng vai trò lớp
+truy cập dữ liệu: \textit{schema} Prisma là nguồn sự thật duy nhất, và
+\texttt{prisma migrate} sinh SQL di trúyền, nhờ vậy lịch sử thay đổi
+cấu trúc bảng được kiểm soát phiên bản cùng mã nguồn.
+
+Hai lựa chọn khác đáng so sánh là FastAPI (Python) và ASP.NET Core
+(C\#). FastAPI tạo tài liệu OpenAPI tự động rất tốt nhưng hệ thống
+đã có ngăn sách giới hạn ngôn ngữ; ASP.NET Core có hệ sinh thái
+mature hơn nhưng cũng đòi hỏi đổi đội ngũ. NestJS cho phép tái sử
+dụng ngôn ngữ TypeScript với cổng web Next.js \cite{nextjs}, nên một
+kiểu dữ liệu hay một thay đổi hợp đồng API có thể được chia sẻ giữa
+hai sản phẩm mà không cần bước chuyển đổi ngôn ngữ.
+}{
+NestJS \cite{nestjs} adopts a decorator-driven dependency-injection
+model and a hierarchical module model, allowing each business domain
+(channels, programmes, users) to be packaged as an independent module
+with its own lifecycle. Compared with plain Express, the framework
+provides out-of-the-box URI versioning (\texttt{VersioningType.URI}),
+a \texttt{ValidationPipe} in \texttt{forbidNonWhitelisted} mode, an
+\texttt{ExceptionFilter} and an \texttt{Interceptor} --- the four
+components the broadcasting problem demands so that every endpoint
+returns an identical response envelope and every input is validated
+strictly. Prisma \cite{prisma} serves as the data-access layer: the
+Prisma schema is the single source of truth and \texttt{prisma
+migrate} generates version-controlled SQL, so schema drift is tracked
+alongside the source code.
+
+Two alternatives deserve comparison: FastAPI (Python) and ASP.NET
+Core (C\#). FastAPI produces excellent OpenAPI documentation but the
+project has a fixed language budget; ASP.NET Core has a more mature
+ecosystem but also demands a language switch. NestJS allows the
+TypeScript toolchain to be reused with the Next.js portal
+\cite{nextjs}, so a shared data type or an API contract change can
+propagate across both deliverables without a language boundary.
+}
+
+\subsection{\bi{Giao thức truy cập dữ liệu}{Data-Access Protocols}}
+
+\bi{
+Phần lớn hệ thống truyền hình truyền thống cung cấp lịch phát cho ứng
+dụng di động thông qua OData \cite{odatapub}, một mở rộng của REST với
+cú pháp truy vấn nhúng ($filter$, $orderby$, $expand$). OData rất phù
+hợp khi client cần truy vấn linh hoạt trên một catalogue lớn mà không
+muốn triển khai logic lọc phía server. OmniCast chọn hướng khác: các
+truy vấn của EPG có hình dạng cố định (theo ngày, theo kênh, theo khung
+giờ), vì vậy endpoint REST thuần với tham số truy vấn chuẩn hoá
+(\cite{rest}) vừa đủ và đơn giản hơn cho cả hai client.
+
+So với GraphQL \cite{graphql}, REST thuần giảm bớt chi phí phía client
+vì không cần thêm một lớp runtime trên di động, đồng thời dễ cache
+tầng HTTP và dễ kiểm thử bằng công cụ dòng lệnh. Đổi lại, hệ thống
+chấp nhận việc phải thiết kế endpoint rõ ràng; bù lại, phần API được
+tài liệu hoá hoàn toàn bằng OpenAPI 3 \cite{openapi} với decorator
+\texttt{@ApiOperation}, \texttt{@ApiResponse}, \texttt{@ApiQuery} nên
+không có tài liệu nào bị bỏ sót.
+}{
+Most legacy broadcasting systems expose their programme guide to
+mobile applications through OData \cite{odatapub}, a REST extension with
+embedded query syntax (\$filter, \$orderby, \$expand). OData is well
+suited when clients need flexible queries over a large catalogue
+without deploying server-side filtering logic. OmniCast takes the
+opposite approach: EPG queries have a fixed shape (by day, by channel,
+by time window), so plain REST endpoints with normalised query
+parameters \cite{rest} are sufficient and simpler for both clients.
+
+Compared with GraphQL \cite{graphql}, plain REST lowers the client-side
+cost because no additional runtime layer is needed on mobile, and it is
+easier to cache at the HTTP layer and to exercise from a command line.
+The trade-off is that every endpoint must be designed explicitly; in
+exchange, the entire API is documented with OpenAPI 3 \cite{openapi}
+using \texttt{@ApiOperation}, \texttt{@ApiResponse} and
+\texttt{@ApiQuery} decorators, so no endpoint is left undocumented.
+}
+
+\subsection{\bi{Lịch phát truyền thông và trợ lý AI}{Broadcast Scheduling and AI Assistance}}
+
+\bi{
+Hệ thống lịch phát thương mại (như EBU Radio-MEP và các bản ghi EPG của
+FTA) bảo đảm tính toàn vẹn lịch bằng cách áp dụng thuật toán phát
+hiện xung đột theo khoảng thời gian tương đối và bổ sung chương
+trình lấn át khi truyền hình trực tiếp. Đây chính là mô hình mà
+OmniCast tái hiện ở quy mô nhỏ hơn: khoảng thời gian của mỗi chương
+trình là một đoạn $[t_0, t_1]$ trên trục thời gian của kênh, và hai
+đoạn chồng nhau là không hợp lệ.
+
+Về phía trợ lý biên tập, các hệ thống EPG thương mại gần đây bắt đầu
+dùng mô hình ngôn ngữ lớn để sinh mô tả và thẻ nội dung
+\cite{openai}. Điểm khác biệt của OmniCast là \emph{kiểm soát chất
+lượng đầu ra}: mọi báo cáo do AI sinh ra đều được kiểm tra theo một
+schema Zod \cite{zod} trước khi ghi vào cơ sở dữ liệu, kèm dấu vết
+phiên bản prompt và phiên bản mô hình, nhờ vậy người quản trị có thể
+so sánh chất lượng giữa các phiên bản prompt khác nhau.
+}{
+Commercial scheduling systems (such as EBU Radio-MEP and FTA EPG
+feeds) guarantee schedule integrity by applying relative-time
+conflict detection and substituting overrun programmes during live
+transmission. This is precisely the model OmniCast reproduces at a
+smaller scale: the slot of a programme is an interval $[t_0, t_1]$ on
+the timeline of a channel, and two overlapping intervals are invalid.
+
+On the editorial-assistance side, commercial EPG systems have recently
+begun using large language models to generate descriptions and content
+tags \cite{openai}. OmniCast's distinguishing feature is
+\emph{output quality control}: every AI-generated report is validated
+against a Zod schema \cite{zod} before being written to the database
+and is stamped with the prompt version and the model version, so
+administrators can compare quality across prompt revisions.
+}
+
+\subsection{\bi{Khoảng trống mà OmniCast lấp đầy}{Gap Addressed by OmniCast}}
+
+\bi{
+Tổng hợp lại, khoảng trống mà dự án lấp đầy là sự thiếu vắt một hệ
+thống lịch phát truyền thông \emph{hoàn chỉnh và có thể kiểm thử tự
+động} ở quy mô phòng học: vừa có cơ chế bảo đảm tính toàn vẹn lịch
+phát, vừa có trải nghiệm người dùng hoàn chỉnh trên web và di động,
+vừa có trợ lý AI có kiểm soát chất lượng, và toàn bộ được kiểm chứng
+bằng 482 kiểm thử tự động trong quy trình tích hợp liên tục.
+}{
+In summary, the gap this project fills is the absence of a complete,
+automatically verifiable broadcast-scheduling system at classroom
+scale: schedule-integrity guarantees, a full user experience across
+web and mobile, quality-controlled AI assistance, and the whole thing
+validated by 482 automated tests inside a continuous-integration
+pipeline.
+}

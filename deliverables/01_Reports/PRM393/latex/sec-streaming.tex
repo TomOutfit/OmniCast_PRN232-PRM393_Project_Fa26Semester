@@ -1,0 +1,111 @@
+% ============================================================
+% PRM393 - Section 5: Multimedia & Real-Time (Bilingual)
+% ============================================================
+\section{\bi{Trình phát đa phương tiện và tương tác trực tiếp}{OmniPlayer \& Real-Time Multimedia Delivery}}
+\label{sec:streaming}
+
+\bi{
+Trung tâm trải nghiệm nghe nhìn của ứng dụng di động là thành phần
+\texttt{OmniPlayer} (\texttt{lib/presentation/widgets/omni\_player.dart}).
+Trình phát này được thiết kế theo mô hình đa tầng tiếp nhận (Multi-Engine
+Playback Architecture), có khả năng chuyển đổi liền mạch giữa luồng trực tiếp
+độ trễ thấp từ MediaMTX, video ghi hình theo yêu cầu (VOD) và luồng nhúng bên
+ngoài.
+}{
+At the epicenter of the mobile user experience is \texttt{OmniPlayer}
+(\texttt{lib/presentation/widgets/omni\_player.dart}). Architected around a
+multi-engine playback paradigm, it dynamically transitions across low-latency
+MediaMTX live broadcasts, on-demand video (VOD), and external embed streams.
+}
+
+\subsection{\bi{Kiến trúc phát trực tiếp qua MediaMTX và WebRTC/HLS}{MediaMTX Low-Latency Streaming Pipeline}}
+
+\bi{
+Đối với các kênh phát trực tiếp, OmniCast kết hợp giao thức ingest WHIP tại
+phòng thu (Live Studio) với máy chủ chuyển tiếp \textbf{MediaMTX}. Trên ứng
+dụng di động, \texttt{OmniPlayer} tích hợp gói \texttt{video\_player} chính
+thức của Flutter, tự động phân giải địa chỉ IP máy chủ trong mạng cục bộ (LAN
+Host Discovery) để khắc phục tình trạng thiết bị thật không thể truy cập
+\texttt{localhost}:
+}{
+For live channels, OmniCast couples studio WHIP ingestion with the high-concurrency
+\textbf{MediaMTX} streaming engine. On the mobile client, \texttt{OmniPlayer}
+leverages Flutter's official \texttt{video\_player} package, dynamically
+resolving LAN host IP addresses to allow physical test devices to seamlessly
+stream feeds without hardcoded local loopback constraints:
+}
+
+\begin{lstlisting}[language=Dart, caption={\bi{Cơ chế cấu hình phân giải địa chỉ phát trực tiếp động.}{Dynamic stream endpoint resolution in OmniPlayer.}}]
+String resolveStreamUrl(String rawUrl, String hostIp) {
+  if (rawUrl.contains('localhost') || rawUrl.contains('127.0.0.1')) {
+    return rawUrl
+      .replaceAll('localhost', hostIp)
+      .replaceAll('127.0.0.1', hostIp);
+  }
+  return rawUrl;
+}
+\end{lstlisting}
+
+\bi{
+Trường hợp luồng phát là liên kết nhúng từ YouTube hoặc các đài truyền hình
+đối tác, \texttt{OmniPlayer} tự động chuyển sang chế độ nhúng qua
+\texttt{webview\_flutter}, loại bỏ sự phụ thuộc vào các thư viện bên ngoài cồng
+kềnh và tránh xung đột mã nguồn nhị phân gốc.
+}{
+When rendering partner broadcast embeds (such as YouTube feeds),
+\texttt{OmniPlayer} seamlessly mounts a headless \texttt{webview\_flutter}
+canvas, eliminating bloated native library footprints and preventing binary
+dependency collisions.
+}
+
+\subsection{\bi{Lớp phủ tương tác thời gian thực hai chiều}{Bi-Directional Interactive Overlay}}
+
+\bi{
+Xung quanh khung hình video, ứng dụng cung cấp ba phân hệ tương tác thời gian
+thực:
+}{
+Surrounding the video viewport, the mobile client embeds three real-time
+interaction layers:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{\bi{Bình luận trực tiếp (Live Chat):}{Live Messaging:}}
+  \bi{Đồng bộ thông qua WebSocket namespace \texttt{/live}. Tin nhắn mới xuất
+  hiện ngay lập tức theo dạng danh sách cuộn tự động với hiệu ứng làm mờ nền
+  bán trong suốt (translucent blur), không che khuất nội dung phát
+  sóng.}{Synced via WebSocket namespace \texttt{/live}. New messages arrive
+  instantly in an auto-scrolling semi-transparent overlay that never obscures
+  video content.}
+
+  \item \textbf{\bi{Thanh cảm xúc nổi (Floating Reactions):}{Animated Floating Reactions:}}
+  \bi{Người xem có thể thả các biểu tượng cảm xúc (tim, vỗ tay, bất ngờ).
+  Các cảm xúc được phát tán tức thì tới toàn bộ người xem qua WebSocket và
+  kích hoạt hiệu ứng bay lên hoạt họa mượt mà bằng CustomPainter.}{Viewers
+  can dispatch emoji reactions (hearts, claps, fire). Reactions broadcast to
+  all concurrent viewers via WebSockets, rendering upward floating animations
+  via Flutter CustomPainters.}
+
+  \item \textbf{\bi{Hộp thoại quyên góp trực tiếp (Live Donation Modal):}{Live Donation Sheet:}}
+  \bi{Tích hợp trong \texttt{live\_donation\_modal.dart}, cho phép người xem
+  chọn các gói ủng hộ nhanh (5.000đ, 20.000đ, 50.000đ...) kèm lời nhắn gửi
+  đến người dẫn chương trình. Thao tác được xác thực bảo mật và hiển thị hiệu
+  ứng vinh danh nổi bật trên luồng phát.}{Embedded in
+  \texttt{live\_donation\_modal.dart}, enabling viewers to tip creators with
+  preset amounts and custom cheers. Contributions trigger celebratory banner
+  animations on the live screen.}
+\end{enumerate}
+
+\subsection{\bi{Khả năng tự phục hồi khi kết nối gián đoạn}{Resilient Connection Recovery}}
+
+\bi{
+Khi luồng phát sóng bị đứt quãng do người dùng di chuyển vào vùng sóng yếu,
+\texttt{OmniPlayer} kích hoạt thuật toán \emph{Exponential Backoff with
+Jitter}: tự động thử kết nối lại sau 1s, 2s, 4s, 8s (tối đa 30s) mà không làm
+đóng băng ứng dụng hay đưa người xem ra khỏi màn hình hiện tại.
+}{
+When network degradation interrupts a live transmission, \texttt{OmniPlayer}
+triggers an \emph{Exponential Backoff with Jitter} retry strategy: attempting
+stream reconnections after 1s, 2s, 4s, 8s intervals (capped at 30s) without
+freezing UI thread execution or prematurely kicking the user off the player
+screen.
+}

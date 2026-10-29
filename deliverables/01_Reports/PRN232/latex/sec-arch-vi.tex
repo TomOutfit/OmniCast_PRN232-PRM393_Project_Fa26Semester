@@ -1,0 +1,214 @@
+% ============================================================
+% PRN232 - Section 3: System Architecture (Vietnamese)
+% ============================================================
+\section{\bi{Kiến trúc hệ thống}{System Architecture}}
+\label{sec:arch}
+
+\subsection{\bi{Tổng quan phân tầng}{Layered Overview}}
+
+\bi{
+Hệ thống được tổ chức theo bốn tầng, mỗi tầng chỉ giao tiếp với tầng
+ngay bên dưới. Tầng trình bày gồm cổng web Next.js 15 và ứng dụng di
+động Flutter; tầng API là một tiến trình NestJS duy nhất với 19 module
+nghiệp vụ; tầng thời gian thực xử lý phát sóng trực tiếp, chat và tín
+hiệu WebRTC; tầng dữ liệu gồm PostgreSQL, dịch vụ phát trực tuyến
+MediaMTX, dịch vụ lưu trữ Cloudinary và các API bên ngoài.
+}{
+The system is organised into four layers, each communicating only with
+the layer immediately below it. The presentation layer comprises the
+Next.js 15 web portal and the Flutter mobile application; the API
+layer is a single NestJS process with 19 business modules; the
+real-time layer handles live broadcasting, chat and WebRTC signalling;
+and the data layer consists of PostgreSQL, the MediaMTX streaming
+server, Cloudinary storage and external APIs.
+}
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figArchitecture}
+\caption{\bi{Kiến trúc phân tầng tổng thể của OmniCast. Cả cổng web và
+ứng dụng di động đều tiêu thụ cùng một API REST; nhật ký kiểm toán
+được tách sang microservice gRPC riêng.}{Overall layered architecture
+of OmniCast. Both the web portal and the mobile application consume
+the same REST API; audit logging is separated into a dedicated gRPC
+microservice.}}
+\label{fig:architecture}
+\end{figure*}
+
+\bi{
+Điểm thiết kế đáng chú ý là \emph{một tiến trình API duy nhất phục vụ
+cả hai client}. Ranh giới giữa client web và client di động chỉ nằm ở
+lớp vận chuyển, không nằm ở lớp nghiệp vụ. Nhờ vậy một quy tắc
+nghiệp vụ chỉ được viết một lần: ví dụ, quy tắc ``hai chương trình
+cùng kênh không được chồng lấn'' được kiểm tra trong
+\texttt{ProgramsService.checkScheduleConflict} và có hiệu lực giống
+nhau đối với cả thao tác tạo lịch từ trang quản trị web lẫn từ ứng
+dụng di động.
+}{
+The notable design decision is a \emph{single API process serving both
+clients}. The boundary between the web and mobile clients exists only
+at the transport layer, never at the business layer. A business rule is
+therefore written exactly once: for instance, the rule that "two
+programmes on the same channel must not overlap" is enforced in
+\texttt{ProgramsService.checkScheduleConflict} and behaves identically
+whether the schedule is created from the web administration portal or
+from the mobile application.
+}
+
+\subsection{\bi{Cấu trúc module của NestJS}{NestJS Module Structure}}
+
+\bi{
+\texttt{AppModule} đăng ký 19 module nghiệp vụ cùng các module hạ tầng.
+Mỗi module chịu trách nhiệm một miền nghiệp vụ và export các service
+cần thiết; các controller chỉ gọi service và không chứa logic nghiệp
+vụ. Cấu trúc thực tế của mã nguồn back-end được liệt kê ở
+Bảng~\ref{tab:modules}.
+}{
+\texttt{AppModule} registers 19 business modules alongside the
+infrastructure modules. Each module owns one business domain and
+exports the services it needs; controllers only call services and hold
+no business logic. Table~\ref{tab:modules} lists the actual
+back-end source layout.
+}
+
+\begin{table}[t]
+\caption{\bi{Cấu trúc module back-end NestJS.}{Back-end NestJS module
+structure.}}
+\label{tab:modules}
+\centering
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Module} & \bi{Trách nhiệm chính}{\textbf{Primary responsibility}} & \bi{Controller}{\textbf{Controller}} \\
+\midrule
+\texttt{auth}         & \bi{Đăng nhập, JWT, refresh, đăng nhập Google}{Login, JWT, refresh, Google sign-in} & \texttt{auth} \\
+\texttt{channels}     & \bi{Kênh phát sóng, danh mục}{Broadcast channels, catalogue} & \texttt{channels} \\
+\texttt{programs}     & \bi{Chương trình, EPG, live studio}{Programmes, EPG, live studio} & \texttt{programs} \\
+\texttt{search}       & \bi{Tìm kiếm liên thực thể}{Cross-entity search} & \texttt{search} \\
+\texttt{ai-curator}   & \bi{Biên tập AI, thống kê}{AI curation, statistics} & \texttt{ai-curator} \\
+\texttt{audit-logger} & \bi{Nhật ký kiểm toán (gRPC)}{Audit logging (gRPC)} & \texttt{audit-logger} \\
+\texttt{watchlist}    & \bi{Danh sách theo dõi}{Watchlist} & \texttt{watchlist} \\
+\texttt{users}        & \bi{Quản lý người dùng}{User management} & \texttt{users} \\
+\texttt{admin}        & \bi{Bảng điều khiển quản trị}{Admin dashboard} & \texttt{admin} \\
+\texttt{billing}      & \bi{Gói dịch vụ, thanh toán}{Plans, payments} & \texttt{billing} \\
+\texttt{notifications} & \bi{Thông báo, đẩy FCM}{Notifications, FCM push} & \texttt{notifications} \\
+\texttt{newsletter}   & \bi{Đăng ký bản tin}{Newsletter subscription} & \texttt{newsletter} \\
+\texttt{websocket}    & \bi{Cổng thời gian thực}{Realtime gateway} & --- \\
+\texttt{cloudinary}   & \bi{Lưu trữ phương tiện}{Media storage} & \texttt{cloudinary} \\
+\texttt{prisma}       & \bi{Kết nối cơ sở dữ liệu}{Database access} & --- \\
+\texttt{health}       & \bi{Kiểm tra tình trạng}{Health probe} & \texttt{health} \\
+\texttt{common}       & \bi{Bộ lọc, interceptor, Swagger}{Filters, interceptors, Swagger} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{\bi{Tích hợp giao thức và vận chuyển}{Protocol and Transport Integration}}
+
+\bi{
+Backend phục vụ bốn loại giao thức độc lập, mỗi loại phục vụ một nhóm
+nhu cầu khác nhau.
+}{
+The back end serves four independent protocols, each serving a
+distinct group of needs.
+}
+
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \bi{\textbf{REST/JSON qua HTTP/1.1.} Đường dẫn có tiền tố
+  \texttt{/api/v1} và được tạo phiên bản bằng
+  \texttt{VersioningType.URI}. Một middleware trong \texttt{main.ts}
+  tự động chuyển hướng mọi yêu cầu dạng \texttt{/api/*} thành
+  \texttt{/api/v1/*}, nhờ vậy các client cũ không gặp lỗi 404 khi
+  phiên bản API được nâng cấp.}{
+  \textbf{REST/JSON over HTTP/1.1.} Paths carry the \texttt{/api/v1}
+  prefix and use \texttt{VersioningType.URI}. A middleware in
+  \texttt{main.ts} automatically rewrites any \texttt{/api/*} request
+  to \texttt{/api/v1/*}, so older clients never receive a 404 when the
+  API version is upgraded.}
+
+  \item \bi{\textbf{WebSocket.} Cổng thời gian thực dùng Socket.IO với
+  namespace \texttt{/live}, phục vụ 12 sự kiện: theo dõi và bỏ theo dõi
+  sự kiện/kênh, chat trực tiếp, biểu cảm, thông báo từ người phát,
+  xoá tin nhắn, và bắt tay WebRTC (offer/answer/ICE candidate).}{
+  \textbf{WebSocket.} The realtime gateway uses Socket.IO on namespace
+  \texttt{/live} and exposes 12 events: event and channel
+  subscribe/unsubscribe, live chat, reactions, broadcaster messages,
+  message deletion, and the WebRTC handshake (offer/answer/ICE
+  candidate).}
+
+  \item \bi{\textbf{gRPC.} Microservice ghi nhật ký kiểm toán nhận yêu
+  cầu \texttt{LogAudit}, \texttt{GetLogsByUser},
+  \texttt{GetLogsByAction}, \texttt{GetLogsByEntity} và
+  \texttt{GetLogStats} qua \texttt{audit\_logger.proto}.}{
+  \textbf{gRPC.} The audit-logging microservice receives
+  \texttt{LogAudit}, \texttt{GetLogsByUser}, \texttt{GetLogsByAction},
+  \texttt{GetLogsByEntity} and \texttt{GetLogStats} requests over
+  \texttt{audit\_logger.proto}.}
+
+  \item \bi{\textbf{WHIP/HLS/WebRTC.} MediaMTX nhận luồng phát qua
+  WHIP và phân phối lại qua HLS (LL-HLS, fMP4) và WHEP. Cấu hình
+  nằm trong \texttt{backend/mediamtx/mediamtx.yml}.}{
+  \textbf{WHIP/HLS/WebRTC.} MediaMTX ingests over WHIP and redistributes
+  over HLS (LL-HLS, fMP4) and WHEP, configured in
+  \texttt{backend/mediamtx/mediamtx.yml}.}
+\end{itemize}
+
+\subsection{\bi{Kết nối cơ sở dữ liệu và giao thức ghi nhật ký}{Database Connection and Audit Logging}}
+
+\bi{
+Cơ sở dữ liệu là PostgreSQL do Supabase quản lý. Một chi tiết vận
+hành đáng lưu ý: Supabase cung cấp hai cổng, cổng \texttt{5432} cho
+kết nối trực tiếp và cổng \texttt{6543} cho transaction pooler. Hàm
+\texttt{optimizeDatabaseUrl} trong \texttt{PrismaService} tự động đổi
+cổng sang \texttt{6543} và đặt \texttt{connection\_limit} phù hợp khi
+phát hiện pooler, tránh tình trạng cạn kết nối khi môi trường
+serverless khởi động nhiều instance đồng thời.
+}{
+The database is Supabase-managed PostgreSQL. One operational detail is
+worth noting: Supabase exposes two ports, \texttt{5432} for direct
+connections and \texttt{6543} for the transaction pooler. The
+\texttt{optimizeDatabaseUrl} helper in \texttt{PrismaService}
+automatically switches to \texttt{6543} and sets a suitable
+\texttt{connection\_limit} when it detects the pooler, avoiding
+connection exhaustion when a serverless environment starts several
+instances concurrently.
+}
+
+\begin{keybox}{\bi{Vì sao tách microservice ghi nhật ký kiểm toán?}{Why a
+separate audit-logging microservice?}}
+\bi{
+Việc ghi nhật ký kiểm toán có hai đặc điểm không giống phần còn lại của
+hệ thống: khối lượng ghi lớn và không chịu được sự chậm trễ. Nếu ghi
+thẳng vào PostgreSQL, mỗi thao tác quản trị sẽ phải chờ một lần ghi
+bổ sung. Tách sang microservice gRPC biến việc ghi nhật ký thành
+thao tác bất đồng bộ theo kiểu fire-and-forget: \texttt{AuditLoggerService}
+gọi RPC trong một \texttt{promise} không chặn, còn microservice tự ghi
+vào cơ sở dữ liệu và duy trì bảng chỉ mục phục vụ truy vấn theo người
+dùng, hành động, thực thể và thống kê tổng hợp.
+}{
+Audit logging has two properties the rest of the system does not
+share: a high write volume and a tolerance for delay. Writing straight
+into PostgreSQL would make every administrative operation wait on an
+extra write. Moving it into a gRPC microservice turns auditing into a
+non-blocking fire-and-forget operation: \texttt{AuditLoggerService}
+issues the RPC inside a non-awaited promise, while the microservice
+writes to the database and maintains index tables supporting queries by
+user, action, entity and aggregate statistics.
+}
+\end{keybox}
+
+\subsection{\bi{Cấu hình tích hợp ngoài}{External Integrations}}
+
+\bi{
+Bốn tích hợp bên ngoài được hỗ trợ, tất cả đều tự khoáng chạy khi thiếu
+khóa API: YouTube Data API v3 (lịch phát kênh), Twitch Helix (lịch phát
+kênh), TMDB (làm giàu dữ liệu phim) và OpenAI (biên tập nội dung).
+Cơ chế này cho phép toàn bộ hệ thống chạy đầy đủ chức năng trong môi
+trường phát triển mà không cần bất kỳ khóa bên thứ ba nào.
+}{
+Four external integrations are supported, all of which degrade
+gracefully when the API key is absent: YouTube Data API v3 (channel
+schedules), Twitch Helix (channel schedules), TMDB (film metadata
+enrichment) and OpenAI (content curation). This mechanism allows the
+whole system to run at full capability in a development environment
+without any third-party credential.
+}

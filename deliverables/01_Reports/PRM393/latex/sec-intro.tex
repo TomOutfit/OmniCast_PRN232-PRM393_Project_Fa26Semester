@@ -1,0 +1,120 @@
+% ============================================================
+% PRM393 - Section 1: Introduction (Bilingual)
+% ============================================================
+\section{\bi{Mở đầu}{Introduction}}
+\label{sec:intro}
+
+\bi{
+Trong kỷ nguyên phân phối nội dung số hiện đại, ứng dụng di động đã trở
+thành điểm tiếp xúc chính yếu giữa người dùng và các dịch vụ truyền thông
+trực tuyến. Khác với môi trường máy tính để bàn (web desktop) có đường
+truyền mạng ổn định và nguồn năng lượng dồi dào, môi trường di động đặt ra
+những thách thức kỹ thuật nghiêm ngặt: độ trễ mạng biến động liên tục, kết
+nối thường xuyên bị gián đoạn khi chuyển vùng (cell tower handover / Wi-Fi
+to cellular), hạn chế về bộ nhớ RAM và thời lượng pin thiết bị.
+
+Để giải quyết toàn diện các thách thức trên, bài báo này trình bày thiết
+kế và hiện thực ứng dụng di động \textbf{OmniCast Mobile} --- một ứng dụng
+phát thanh truyền hình và phân phối nội dung số đa nền tảng được phát triển
+cho môn học \textbf{PRM393 --- Mobile Applications Development}. Ứng dụng
+được xây dựng trên nền tảng Flutter 3.x với ngôn ngữ Dart, áp dụng kiến trúc
+phân tầng rõ ràng kết hợp mô hình quản lý trạng thái BLoC (Business Logic
+Component).
+}{
+In the modern era of digital content delivery, mobile applications have
+become the primary touchpoint connecting viewers with broadcast media
+services. Unlike desktop environments with steady broadband connectivity
+and continuous power supplies, mobile devices present stringent technical
+challenges: highly fluctuating network latency, frequent network drops during
+roaming transitions (cell tower handovers or Wi-Fi to cellular switches),
+constrained memory footprints, and battery budget limits.
+
+To comprehensively address these demands, this paper presents the
+architectural design and implementation of \textbf{OmniCast Mobile} --- an
+enterprise cross-platform digital broadcast and multimedia streaming client
+developed for the course \textbf{PRM393 --- Mobile Applications Development}.
+Built upon Flutter 3.x with the Dart language, the client adopts a clean
+four-tier layered architecture coupled with the Business Logic Component
+(BLoC) state management pattern.
+}
+
+\subsection{\bi{Động lực và bài toán kỹ thuật}{Motivation and Engineering Challenges}}
+
+\bi{
+Quá trình xây dựng ứng dụng di động OmniCast tập trung vào việc giải quyết bốn
+bài toán kỹ thuật cốt lõi:
+}{
+The engineering of OmniCast Mobile resolves four pivotal technical
+challenges:
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{\textbf{Khả năng hoạt động khi mất mạng (Offline-First):}
+  Người dùng thường xuyên tra cứu lịch phát sóng (EPG) và danh sách theo
+  dõi (Watchlist) trong điều kiện mất kết nối. Ứng dụng phải hỗ trợ lưu
+  trữ cục bộ bằng cơ sở dữ liệu SQLite, xếp hàng các thao tác phát sinh khi
+  ngoại tuyến và tự động phát lại (replay) đồng bộ lên máy chủ khi có mạng
+  trở lại.}{%
+  \textbf{Offline-First Resilience:} Viewers frequently consult electronic
+  programme guides (EPG) and their personal watchlists in poor or nonexistent
+  connectivity conditions. The application must store structured data in a
+  local SQLite database, queue pending mutations while offline, and seamlessly
+  replay them to the central cloud upon reconnection.}
+
+  \item \bi{\textbf{Luồng phát đa phương tiện độ trễ thấp:}
+  Hệ sinh thái OmniCast phát sóng qua nhiều giao thức: WebRTC / HLS thông
+  qua MediaMTX và luồng nhúng video ngoài. Trình phát \texttt{OmniPlayer}
+  phải tự động thích ứng với cấu hình mạng cục bộ (LAN IP) và tự phục hồi
+  khi luồng video bị đứt quãng.}{%
+  \textbf{Low-Latency Adaptive Streaming:} The OmniCast broadcast pipeline
+  emits both ultra-low latency WebRTC/HLS streams via MediaMTX and external
+  curated feeds. The embedded \texttt{OmniPlayer} must dynamically adapt to
+  local LAN IP environments and recover transparently during transient
+  network drops.}
+
+  \item \bi{\textbf{Tương tác thời gian thực hai chiều:}
+  Người xem không chỉ thụ động tiếp nhận luồng phát mà còn gửi bình luận,
+  thả cảm xúc và quyên góp ủng hộ kênh trực tiếp. Ứng dụng phải duy trì kết
+  nối WebSocket liên tục với mức tiêu hao tài nguyên tối thiểu.}{%
+  \textbf{Bi-Directional Real-Time Interaction:} Viewers expect interactive
+  experiences: live chat messaging, animated floating reactions, and tipping
+  donations. The client must sustain persistent WebSocket channels while
+  strictly bounding battery and memory consumption.}
+
+  \item \bi{\textbf{Quản lý trạng thái phân tán và bảo mật phiên:}}%
+  {Việc điều hướng 31 màn hình với 12 module BLoC yêu cầu cơ chế kiểm soát
+  trạng thái chặt chẽ, cùng với việc lưu trữ token JWT an toàn trong
+  Keystore/Keychain để tự động gia hạn phiên làm việc ngầm mà không làm phiền
+  người dùng.}%
+  \bi{}{\textbf{Distributed State Management and Session Security:}
+  Navigating 31 screens powered by 12 BLoC modules requires predictable
+  unidirectional data flows, paired with hardware-backed secure storage
+  (Keystore/Keychain) for transparent JWT token rotation.}
+\end{enumerate}
+
+\subsection{\bi{Đóng góp chính của báo cáo}{Principal Contributions}}
+
+\bi{
+Báo cáo này phân tích chi tiết bốn đóng góp công nghệ của ứng dụng:
+}{
+This paper details four principal technical contributions:
+}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \bi{Kiến trúc Clean Architecture 4 tầng (Presentation, Logic/BLoC,
+  Data, Core) với cơ chế Service Locator qua \texttt{get\_it}.}{%
+  A 4-tier Clean Architecture (Presentation, Logic/BLoC, Data, Core)
+  orchestrated through \texttt{get\_it} service locator.}
+  \item \bi{Mô hình quản lý trạng thái luồng (Stream-based BLoC) với các
+  concurrency transformer như \texttt{droppable} và \texttt{restartable}.}{%
+  A stream-based reactive state architecture employing custom BLoC
+  concurrency transformers such as \texttt{droppable} and \texttt{restartable}.}
+  \item \bi{Động cơ ngoại tuyến SQLite với hàng đợi PendingOp và cơ chế tự
+  động giải quyết xung đột dữ liệu.}{%
+  An offline-first SQLite synchronization engine featuring an asynchronous
+  mutation queue and conflict resolution heuristics.}
+  \item \bi{Bộ kiểm thử tự động toàn diện gồm 91 test đạt tỷ lệ vượt qua
+  100\% trên quy trình CI/CD GitHub Actions.}{%
+  A test suite of 91 automated unit and widget tests achieving a 100\%
+  pass rate in a GitHub Actions continuous integration matrix.}
+\end{itemize}

@@ -1,0 +1,156 @@
+% ============================================================
+% PRN232 - Section 1: Introduction (Vietnamese)
+% ============================================================
+\section{\bi{Mở đầu}{Introduction}}
+\label{sec:intro}
+
+\bi{
+Trong những năm gần đây, nhu cầu theo dõi nội dung truyền hình trực tuyến
+tại Việt Nam đã thay đổi rõ rệt. Người dùng không còn chỉ ngồi trước
+tivi lúc 21 giờ; họ xem các chương trình theo dõi ngẫu nhiên, bỏ lỡ
+lịch phát của kênh mình yêu thích, và muốn được gợi ý nội dung phù hợp
+với sở thích. Ở phía bên kia, các đài truyền hình và nền tảng nội
+dung số cần một hệ thống lịch phát thống nhất, đáng tin cậy và có thể
+mở rộng để phục vụ đồng thời nhiều nền tảng: web, ứng dụng di động và
+các thiết bị phát trực tuyến.
+
+Bài báo này trình bày \textbf{OmniCast} --- một hệ thống lập lịch và
+phát sóng nội dung số đa nền tảng, được xây dựng cho môn
+\textbf{PRN232 --- Building Cross-Platform Back-End Application}.
+Hệ thống gồm một back-end NestJS hiệu năng cao phục vụ đồng thời một cổng
+web Next.js 15 và một ứng dụng Flutter, với lõi nghiệp vụ tập trung vào
+ba năng lực chủ chốt: lịch phát điện tử (EPG) không bao giờ để trống,
+cơ chế phát hiện xung đột lịch phát, và trợ lý biên tập AI có kiểm
+duyệt theo chuẩn đạo đức nội dung.
+}{
+In recent years, the way Vietnamese audiences consume television has
+changed dramatically. Viewers no longer sit in front of a screen at a
+fixed broadcast slot; they browse on-demand, miss the schedules of
+channels they follow, and expect content recommendations tailored to
+their interests. Broadcasters and digital-content providers, in turn,
+need a single, reliable and scalable scheduling system that serves
+several delivery surfaces at once: the web, mobile applications and
+live-streaming devices.
+
+This paper presents \textbf{OmniCast} --- a multi-platform digital
+broadcast scheduling and delivery system built for the course
+\textbf{PRN232 --- Building Cross-Platform Back-End Application}. The
+system comprises a high-performance NestJS back end that serves both a
+Next.js 15 web portal and a Flutter mobile application, with the core
+business logic concentrated on three capabilities: an electronic
+programme guide (EPG) that is never empty, a broadcast-schedule
+conflict-detection mechanism, and an AI editorial assistant with
+content-compliance validation.
+}
+
+\subsection{\bi{Động cơ và vấn đề cần giải quyết}{Motivation and Problem Statement}}
+
+\bi{
+Ba vấn đề kỹ thuật chi phối toàn bộ thiết kế của hệ thống được xác định
+từ yêu cầu thực tế của dự án.
+}{
+Three technical problems dominate the system's design, each derived
+from concrete project requirements.
+}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \bi{\textbf{Lịch phát thưa thớt.} Một kênh truyền hình thực tế
+  chỉ có khoảng một chương trình gốc mỗi ngày. Nếu dựng lưới EPG 24
+  giờ trực tiếp từ bảng dữ liệu, phần lớn lưới sẽ trống và bộ lọc theo
+  ngày ở giao diện người dùng trở nên vô nghĩa. Hệ thống cần một cơ
+  chế điền lịch tự động, luôn đảm bảo mỗi kênh trong mỗi ngày đều đầy
+  đủ 24 giờ nội dung hợp lệ.}{
+  \textbf{Sparse schedules.} A real broadcast channel originates only a
+  handful of productions per day. Building a 24-hour EPG grid directly
+  from the event table leaves most of the grid empty and renders the
+  day filter in the user interface meaningless. The system therefore
+  requires an automatic filler that guarantees every channel-day grid
+  is fully populated with valid content.}
+
+  \item \bi{\textbf{Xung đột lịch phát.} Nếu hai chương trình cùng một
+  kênh có khoảng thời gian chồng lấn, người xem sẽ không biết chương
+  trình nào được phát. Cơ chế kiểm tra phải phát hiện được cả ba dạng
+  giao thoa (đầu, đuôi, bao trùm toàn bộ) và phải chạy trong một câu
+  truy vấn cơ sở dữ liệu để tránh điều kiện tranh chấp.}{
+  \textbf{Schedule conflicts.} If two programmes on the same channel
+  overlap, viewers cannot tell which one is actually on air. The
+  validation must detect all three overlap forms (head, tail, full
+  containment) and must execute as a single database query to avoid
+  race conditions.}
+
+  \item \bi{\textbf{Kiểm duyệt nội dung không tự động.} Quy trình biên
+  tập nội dung (mô tả, thẻ, phân loại) là thủ công và tốn thời gian.
+  Việc tự động hoá bằng mô hình ngôn ngữ lớn giúp giảm tải, nhưng đòi
+  hỏi cơ chế dự phòng khi không có khóa API, và đầu ra phải được kiểm
+  tra theo schema trước khi lưu.}{
+  \textbf{Manual content moderation.} The editorial workflow (writing
+  descriptions, tagging, categorising) is manual and time-consuming.
+  Automating it with a large language model reduces the load, but
+  requires a fallback path when no API key is present, and the output
+  must be schema-validated before it is persisted.}
+\end{enumerate}
+
+\subsection{\bi{Đóng góp của bài báo}{Contributions}}
+
+\bi{
+Bài báo đóng góp như sau:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item Kiến trúc phân tầng \textbf{NestJS + Prisma + PostgreSQL} với 19
+  module nghiệp vụ, 140 endpoint REST và tài liệu OpenAPI tự sinh,
+  kèm lớp bảo vệ RBAC bốn vai trò.
+  \item Thuật toán phát hiện xung đột lịch phát bằng một truy vấn SQL
+  thô, tính toán thời điểm kết thúc hiệu lực bằng
+  \texttt{COALESCE(endedAt, scheduledAt + duration)}.
+  \item Cơ chế điền lịch EPG 24/7 với lựa chọn ngẫu nhiên có hạt giống
+  (seeded PRNG) theo cặp (ngày, kênh), bảo đảm cùng một ngày luôn
+  cho cùng một lịch.
+  \item Quy trình biên tập AI gọi mô hình một lần duy nhất
+  (\texttt{gpt-4o}), kiểm tra schema bằng Zod, có cơ chế thử lại và
+  đường dự phòng heuristic.
+  \item Một microservice ghi nhật ký kiểm toán giao tiếp qua gRPC,
+  tách biệt khỏi tiến trình API chính.
+  \item Cổng web Next.js 15 với 33 route và quản trị AI Curator dựa trên
+  kiến trúc Next.js App Router.
+  \item Quy trình CI/CD năm công việc trên GitHub Actions với cổng chất
+  lượng tự động, cùng 482 kiểm thử tự động trên ba bộ kiểm thử.
+\end{enumerate}
+}{
+This paper makes the following contributions.
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item A layered \textbf{NestJS + Prisma + PostgreSQL} architecture
+  with 19 business modules, 140 REST endpoints and auto-generated
+  OpenAPI documentation, protected by a four-role RBAC layer.
+  \item A broadcast-conflict detection algorithm implemented as a
+  single raw SQL query that computes the effective end time with
+  \texttt{COALESCE(endedAt, scheduledAt + duration)}.
+  \item A 24/7 EPG filler with seeded pseudo-random selection keyed on
+  the (date, channel) pair, guaranteeing that the same day always
+  renders the same schedule.
+  \item An AI editorial pipeline that issues a single consolidated model
+  call (\texttt{gpt-4o}), validates the result against a Zod schema,
+  and provides retry plus heuristic-fallback paths.
+  \item An audit-logging microservice communicating over gRPC, deployed
+  independently of the main API process.
+  \item A Next.js 15 web portal with 33 routes and an AI Curator studio
+  built on the Next.js App Router architecture.
+  \item A five-job GitHub Actions CI/CD pipeline with an automated
+  quality gate, covering 482 automated tests across three suites.
+\end{enumerate}
+}
+
+\subsection{\bi{Phạm vi bài báo}{Scope}}
+
+\bi{
+Bài báo tập trung vào phần back-end và cổng web của hệ thống, là hai
+sản phẩm của môn PRN232. Phần ứng dụng di động Flutter được trình bày
+đầy đủ trong bài báo song song ứng với môn PRM393. Các khía cạnh triển
+khai hạ tầng, cấu hình biến môi trường và quy trình phát hành ứng dụng
+di động được trình bày trong tài liệu triển khai đi kèm, còn ở đây chỉ
+tóm tắt ở mức kiến trúc.}{
+This paper concentrates on the back end and the web portal, which are
+the two PRN232 deliverables. The Flutter mobile application is
+presented separately in the companion PRM393 paper. Infrastructure
+deployment, environment-variable configuration and mobile release
+procedures are covered in the accompanying deployment documentation
+and are only summarised here at the architectural level.
+}
