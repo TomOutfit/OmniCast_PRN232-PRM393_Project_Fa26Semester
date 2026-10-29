@@ -1857,5 +1857,3 @@ class _ServerConfigCardState extends State<_ServerConfigCard> {
     );
   }
 }
-  }
-}
