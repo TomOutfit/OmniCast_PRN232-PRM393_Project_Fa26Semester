@@ -244,9 +244,16 @@ export function WebcamLiveBroadcaster({
 
     try {
       // 3. Register the LiveEvent on the backend.
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+      const resolvedMediaHost =
+        currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1' && !currentHost.includes('vercel.app')
+          ? currentHost
+          : (ingestConfig?.publicHost || ingestConfig?.lanIp);
+
       const result = await startMutation.mutateAsync({
         channelSlug: channel.slug,
         title: defaultTitle?.trim() || undefined,
+        mediaHost: resolvedMediaHost,
       });
 
       eventIdRef.current = result.eventId;

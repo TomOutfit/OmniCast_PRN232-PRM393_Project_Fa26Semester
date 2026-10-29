@@ -103,6 +103,7 @@ export interface AddFromCatalogInput {
 export interface IngestConfig {
   /** LAN IP / hostname of the machine running MediaMTX. */
   publicHost: string;
+  lanIp?: string;
   /** Base HLS URL, e.g. `http://192.168.2.74:8888`. */
   hlsUrl: string;
   /** Template for the multivariant manifest. */
@@ -125,6 +126,8 @@ export interface WebcamLiveStartInput {
   channelSlug: string;
   title?: string;
   description?: string;
+  mediaHost?: string;
+  streamUrl?: string;
 }
 
 export interface WebcamLiveStartResult {
