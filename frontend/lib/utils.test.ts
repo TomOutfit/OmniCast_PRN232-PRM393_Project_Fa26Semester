@@ -8,7 +8,7 @@
  * Run with: `npx vitest run lib/utils.test.ts`
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   cn,
   formatDate,
@@ -153,6 +153,59 @@ describe('resolveStreamUrl', () => {
   it('passes file: URLs through unchanged (local file system)', () => {
     const fileUrl = 'file:///C:/Users/demo/Downloads/video.mp4';
     expect(resolveStreamUrl(fileUrl)).toBe(fileUrl);
+  });
+
+  describe('stale LAN host repair', () => {
+    const originalLocation = globalThis.window;
+
+    function mockBrowserHost(hostname: string) {
+      // @ts-expect-error — minimal window stub for the resolver
+      globalThis.window = { location: { hostname } };
+    }
+
+    afterEach(() => {
+      globalThis.window = originalLocation;
+    });
+
+    it('rewrites a stale MediaMTX IP to the current LAN host', () => {
+      mockBrowserHost('192.168.1.204');
+      const stale = 'http://172.9.8.239:8888/omni-sport/live/index.m3u8';
+      expect(resolveStreamUrl(stale)).toBe(
+        'http://192.168.1.204:8888/omni-sport/live/index.m3u8',
+      );
+    });
+
+    it('rewrites a previous LAN IP to the current LAN host', () => {
+      mockBrowserHost('192.168.1.204');
+      const stale = 'http://192.168.1.88:8888/channel/index.m3u8';
+      expect(resolveStreamUrl(stale)).toBe(
+        'http://192.168.1.204:8888/channel/index.m3u8',
+      );
+    });
+
+    it('never touches a public CDN host', () => {
+      mockBrowserHost('192.168.1.204');
+      const cdn = 'https://cdn.bunny.net/live/master.m3u8';
+      expect(resolveStreamUrl(cdn)).toBe(cdn);
+    });
+
+    it('never touches a DNS host on the MediaMTX port (tunnel / production)', () => {
+      mockBrowserHost('192.168.1.204');
+      const tunnel = 'https://stream.example.com:8888/channel/index.m3u8';
+      expect(resolveStreamUrl(tunnel)).toBe(tunnel);
+    });
+
+    it('leaves non-MediaMTX ports alone', () => {
+      mockBrowserHost('192.168.1.204');
+      const api = 'http://172.9.8.239:3000/api/v1/programs';
+      expect(resolveStreamUrl(api)).toBe(api);
+    });
+
+    it('does not rewrite when the browser is not on a LAN address', () => {
+      mockBrowserHost('omnicast.vercel.app');
+      const stale = 'http://172.9.8.239:8888/omni-sport/live/index.m3u8';
+      expect(resolveStreamUrl(stale)).toBe(stale);
+    });
   });
 });
 

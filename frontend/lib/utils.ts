@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { rewriteMediaUrlForClient } from './net-host';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -147,27 +148,31 @@ export function resolveStreamUrl(url: string | null | undefined): string {
     return VERIFIED_FALLBACK_STREAMS.BIG_BUCK_BUNNY_MP4;
   }
 
-  // Normalize any mismapped vercel.app:8888 back to localhost:8888
+  // Normalize any mismapped vercel.app:8888 back to the local MediaMTX
+  // host. The shared rule below then rewrites `localhost` to the LAN
+  // address when the browser is on a LAN host.
+  let candidate = trimmed;
   if (lower.includes('.vercel.app:8888/')) {
-    return trimmed.replace(/:\/\/[^/]+:8888\//, '://localhost:8888/');
+    candidate = candidate.replace(/:\/\/[^/]+:8888\//, '://localhost:8888/');
   }
 
-  // Transparently rewrite localhost:8888 / 127.0.0.1:8888 MediaMTX URLs to the actual
-  // server hostname ONLY when accessed from other devices on the LAN
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
-  ) {
-    const isLan =
-      /^192\.168\.\d+\.\d+$/.test(window.location.hostname) ||
-      /^10\.\d+\.\d+\.\d+$/.test(window.location.hostname) ||
-      /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(window.location.hostname);
-
-    if (isLan && (lower.includes('://localhost:8888/') || lower.includes('://127.0.0.1:8888/'))) {
-      return trimmed.replace(/:\/\/(localhost|127\.0\.0\.1):8888\//, `://${window.location.hostname}:8888/`);
-    }
+  // ── Stale LAN host rewrite ────────────────────────────────────────────
+  // The backend persists stream URLs with the IP the streaming machine
+  // had at publish time. When that IP changes (DHCP renewal, new Wi-Fi)
+  // the stored URL points at an address nobody owns any more.
+  //
+  // The backend already rewrites these on the way out, but a URL can
+  // also come straight from a client-side cache or from a value the
+  // broadcaster captured earlier. So we repair it here too — via the
+  // ONE shared rule in `lib/net-host.ts`, which also handles the
+  // `localhost` / `127.0.0.1` case. Public hosts (CDNs, tunnels,
+  // domains) are never touched.
+  const repaired = rewriteMediaUrlForClient(candidate);
+  if (repaired && repaired !== candidate) {
+    return repaired;
+  }
+  if (candidate !== trimmed) {
+    return candidate;
   }
 
   if (
