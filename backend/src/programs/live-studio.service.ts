@@ -58,6 +58,17 @@ import {
   WebcamLiveStopDto,
 } from './dto/live-studio.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  detectLanIpv4,
+  getMediaPublicHost,
+  isIpOnThisMachine,
+  pickMediaBaseUrl,
+  rewriteMediaHost,
+} from '../common/utils/media-url';
+
+// Re-exported for backwards compatibility — other modules import these
+// helpers from the live-studio service.
+export { detectLanIpv4, isIpOnThisMachine };
 import { NotificationsPushService } from '../notifications/notifications-push.service';
 
 /**
@@ -391,84 +402,10 @@ function enforcePublishGate(
   };
 }
 
-/**
- * Detect the host's active local Wi-Fi / LAN IPv4 address so that devices
- * on the same Wi-Fi network can auto-connect to MediaMTX / OmniCast with zero configuration.
- */
-export function detectLanIpv4(): string {
-  try {
-    const interfaces = os.networkInterfaces();
-    let fallbackIp: string | null = null;
-
-    // Pass 1: Prioritize Wi-Fi, WLAN, Ethernet
-    for (const [name, list] of Object.entries(interfaces)) {
-      if (!list) continue;
-      const lowerName = name.toLowerCase();
-      if (
-        lowerName.includes('loopback') ||
-        lowerName.includes('vethernet') ||
-        lowerName.includes('wsl') ||
-        lowerName.includes('docker') ||
-        lowerName.includes('vbox') ||
-        lowerName.includes('vmware')
-      ) {
-        continue;
-      }
-
-      for (const iface of list) {
-        if (iface.family === 'IPv4' && !iface.internal) {
-          if (iface.address.startsWith('169.254.') || iface.address === '127.0.0.1') continue;
-          if (
-            lowerName.includes('wi-fi') ||
-            lowerName.includes('wifi') ||
-            lowerName.includes('wlan') ||
-            lowerName.includes('ethernet') ||
-            lowerName.includes('eth') ||
-            lowerName.includes('en')
-          ) {
-            return iface.address;
-          }
-          if (!fallbackIp) {
-            fallbackIp = iface.address;
-          }
-        }
-      }
-    }
-
-    if (fallbackIp) return fallbackIp;
-
-    // Pass 2: Any non-internal IPv4
-    for (const list of Object.values(interfaces)) {
-      if (!list) continue;
-      for (const iface of list) {
-        if (iface.family === 'IPv4' && !iface.internal) {
-          if (!iface.address.startsWith('169.254.') && iface.address !== '127.0.0.1') {
-            return iface.address;
-          }
-        }
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return 'localhost';
-}
-
-export function isIpOnThisMachine(ip: string): boolean {
-  if (!ip || ip === 'localhost' || ip === '127.0.0.1') return true;
-  try {
-    const interfaces = os.networkInterfaces();
-    for (const list of Object.values(interfaces)) {
-      if (!list) continue;
-      for (const iface of list) {
-        if (iface.address === ip) return true;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return false;
-}
+// NOTE: `detectLanIpv4()` and `isIpOnThisMachine()` now live in
+// `../common/utils/media-url` so that every module (services,
+// gateways, resolvers) shares ONE implementation. They are
+// re-exported at the top of this file for backwards compatibility.
 
 @Injectable()
 export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
@@ -802,17 +739,20 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
     // This notifies all clients subscribed to this channel and across the app that a live stream is active
     try {
       let hlsIndexUrl: string;
-    if (dto.streamUrl && dto.streamUrl.trim().length > 0) {
-      hlsIndexUrl = dto.streamUrl.trim();
-    } else if (dto.mediaHost && dto.mediaHost.trim().length > 0) {
-      const cleanHost = dto.mediaHost.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-      const scheme = dto.mediaHost.startsWith('https') ? 'https' : 'http';
-      const hasPort = cleanHost.includes(':');
-      const hostWithPort = hasPort ? cleanHost : `${cleanHost}:8888`;
-      hlsIndexUrl = `${scheme}://${hostWithPort}/${channel.slug}/index.m3u8`;
-    } else {
-      hlsIndexUrl = this.buildHlsUrls(channel.slug).hlsIndexUrl;
-    }
+      if (dto.streamUrl && dto.streamUrl.trim().length > 0) {
+        hlsIndexUrl = dto.streamUrl.trim();
+      } else if (dto.mediaHost && dto.mediaHost.trim().length > 0) {
+        const cleanHost = dto.mediaHost.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+        const scheme = dto.mediaHost.startsWith('https') ? 'https' : 'http';
+        const hasPort = cleanHost.includes(':');
+        const hostWithPort = hasPort ? cleanHost : `${cleanHost}:8888`;
+        hlsIndexUrl = `${scheme}://${hostWithPort}/${channel.slug}/index.m3u8`;
+      } else {
+        hlsIndexUrl = this.buildHlsUrls(channel.slug).hlsIndexUrl;
+      }
+      // The client may have sent a stale LAN IP as `mediaHost`. Point the
+      // manifest at the host that is reachable right now.
+      hlsIndexUrl = rewriteMediaHost(hlsIndexUrl);
       this.wsGateway.notifyLiveStarted(channel.slug, {
         eventId: event.id,
         title: event.title,
@@ -858,22 +798,45 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    */
   getIngestConfig() {
     const lanIp = detectLanIpv4();
-    const envHost = process.env.MEDIAMTX_PUBLIC_HOST;
-    const isValidEnvHost =
-      envHost &&
-      envHost !== 'localhost' &&
-      envHost !== '127.0.0.1' &&
-      isIpOnThisMachine(envHost);
 
-    const publicHost = isValidEnvHost ? envHost : lanIp;
-    const rawHls = isValidEnvHost ? process.env.MEDIAMTX_HLS_URL : undefined;
-    const hlsBase = (rawHls || `http://${publicHost}:8888`).replace(/\/$/, '');
-    const rawWebrtc = isValidEnvHost ? process.env.MEDIAMTX_WEBRTC_URL : undefined;
-    const webrtcBase = (rawWebrtc || `ws://${publicHost}:8889`).replace(/\/$/, '');
-    const rawWhip = isValidEnvHost ? process.env.MEDIAMTX_WHIP_URL : undefined;
-    const whipBase = (rawWhip || `http://${publicHost}:8889`).replace(/\/$/, '');
-    const rawRtmp = isValidEnvHost ? process.env.MEDIAMTX_RTMP_URL : undefined;
-    const rtmpBase = (rawRtmp || `rtmp://${publicHost}:1935`).replace(/\/$/, '');
+    // The host every client should use. It resolves, in order:
+    //   1. `MEDIAMTX_PUBLIC_BASE_URL` (explicit tunnel / production URL)
+    //   2. `MEDIAMTX_PUBLIC_HOST` — but ONLY when it is genuinely an
+    //      address of THIS machine, so a stale value left over from
+    //      another network can never be advertised to viewers.
+    //   3. The auto-detected LAN IPv4.
+    const publicHost = getMediaPublicHost();
+
+    // Per-protocol base URLs. The `MEDIAMTX_*_URL` overrides are a
+    // convenience for exotic setups; they are only honoured when they
+    // point at the SAME host the server resolved. A leftover value
+    // from a previous network (pointing at an IP this machine no
+    // longer owns) would otherwise silently win over the freshly
+    // detected one and every viewer would get a dead stream.
+    const hlsBase = pickMediaBaseUrl(
+      process.env.MEDIAMTX_HLS_URL,
+      'http',
+      publicHost,
+      '8888',
+    );
+    const webrtcBase = pickMediaBaseUrl(
+      process.env.MEDIAMTX_WEBRTC_URL,
+      'ws',
+      publicHost,
+      '8889',
+    );
+    const whipBase = pickMediaBaseUrl(
+      process.env.MEDIAMTX_WHIP_URL,
+      'http',
+      publicHost,
+      '8889',
+    );
+    const rtmpBase = pickMediaBaseUrl(
+      process.env.MEDIAMTX_RTMP_URL,
+      'rtmp',
+      publicHost,
+      '1935',
+    );
 
     return {
       publicHost,
@@ -971,6 +934,9 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
     } else {
       hlsIndexUrl = this.buildHlsUrls(channel.slug).hlsIndexUrl;
     }
+    // Store the URL with the host that is reachable RIGHT NOW, so the
+    // persisted row does not go stale when the LAN IP changes.
+    hlsIndexUrl = rewriteMediaHost(hlsIndexUrl);
 
     const event = await this.prisma.liveEvent.create({
       data: {
@@ -1992,7 +1958,9 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
         eventId: event.id,
         title: event.title,
         description: event.description,
-        streamUrl: event.streamUrl,
+        // The persisted URL may carry a stale LAN IP — rewrite it so the
+        // viewer is pointed at the host that is reachable right now.
+        streamUrl: rewriteMediaHost(event.streamUrl),
         hlsUrl: hlsIndexUrl,
         sourceRecordingId: recTag ? recTag.replace('rec:', '') : null,
         startedAt: event.startedAt?.toISOString(),

@@ -54,6 +54,7 @@ import {
   WebcamLiveStopDto,
 } from './dto/live-studio.dto';
 import { LiveStreamGateway } from '../websocket/live-stream.gateway';
+import { rewriteMediaHost } from '../common/utils/media-url';
 
 // ============================================================
 // DTOs for Mobile Push-to-Live
@@ -276,7 +277,8 @@ export class LiveStudioController {
       return {
         isLive: true,
         type: 'live',
-        streamUrl: liveEvent.streamUrl || channelHlsUrl,
+        // Rewrite a stale LAN IP to the host that is reachable now.
+        streamUrl: rewriteMediaHost(liveEvent.streamUrl || channelHlsUrl),
         hlsUrl: channelHlsUrl,
         eventId: liveEvent.id,
         title: liveEvent.title,
