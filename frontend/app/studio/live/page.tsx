@@ -76,6 +76,7 @@ import {
 } from '@/lib/api/cloudinary';
 import { LiveBroadcasterConsole } from '@/components/studio/live-broadcaster-console';
 import { WebcamLiveBroadcaster } from '@/components/studio/webcam-live-broadcaster';
+import { createCameraComposer } from '@/lib/camera/compose-stream';
 import { logError } from '@/lib/utils/safe-log';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog' | 'interaction';
@@ -1028,6 +1029,8 @@ export default function WebLiveStudioPage() {
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const rawMediaStreamRef = useRef<MediaStream | null>(null);
+  const cameraComposerRef = useRef<{ stop: () => void } | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -1071,6 +1074,10 @@ export default function WebLiveStudioPage() {
   }, [localPcFiles]);
 
   const stopMediaTracks = () => {
+    cameraComposerRef.current?.stop();
+    cameraComposerRef.current = null;
+    rawMediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    rawMediaStreamRef.current = null;
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
@@ -1116,6 +1123,22 @@ export default function WebLiveStudioPage() {
           });
           toast.info('Chưa kết nối microphone; luồng phát tạm thời ở chế độ tắt tiếng.');
         }
+
+        // Normalise the camera to a fixed 16:9 (1280×720) frame so a
+        // portrait phone camera or a 4:3 webcam still produces a
+        // correctly proportioned recording. Falls back to the raw
+        // stream when the browser cannot capture a canvas.
+        rawMediaStreamRef.current = stream;
+        const composer = await createCameraComposer(stream, {
+          onFallback: (reason) => {
+            console.warn(
+              '[StudioLive] Camera composition unavailable, using the raw camera stream:',
+              reason,
+            );
+          },
+        });
+        cameraComposerRef.current = composer;
+        stream = composer.stream;
       } else {
         try {
           stream = await navigator.mediaDevices.getDisplayMedia({

@@ -55,6 +55,8 @@ import {
   useStartWebcamLive,
   useStopWebcamLive,
 } from '@/lib/hooks/useLiveStudio';
+import { createCameraComposer } from '@/lib/camera/compose-stream';
+import { resolveMediaHostForClient } from '@/lib/net-host';
 import type { Channel } from '@/types';
 
 type BroadcasterPhase =
@@ -93,6 +95,8 @@ export function WebcamLiveBroadcaster({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const rawStreamRef = useRef<MediaStream | null>(null);
+  const composerRef = useRef<{ stop: () => void } | null>(null);
   const publisherRef = useRef<WhipPublisher | null>(null);
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,6 +120,8 @@ export function WebcamLiveBroadcaster({
       if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
       abortRef.current?.abort();
       void publisherRef.current?.stop().catch(() => undefined);
+      composerRef.current?.stop();
+      composerRef.current = null;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       publisherRef.current = null;
       streamRef.current = null;
@@ -140,8 +146,13 @@ export function WebcamLiveBroadcaster({
   }, []);
 
   const releaseCamera = useCallback(() => {
+    composerRef.current?.stop();
+    composerRef.current = null;
+    // Stop both the raw camera track and the composed canvas track.
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    rawStreamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    rawStreamRef.current = null;
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
@@ -175,16 +186,16 @@ export function WebcamLiveBroadcaster({
     setPhase('capturing');
 
     // 1. Capture the camera + microphone.
-    let stream: MediaStream;
+    let rawStream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
+      rawStream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
     } catch (err) {
       // Retry without the microphone — video-only is still a valid live stream.
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        rawStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
@@ -201,8 +212,31 @@ export function WebcamLiveBroadcaster({
       }
     }
 
+    rawStreamRef.current = rawStream;
+    setMicOn(rawStream.getAudioTracks().length > 0);
+
+    // 1b. Normalise the camera to a fixed 16:9 (1280×720) frame.
+    //
+    // A phone camera reports a portrait 1080×1920 frame and an old
+    // webcam reports 640×480. Publishing that as-is gives every
+    // viewer a stretched or letterboxed picture. The composer
+    // centre-crops ("cover") whatever the camera gives us into a
+    // 16:9 frame. If the browser cannot capture a canvas it falls
+    // back to the raw stream, so the broadcast never fails because
+    // of this step.
+    const composer = await createCameraComposer(rawStream, {
+      onFallback: (reason) => {
+        console.warn(
+          '[WebcamLiveBroadcaster] Camera composition unavailable, using the raw camera stream:',
+          reason,
+        );
+      },
+    });
+    composerRef.current = composer;
+
+    const stream = composer.stream;
     streamRef.current = stream;
-    setMicOn(stream.getAudioTracks().length > 0);
+
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       videoRef.current.play().catch(() => undefined);
@@ -244,11 +278,15 @@ export function WebcamLiveBroadcaster({
 
     try {
       // 3. Register the LiveEvent on the backend.
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
-      const resolvedMediaHost =
-        currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1' && !currentHost.includes('vercel.app')
-          ? currentHost
-          : (ingestConfig?.publicHost || ingestConfig?.lanIp);
+      //
+      // The media host is decided by the BACKEND (`ingestConfig.publicHost`):
+      // it resolves `MEDIAMTX_PUBLIC_BASE_URL` → `MEDIAMTX_PUBLIC_HOST` →
+      // the auto-detected LAN IP, so it is always the address that is
+      // actually reachable. The browser hostname is only a fallback for
+      // the case where the ingest config could not be loaded, and it
+      // uses the shared host rule from `lib/net-host.ts`.
+      const configHost = ingestConfig?.publicHost || ingestConfig?.lanIp || '';
+      const resolvedMediaHost = configHost || resolveMediaHostForClient();
 
       const result = await startMutation.mutateAsync({
         channelSlug: channel.slug,
