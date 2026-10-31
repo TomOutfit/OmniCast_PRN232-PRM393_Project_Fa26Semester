@@ -41,6 +41,8 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SocialService } from '../programs/social.service';
 import { ReactionType } from '@prisma/client';
+import { rewriteMediaHost } from '../common/utils/media-url';
+import { isOriginAllowed, parseAllowedOrigins } from '../common/utils/cors';
 
 export interface LiveEventPayload {
   eventId: string;
@@ -74,9 +76,38 @@ interface ClientInfo {
   joinedAt: Date;
 }
 
+/**
+ * Socket.IO CORS policy.
+ *
+ * Mirrors the HTTP policy in `common/utils/cors.ts`: the explicit
+ * allow-list wins, then Vercel origins, then any machine-local
+ * origin (localhost / literal IPv4).
+ *
+ * The `cors` package expects `origin` to be a function with the
+ * signature `(origin, callback)` where the callback receives the
+ * origin to echo back. Echoing the concrete origin (instead of `*`)
+ * is required because `credentials: true` makes
+ * `Access-Control-Allow-Origin: *` invalid in browsers.
+ */
+function resolveSocketOrigin(
+  origin: string | undefined,
+  callback: (err: Error | null, origin?: boolean | string) => void,
+): void {
+  if (!origin) {
+    // No Origin header → not a browser request (mobile app, tests).
+    return callback(null, true);
+  }
+
+  const allowed = parseAllowedOrigins(process.env.FRONTEND_URL || '*');
+  if (!isOriginAllowed(origin, allowed)) {
+    return callback(new Error('CORS: Origin not allowed'), false);
+  }
+  return callback(null, origin);
+}
+
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: resolveSocketOrigin,
     credentials: true,
   },
   namespace: '/live',
@@ -496,6 +527,11 @@ export class LiveStreamGateway
     const roomName = `channel:${channelSlug}`;
     const broadcastData = {
       ...payload,
+      // The stored stream URL may still carry the LAN IP the server
+      // had when the event was created. Rewrite it to the host that
+      // is reachable RIGHT NOW so viewers never hit a dead address.
+      streamUrl: rewriteMediaHost(payload.streamUrl),
+      hlsUrl: payload.hlsUrl ? rewriteMediaHost(payload.hlsUrl) : undefined,
       channelSlug,
       timestamp: new Date().toISOString(),
     };
@@ -633,6 +669,7 @@ export class LiveStreamGateway
     const broadcastData = {
       eventId,
       ...payload,
+      streamUrl: rewriteMediaHost(payload.streamUrl),
       timestamp: new Date().toISOString(),
     };
     this.server?.to(roomName).emit('live:program:changed', broadcastData);

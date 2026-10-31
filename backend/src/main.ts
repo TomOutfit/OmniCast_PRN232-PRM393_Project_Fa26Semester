@@ -13,6 +13,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggerService } from './common/utils/logger.service';
+import { isOriginAllowed, parseAllowedOrigins } from './common/utils/cors';
 
 import { setupSwagger } from './common/swagger/swagger.config';
 
@@ -66,19 +67,16 @@ async function bootstrap() {
     prefix: 'v',
   });
 
-  // CORS - explicit allowlist for production
-  const allowedOrigins = configService
-    .get<string>('FRONTEND_URL', '*')
-    .split(',')
-    .map((s) => s.trim());
+  // CORS - explicit allowlist for production, plus machine-local
+  // origins for LAN development. The rule is shared with the
+  // frontend (see `common/utils/cors.ts` for the rationale).
+  const allowedOrigins = parseAllowedOrigins(
+    configService.get<string>('FRONTEND_URL', '*'),
+  );
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, server-to-server)
-      if (!origin) return callback(null, true);
-      const isLocalOrLan = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin);
-      const isVercel = /^https:\/\/[a-zA-Z0-9_.-]*\.vercel\.app$/.test(origin);
-      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin) || isLocalOrLan || isVercel) {
+      if (isOriginAllowed(origin, allowedOrigins)) {
         return callback(null, true);
       }
       return callback(new Error('CORS: Origin not allowed'), false);

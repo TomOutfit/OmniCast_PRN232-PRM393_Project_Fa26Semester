@@ -24,6 +24,7 @@ import {
   UpdateRecordingDto,
 } from './dto/program.dto';
 import { EventStatus } from '@prisma/client';
+import { rewriteMediaHost } from '../common/utils/media-url';
 
 const VERIFIED_CDN_SAMPLE_MP4 =
   'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4';
@@ -185,7 +186,10 @@ export class ProgramsService {
     ]);
 
     return {
-      data: events,
+      data: events.map((event) => ({
+        ...event,
+        streamUrl: event.streamUrl ? rewriteMediaHost(event.streamUrl) : event.streamUrl,
+      })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -209,7 +213,10 @@ export class ProgramsService {
         throw new NotFoundException('Live event not found');
       }
 
-      return event;
+      return {
+        ...event,
+        streamUrl: event.streamUrl ? rewriteMediaHost(event.streamUrl) : event.streamUrl,
+      };
     } catch (err) {
       if (
         (err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -522,7 +529,9 @@ export class ProgramsService {
           // non-nullable).
           status: e.status ?? 'SCHEDULED',
           thumbnailUrl: e.thumbnailUrl ?? null,
-          streamUrl: e.streamUrl ?? null,
+          // The persisted URL may carry a stale LAN IP — rewrite it to
+          // the host that is reachable right now.
+          streamUrl: e.streamUrl ? rewriteMediaHost(e.streamUrl) : null,
           durationMinutes,
           tags: e.tags ?? [],
           // `e.channel` can theoretically be null even though we filter
@@ -779,7 +788,7 @@ export class ProgramsService {
   }
 
   async getLiveNow() {
-    return this.prisma.liveEvent.findMany({
+    const events = await this.prisma.liveEvent.findMany({
       where: { status: 'LIVE' },
       include: {
         channel: {
@@ -788,6 +797,14 @@ export class ProgramsService {
       },
       orderBy: { viewerCount: 'desc' },
     });
+
+    // The persisted `streamUrl` may still carry the LAN IP the server
+    // had when the event was created. Rewrite it to the host that is
+    // reachable right now so a viewer never gets a dead stream.
+    return events.map((event) => ({
+      ...event,
+      streamUrl: event.streamUrl ? rewriteMediaHost(event.streamUrl) : event.streamUrl,
+    }));
   }
 
   // ============================================================

@@ -25,6 +25,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProgramsService } from './programs.service';
+import { rewriteMediaHost } from '../common/utils/media-url';
 import type { FillerExpandedProgram } from './epg-filler.service';
 
 export interface NowPlayingDto {
@@ -216,10 +217,11 @@ export class EpgNowService {
       }
     }
 
-    const streamUrl =
+    const streamUrl = rewriteMediaHost(
       (onAir?.streamUrl as string | undefined | null) ??
-      (next?.streamUrl as string | undefined | null) ??
-      SAMPLE_MP4_FALLBACK;
+        (next?.streamUrl as string | undefined | null) ??
+        SAMPLE_MP4_FALLBACK,
+    );
 
     // If we found a real LiveEvent, look up its richer fields
     let richProgram: NowPlayingDto['program'] = null;
@@ -518,8 +520,9 @@ export class EpgNowService {
       tags: event.tags ?? [],
     };
 
-    const streamUrl =
-      event.streamUrl ?? event.externalUrl ?? SAMPLE_MP4_FALLBACK;
+    const streamUrl = rewriteMediaHost(
+      event.streamUrl ?? event.externalUrl ?? SAMPLE_MP4_FALLBACK,
+    );
 
     return {
       channelId: channel.id,
