@@ -81,10 +81,30 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    const backendBase =
-      process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost')
-        ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')
-        : 'https://omnicast-api.vercel.app/api/v1';
+    // Where the Next.js server proxies RELATIVE `/api/v1/*` requests.
+    //
+    // On a LAN / local setup the browser talks to the backend on the
+    // SAME machine, so this proxy must point at the LOCAL backend
+    // too. Pointing it at the deployed API instead would make server
+    // -side reads hit the production database while the browser
+    // reads the local one - the classic "the list is empty on the
+    // laptop but full in production" symptom.
+    //
+    // `localhost` is correct here because this proxy runs ON the
+    // machine that also hosts the backend.
+    const configured = process.env.NEXT_PUBLIC_API_URL;
+    const isLocalConfig = !configured || /localhost|127\.0\.0\.1/.test(configured);
+
+    let backendBase;
+    if (!isLocalConfig) {
+      backendBase = configured.replace(/\/$/, '');
+    } else if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      // A production build with no usable NEXT_PUBLIC_API_URL: the
+      // deployed API is the only reachable backend.
+      backendBase = 'https://omnicast-api.vercel.app/api/v1';
+    } else {
+      backendBase = 'http://localhost:3000/api/v1';
+    }
 
     return [
       {
