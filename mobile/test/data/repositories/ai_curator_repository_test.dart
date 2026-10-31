@@ -326,8 +326,79 @@ void main() {
     });
   });
 
-  group('AiSentiment & AiCompliance.fromJson', () {
-    test('AiSentiment tolerates empty / missing input', () {
+  // ============================================================
+  // Grounding (prompt v5) — the evidence trail
+  // ============================================================
+
+  group('Grounding', () {
+    test('parses the grounding block from the top level', () {
+      final r = AiCuratorReport.fromJson({
+        'broadcastSuitability': 'STANDARD',
+        'suggestedTimeSlot': '20:00 - 21:00',
+        'targetAudienceVibe': 'Khán giả',
+        'riskWarnings': '',
+        'sentimentAnalysis': {
+          'overallSentiment': 'neutral',
+          'hypeLevel': 'low',
+          'audienceEngagement': 50,
+        },
+        'complianceAssessment': {
+          'isAgeRestricted': false,
+          'ageRating': 'PG',
+          'flaggedContent': [],
+          'recommendedBroadcastWindow': 'EVENING',
+        },
+        'grounding': {
+          'sourceExcerpts': ['Trận chung kết giải bóng đá'],
+          'infoGaps': ['Không rõ tên cầu thủ'],
+          'groundingScore': 88,
+        },
+      });
+
+      expect(r.grounding, isNotNull);
+      expect(r.grounding!.sourceExcerpts, ['Trận chung kết giải bóng đá']);
+      expect(r.grounding!.infoGaps, ['Không rõ tên cầu thủ']);
+      expect(r.grounding!.groundingScore, 88);
+      expect(r.grounding!.isWellGrounded, true);
+    });
+
+    test('parses the grounding block from the sentimentAnalysis blob', () {
+      // The backend persists the grounding inside the
+      // sentimentAnalysis JSON column, so history rows carry it there.
+      final r = AiCuratorReport.fromJson({
+        'sentimentAnalysis': {
+          'overallSentiment': 'neutral',
+          'hypeLevel': 'low',
+          'audienceEngagement': 50,
+          'grounding': {
+            'sourceExcerpts': ['a'],
+            'infoGaps': ['b'],
+            'groundingScore': 30,
+          },
+        },
+        'complianceAssessment': {},
+      });
+
+      expect(r.grounding, isNotNull);
+      expect(r.grounding!.groundingScore, 30);
+      expect(r.grounding!.isWellGrounded, false);
+    });
+
+    test('reports no grounding for legacy reports without the block', () {
+      final r = AiCuratorReport.fromJson({
+        'sentimentAnalysis': {
+          'overallSentiment': 'neutral',
+          'hypeLevel': 'low',
+          'audienceEngagement': 50,
+        },
+        'complianceAssessment': {},
+      });
+
+      expect(r.grounding, isNull);
+    });
+  });
+
+  group('AiSentiment & AiCompliance.fromJson', () {    test('AiSentiment tolerates empty / missing input', () {
       final s = AiSentiment.fromJson(const {});
       expect(s.overallSentiment, 'neutral');
       expect(s.hypeLevel, 'medium');
@@ -444,6 +515,27 @@ void main() {
       expect(dio.lastData['title'], 'Title only');
       expect(dio.lastData.containsKey('description'), false);
       expect(dio.lastData.containsKey('category'), false);
+    });
+
+    test('sends the duration in seconds when provided', () async {
+      dio.nextResponse = _fullReportJson();
+
+      await repo.analyze(
+        title: 'World Cup Final',
+        duration: 5400,
+      );
+
+      expect(dio.lastData['duration'], 5400);
+    });
+
+    test('omits the duration when it is null or zero', () async {
+      dio.nextResponse = _fullReportJson();
+
+      await repo.analyze(title: 'World Cup Final', duration: null);
+      expect(dio.lastData.containsKey('duration'), false);
+
+      await repo.analyze(title: 'World Cup Final', duration: 0);
+      expect(dio.lastData.containsKey('duration'), false);
     });
   });
 

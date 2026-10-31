@@ -364,6 +364,7 @@ void main() {
           title: any(named: 'title'),
           description: any(named: 'description'),
           channelName: any(named: 'channelName'),
+          duration: any(named: 'duration'),
         )).thenAnswer((_) async => _report(confidence: 91));
 
     when(() => curator.history(any())).thenAnswer((_) async => const []);
@@ -372,6 +373,10 @@ void main() {
 
     // Type a title and run analysis on tab 1.
     await tester.enterText(find.byType(TextField).first, 'World Cup Final');
+    // The form is a scroll view — the analyze button can sit below
+    // the fold on a small test viewport.
+    await tester.ensureVisible(find.text('CHẠY PHÂN TÍCH VỚI AI'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('CHẠY PHÂN TÍCH VỚI AI'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
 
@@ -460,11 +465,14 @@ void main() {
           title: any(named: 'title'),
           description: any(named: 'description'),
           channelName: any(named: 'channelName'),
+          duration: any(named: 'duration'),
         )).thenAnswer((_) async => _report());
 
     await _pump(tester, curator: curator, programs: programs);
 
     // Tap the analyze button without entering a title.
+    await tester.ensureVisible(find.text('CHẠY PHÂN TÍCH VỚI AI'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('CHẠY PHÂN TÍCH VỚI AI'));
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
@@ -476,6 +484,7 @@ void main() {
           title: any(named: 'title'),
           description: any(named: 'description'),
           channelName: any(named: 'channelName'),
+          duration: any(named: 'duration'),
         ));
   });
 }
