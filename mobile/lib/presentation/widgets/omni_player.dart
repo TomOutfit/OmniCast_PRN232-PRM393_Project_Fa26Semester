@@ -205,31 +205,66 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
       var target = trimmed;
 
+      // Only URLs that point at a *literal IP* (or loopback) on the
+      // MediaMTX port are ours to rewrite. A DNS host (tunnel, CDN,
+      // production domain) is left exactly as it is — clobbering it
+      // with the LAN address would break remote playback.
+      final uri = Uri.tryParse(
+        lower.startsWith('http') ? trimmed : 'http://$trimmed',
+      );
+      final rawHost = uri?.host ?? '';
+      final isLiteralHost = rawHost.isNotEmpty &&
+          RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(rawHost);
+      final isLoopback = rawHost == 'localhost' || rawHost == '127.0.0.1';
+      final looksLikeMediaMtx = lower.contains(':8888/');
+
       // Wi-Fi Stream Optimization: If URL contains a valid non-loopback IP,
       // auto-adopt it as discovered host if no custom host is configured.
-      final ipMatch = RegExp(r'^(?:https?:\/\/)?([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):8888\/').firstMatch(target);
-      if (ipMatch != null) {
-        final discoveredLanIp = ipMatch.group(1);
-        if (discoveredLanIp != null &&
-            discoveredLanIp != '127.0.0.1' &&
-            !discoveredLanIp.startsWith('169.254.') &&
-            !AppConstants.hasCustomMediaHost) {
-          AppConstants.setDiscoveredMediaHost(discoveredLanIp);
-        }
+      if (isLiteralHost &&
+          rawHost != '127.0.0.1' &&
+          !rawHost.startsWith('169.254.') &&
+          !AppConstants.hasCustomMediaHost) {
+        AppConstants.setDiscoveredMediaHost(rawHost);
       }
 
       final host = AppConstants.mediaHost;
-      if (lower.contains(':8888/')) {
-        // Rewrite ANY scheme://[old_host]:8888/ to http://$host:8888/
-        target = target.replaceFirst(
-          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
-          'http://$host:8888/',
-        );
-      } else {
-        final cleanPath = target.startsWith('/') ? target.substring(1) : target;
-        target = 'http://$host:8888/$cleanPath';
+
+      // Rewrite a stale literal-IP host to the currently known media
+      // host. When no host is known yet (fresh install, no discovery
+      // result) the original URL is kept so the player can still try.
+      final shouldRewrite = isLiteralHost || isLoopback;
+      if (shouldRewrite && host.isNotEmpty) {
+        if (looksLikeMediaMtx) {
+          // Rewrite scheme://[old_host]:8888/ to http://$host:8888/
+          target = target.replaceFirst(
+            RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
+            'http://$host:8888/',
+          );
+        } else {
+          final cleanPath = target.startsWith('/') ? target.substring(1) : target;
+          target = 'http://$host:8888/$cleanPath';
+        }
+        // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
+        if (!target.contains('cookieCheck=')) {
+          target = target.contains('?')
+              ? '$target&cookieCheck=1'
+              : '$target?cookieCheck=1';
+        }
+        return target;
       }
-      // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
+
+      if (!looksLikeMediaMtx) {
+        // Relative path but no host known yet — glue to the API origin.
+        final apiBase = AppConstants.baseUrl;
+        final origin = apiBase.endsWith('/api')
+            ? apiBase.substring(0, apiBase.length - 4)
+            : apiBase;
+        final cleanPath = target.startsWith('/') ? target.substring(1) : target;
+        return '$origin/$cleanPath';
+      }
+
+      // A DNS host on the MediaMTX port (tunnel / production): keep it
+      // verbatim, only add the MediaMTX cookie check.
       if (!target.contains('cookieCheck=')) {
         target = target.contains('?')
             ? '$target&cookieCheck=1'
@@ -1228,7 +1263,7 @@ class _LiveConnectingState extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Đích: http://${AppConstants.mediaHost}:8888',
+                  'Đích: http://${AppConstants.mediaHostDisplay}:8888',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontSize: 10,
@@ -1403,7 +1438,7 @@ class _LiveStandbyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Đích kết nối: http://${AppConstants.mediaHost}:8888',
+                    'Đích kết nối: http://${AppConstants.mediaHostDisplay}:8888',
                     style: const TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 10,

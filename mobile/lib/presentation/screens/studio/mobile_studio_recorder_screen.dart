@@ -348,14 +348,23 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     // Wi-Fi Auto-Discovery: ensure mediaHost is resolved to local Wi-Fi broadcaster
     await LanDiscoveryService().autoDiscoverMediaHost(timeout: const Duration(milliseconds: 600));
 
-    var whipUrl = await _liveApiService?.getWhipUrl();
-    if (whipUrl != null && whipUrl.isNotEmpty) {
-      whipUrl = whipUrl.replaceFirst(
-        RegExp(r'^(?:https?:\/\/)?([^\/:]+):8889'),
-        'http://${AppConstants.mediaHost}:8889',
-      );
-    } else {
-      whipUrl = 'http://${AppConstants.mediaHost}:8889';
+    var whipUrl = await _liveApiService?.getWhipUrl() ?? '';
+    final mediaHost = AppConstants.mediaHost;
+    if (whipUrl.isNotEmpty) {
+      // Only redirect to the locally discovered host when the URL points
+      // at a literal IP. A DNS host (tunnel / production) must be left
+      // untouched, otherwise remote publishing breaks.
+      final whipUri = Uri.tryParse(whipUrl);
+      final whipHost = whipUri?.host ?? '';
+      final isLiteral = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(whipHost);
+      if (mediaHost.isNotEmpty && (isLiteral || whipHost == 'localhost' || whipHost == '127.0.0.1')) {
+        whipUrl = whipUrl.replaceFirst(
+          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8889'),
+          'http://$mediaHost:8889',
+        );
+      }
+    } else if (mediaHost.isNotEmpty) {
+      whipUrl = 'http://$mediaHost:8889';
     }
 
     // Configure WebRTC publisher
