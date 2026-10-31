@@ -34,6 +34,8 @@ import {
   type CuratorRowShape,
 } from '@/lib/utils/curator-filters';
 
+import { resolveReportPanelState } from '@/lib/utils/curator-helpers';
+
 // ─── Mocks ──────────────────────────────────────────────────────────
 
 const mockUseAuth = vi.fn();
@@ -306,6 +308,86 @@ describe('Curator Studio page — filter & pagination', () => {
     }));
     const count = withReports.filter((r) => r.aiReport).length;
     expect(count).toBe(3);
+  });
+});
+
+// ─── Report panel branch (immediate-report fix) ───────────────────
+//
+// Regression cover for the bug "AI chạy xong nhưng báo cáo không
+// hiện, phải bấm vào chương trình mới thấy".
+//
+// The root cause was twofold:
+//   1. The report was written to `reportById` but `selectedId` was
+//      never updated, so the right-hand panel kept rendering the
+//      "no report" state until the curator re-clicked the row.
+//   2. `selectedQuery.isFetching` (a background refetch) replaced the
+//      whole `ReportDetail` block with a loader, so the report
+//      blinked out and back in.
+//
+// The branch rule now lives in `resolveReportPanelState()` so it can
+// be verified without a DOM.
+
+describe('Curator Studio page — report panel branch', () => {
+  it('renders the report when one exists', () => {
+    expect(
+      resolveReportPanelState({
+        hasReport: true,
+        isFetching: false,
+        isAnalyzing: false,
+      }),
+    ).toBe('report');
+  });
+
+  it('does NOT replace an existing report with the loader on refetch', () => {
+    // This is the exact scenario that made the report disappear:
+    // the detail query refetches while the report is already shown.
+    expect(
+      resolveReportPanelState({
+        hasReport: true,
+        isFetching: true,
+        isAnalyzing: false,
+      }),
+    ).toBe('report');
+  });
+
+  it('keeps the report visible while a re-analysis is running', () => {
+    expect(
+      resolveReportPanelState({
+        hasReport: true,
+        isFetching: true,
+        isAnalyzing: true,
+      }),
+    ).toBe('report');
+  });
+
+  it('shows the loader only when there is no report yet', () => {
+    expect(
+      resolveReportPanelState({
+        hasReport: false,
+        isFetching: true,
+        isAnalyzing: false,
+      }),
+    ).toBe('loading');
+  });
+
+  it('shows the analyzing state when the model is working on the selected program', () => {
+    expect(
+      resolveReportPanelState({
+        hasReport: false,
+        isFetching: false,
+        isAnalyzing: true,
+      }),
+    ).toBe('analyzing');
+  });
+
+  it('falls back to the empty state when there is nothing to show', () => {
+    expect(
+      resolveReportPanelState({
+        hasReport: false,
+        isFetching: false,
+        isAnalyzing: false,
+      }),
+    ).toBe('empty');
   });
 });
 

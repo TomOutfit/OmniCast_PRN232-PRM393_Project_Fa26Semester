@@ -23,7 +23,7 @@
 //   • Toggle history to view previous reports
 // ============================================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Bot,
@@ -71,6 +71,7 @@ import { parseApiError } from '@/lib/errors/api-error';
 import { logWarn, logError } from '@/lib/utils/safe-log';
 import {
   toReportShape,
+  resolveReportPanelState,
 } from '@/lib/utils/curator-helpers';
 import {
   filterCuratorRows,
@@ -148,6 +149,27 @@ export default function CuratorStudioPage() {
     null,
   );
 
+  /**
+   * Ref to the right-hand report panel. We scroll it into view once a
+   * report arrives so the curator doesn't have to hunt for it — the
+   * layout is a 2-column grid on desktop and stacked on mobile, so
+   * the panel may be off-screen either way.
+   */
+  const reportPanelRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Scroll the report panel into view when a fresh report shows up.
+   * We key on the selected program id + whether a report exists so
+   * the effect only fires on transitions, not on every re-render.
+   */
+  useEffect(() => {
+    if (!selectedId) return;
+    if (!reportById[selectedId]) return;
+    const el = reportPanelRef.current;
+    if (!el || typeof el.scrollIntoView !== 'function') return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [selectedId, reportById]);
+
   // ─── Search / filter / pagination state ─────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CuratorStatusFilter>('all');
@@ -158,9 +180,12 @@ export default function CuratorStudioPage() {
       id: e.id,
       title: e.title,
       description: e.description ?? '',
-      // LiveEvent.channel is a partial sub-object without `category`,
-      // so we fall back to a generic label when category isn't present.
-      category: 'Chương trình',
+      // `LiveEvent.channel` is a partial sub-object; `category` is
+      // present on the list/detail payloads but may be missing for
+      // channels created before the field existed — fall back to a
+      // generic label instead of a hard-coded 'Chương trình' so the
+      // AI prompt always sees the real genre.
+      category: e.channel?.category ?? 'Chương trình',
       channelName: e.channel?.name ?? '—',
       scheduledAt: e.scheduledAt,
       status: deriveStatus(e),
@@ -224,6 +249,16 @@ export default function CuratorStudioPage() {
     enabled: !!selectedId && canCurate,
   });
 
+  /**
+   * True while the model is working on the program currently shown in
+   * the right-hand panel. Declared here (after the mutation hooks) so
+   * `analyzeMutation` is already initialised.
+   */
+  const isAnalyzingSelected =
+    !!selectedId &&
+    analyzingProgramId === selectedId &&
+    analyzeMutation.isPending;
+
   // ─── Handlers ───────────────────────────────────────────────────
   /**
    * Mode 2 — preview / ad-hoc analysis. The server does NOT persist.
@@ -235,6 +270,10 @@ export default function CuratorStudioPage() {
       description: row.description || undefined,
       channelName: row.channelName,
       scheduledAt: row.scheduledAt,
+      category: row.category || undefined,
+      tags: row.tags?.length ? row.tags : undefined,
+      language: row.language || undefined,
+      duration: row.duration,
     };
     const parsed = aiCuratorRequestSchema.safeParse(payload);
     if (!parsed.success) {
@@ -251,13 +290,20 @@ export default function CuratorStudioPage() {
         description: parsed.data.description || undefined,
         channelName: parsed.data.channelName || undefined,
         scheduledAt: parsed.data.scheduledAt || undefined,
+        category: parsed.data.category || undefined,
         tags: parsed.data.tags,
-        language: parsed.data.language,
+        language: parsed.data.language || undefined,
+        duration: parsed.data.duration,
       });
       setReportById((prev) => ({ ...prev, [row.id]: report }));
       // A preview is NOT persisted — make sure the "Đã lưu" pill
       // doesn't lie.
       setPersistedById((prev) => ({ ...prev, [row.id]: false }));
+      // Select the program we just analyzed so the right-hand panel
+      // renders the report IMMEDIATELY. Without this the report only
+      // lives in `reportById` and stays invisible until the curator
+      // clicks the row again.
+      setSelectedId(row.id);
       toast.success('Phân tích preview hoàn tất', {
         description: `Khung giờ đề xuất: ${report.suggestedTimeSlot}`,
       });
@@ -283,6 +329,9 @@ export default function CuratorStudioPage() {
       });
       setReportById((prev) => ({ ...prev, [row.id]: toReportShape(result) }));
       setPersistedById((prev) => ({ ...prev, [row.id]: true }));
+      // Same as `handleAnalyze` — surface the fresh report right away
+      // instead of waiting for the curator to re-click the row.
+      setSelectedId(row.id);
       toast.success(
         forceRefresh
           ? 'Đã chạy lại pipeline AI'
@@ -397,6 +446,17 @@ export default function CuratorStudioPage() {
   const aiReportCount = rows.filter((r) => r.aiReport).length;
   const hasAnyData = rows.length > 0;
   const hasNoMatches = hasAnyData && filteredRows.length === 0;
+
+  /**
+   * Which branch the right-hand panel renders. A report that already
+   * exists always wins over the loader so a background refetch can
+   * never blank out what the curator is reading.
+   */
+  const panelState = resolveReportPanelState({
+    hasReport: !!selectedRow?.aiReport,
+    isFetching: selectedQuery.isFetching,
+    isAnalyzing: isAnalyzingSelected,
+  });
 
   return (
     <div className="min-h-[80vh]">
@@ -700,7 +760,7 @@ export default function CuratorStudioPage() {
           </Card>
 
           {/* AI Report Panel */}
-          <Card className="glass-card">
+          <Card className="glass-card" ref={reportPanelRef}>
             <div className="p-4 border-b border-dark-700 flex items-center justify-between">
               <h2 className="font-bold text-white flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-accent-gold" />
@@ -737,16 +797,35 @@ export default function CuratorStudioPage() {
                     aiReport={selectedRow.aiReport}
                   />
 
-                  {selectedQuery.isFetching ? (
+                  {/* The detail query refetches after "Áp dụng" and
+                      right after an auto-select. That refetch must NOT
+                      blank out a report we already have on screen —
+                      only show the loader when there is nothing to
+                      show yet. The branch rule lives in
+                      `resolveReportPanelState()` so it is unit-tested
+                      in isolation. */}
+                  {panelState === 'loading' ? (
                     <div className="text-center py-12">
                       <Loader2 className="w-8 h-8 mx-auto text-primary-400 animate-spin" />
                       <p className="text-dark-400 mt-3 text-sm">
                         Đang tải chi tiết...
                       </p>
                     </div>
-                  ) : selectedRow.aiReport ? (
+                  ) : panelState === 'report' ? (
                     <>
-                      <ReportDetail report={selectedRow.aiReport} />
+                      {/* Re-running the model on the selected program:
+                          keep the previous report visible but tell the
+                          curator a fresh run is in flight. */}
+                      {isAnalyzingSelected && (
+                        <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-primary-500/10 border border-primary-500/30">
+                          <Loader2 className="w-4 h-4 text-primary-400 animate-spin" />
+                          <p className="text-sm text-primary-200">
+                            AI đang phân tích...
+                          </p>
+                        </div>
+                      )}
+
+                      <ReportDetail report={selectedRow.aiReport!} />
 
                       <ApplyCurationPanel
                         row={{
@@ -755,7 +834,7 @@ export default function CuratorStudioPage() {
                           description: selectedRow.description,
                           scheduledAt: selectedRow.scheduledAt,
                           status: selectedRow.status,
-                          aiReport: selectedRow.aiReport,
+                          aiReport: selectedRow.aiReport!,
                         }}
                         onApply={(fields) => handleApply(selectedRow, fields)}
                         loading={applyMutation.isPending}
@@ -771,7 +850,7 @@ export default function CuratorStudioPage() {
                         }
                         curating={curateMutation.isPending}
                         isPersisted={!!persistedById[selectedRow.id]}
-                        confidence={selectedRow.aiReport.confidence}
+                        confidence={selectedRow.aiReport?.confidence}
                       />
 
                       <HistorySection
@@ -779,35 +858,30 @@ export default function CuratorStudioPage() {
                         isLoading={historyQuery.isFetching}
                       />
                     </>
+                  ) : panelState === 'analyzing' ? (
+                    <div className="text-center py-12 space-y-4">
+                      <Loader2 className="w-12 h-12 mx-auto text-primary-400 animate-spin" />
+                      <p className="text-dark-400">AI đang phân tích...</p>
+                    </div>
                   ) : (
                     <div className="text-center py-12">
-                      {analyzeMutation.isPending &&
-                      analyzingProgramId === selectedRow.id ? (
-                        <div className="space-y-4">
-                          <Loader2 className="w-12 h-12 mx-auto text-primary-400 animate-spin" />
-                          <p className="text-dark-400">AI đang phân tích...</p>
-                        </div>
-                      ) : (
-                        <>
-                          <Bot className="w-12 h-12 mx-auto text-dark-600 mb-4" />
-                          <p className="text-dark-400 mb-4">
-                            {t('curator.noReport')}
-                          </p>
-                          <Button
-                            onClick={() => handleAnalyze(selectedRow)}
-                            className="gap-2"
-                          >
-                            <Bot className="w-4 h-4" />
-                            {t('curator.analyzeWithAI')}
-                          </Button>
-                          <p className="text-xs text-dark-500 mt-3">
-                            {`Tiêu đề: ${LIMITS.AI_TITLE_MIN}–${LIMITS.AI_TITLE_MAX} ký tự`}
-                          </p>
-                          <p className="text-xs text-dark-500 mt-1">
-                            Phím tắt: <kbd className="px-1 py-0.5 bg-dark-700 rounded text-[10px]">⌘/Ctrl + Enter</kbd>
-                          </p>
-                        </>
-                      )}
+                      <Bot className="w-12 h-12 mx-auto text-dark-600 mb-4" />
+                      <p className="text-dark-400 mb-4">
+                        {t('curator.noReport')}
+                      </p>
+                      <Button
+                        onClick={() => handleAnalyze(selectedRow)}
+                        className="gap-2"
+                      >
+                        <Bot className="w-4 h-4" />
+                        {t('curator.analyzeWithAI')}
+                      </Button>
+                      <p className="text-xs text-dark-500 mt-3">
+                        {`Tiêu đề: ${LIMITS.AI_TITLE_MIN}–${LIMITS.AI_TITLE_MAX} ký tự`}
+                      </p>
+                      <p className="text-xs text-dark-500 mt-1">
+                        Phím tắt: <kbd className="px-1 py-0.5 bg-dark-700 rounded text-[10px]">⌘/Ctrl + Enter</kbd>
+                      </p>
                     </div>
                   )}
                 </div>
