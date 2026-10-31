@@ -21,8 +21,18 @@
 //            schema.
 //   - PATCH: typo / whitespace / minor copy edit.
 //
-// Last change: 2026-10-19 — consolidated 3 calls into 1
-//   (Phase 3 of the AI quality overhaul).
+// Last change: 2026-10-31 — prompt v5 "grounding overhaul".
+//   - Added a GROUNDING RULES block: the model must only assert
+//     facts that are retrievable from PROGRAM INPUT, must quote
+//     sources verbatim, and must record missing information in
+//     `infoGaps` instead of padding with filler.
+//   - Replaced the single sports few-shot with THREE examples
+//     (news, documentary, thin description) so the model doesn't
+//     learn a genre bias from the examples.
+//   - The PROGRAM INPUT block now carries Duration / Language /
+//     Tags / the real channel category (previously the client sent
+//     a hard-coded "Chương trình" and dropped tags/language
+//     entirely, so the model was reasoning from a title alone).
 // ============================================================
 
 import { CuratorProgramInput } from './ai-curator.service';
@@ -31,7 +41,7 @@ import { CuratorProgramInput } from './ai-curator.service';
  * Current prompt version. Stamped on every report as
  * `report.promptVersion`. Bump this whenever the prompt changes.
  */
-export const PROMPT_VERSION = 'curator-prompt-v4.0.0';
+export const PROMPT_VERSION = 'curator-prompt-v5.0.0';
 
 /**
  * Underlying OpenAI model identifier. Kept separate from the
@@ -60,10 +70,29 @@ export const MODEL_FREQUENCY_PENALTY = 0.0;
 //
 // Schema is described inline (instead of relying solely on
 // `response_format: 'json_object'`) so the model gets a precise
-// contract. The few-shot example at the bottom of the prompt
-// anchors the response format — empirical A/B test showed
-// ~30% fewer schema-violation retries with the example present.
+// contract. The few-shot examples at the bottom of the prompt
+// anchor the response format without biasing the model toward one
+// genre.
+//
+// v5 adds the GROUNDING RULES block and a `grounding` output field.
+// The model is asked to cite verbatim excerpts and to declare what
+// information is missing; the backend then independently verifies
+// those claims in `computeGroundingScore()` and overwrites the
+// model-reported score.
 // ───────────────────────────────────────────────────────────────
+
+/** Render a duration in seconds as a human-readable "1h 30m" string. */
+function formatDuration(seconds?: number): string {
+  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) {
+    return 'unknown';
+  }
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
 
 export function buildConsolidatedPrompt(program: CuratorProgramInput): string {
   const desc = program.description?.trim() || 'No description available';
@@ -73,6 +102,9 @@ export function buildConsolidatedPrompt(program: CuratorProgramInput): string {
   const scheduled = program.scheduledAt
     ? String(program.scheduledAt)
     : 'unknown';
+  const language = program.language ?? 'unknown';
+  const duration = formatDuration(program.durationSeconds);
+  const title = program.title ?? '';
 
   return `You are "OmniCast Curator" — a senior broadcast programming analyst
 at a major Vietnamese TV network. You decide whether a program is
@@ -85,12 +117,46 @@ markdown fences.
 ────────────────────────────────────────────────────────────────
 PROGRAM INPUT
 ────────────────────────────────────────────────────────────────
-Title: ${program.title}
+Title: ${title}
 Description: ${desc}
 Channel: ${channelName}
 Category: ${channelCategory}
 Tags: ${tags}
+Language: ${language}
+Duration: ${duration}
 Scheduled At: ${scheduled}
+
+────────────────────────────────────────────────────────────────
+GROUNDING RULES (read before writing anything)
+────────────────────────────────────────────────────────────────
+These rules are the highest priority. They override any other
+instruction in this prompt.
+
+1. SOURCE-ONLY. Every factual claim you make about the program's
+   content, cast, production, theme, or tone MUST be traceable to
+   the PROGRAM INPUT above. Never invent a name, number, date,
+   guest, award, location, or statistic that does not appear there.
+2. NO FILLER. Do not pad the arrays to hit a minimum length. If the
+   Description is thin, it is correct — and expected — to return
+   FEWER bullets, and even zero bullets for a field.
+3. DECLARE GAPS, DON'T GUESS. Anything a curator would need but
+   which the Description does not state goes into "infoGaps"
+   (for example: "Không rõ thời lượng thực tế", "Không nêu tên
+   khách mời", "Không rõ đối tượng hạt nhân"). Use infoGaps
+   instead of inventing the missing detail.
+4. QUOTE VERBATIM. Every entry in "sourceExcerpts" must be copied
+   EXACTLY, character for character, from the Description. Do not
+   paraphrase, translate, correct typos, or stitch two fragments
+   together. If you cannot find a verbatim fragment, do not include
+   one.
+5. GENERALISED JUDGEMENTS ARE ALLOWED. Editorial judgements that
+   follow from the genre and format ("hình thức talkshow trường
+   quay", "cần đồ họa đồng họa cho phần số liệu") are fine, but
+   they must be phrased as judgements — not as facts about content
+   the source never mentions.
+6. HONEST NUMBERS. The five sub-scores and "groundingScore" must
+   reflect what the source actually supports. A thin description
+   should score LOWER, not be dressed up with confident numbers.
 
 ────────────────────────────────────────────────────────────────
 OUTPUT SCHEMA (return JSON matching this shape)
@@ -115,9 +181,9 @@ OUTPUT SCHEMA (return JSON matching this shape)
 
     "contentAssessment": {
       "summary":               "<1-2 sentence plot/script summary in Vietnamese>",
-      "highlights":            <3-5 bullet points in Vietnamese, each ≤ 300 chars>,
-      "strengths":             <2-4 bullets in Vietnamese, each ≤ 300 chars>,
-      "weaknesses":            <1-3 bullets in Vietnamese, each ≤ 300 chars>,
+      "highlights":            <0-8 bullet points in Vietnamese, each ≤ 300 chars>,
+      "strengths":             <0-5 bullets in Vietnamese, each ≤ 300 chars>,
+      "weaknesses":            <0-4 bullets in Vietnamese, each ≤ 300 chars>,
       "narrativeFlow":         "<1-2 sentence pacing/structure note in Vietnamese>",
       "targetAudienceDetails": "<1-2 sentence detailed audience description in Vietnamese>"
     },
@@ -138,6 +204,14 @@ OUTPUT SCHEMA (return JSON matching this shape)
       "commercialPotential":   <integer 0-100>,
       "overallScore":          <integer 0-100, weighted average — see weights below>,
       "grade":                 "S" | "A" | "B" | "C" | "D"
+    },
+
+    "grounding": {
+      "sourceExcerpts": <0-6 verbatim quotes copied exactly from Description>,
+      "infoGaps":       <0-5 statements about what the Description does NOT say>,
+      "groundingScore": <integer 0-100, your own estimate of how well the
+                         report tracks the source — the backend will
+                         recompute and overwrite this value>
     }
   }
 }
@@ -175,17 +249,24 @@ DOMAIN RULES
 - Numbers MUST be integers (not floats).
 
 ────────────────────────────────────────────────────────────────
-FEW-SHOT EXAMPLE
+FEW-SHOT EXAMPLES
 ────────────────────────────────────────────────────────────────
-INPUT: Title: "Chung kết World Cup 2026", Category: "SPORTS",
-       Description: "Trận chung kết giải bóng đá lớn nhất hành tinh"
+These three examples demonstrate the JSON STRUCTURE and the grounding
+behaviour. They deliberately cover three very different situations.
+Do NOT copy their content, scores, or conclusions for the program
+you are analyzing — derive everything from your own PROGRAM INPUT.
+
+─── EXAMPLE 1 (news, rich description) ───
+INPUT: Title: "Bản tin thời sự 19h ngày 15/10"
+       Description: "Cập nhật tin nóng về cứu hộ 8 người bị lũ quét ở Nghệ An, phát biểu của Bộ trưởng Bộ TT&TT về chuyển đổi số và giá điện, thời tiết cả nước."
+       Category: NEWS   Duration: 30m   Tags: tin tức, thời sự
 
 OUTPUT:
 {
   "sentiment": {
-    "overallSentiment": "positive",
-    "hypeLevel": "high",
-    "audienceEngagement": 92
+    "overallSentiment": "negative",
+    "hypeLevel": "medium",
+    "audienceEngagement": 68
   },
   "compliance": {
     "isAgeRestricted": false,
@@ -194,46 +275,198 @@ OUTPUT:
     "recommendedBroadcastWindow": "EVENING"
   },
   "editorial": {
-    "broadcastSuitability": "PRIME_TIME",
-    "suggestedTimeSlot": "21:00 - 23:00",
-    "targetAudienceVibe": "Khán giả đại chúng theo dõi sự kiện thể thao tâm điểm (Giờ vàng)",
-    "riskWarnings": "Phù hợp mọi đối tượng khán giả",
+    "broadcastSuitability": "STANDARD",
+    "suggestedTimeSlot": "19:00 - 19:30",
+    "targetAudienceVibe": "Khán giả đại chúng theo dõi diễn biến thời sự trong ngày.",
+    "riskWarnings": "Có nội dung thiên tai, cần cảnh báo bối phối khi phát trực tiếp.",
     "contentAssessment": {
-      "summary": "Tường thuật trực tiếp trận chung kết World Cup 2026 với bình luận chuyên sâu và phân tích chiến thuật.",
+      "summary": "Bản tin tổng hợp tin nóng về cứu hộ nạn nhân lũ tại Nghệ An, thông tin chính sách chuyển đổi số và dự báo thời tiết.",
       "highlights": [
-        "Tường thuật trực tiếp diễn biến kịch tính",
-        "Bình luận chuyên sâu từ chuyên gia hàng đầu",
-        "Phân tích chiến thuật và số liệu thống kê thời gian thực"
+        "Diễn biến cứu hộ 8 người bị lũ quét tại Nghệ An",
+        "Phát biểu của Bộ trưởng Bộ TT&TT về chuyển đổi số và giá điện",
+        "Thông tin dự báo thời tiết toàn quốc"
       ],
       "strengths": [
-        "Tính thời sự và cảm xúc cao trào tức thì",
-        "Khả năng giữ chân người xem xuyên suốt 90+ phút"
+        "Tin nóng được dẫn dắt ngay đầu chương trình",
+        "Cân bằng giữa sự kiện, chính sách và dự báo"
       ],
       "weaknesses": [
-        "Phụ thuộc vào diễn biến thực tế trên sân"
+        "Chưa có thông tin về tình hình cứu hộ được cập nhật mới nhất"
       ],
-      "narrativeFlow": "Nhịp độ dồn dập, bám sát từng phút thi đấu và leo thang ở các pha quyết định.",
-      "targetAudienceDetails": "Khán giả đam mê thể thao, người hâm mộ cuồng nhiệt và khán giả đại chúng yêu thích tranh tài."
+      "narrativeFlow": "Mở đầu bằng tin nóng, chuyển sang chuyên đề chính sách và khép lại bằng phần thời tiết.",
+      "targetAudienceDetails": "Khán giả trưởng thành, giới công sở và những người theo dõi diễn biến thiên tai."
     },
     "formatAssessment": {
-      "productionFormat": "Truyền hình trực tiếp thể thao đa góc máy (Multi-cam Live Broadcast)",
-      "pacing": "DYNAMIC",
+      "productionFormat": "Bản tin trường quay kết hợp phóng sự hiện trường",
+      "pacing": "MODERATE",
       "visualAudioRequirements": [
-        "Bảng tỉ số điện tử trực tiếp thời gian thực (Live Scorebug Overlay)",
-        "Góc máy quay chậm (Super Slow-Motion Replay) và flycam toàn cảnh",
-        "Âm thanh vòm thu tiếng khán đài kết hợp mic bình luận viên stereo"
+        "Màn hình LED phông nền trình chiếu đồ họa tin tức",
+        "Máy nhắc chữ đồng bộ tốc độ MC",
+        "Bản đồ thông tin và infographic hiện trường"
       ],
-      "interactivityLevel": "HIGH",
-      "technicalRecommendations": "Duy trì luồng stream dự phòng (Redundant RTMP/SRT) và độ trễ thấp dưới 3 giây."
+      "interactivityLevel": "LOW",
+      "technicalRecommendations": "Kiểm tra đường truyền từ hiện trường trước 30 phút lên sóng."
     },
     "scoringBreakdown": {
-      "contentQuality": 85,
-      "productionValue": 92,
-      "audienceAppeal": 95,
+      "contentQuality": 82,
+      "productionValue": 78,
+      "audienceAppeal": 70,
+      "complianceSafety": 96,
+      "commercialPotential": 68,
+      "overallScore": 79,
+      "grade": "B"
+    },
+    "grounding": {
+      "sourceExcerpts": [
+        "cứu hộ 8 người bị lũ quét ở Nghệ An",
+        "phát biểu của Bộ trưởng Bộ TT&TT về chuyển đổi số và giá điện",
+        "thời tiết cả nước"
+      ],
+      "infoGaps": [
+        "Không rõ số người thương vong và tình trạng cứu hộ hiện tại",
+        "Không nêu thời điểm chính xác sự việc xảy ra"
+      ],
+      "groundingScore": 88
+    }
+  }
+}
+
+─── EXAMPLE 2 (documentary, medium description) ───
+INPUT: Title: "Chuyện đời người thợ mộc"
+       Description: "Phim tài liệu ngắn về nghề mộc truyền thống ở vùng Tây Bắc, qua lời kể của ba thế hệ thợ mộc. Phim ghi hình tại làng gỗ và bảo tồn công cụ cưa thủ công."
+       Category: DOCUMENTARY   Duration: 45m   Tags: tài liệu, nghề truyền thống
+
+OUTPUT:
+{
+  "sentiment": {
+    "overallSentiment": "neutral",
+    "hypeLevel": "low",
+    "audienceEngagement": 52
+  },
+  "compliance": {
+    "isAgeRestricted": false,
+    "ageRating": "PG",
+    "flaggedContent": [],
+    "recommendedBroadcastWindow": "EVENING"
+  },
+  "editorial": {
+    "broadcastSuitability": "STANDARD",
+    "suggestedTimeSlot": "20:00 - 20:45",
+    "targetAudienceVibe": "Khán giả trưởng thành yêu thích tài liệu văn hóa và nghề truyền thống.",
+    "riskWarnings": "Phù hợp mọi đối tượng.",
+    "contentAssessment": {
+      "summary": "Phim tài liệu kể về nghề mộc vùng Tây Bắc qua lời kể của ba thế hệ thợ, bám sát công việc và bảo tồn dụng cụ truyền thống.",
+      "highlights": [
+        "Lời kể của ba thế hệ thợ mộc",
+        "Ghi hình tại làng gỗ",
+        "Bảo tồn công cụ cưa thủ công"
+      ],
+      "strengths": [
+        "Chủ đề có giá trị văn hóa rõ ràng",
+        "Bám sát hiện trường nghề"
+      ],
+      "weaknesses": [],
+      "narrativeFlow": "Xoay quanh lời kể nhiều thế hệ, xen kẽ hình ảnh lao động và chi tiết dụng cụ.",
+      "targetAudienceDetails": "Khán giả 25-55 quan tâm văn hóa dân gian và lịch sử nghề."
+    },
+    "formatAssessment": {
+      "productionFormat": "Phim tài liệu quay hiện trường kết hợp tư liệu lưu trữ",
+      "pacing": "SLOW",
+      "visualAudioRequirements": [
+        "Camera 4K với dải dynamic range cao",
+        "Âm thanh vòm cho không gian làng gỗ",
+        "Góc quay cận cảnh dụng cụ thủ công"
+      ],
+      "interactivityLevel": "LOW",
+      "technicalRecommendations": "Cần thời gian color grading hậu kỳ cho phim tài liệu."
+    },
+    "scoringBreakdown": {
+      "contentQuality": 80,
+      "productionValue": 72,
+      "audienceAppeal": 52,
       "complianceSafety": 98,
-      "commercialPotential": 94,
-      "overallScore": 92,
-      "grade": "S"
+      "commercialPotential": 58,
+      "overallScore": 72,
+      "grade": "B"
+    },
+    "grounding": {
+      "sourceExcerpts": [
+        "nghề mộc truyền thống ở vùng Tây Bắc",
+        "qua lời kể của ba thế hệ thợ mộc",
+        "bảo tồn công cụ cưa thủ công"
+      ],
+      "infoGaps": [
+        "Không nêu tên các nghệ nhân cụ thể",
+        "Không rõ địa danh chính xác của làng gỗ"
+      ],
+      "groundingScore": 90
+    }
+  }
+}
+
+─── EXAMPLE 3 (thin description — notice the short arrays) ───
+INPUT: Title: "Chương trình âm nhạc số 7"
+       Description: "Chương trình âm nhạc."
+       Category: MUSIC   Duration: unknown   Tags: none
+
+OUTPUT:
+{
+  "sentiment": {
+    "overallSentiment": "neutral",
+    "hypeLevel": "low",
+    "audienceEngagement": 40
+  },
+  "compliance": {
+    "isAgeRestricted": false,
+    "ageRating": "PG",
+    "flaggedContent": [],
+    "recommendedBroadcastWindow": "EVENING"
+  },
+  "editorial": {
+    "broadcastSuitability": "STANDARD",
+    "suggestedTimeSlot": "20:00 - 21:00",
+    "targetAudienceVibe": "Khán giả đại chúng có thói quen nghe nhạc vào khung giờ tối.",
+    "riskWarnings": "Phù hợp mọi đối tượng.",
+    "contentAssessment": {
+      "summary": "Chương trình âm nhạc; mô tả hiện có chưa cung cấp thông tin về thể loại, diễn viên hay nội dung cụ thể.",
+      "highlights": [],
+      "strengths": [],
+      "weaknesses": [
+        "Mô tả chương trình quá ngắn để đánh giá nội dung và hình thức"
+      ],
+      "narrativeFlow": "Chưa đủ thông tin để đánh giá nhịp độ và mạch dẫn dắt.",
+      "targetAudienceDetails": "Chưa đủ thông tin để xác định nhóm khán giả mục tiêu cụ thể."
+    },
+    "formatAssessment": {
+      "productionFormat": "Chương trình âm nhạc",
+      "pacing": "MODERATE",
+      "visualAudioRequirements": [
+        "Hệ thống âm thanh stereo tiêu chuẩn phát sóng",
+        "Đồ họa nhận diện chương trình"
+      ],
+      "interactivityLevel": "MEDIUM",
+      "technicalRecommendations": "Cần bổ sung mô tả chương trình trước khi đánh giá kỹ thuật dàn dựng."
+    },
+    "scoringBreakdown": {
+      "contentQuality": 45,
+      "productionValue": 55,
+      "audienceAppeal": 40,
+      "complianceSafety": 96,
+      "commercialPotential": 55,
+      "overallScore": 57,
+      "grade": "C"
+    },
+    "grounding": {
+      "sourceExcerpts": [
+        "Chương trình âm nhạc"
+      ],
+      "infoGaps": [
+        "Không rõ thể loại âm nhạc",
+        "Không nêu diễn viên hoặc nghệ sĩ tham gia",
+        "Không rõ thời lượng chương trình",
+        "Không rõ khung giờ phát sóng dự kiến"
+      ],
+      "groundingScore": 30
     }
   }
 }

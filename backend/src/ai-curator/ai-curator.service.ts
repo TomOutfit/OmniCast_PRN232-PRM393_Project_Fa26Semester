@@ -45,6 +45,7 @@ import {
 import OpenAI from 'openai';
 import {
   ConsolidatedReport,
+  GroundingSchema,
   parseConsolidatedReport,
 } from './ai-curator.schemas';
 import { withRetry } from './ai-curator.retry';
@@ -88,6 +89,21 @@ export interface ScoringBreakdown {
   grade: 'S' | 'A' | 'B' | 'C' | 'D';
 }
 
+/**
+ * Bằng chứng bám sát nội dung (grounding).
+ *
+ * `sourceExcerpts` là các trích dẫn NGUYÊN VĂN lấy từ mô tả chương
+ * trình. `infoGaps` là những thông tin còn THIẾU. `groundingScore`
+ * luôn được backend tự tính lại (không tin số do model tự khai) —
+ * xem `computeGroundingScore()`.
+ */
+export interface Grounding {
+  sourceExcerpts: string[];
+  infoGaps: string[];
+  /** 0-100. Recomputed server-side on every run. */
+  groundingScore: number;
+}
+
 export interface AiCuratorReport {
   broadcastSuitability: 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED';
   suggestedTimeSlot: string;
@@ -107,6 +123,11 @@ export interface AiCuratorReport {
   contentAssessment?: ContentAssessment;
   formatAssessment?: FormatAssessment;
   scoringBreakdown?: ScoringBreakdown;
+  /**
+   * Evidence trail: verbatim source quotes, declared information
+   * gaps, and the server-computed grounding score.
+   */
+  grounding?: Grounding;
   /** Bumped whenever the prompt family changes. */
   promptVersion: string;
   /**
@@ -163,6 +184,11 @@ export interface CuratorProgramInput {
   scheduledAt?: Date | string;
   language?: string;
   tags?: string[];
+  /**
+   * Program duration in seconds. The prompt uses it to judge pacing
+   * and to pick a slot that can actually hold the content.
+   */
+  durationSeconds?: number;
   channel?: {
     id?: string;
     name: string;
@@ -295,6 +321,9 @@ export class AiCuratorService {
           contentAssessment: report.contentAssessment,
           formatAssessment: report.formatAssessment,
           scoringBreakdown: report.scoringBreakdown,
+          // The grounding block is persisted inside the same JSON
+          // blob so we don't need a schema migration for it.
+          grounding: report.grounding,
         } as any,
         complianceAssessment: report.complianceAssessment as any,
         aiModelVersion: report.aiModelVersion,
@@ -401,6 +430,10 @@ export class AiCuratorService {
         flaggedContent: report.complianceAssessment.flaggedContent,
         isAgeRestricted: report.complianceAssessment.isAgeRestricted,
       });
+      report.confidence = this.applyGroundingPenalty(
+        report.confidence,
+        report.grounding,
+      );
       report.confidence = this.clampConfidence(report.confidence);
       report.cached = false;
 
@@ -497,7 +530,10 @@ export class AiCuratorService {
     // a slightly conservative confidence formula (no length-aware
     // bonus since we can't trust chunk boundaries, no retry penalty
     // since we already paid the retry cost in the connection phase).
-    report.confidence = this.streamingConfidence(result.data, openaiRetries);
+    report.confidence = this.applyGroundingPenalty(
+      this.streamingConfidence(result.data, openaiRetries),
+      report.grounding,
+    );
     report.cached = false;
 
     // Audit the stream-completion. We do this after yielding the
@@ -658,6 +694,10 @@ export class AiCuratorService {
         flaggedContent: report.complianceAssessment.flaggedContent,
         isAgeRestricted: report.complianceAssessment.isAgeRestricted,
       });
+      report.confidence = this.applyGroundingPenalty(
+        report.confidence,
+        report.grounding,
+      );
       report.confidence = this.clampConfidence(report.confidence);
       return report;
     }
@@ -683,6 +723,13 @@ export class AiCuratorService {
         openaiRetries,
         /* validationOk */ true,
       );
+      // A report that doesn't track the source can't be trusted as
+      // much, no matter how confident the model sounded.
+      report.confidence = this.applyGroundingPenalty(
+        report.confidence,
+        report.grounding,
+      );
+      report.confidence = this.clampConfidence(report.confidence);
       report.processingTimeMs = Date.now() - startTime;
       report.pipelineMs = report.processingTimeMs;
       return report;
@@ -706,6 +753,10 @@ export class AiCuratorService {
       flaggedContent: report.complianceAssessment.flaggedContent,
       isAgeRestricted: report.complianceAssessment.isAgeRestricted,
     });
+    report.confidence = this.applyGroundingPenalty(
+      report.confidence,
+      report.grounding,
+    );
     report.confidence = this.clampConfidence(report.confidence);
     report.processingTimeMs = Date.now() - startTime;
     report.pipelineMs = report.processingTimeMs;
@@ -770,9 +821,20 @@ export class AiCuratorService {
    * but not identical — this is the single mapping point.
    */
   private reportFromConsolidated(
-    _input: CuratorProgramInput,
+    input: CuratorProgramInput,
     c: ConsolidatedReport,
   ): AiCuratorReport {
+    // The model's own `groundingScore` is advisory only — we recompute
+    // it from the source text and overwrite it.
+    const grounding = this.buildGrounding(input, {
+      contentAssessment: c.editorial.contentAssessment,
+      formatAssessment: c.editorial.formatAssessment,
+      targetAudienceVibe: c.editorial.targetAudienceVibe,
+      riskWarnings: c.editorial.riskWarnings,
+      sourceExcerpts: c.editorial.grounding?.sourceExcerpts,
+      infoGaps: c.editorial.grounding?.infoGaps,
+    });
+
     return {
       broadcastSuitability: c.editorial.broadcastSuitability,
       suggestedTimeSlot: c.editorial.suggestedTimeSlot,
@@ -783,6 +845,7 @@ export class AiCuratorService {
       contentAssessment: c.editorial.contentAssessment,
       formatAssessment: c.editorial.formatAssessment,
       scoringBreakdown: c.editorial.scoringBreakdown,
+      grounding,
       promptVersion: PROMPT_VERSION,
       aiModelVersion: 'gpt-4o-omnicast-v3',
       processingTimeMs: 0, // filled in by runPipelineForInput
@@ -804,6 +867,21 @@ export class AiCuratorService {
     const compliance = this.fallbackCompliance(input);
     const editorial = this.fallbackEditorial(input, sentiment, compliance);
 
+    // The heuristic path has no model-authored excerpts, so we derive
+    // them from the description itself — the sentences we actually
+    // used to build the content assessment. That keeps the grounding
+    // block honest: the excerpts really are in the source.
+    const grounding = this.buildGrounding(input, {
+      contentAssessment: editorial.contentAssessment,
+      formatAssessment: editorial.formatAssessment,
+      targetAudienceVibe: editorial.targetAudienceVibe,
+      riskWarnings: editorial.riskWarnings,
+      sourceExcerpts: this.splitSentences(
+        (input.description ?? '').trim(),
+      ).slice(0, 4),
+      infoGaps: this.extractInfoGaps(input),
+    });
+
     return {
       broadcastSuitability: editorial.broadcastSuitability,
       suggestedTimeSlot: editorial.suggestedTimeSlot,
@@ -814,12 +892,256 @@ export class AiCuratorService {
       contentAssessment: editorial.contentAssessment,
       formatAssessment: editorial.formatAssessment,
       scoringBreakdown: editorial.scoringBreakdown,
+      grounding,
       promptVersion: PROMPT_VERSION,
       aiModelVersion: 'heuristic-fallback-v1',
       processingTimeMs: 0,
       pipelineMs: 0,
       // Filled in by runPipelineForInput.
       confidence: 0,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // GROUNDING (prompt v5)
+  //
+  // The model is ASKED to ground its claims, but we don't trust it.
+  // `computeGroundingScore()` independently measures two things:
+  //
+  //   1. COVERAGE — how many of the source's key terms actually show
+  //      up in the generated content assessment. A report that
+  //      invents its own vocabulary scores badly here.
+  //   2. CITATION HONESTY — whether each `sourceExcerpts` entry
+  //      really appears in the description (normalised: lowercased,
+  //      diacritics stripped, whitespace collapsed). A fabricated
+  //      quote costs a lot of points.
+  //
+  // The resulting score replaces whatever the model reported, so a
+  // hallucinating model cannot inflate its own grounding.
+  // ───────────────────────────────────────────────────────────────
+
+  /**
+   * Vietnamese + English stopwords. Removed before computing key
+   * terms so common connective words don't inflate the overlap.
+   */
+  private static readonly STOPWORDS = new Set([
+    // Vietnamese
+    'và', 'của', 'là', 'có', 'được', 'trong', 'cho', 'với', 'các', 'những',
+    'một', 'như', 'này', 'đó', 'khi', 'đã', 'sẽ', 'đang', 'về', 'từ', 'đến',
+    'trên', 'dưới', 'sau', 'trước', 'theo', 'tại', 'ra', 'vào', 'lên', 'xuống',
+    'nếu', 'vì', 'mà', 'thì', 'nên', 'để', 'nhưng', 'hoặc', 'nên', 'rất',
+    'người', 'những', 'một', 'các', 'cùng', 'nhiều', 'ít', 'tất', 'cả',
+    // English
+    'the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'for', 'to', 'with',
+    'is', 'are', 'was', 'were', 'be', 'by', 'at', 'as', 'it', 'its', 'this',
+    'that', 'from', 'has', 'have', 'will', 'can', 'but', 'not',
+  ]);
+
+  /**
+   * Normalise a string for comparison: lowercase, strip diacritics,
+   * collapse whitespace and punctuation. Vietnamese text needs the
+   * diacritic strip because the model may paraphrase with slightly
+   * different tone marks while still quoting the same words.
+   */
+  private normalizeForMatch(text: string): string {
+    return (text ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Extract the meaningful key terms of a text (stopwords removed). */
+  private keyTerms(text: string): string[] {
+    const normalized = this.normalizeForMatch(text);
+    if (!normalized) return [];
+    const seen = new Set<string>();
+    const terms: string[] = [];
+    for (const token of normalized.split(' ')) {
+      if (token.length < 3) continue;
+      if (AiCuratorService.STOPWORDS.has(token)) continue;
+      if (seen.has(token)) continue;
+      seen.add(token);
+      terms.push(token);
+    }
+    return terms;
+  }
+
+  /**
+   * Score how well the generated report tracks the program source.
+   *
+   * Returns a 0-100 integer:
+   *   - Coverage contributes up to 70 points: the share of the
+   *     source's key terms that appear in the generated text.
+   *   - Citation honesty contributes up to 30 points: the share of
+   *     `sourceExcerpts` that are verbatim in the description.
+   *   - When the description is empty there is nothing to ground
+   *     against, so the score is capped low (the report can't be
+   *     considered grounded if there was no source).
+   *
+   * Fabricated excerpts are penalised hard: each one that isn't
+   * found in the source removes its full citation weight plus a
+   * flat penalty, so a model that quotes a source it never saw
+   * scores worse than one that quotes nothing.
+   */
+  private computeGroundingScore(
+    input: CuratorProgramInput,
+    generated: {
+      contentAssessment?: ContentAssessment;
+      formatAssessment?: FormatAssessment;
+      targetAudienceVibe?: string;
+      riskWarnings?: string;
+      sourceExcerpts?: string[];
+    },
+  ): { score: number; sourceExcerpts: string[]; fabricatedExcerpts: number } {
+    const description = (input.description ?? '').trim();
+    const sourceTerms = this.keyTerms(description);
+    const sourceNormalized = this.normalizeForMatch(description);
+
+    // ── Citation honesty ──────────────────────────────────────
+    const excerpts = (generated.sourceExcerpts ?? []).filter(
+      (e) => e && e.trim().length > 0,
+    );
+    let verified = 0;
+    let fabricated = 0;
+    const verifiedExcerpts: string[] = [];
+    for (const excerpt of excerpts) {
+      const normalizedExcerpt = this.normalizeForMatch(excerpt);
+      if (!normalizedExcerpt) continue;
+      // With no source text there is nothing to verify against, so a
+      // quote is merely unverifiable — not fabricated.
+      if (sourceTerms.length === 0) {
+        continue;
+      }
+      if (sourceNormalized.includes(normalizedExcerpt)) {
+        verified += 1;
+        verifiedExcerpts.push(excerpt);
+      } else {
+        fabricated += 1;
+      }
+    }
+
+    // ── Coverage ──────────────────────────────────────────────
+    const generatedText = [
+      generated.contentAssessment?.summary ?? '',
+      ...(generated.contentAssessment?.highlights ?? []),
+      ...(generated.contentAssessment?.strengths ?? []),
+      ...(generated.contentAssessment?.weaknesses ?? []),
+      generated.contentAssessment?.narrativeFlow ?? '',
+      generated.contentAssessment?.targetAudienceDetails ?? '',
+      generated.formatAssessment?.productionFormat ?? '',
+      ...(generated.formatAssessment?.visualAudioRequirements ?? []),
+      generated.formatAssessment?.technicalRecommendations ?? '',
+      generated.targetAudienceVibe ?? '',
+      generated.riskWarnings ?? '',
+    ].join(' ');
+
+    const generatedNormalized = this.normalizeForMatch(generatedText);
+    const generatedTerms = new Set(this.keyTerms(generatedText));
+
+    const coverageRatio =
+      sourceTerms.length === 0
+        ? 0
+        : sourceTerms.filter((t) => generatedTerms.has(t)).length /
+          sourceTerms.length;
+
+    // Source richness: how much evidence the description actually
+    // provides. A one-line description can be quoted back perfectly
+    // and still leave the report with almost nothing to stand on, so
+    // the score has to reflect the SOURCE's substance, not just the
+    // report's fidelity to it. We require ~20 distinct key terms for
+    // a description to count as fully rich.
+    const richness = Math.min(1, sourceTerms.length / 20);
+
+    // A model that copies the description wholesale isn't necessarily
+    // more grounded — it's more repetitive. Cap the coverage
+    // contribution so the score stays a measure of *support*, not
+    // of *similarity*.
+    const coveragePoints = Math.min(1, coverageRatio) * 70;
+
+    // ── Citation points ───────────────────────────────────────
+    let citationPoints: number;
+    if (excerpts.length === 0) {
+      // No citations at all: neutral. We can't prove fabrication,
+      // but we also can't confirm grounding.
+      citationPoints = sourceTerms.length === 0 ? 0 : 12;
+    } else {
+      const ratio = verified / excerpts.length;
+      citationPoints = ratio * 30;
+    }
+
+    // Base score: how faithfully the report tracks the source.
+    let score = Math.round(coveragePoints + citationPoints);
+
+    // Ceiling by source richness: a report can never be *more*
+    // grounded than the evidence it had to work with. A one-line
+    // description caps the score low even when every word of it is
+    // quoted back perfectly.
+    if (sourceTerms.length === 0) {
+      score = Math.min(score, 35);
+    } else {
+      score = Math.min(score, Math.round(100 * richness));
+    }
+
+    // Fabricated citations are penalised AFTER the ceiling so a
+    // report that quotes a source it never saw always scores worse
+    // than an honest one about the same program.
+    if (fabricated > 0) {
+      score = Math.min(score - fabricated * 12, 45);
+    }
+
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      // Fabricated quotes are DROPPED — the curator must never see a
+      // quote attributed to the source that isn't in the source.
+      sourceExcerpts: verifiedExcerpts,
+      fabricatedExcerpts: fabricated,
+    };
+  }
+
+  /**
+   * Build a grounding block for a report. `modelExcerpts` are the
+   * excerpts the model claimed; they are verified against the
+   * description and the score is always recomputed here.
+   */
+  private buildGrounding(
+    input: CuratorProgramInput,
+    generated: {
+      contentAssessment?: ContentAssessment;
+      formatAssessment?: FormatAssessment;
+      targetAudienceVibe?: string;
+      riskWarnings?: string;
+      sourceExcerpts?: string[];
+      infoGaps?: string[];
+    },
+  ): Grounding {
+    const { score, sourceExcerpts, fabricatedExcerpts } =
+      this.computeGroundingScore(input, generated);
+
+    const infoGaps = (generated.infoGaps ?? []).filter(
+      (g) => g && g.trim().length > 0,
+    );
+
+    // If the model claimed citations that don't exist in the source,
+    // surface that as an information gap so the curator sees WHY the
+    // report wasn't fully trusted.
+    if (fabricatedExcerpts > 0) {
+      infoGaps.push(
+        `${fabricatedExcerpts} trích dẫn không khớp với mô tả nguồn và đã bị loại khỏi báo cáo`,
+      );
+    }
+
+    // No source text at all → the report is unfalsifiable; say so.
+    if (!(input.description ?? '').trim() && infoGaps.length === 0) {
+      infoGaps.push('Chương trình không có mô tả nội dung để đối chiếu');
+    }
+
+    return {
+      sourceExcerpts,
+      infoGaps,
+      groundingScore: score,
     };
   }
 
@@ -949,225 +1271,258 @@ export class AiCuratorService {
 
   /**
    * Tổng hợp đánh giá chuẩn về Nội dung chương trình.
-   * Expanded 2026-10-19 to cover KIDS / DOC / COMEDY / TALKSHOW
-   * in addition to the original SPORTS / NEWS / MUSIC.
+   *
+   * REWRITTEN 2026-10-31 (prompt v5 grounding overhaul).
+   *
+   * The previous implementation returned a fixed set of template
+   * bullets chosen by channel category — it never actually read the
+   * program description, so a program with a rich description got the
+   * same generic "Tường thuật trực tiếp diễn biến kịch tính" bullet
+   * as a program with no description at all. That was the single
+   * biggest source of "the AI report doesn't match the program"
+   * complaints.
+   *
+   * The new implementation EXTRACTS the assessment from the real
+   * `Description`:
+   *   - `summary`     → the first meaningful sentence(s).
+   *   - `highlights`  → sentences carrying distinctive terms (proper
+   *                      nouns, numbers, named events).
+   *   - `strengths`   → the most information-dense sentences.
+   *   - `weaknesses`  → derived from the information GAPS (what the
+   *                      description does NOT tell us).
+   *
+   * When the description is too thin to support a claim, the arrays
+   * are left EMPTY rather than padded with filler — that is the
+   * whole point of the grounding overhaul.
    */
   private synthesizeContentAssessment(program: any): ContentAssessment {
     const title = program?.title ?? 'Chương trình phát sóng';
-    const desc = program?.description ?? '';
+    const desc = (program?.description ?? '').trim();
     const cat = (
       program?.channel?.category ??
       program?.category ??
       ''
     ).toUpperCase();
-    const text = `${title} ${desc}`.toLowerCase();
 
-    const summary =
-      desc.length > 20
-        ? desc
-        : `Bản tóm lược kịch bản phát sóng cho "${title}", chú trọng khai thác nội dung trọng tâm và kết nối thị hiếu khán giả.`;
+    const sentences = this.splitSentences(desc);
+    const infoGaps = this.extractInfoGaps(program);
 
-    // Default — overridden per category.
-    const base: ContentAssessment = {
+    // ── Not enough source material to make any claim ──────────
+    if (sentences.length === 0) {
+      return {
+        summary: `Chương trình "${title}" chưa có mô tả nội dung đủ để đánh giá chi tiết.`,
+        highlights: [],
+        strengths: [],
+        weaknesses: [
+          'Mô tả chương trình quá ngắn hoặc không có mô tả nội dung để đối chiếu',
+        ],
+        narrativeFlow:
+          'Chưa đủ thông tin để đánh giá nhịp độ và mạch dẫn dắt của chương trình.',
+        targetAudienceDetails:
+          'Chưa đủ thông tin để xác định nhóm khán giả mục tiêu cụ thể.',
+      };
+    }
+
+    // ── Summary: the first meaningful sentence(s) ──────────────
+    const summary = this.truncateAtWord(
+      sentences.slice(0, sentences.length > 2 ? 2 : 1).join(' '),
+      600,
+    );
+
+    // ── Highlights: sentences with distinctive content ─────────
+    const ranked = sentences
+      .map((sentence, index) => ({
+        sentence,
+        index,
+        score: this.distinctivenessScore(sentence),
+      }))
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score || a.index - b.index);
+
+    const highlights = ranked
+      .slice(0, 6)
+      .sort((a, b) => a.index - b.index)
+      .map((s) => this.truncateAtWord(s.sentence, 300));
+
+    // ── Strengths: the densest informational sentences ────────
+    const strengths = [...ranked]
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, 4)
+      .sort((a, b) => a.index - b.index)
+      .map((s) => this.truncateAtWord(s.sentence, 300));
+
+    // ── Weaknesses: what the source does NOT tell us ───────────
+    const weaknesses = infoGaps.slice(0, 4).map(
+      (gap) => `Chưa có thông tin về ${gap.toLowerCase()}`,
+    );
+
+    const narrativeFlow = this.buildNarrativeFlow(sentences, cat);
+    const targetAudienceDetails = this.buildAudienceDetails(program, cat);
+
+    return {
       summary,
-      highlights: [
-        `Thông điệp chủ đạo xoay quanh tiêu điểm "${title}"`,
-        'Khai thác góc nhìn chân thực, đa chiều và giàu giá trị thông tin',
-        'Định vị nội dung phù hợp với xu hướng theo dõi của khán giả hiện đại',
-      ],
-      strengths: [
-        'Đề tài có độ gắn kết cao với nhóm công chúng mục tiêu',
-        'Cấu trúc kịch bản mạch lạc, có điểm nhấn tạo sự tò mò và theo dõi liên tục',
-      ],
-      weaknesses: [
-        'Cần tối ưu thời lượng các phân đoạn chuyển cảnh để tránh phân tán sự chú ý',
-        'Cân nhắc tăng cường thêm thông số đồ họa trực quan minh họa',
-      ],
-      narrativeFlow:
-        'Mạch dẫn mở đầu ấn tượng (Hook), diễn tiến tuần tự phát triển cao trào và kết thúc đọng lại thông điệp rõ ràng.',
-      targetAudienceDetails:
-        'Khán giả độ tuổi 18–45 quan tâm đến nội dung truyền thông hiện đại và đa nền tảng.',
+      highlights,
+      strengths,
+      weaknesses,
+      narrativeFlow,
+      targetAudienceDetails,
     };
-
-    if (cat === 'SPORTS' || /(thể thao|bóng đá|cup|match|trận)/i.test(text)) {
-      return {
-        ...base,
-        highlights: [
-          'Tường thuật trực tiếp diễn biến kịch tính với bình luận chuyên sâu',
-          'Phân tích chiến thuật và số liệu thống kê thời gian thực',
-          'Phỏng vấn độc quyền trước và sau sự kiện thể thao',
-        ],
-        strengths: [
-          'Tính thời sự và cảm xúc cao trào tức thì (Instant Thrill)',
-          'Khả năng giữ chân người xem xuyên suốt 90+ phút trận đấu',
-        ],
-        weaknesses: [
-          'Phụ thuộc vào nhịp độ thực tế của diễn biến trên sân',
-          'Cần kịch bản dự phòng khi phát sinh gián đoạn kỹ thuật',
-        ],
-        narrativeFlow:
-          'Nhịp độ dồn dập, bám sát từng phút thi đấu và leo thang kịch tính ở các pha bóng quyết định.',
-        targetAudienceDetails:
-          'Khán giả đam mê thể thao, người hâm mộ cuồng nhiệt và khán giả đại chúng yêu thích tranh tài.',
-      };
-    }
-
-    if (cat === 'NEWS' || /(tin tức|thời sự|bản tin|news)/i.test(text)) {
-      return {
-        ...base,
-        highlights: [
-          'Cập nhật tin tức chính trị - kinh tế - xã hội nóng hổi trong nước và quốc tế',
-          'Phóng sự hiện trường sắc bén từ các điểm nóng',
-          'Ý kiến chuyên gia đầu ngành mang tính định hướng',
-        ],
-        strengths: [
-          'Độ tin cậy và tính xác thực cao theo chuẩn báo chí chuyên nghiệp',
-          'Ngôn từ cô đọng, khách quan và đa chiều',
-        ],
-        weaknesses: [
-          'Cần rà soát kỹ nguồn tin độc quyền để tránh sai sót kiểm duyệt',
-        ],
-        narrativeFlow:
-          'Khởi động với tin nóng (Top headlines), triển khai chuyên đề tiêu điểm và tổng kết thị trường.',
-        targetAudienceDetails:
-          'Khán giả trưởng thành, giới công sở, nhà đầu tư và người theo dõi dòng chảy thông tin thời sự.',
-      };
-    }
-
-    if (
-      cat === 'MUSIC' ||
-      cat === 'ENTERTAINMENT' ||
-      cat === 'SHOW' ||
-      /(ca nhạc|âm nhạc|gala|concert|live show)/i.test(text)
-    ) {
-      return {
-        ...base,
-        highlights: [
-          'Các tiết mục biểu diễn nghệ thuật thăng hoa cùng dàn nghệ sĩ khách mời',
-          'Hiệu ứng âm thanh ánh sáng sân khấu đỉnh cao',
-          'Giao lưu nghệ sĩ và chia sẻ hậu trường hấp dẫn',
-        ],
-        strengths: [
-          'Tính giải trí cao, khả năng tạo viral clip trên mạng xã hội',
-          'Cảm xúc âm nhạc chạm đến thị hiếu giới trẻ',
-        ],
-        weaknesses: [
-          'Cần cân đối thời lượng giữa tiết mục và phần giao lưu MC',
-        ],
-        narrativeFlow:
-          'Mở màn sôi động, đẩy dần cung bậc cảm xúc qua các bản phối đặc sắc và bùng nổ tại tiết mục đinh (Headliner).',
-        targetAudienceDetails:
-          'Khán giả trẻ (Gen Z & Millennials), người yêu nghệ thuật giải trí đại chúng.',
-      };
-    }
-
-    if (
-      cat === 'KIDS' ||
-      cat === 'CHILDREN' ||
-      /(thiếu nhi|trẻ em|kids|hoạt hình|hoạt họa|thanh thiếu niên|phim hoạt hình)/i.test(
-        text,
-      )
-    ) {
-      return {
-        ...base,
-        highlights: [
-          'Câu chuyện giáo dục nhân văn phù hợp lứa tuổi',
-          'Hình ảnh hoạt hình đầy màu sắc và âm nhạc vui nhộn',
-          'Tương tác với khán giả nhí qua trò chơi và câu đố',
-        ],
-        strengths: [
-          'Giá trị giáo dục tích cực cho trẻ em',
-          'An toàn nội dung 100%, không có yếu tố bạo lực hay ngôn ngữ không phù hợp',
-        ],
-        weaknesses: [
-          'Cần mở rộng thêm phiên bản tương tác đa nền tảng (mobile/tablet)',
-        ],
-        narrativeFlow:
-          'Mở đầu hấp dẫn, duy trì nhịp độ vui tươi ổn định, kết thúc bằng bài học dễ nhớ.',
-        targetAudienceDetails:
-          'Trẻ em 4-12 tuổi và phụ huynh xem cùng con; phù hợp phát sóng ban ngày và cuối tuần.',
-      };
-    }
-
-    if (
-      cat === 'DOCUMENTARY' ||
-      cat === 'DOC' ||
-      /(phim tài liệu|tài liệu|documentary|khám phá)/i.test(text)
-    ) {
-      return {
-        ...base,
-        highlights: [
-          'Phóng sự điều tra chuyên sâu với nguồn tư liệu độc quyền',
-          'Góc nhìn học thuật kết hợp câu chuyện nhân văn',
-          'Hình ảnh quay tại hiện trường chân thực, giàu tính thẩm mỹ',
-        ],
-        strengths: [
-          'Giá trị thông tin cao, khả năng tạo chủ đề thảo luận xã hội',
-          'Phù hợp phát sóng nhiều lần (evergreen content)',
-        ],
-        weaknesses: [
-          'Cần rà soát kỹ thuật thuật ngữ để dễ tiếp cận khán giả phổ thông',
-        ],
-        narrativeFlow:
-          'Xây dựng theo cấu trúc 3 hồi (Setup-Development-Resolution) với hook mở đầu hấp dẫn.',
-        targetAudienceDetails:
-          'Khán giả trưởng thành 25-55, người yêu thích nội dung học thuật và khám phá tri thức.',
-      };
-    }
-
-    if (
-      cat === 'COMEDY' ||
-      /(hài|hài kịch|truyện cười|stand.up|stand-up)/i.test(text)
-    ) {
-      return {
-        ...base,
-        highlights: [
-          'Các tiểu phẩm hài kịch tình huống dí dỏm, gần gũi',
-          'Phản biện xã hội nhẹ nhàng qua lăng kính hài hước',
-          'Dàn diễn viên tài năng với phong cách biểu diễn đặc sắc',
-        ],
-        strengths: [
-          'Khả năng viral cao qua mạng xã hội (quote-worthy moments)',
-          'Giải trí nhẹ nhàng, phù hợp phát sóng khung giờ gia đình',
-        ],
-        weaknesses: [
-          'Cần cân nhắc biên tập để tránh ngôn ngữ vượt quá T13 ở khung giờ sớm',
-        ],
-        narrativeFlow:
-          'Nhịp độ nhanh, đan xen punchline ngắn gọn; kết thúc bằng payoff bất ngờ.',
-        targetAudienceDetails:
-          'Khán giả 16-35, gia đình xem cùng nhau, fans của stand-up và sketch comedy.',
-      };
-    }
-
-    if (
-      cat === 'TALKSHOW' ||
-      cat === 'TALK_SHOW' ||
-      /(talkshow|talk show|trò chuyện|phỏng vấn)/i.test(text)
-    ) {
-      return {
-        ...base,
-        highlights: [
-          'Cuộc trò chuyện sâu sắc với nhân vật nổi bật trong tuần',
-          'Chia sẻ góc nhìn cá nhân và câu chuyện hậu trường',
-          'Tương tác trực tiếp với khán giả qua hotline/mạng xã hội',
-        ],
-        strengths: [
-          'Xây dựng kết nối cảm xúc giữa khách mời và khán giả',
-          'Chi phí sản xuất thấp, dễ tái sử dụng nội dung',
-        ],
-        weaknesses: [
-          'Phụ thuộc nhiều vào chất lượng khách mời và kỹ năng MC',
-        ],
-        narrativeFlow:
-          'Mở đầu nhẹ nhàng (Warm-up), đào sâu vào chủ đề chính và kết thúc bằng thông điệp đáng nhớ.',
-        targetAudienceDetails:
-          'Khán giả 22-45, đặc biệt là giới văn phòng và người yêu thích nội dung chân thực.',
-      };
-    }
-
-    return base;
   }
+
+  /**
+   * Split a description into sentences. Handles both Vietnamese
+   * full-stops and common separators (semicolons, newlines) so a
+   * description written as a bullet list still yields usable units.
+   */
+  private splitSentences(text: string): string[] {
+    if (!text) return [];
+    return text
+      .split(/(?<=[.!?…])\s+|[;\n]+|•|·/u)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 12)
+      .slice(0, 12);
+  }
+
+  /**
+   * How "distinctive" a sentence is — i.e. how likely it carries a
+   * concrete fact worth reporting (a number, a proper noun, a named
+   * event) rather than generic filler.
+   */
+  private distinctivenessScore(sentence: string): number {
+    let score = 0;
+
+    // Digits (dates, quantities, counts).
+    if (/\d/.test(sentence)) score += 3;
+
+    // Capitalised words that are NOT the first word of the sentence
+    // and not a common sentence-initial particle — a decent proxy
+    // for proper nouns in Vietnamese (which has no capitalisation
+    // convention of its own).
+    const words = sentence.split(/\s+/);
+    for (let i = 1; i < words.length; i += 1) {
+      const w = words[i].replace(/[^\p{L}\p{N}]/gu, '');
+      if (w.length < 2) continue;
+      if (!/^\p{Lu}/u.test(w)) continue;
+      if (AiCuratorService.STOPWORDS.has(w.toLowerCase())) continue;
+      score += 2;
+    }
+
+    // Quototed names — a strong signal of a concrete entity.
+    if (/["“”'«»]/u.test(sentence)) score += 2;
+
+    // Very short sentences rarely carry a full fact.
+    if (sentence.length < 25) score -= 1;
+
+    return score;
+  }
+
+  /**
+   * The list of things a curator would want to know that the program
+   * record does NOT provide. Drives both the "weaknesses" bullets in
+   * the heuristic fallback and the `infoGaps` field of the grounding
+   * block.
+   */
+  private extractInfoGaps(program: any): string[] {
+    const gaps: string[] = [];
+    const desc = (program?.description ?? '').trim();
+
+    if (!desc) {
+      gaps.push('Mô tả nội dung chương trình');
+    } else if (desc.length < 60) {
+      gaps.push('Mô tả nội dung chương trình (quá ngắn)');
+    }
+
+    if (!program?.duration && !program?.durationSeconds) {
+      gaps.push('Thời lượng thực tế');
+    }
+
+    const tags = program?.tags;
+    if (!Array.isArray(tags) || tags.length === 0) {
+      gaps.push('Thẻ (tag) phân loại nội dung');
+    }
+
+    if (!program?.language) {
+      gaps.push('Ngôn ngữ phát sóng');
+    }
+
+    const cat = program?.channel?.category ?? program?.category;
+    if (!cat) {
+      gaps.push('Thể loại kênh phát sóng');
+    }
+
+    return gaps;
+  }
+
+  /**
+   * A short, honest note about the program structure. When the
+   * description is long enough we infer the shape from the number of
+   * segments; otherwise we say plainly that it can't be assessed.
+   */
+  private buildNarrativeFlow(sentences: string[], cat: string): string {
+    if (sentences.length === 0) {
+      return 'Chưa đủ thông tin để đánh giá nhịp độ và mạch dẫn dắt.';
+    }
+    if (sentences.length === 1) {
+      return 'Mô tả chương trình chỉ có một đoạn, chưa đủ cơ sở để đánh giá mạch dẫn dắt.';
+    }
+    const segmentHint =
+      sentences.length >= 4
+        ? 'Mô tả chia thành nhiều nội dung nhỏ, gợi ý chương trình có nhiều phân đoạn được xử lý liên tục.'
+        : 'Mô tả tập trung vào một vài nội dung chính, phù hợp với chương trình có cấu trúc đơn giản.';
+    const genreHint = cat
+      ? ` Định dạng dự kiến theo thể loại ${cat}.`
+      : '';
+    return `${segmentHint}${genreHint}`;
+  }
+
+  /**
+   * Audience description. Only mentions the audience when the source
+   * supports it; otherwise it names the gap instead of inventing a
+   * demographic.
+   */
+  private buildAudienceDetails(program: any, cat: string): string {
+    const desc = (program?.description ?? '').trim();
+    const audienceMatch = desc.match(
+      /(khán giả|người xem|đối tượng|trẻ em|thiếu nhi|thanh thiếu niên|người lớn|cả gia đình)/i,
+    );
+
+    if (audienceMatch) {
+      return `Mô tả có đề cập tới đối tượng khán giả: "${this.truncateAtWord(
+        this.sentenceAround(desc, audienceMatch.index ?? 0),
+        300,
+      )}"`;
+    }
+
+    if (cat) {
+      return `Chưa nêu rõ đối tượng khán giả trong mô tả; tạm xếp theo thể loại kênh ${cat}.`;
+    }
+
+    return 'Chưa đủ thông tin để xác định nhóm khán giả mục tiêu cụ thể.';
+  }
+
+  /** Return the sentence containing the given character offset. */
+  private sentenceAround(text: string, index: number): string {
+    const sentences = this.splitSentences(text);
+    if (sentences.length === 0) return text.slice(0, 300);
+    let cursor = 0;
+    for (const s of sentences) {
+      const at = text.indexOf(s, cursor);
+      if (at === -1) continue;
+      cursor = at + s.length;
+      if (index >= at && index <= cursor) return s;
+    }
+    return sentences[0];
+  }
+
+  /** Truncate a string at a word boundary (never mid-word). */
+  private truncateAtWord(value: string, max: number): string {
+    const text = (value ?? '').trim();
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const lastSpace = cut.lastIndexOf(' ');
+    return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+  }
+
 
   /**
    * Đánh giá chuẩn về Hình thức & Kỹ thuật dàn dựng.
@@ -1453,11 +1808,34 @@ export class AiCuratorService {
       sa.scoringBreakdown ??
       this.synthesizeScoringBreakdown(row, { sentimentAnalysis: sa }, row);
 
+    // The grounding block is persisted inside the `sentimentAnalysis`
+    // JSON blob. Legacy rows (written before prompt v5) don't have
+    // one — we synthesise a minimal, honest block rather than
+    // dropping the field.
+    const rawGrounding = row.grounding ?? sa.grounding;
+    const grounding: Grounding = {
+      sourceExcerpts: Array.isArray(rawGrounding?.sourceExcerpts)
+        ? rawGrounding.sourceExcerpts.filter(
+            (e: unknown): e is string => typeof e === 'string',
+          )
+        : [],
+      infoGaps: Array.isArray(rawGrounding?.infoGaps)
+        ? rawGrounding.infoGaps.filter(
+            (e: unknown): e is string => typeof e === 'string',
+          )
+        : [],
+      groundingScore:
+        typeof rawGrounding?.groundingScore === 'number'
+          ? Math.max(0, Math.min(100, rawGrounding.groundingScore))
+          : 0,
+    };
+
     return {
       ...row,
       contentAssessment,
       formatAssessment,
       scoringBreakdown,
+      grounding,
       sentimentAnalysis: {
         overallSentiment: sa.overallSentiment ?? 'neutral',
         hypeLevel: sa.hypeLevel ?? 'medium',
@@ -1582,6 +1960,36 @@ export class AiCuratorService {
     return Math.max(0, Math.min(100, Math.round(value)));
   }
 
+  /**
+   * Discount the confidence score when the report doesn't actually
+   * track the source text.
+   *
+   *   - groundingScore ≥ 70 → no penalty (the report is well
+   *     supported by the description).
+   *   - groundingScore < 55 → up to a 20-point penalty, scaled
+   *     linearly. A report that reads like a generic template earns
+   *     a low score and therefore a low confidence.
+   *
+   * The threshold matches the "LOW_GROUNDING_THRESHOLD" used by the
+   * UI to flag weakly-grounded reports.
+   */
+  private applyGroundingPenalty(
+    confidence: number,
+    grounding?: Grounding,
+  ): number {
+    if (!grounding || !Number.isFinite(grounding.groundingScore)) {
+      return confidence;
+    }
+    const score = grounding.groundingScore;
+    if (score >= 70) return confidence;
+    if (score >= 55) {
+      // Mild discount in the "acceptable but not great" band.
+      return confidence - (70 - score) * 0.5;
+    }
+    const penalty = ((55 - score) / 55) * 20;
+    return confidence - penalty;
+  }
+
   // ───────────────────────────────────────────────────────────────
   // INPUT BUILDERS
   // ───────────────────────────────────────────────────────────────
@@ -1594,6 +2002,10 @@ export class AiCuratorService {
       scheduledAt: program.scheduledAt,
       language: program.language ?? undefined,
       tags: program.tags ?? [],
+      durationSeconds:
+        typeof program.duration === 'number' && program.duration > 0
+          ? program.duration
+          : undefined,
       channel: program.channel
         ? {
             id: program.channel.id,
@@ -1622,6 +2034,10 @@ export class AiCuratorService {
       scheduledAt: dto.scheduledAt,
       language: dto.language,
       tags: dto.tags,
+      durationSeconds:
+        typeof dto.duration === 'number' && dto.duration > 0
+          ? dto.duration
+          : undefined,
       channel: dto.channelName
         ? { name: dto.channelName, category: dto.category }
         : undefined,
