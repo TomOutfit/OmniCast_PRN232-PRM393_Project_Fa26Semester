@@ -69,8 +69,12 @@ $LanIp = if ($null -ne $candidate) { $candidate.IPAddress } else { '127.0.0.1' }
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $config = [System.IO.File]::ReadAllText($ConfigFile, [System.Text.Encoding]::UTF8)
 
+# The tunnel only publishes HLS over HTTPS; WebRTC stays on the LAN.
+# The ICE candidates are discovered live from the network interfaces
+# (`webrtcIPsFromInterfaces: true` in the shared config), so no IP is
+# hard-coded here - a DHCP renewal cannot leave a stale candidate.
 $pattern = '(?m)^webrtcAdditionalHosts:[^\r\n]*'
-$config = [regex]::Replace($config, $pattern, ('webrtcAdditionalHosts: ["' + $LanIp + '", "127.0.0.1"]'))
+$config = [regex]::Replace($config, $pattern, 'webrtcAdditionalHosts: []')
 $pattern = '(?m)^hlsAddress:[^\r\n]*'
 $config = [regex]::Replace($config, $pattern, ('hlsAddress: :' + $HlsPort))
 $pattern = '(?m)^webrtcAddress:[^\r\n]*'
@@ -122,6 +126,30 @@ Write-Host " [Local HLS Port]     : http://localhost:$HlsPort" -ForegroundColor 
 Write-Host " [Local WHIP Ingest]  : http://localhost:$WebRtcPort" -ForegroundColor Cyan
 Write-Host " [LAN IP]             : $LanIp" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Green
+
+# 6b. Publish the tunnel URL as MEDIAMTX_PUBLIC_BASE_URL in backend/.env
+# The backend resolves the media host from this variable first, so every
+# newly created live event is handed the tunnel URL (HTTPS — no mixed
+# content on the Vercel deployment) instead of a LAN IP that only works
+# for devices on this Wi-Fi.
+$EnvFile = Join-Path $BackendDir '.env'
+if (Test-Path $EnvFile) {
+  try {
+    $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $envText = [System.IO.File]::ReadAllText($EnvFile, [System.Text.Encoding]::UTF8)
+    $pattern = '(?m)^MEDIAMTX_PUBLIC_BASE_URL=.*$'
+    if ($envText -match $pattern) {
+      $envText = [regex]::Replace($envText, $pattern, "MEDIAMTX_PUBLIC_BASE_URL=$TunnelUrl")
+    } else {
+      $envText = $envText.TrimEnd() + "`r`nMEDIAMTX_PUBLIC_BASE_URL=$TunnelUrl`r`n"
+    }
+    [System.IO.File]::WriteAllText($EnvFile, $envText, $Utf8NoBom)
+    Write-Host "==> MEDIAMTX_PUBLIC_BASE_URL set to $TunnelUrl" -ForegroundColor Green
+    Write-Host "    (restart the backend to pick it up)" -ForegroundColor DarkGray
+  } catch {
+    Write-Warn "Could not update MEDIAMTX_PUBLIC_BASE_URL: $_"
+  }
+}
 
 # 7. Update database active live events with the Tunnel HTTPS URL
 Write-Host "==> Synchronizing Tunnel URL with Active Live Events in Cloud Database..." -ForegroundColor Yellow

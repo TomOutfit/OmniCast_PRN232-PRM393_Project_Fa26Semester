@@ -5,9 +5,9 @@
 # Used by:
 #   (A) Windows binary - `backend/scripts/start-mediamtx.ps1`
 #       The script copies this file to `mediamtx.local.yml`,
-#       injects the detected LAN IP into `webrtcAdditionalHosts`
-#       and starts MediaMTX with that copy. This file itself
-#       therefore stays machine-independent.
+#       copies this file to `mediamtx.local.yml`, applies the
+#       requested ports and starts MediaMTX with that copy. This
+#       file itself therefore stays machine-independent.
 #   (B) Docker - `backend/docker-compose.yml`
 #       Mounts this file read-only and overrides
 #       `webrtcAdditionalHosts` through the
@@ -74,11 +74,14 @@ webrtcAllowOrigins: ["*"]
 webrtcLocalUDPAddress: :8189
 webrtcLocalTCPAddress: :8189
 webrtcIPsFromInterfaces: true
-# Extra ICE candidates advertised on top of the machine's own
-# interfaces. Native branch: filled in by start-mediamtx.ps1
-# (mediamtx.local.yml). Docker branch: supplied through the
-# MTX_WEBRTCADDITIONALHOSTS environment variable.
-webrtcAdditionalHosts: ["192.168.1.88"]
+# Extra ICE candidates advertised on top of the machine's own.
+# Empty by default: `webrtcIPsFromInterfaces` already advertises the
+# machine's live addresses and MediaMTX re-reads them for every
+# WHIP/WHEP session, so the candidates survive a DHCP change.
+# Docker branch: supplied through the MTX_WEBRTCADDITIONALHOSTS
+# environment variable, because a container only sees the Docker
+# bridge and never the host's LAN adapter.
+webrtcAdditionalHosts: []
 
 # - API + metrics ----------------------------------------------
 # Upstream restricts the `api` and `metrics` actions to

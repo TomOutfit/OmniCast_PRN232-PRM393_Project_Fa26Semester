@@ -4,21 +4,49 @@
 #
 # Usage
 #   .\scripts\start-mediamtx.ps1
-#   .\scripts\start-mediamtx.ps1 -PublicHost 192.168.1.88
+#   .\scripts\start-mediamtx.ps1 -PublicHost 192.168.1.204
 #   .\scripts\start-mediamtx.ps1 -HlsPort 8888 -WebRtcPort 8889
 #   .\scripts\start-mediamtx.ps1 -SyncEnv
+#   .\scripts\start-mediamtx.ps1 -SyncEnvOnly   # only write .env, don't launch
 #
 # What it does
 #   1. Detects the LAN IP of this machine (or uses -PublicHost).
 #   2. Generates `backend/mediamtx/mediamtx.local.yml` from the
-#      shared `backend/mediamtx/mediamtx.yml`, injecting the LAN IP
-#      into `webrtcAdditionalHosts` and the requested ports, then
-#      launches MediaMTX with the generated file.
+#      shared `backend/mediamtx/mediamtx.yml`, applying the requested
+#      ports and - only when `-PublicHost` was passed explicitly - the
+#      advertised WebRTC host, then launches MediaMTX with the
+#      generated file.
 #      The shared file is never modified, so the Docker branch
 #      always starts from the exact same configuration.
 #   3. Downloads `mediamtx.exe` (v1.21.3) on first run into
 #      `backend/mediamtx/`.
 #   4. Prints the URLs you need for `backend/.env`.
+#
+# Why `webrtcAdditionalHosts` is normally left EMPTY
+# --------------------------------------------------
+#   The shared `mediamtx.yml` sets `webrtcIPsFromInterfaces: true`,
+#   so MediaMTX collects the machine's current IP addresses straight
+#   from the OS adapters. In the upstream source
+#   (`internal/protocols/webrtc/peer_connection.go`) that lookup runs
+#   inside `removeUnwantedCandidates`, which executes for EVERY
+#   WHIP/WHEP session - the advertised candidates therefore always
+#   reflect the addresses the machine has at that moment.
+#
+#   Hard-coding the LAN IP here would be redundant AND harmful:
+#   MediaMTX reads its YAML only at startup, so a DHCP renewal would
+#   leave a stale candidate in the SDP answer while the interface
+#   derived one would be correct - the browser would then waste time
+#   on a dead candidate.
+#
+#   `-PublicHost` is still honoured when passed explicitly: that is
+#   the escape hatch for the rare case where the address MediaMTX
+#   should advertise is NOT one of this machine's own interfaces
+#   (port-forwarded NAT address, VPN address, ...).
+#
+# `-SyncEnvOnly` performs steps 1 and 4 only — it writes the detected
+# IP into `backend/.env` and exits without downloading or launching
+# anything. Use it for the Docker branch, where the container needs
+# the host's LAN IP for the WebRTC ICE handshake.
 #
 # Encoding note (do not "simplify" this away)
 #   MediaMTX parses the YAML with a strict YAML->JSON decoder and
@@ -48,10 +76,17 @@ param(
   # Skip the download step even if mediamtx.exe is missing.
   [switch]$NoDownload,
   # Write the detected URLs back into `backend/.env` (MEDIAMTX_* keys only).
-  [switch]$SyncEnv
+  [switch]$SyncEnv,
+  # Only detect the LAN IP and write it into `backend/.env` — do not
+  # download or launch MediaMTX. Used by the Docker branch.
+  [switch]$SyncEnvOnly
 )
 
 $ErrorActionPreference = 'Stop'
+
+# An explicitly supplied -PublicHost means "advertise THIS address
+# even if it is not one of my own interfaces" (NAT / VPN).
+$PublicHostExplicit = -not [string]::IsNullOrWhiteSpace($PublicHost)
 
 $MediaMtxVersion = 'v1.21.3'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -129,12 +164,24 @@ if (-not (Test-Path $ConfigFile)) {
 # decoder keeps the remaining characters intact.
 $config = [System.IO.File]::ReadAllText($ConfigFile, [System.Text.Encoding]::UTF8)
 
-$config = Set-YamlValue $config 'webrtcAdditionalHosts' ('["' + $PublicHost + '"]')
+if ($PublicHostExplicit) {
+  # Only for an explicitly requested host. Otherwise MediaMTX
+  # discovers the machine's own addresses live (webrtcIPsFromInterfaces),
+  # which keeps the ICE candidates correct across DHCP changes.
+  $config = Set-YamlValue $config 'webrtcAdditionalHosts' ('["' + $PublicHost + '"]')
+} else {
+  $config = Set-YamlValue $config 'webrtcAdditionalHosts' '[]'
+}
 $config = Set-YamlValue $config 'hlsAddress' (':' + $HlsPort)
 $config = Set-YamlValue $config 'webrtcAddress' (':' + $WebRtcPort)
 
 [System.IO.File]::WriteAllText($LocalConfigFile, $config, $Utf8NoBom)
 Write-Ok "Generated $LocalConfigFile (PublicHost=$PublicHost, HLS=$HlsPort, WebRTC=$WebRtcPort)"
+if ($PublicHostExplicit) {
+  Write-Ok "WebRTC ICE host: $PublicHost (explicitly requested)"
+} else {
+  Write-Ok "WebRTC ICE host: auto-detected from network interfaces (DHCP-safe)"
+}
 
 # ── 3. Download mediamtx.exe if needed ──────────────────────────────────────
 if (-not (Test-Path $ExePath)) {
@@ -183,7 +230,7 @@ $webrtcUrl = "ws://${PublicHost}:$WebRtcPort"
 $rtmpUrl = "rtmp://${PublicHost}:1935"
 
 # ── 5. Optionally sync backend/.env ──────────────────────────────────────────
-if ($SyncEnv) {
+if ($SyncEnv -or $SyncEnvOnly) {
   if (-not (Test-Path $EnvFile)) {
     Write-Warn "No $EnvFile found - skipping env sync."
   } else {
@@ -193,9 +240,21 @@ if ($SyncEnv) {
     $envText = Set-DotenvValue $envText 'MEDIAMTX_WEBRTC_URL' $webrtcUrl
     $envText = Set-DotenvValue $envText 'MEDIAMTX_WHIP_URL' $whipUrl
     $envText = Set-DotenvValue $envText 'MEDIAMTX_RTMP_URL' $rtmpUrl
+    # This script configures plain LAN mode. A tunnel URL left over from
+    # `start-mediamtx-tunnel.ps1` would point at a dead endpoint, so it
+    # is cleared here — the backend then falls back to the LAN IP.
+    $envText = Set-DotenvValue $envText 'MEDIAMTX_PUBLIC_BASE_URL' ''
     [System.IO.File]::WriteAllText($EnvFile, $envText, $Utf8NoBom)
     Write-Ok "Updated MEDIAMTX_* values in $EnvFile"
   }
+}
+
+if ($SyncEnvOnly) {
+  Write-Host ''
+  Write-Ok "Env synced with LAN IP $PublicHost. Nothing was launched."
+  Write-Host '    Docker:  docker compose -f backend\docker-compose.yml up -d' -ForegroundColor DarkGray
+  Write-Host '    Native:  .\backend\scripts\start-mediamtx.ps1' -ForegroundColor DarkGray
+  exit 0
 }
 
 # ── 6. Launch ───────────────────────────────────────────────────────────────
