@@ -27,6 +27,7 @@ import {
   Flame,
   Gauge,
   Layers,
+  Link2,
   Radio,
   Shield,
   Sliders,
@@ -148,8 +149,54 @@ const confidenceToneClasses = {
   red: { bg: 'bg-red-500/20', text: 'text-red-300', bar: 'bg-red-400' },
 } as const;
 
-function scoreColor(score: number): { text: string; bar: string; badge: string } {
-  if (score >= 85) {
+/**
+ * Tone for the grounding score band. The thresholds mirror the
+ * backend's `applyGroundingPenalty()`: below 55 the report is
+ * considered weakly grounded and its confidence is discounted.
+ */
+function groundingTone(score: number): {
+  label: string;
+  grounding: {
+    bg: string;
+    text: string;
+    border: string;
+    bar: string;
+  };
+} {
+  if (score >= 70) {
+    return {
+      label: 'Báo cáo bám sát tốt với mô tả chương trình.',
+      grounding: {
+        bg: 'bg-emerald-500/20',
+        text: 'text-emerald-300',
+        border: 'border-emerald-500/40',
+        bar: 'bg-emerald-400',
+      },
+    };
+  }
+  if (score >= 55) {
+    return {
+      label: 'Báo cáo bám sát mô tả ở mức chấp nhận được.',
+      grounding: {
+        bg: 'bg-yellow-500/20',
+        text: 'text-yellow-300',
+        border: 'border-yellow-500/40',
+        bar: 'bg-yellow-400',
+      },
+    };
+  }
+  return {
+    label: 'Báo cáo bám sát nội dung yếu — nên rà soát lại mô tả chương trình.',
+    grounding: {
+      bg: 'bg-red-500/20',
+      text: 'text-red-300',
+      border: 'border-red-500/40',
+      bar: 'bg-red-400',
+    },
+  };
+}
+
+function scoreColor(score: number): { text: string; bar: string; badge: string } {  if (score >= 85) {
     return {
       text: 'text-emerald-400',
       bar: 'bg-emerald-500',
@@ -202,6 +249,12 @@ export function ReportDetail({ report }: ReportDetailProps) {
   const format = report.formatAssessment;
   const gradeInfo = scoring?.grade ? gradeConfig[scoring.grade] : null;
 
+  // Grounding (v5). Older reports persisted before prompt v5 have no
+  // grounding block — the section is simply omitted for them.
+  const grounding = report.grounding;
+  const groundingToneInfo = grounding
+    ? groundingTone(grounding.groundingScore)
+    : null;
   return (
     <div className="space-y-4 text-dark-100">
       {/* ─── HEADER: Tổng quan Phân loại & Chỉ số Phát sóng (OBI) ─── */}
@@ -686,7 +739,83 @@ export function ReportDetail({ report }: ReportDetailProps) {
         </div>
       )}
 
-      {/* ─── SECTION 5: Thông số Kỹ thuật Hệ thống & Độ tin cậy ─── */}
+      {/* ─── SECTION 5: Độ bám sát nội dung (Grounding) ─── */}
+      {grounding && groundingToneInfo && (
+        <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-emerald-400" />
+              Độ bám sát nội dung
+            </h4>
+            <span
+              className={cn(
+                'text-sm font-bold font-mono px-2 py-0.5 rounded border',
+                groundingToneInfo.grounding.bg,
+                groundingToneInfo.grounding.text,
+                groundingToneInfo.grounding.border,
+              )}
+            >
+              {grounding.groundingScore}%
+            </span>
+          </div>
+
+          {/* Score bar */}
+          <div className="h-1.5 w-full bg-dark-800 rounded-full overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                groundingToneInfo.grounding.bar,
+              )}
+              style={{ width: `${grounding.groundingScore}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-dark-400 leading-relaxed">
+            {groundingToneInfo.label} Điểm này do máy chủ tự chấm bằng cách
+            đối chiếu báo cáo với mô tả chương trình — không phải điểm do AI
+            tự khai.
+          </p>
+
+          {/* Source excerpts */}
+          {grounding.sourceExcerpts.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">
+                Trích dẫn từ mô tả nguồn:
+              </p>
+              {grounding.sourceExcerpts.map((excerpt, i) => (
+                <blockquote
+                  key={i}
+                  className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-dark-200 italic leading-relaxed"
+                >
+                  “{excerpt}”
+                </blockquote>
+              ))}
+            </div>
+          )}
+
+          {/* Information gaps */}
+          {grounding.infoGaps.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                Thiếu thông tin trong mô tả:
+              </p>
+              <ul className="space-y-1">
+                {grounding.infoGaps.map((gap, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-[11px] text-dark-200"
+                  >
+                    <span className="text-amber-400 shrink-0">•</span>
+                    <span>{gap}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── SECTION 6: Thông số Kỹ thuật Hệ thống & Độ tin cậy ─── */}
       <div className="p-3 rounded-xl bg-dark-900/30 border border-dark-800 space-y-2">
         {showConfidence && confidenceMeta && (
           <div className="space-y-1.5">
