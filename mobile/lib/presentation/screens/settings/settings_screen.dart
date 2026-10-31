@@ -1443,10 +1443,25 @@ class _ServerConfigCardState extends State<_ServerConfigCard> {
       // 2. Test MediaMTX Stream Host
       try {
         final mediaHost = AppConstants.mediaHost;
-        final mediaUri = Uri.parse('http://$mediaHost:8888/');
-        final req = await client.getUrl(mediaUri).timeout(const Duration(seconds: 4));
-        final res = await req.close().timeout(const Duration(seconds: 4));
-        mediaOk = (res.statusCode >= 200 && res.statusCode < 500);
+        if (mediaHost.isEmpty) {
+          // No host known yet — run a discovery sweep first.
+          final discovery = await LanDiscoveryService().autoDiscoverMediaHost(
+            timeout: const Duration(seconds: 3),
+          );
+          if (!discovery.success || (discovery.host ?? '').isEmpty) {
+            mediaOk = false;
+          } else {
+            final mediaUri = Uri.parse('http://${discovery.host}:8888/');
+            final req = await client.getUrl(mediaUri).timeout(const Duration(seconds: 4));
+            final res = await req.close().timeout(const Duration(seconds: 4));
+            mediaOk = (res.statusCode >= 200 && res.statusCode < 500);
+          }
+        } else {
+          final mediaUri = Uri.parse('http://$mediaHost:8888/');
+          final req = await client.getUrl(mediaUri).timeout(const Duration(seconds: 4));
+          final res = await req.close().timeout(const Duration(seconds: 4));
+          mediaOk = (res.statusCode >= 200 && res.statusCode < 500);
+        }
       } catch (_) {
         mediaOk = false;
       }
@@ -1537,7 +1552,7 @@ class _ServerConfigCardState extends State<_ServerConfigCard> {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: const Color(0xFF1E293B),
-                    hintText: 'https://my-backend.ngrok-free.app/api hoặc http://192.168.1.88:3000/api',
+                    hintText: 'https://my-backend.ngrok-free.app/api hoặc http://<LAN-IP>:3000/api',
                     hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1565,7 +1580,7 @@ class _ServerConfigCardState extends State<_ServerConfigCard> {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: const Color(0xFF1E293B),
-                    hintText: 'my-backend.ngrok-free.app hoặc 10.12.2.162 hoặc 192.168.1.88',
+                    hintText: 'my-backend.ngrok-free.app hoặc 192.168.1.204 (IP của máy chủ)',
                     hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1773,7 +1788,7 @@ class _ServerConfigCardState extends State<_ServerConfigCard> {
                   const Text('MediaMTX Host: ', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
                   Expanded(
                     child: Text(
-                      'http://${AppConstants.mediaHost}:8888',
+                      'http://${AppConstants.mediaHostDisplay}:8888',
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'JetBrainsMono', fontWeight: FontWeight.w600),
                     ),

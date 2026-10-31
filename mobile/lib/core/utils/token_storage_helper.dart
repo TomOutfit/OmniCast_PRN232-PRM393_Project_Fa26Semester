@@ -137,13 +137,34 @@ class TokenStorageHelper {
     return await _storage.read(key: AppConstants.customMediaHostKey);
   }
 
+  /// Persist the MediaMTX host found by LAN auto-discovery.
+  ///
+  /// The host is remembered so the app can start playing immediately
+  /// on the next launch, before the (asynchronous) discovery sweep
+  /// has had a chance to finish.
+  Future<void> saveDiscoveredMediaHost(String host) async {
+    final cleanHost = host.trim();
+    if (cleanHost.isEmpty) return;
+    await _storage.write(
+      key: AppConstants.discoveredMediaHostKey,
+      value: cleanHost,
+    );
+    AppConstants.setDiscoveredMediaHost(cleanHost);
+  }
+
+  Future<String?> getDiscoveredMediaHost() async {
+    return await _storage.read(key: AppConstants.discoveredMediaHostKey);
+  }
+
   Future<void> clearCustomNetworkConfig() async {
     await Future.wait([
       _storage.delete(key: AppConstants.customBaseUrlKey),
       _storage.delete(key: AppConstants.customMediaHostKey),
+      _storage.delete(key: AppConstants.discoveredMediaHostKey),
     ]);
     AppConstants.setCustomBaseUrl('');
     AppConstants.setCustomMediaHost('');
+    AppConstants.setDiscoveredMediaHost('');
   }
 
   // Onboarding

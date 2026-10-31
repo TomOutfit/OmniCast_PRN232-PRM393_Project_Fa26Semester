@@ -72,6 +72,11 @@ void main() async {
     AppConstants.setCustomMediaHost(customMediaHost);
   }
 
+  // Restore the MediaMTX host remembered from the previous run so the
+  // first player already points at the right machine. The background
+  // discovery below verifies (and if needed replaces) it.
+  await LanDiscoveryService().restorePersistedHost();
+
   // Zero-Config: Auto-discover local MediaMTX streaming server on the same Wi-Fi
   unawaited(LanDiscoveryService().autoDiscoverMediaHost());
 
