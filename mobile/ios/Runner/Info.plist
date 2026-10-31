@@ -57,6 +57,28 @@
 	<string>OmniCast cần quyền truy cập microphone để thu âm thanh trong buổi phát sóng trực tiếp.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>OmniCast cần quyền truy cập thư viện ảnh để lưu video đã quay.</string>
+	<!-- Local Network access: MediaMTX (HLS/WebRTC) runs on the local
+	     Wi-Fi network, so iOS 14+ requires an explicit permission and
+	     an ATS exception for plain HTTP on LAN addresses. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>OmniCast cần quyền truy cập mạng nội bộ (Wi-Fi) để phát trực tiếp và nhận luồng video từ máy chủ truyền thông trong mạng.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
