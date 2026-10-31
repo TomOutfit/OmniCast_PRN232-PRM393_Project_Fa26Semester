@@ -18,6 +18,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import '../constants/app_constants.dart';
+import '../utils/token_storage_helper.dart';
 
 class LanDiscoveryResult {
   final bool success;
@@ -227,7 +228,30 @@ class LanDiscoveryService {
   void _applyDiscoveredHost(String host) {
     _lastDiscoveredHost = host;
     AppConstants.setDiscoveredMediaHost(host);
+    // Remember the host so the next app launch can play immediately,
+    // without waiting for the discovery sweep to complete.
+    unawaited(TokenStorageHelper().saveDiscoveredMediaHost(host));
     debugPrint('[LanDiscovery] ⚡ Successfully auto-connected to MediaMTX at $host:8888 (Wi-Fi Auto-Discovery)');
+  }
+
+  /// Restore the MediaMTX host remembered from the previous run.
+  ///
+  /// Called during startup so the first player already points at the
+  /// right machine. The host is verified afterwards by
+  /// [autoDiscoverMediaHost], which replaces it if it is stale.
+  Future<String?> restorePersistedHost() async {
+    try {
+      final persisted = await TokenStorageHelper().getDiscoveredMediaHost();
+      if (persisted != null && persisted.trim().isNotEmpty) {
+        AppConstants.setDiscoveredMediaHost(persisted.trim());
+        _lastDiscoveredHost = persisted.trim();
+        debugPrint('[LanDiscovery] ♻️ Restored persisted media host: $persisted');
+        return persisted.trim();
+      }
+    } catch (e) {
+      debugPrint('[LanDiscovery] Could not restore persisted host: $e');
+    }
+    return null;
   }
 
   /// Probe a specific host on a port to see if MediaMTX is active.
@@ -267,7 +291,13 @@ class LanDiscoveryService {
         final text = await response.transform(utf8.decoder).join();
         final map = jsonDecode(text);
         if (map is Map) {
-          final lanIp = map['lanIp']?.toString();
+          // The API wraps every payload in an envelope:
+          //   { success, statusCode, data: { lanIp, publicHost, ... } }
+          // so the fields live one level down. Older builds read them
+          // from the top level, which made this tier ALWAYS fail and
+          // silently fall through to the slower UDP / subnet probes.
+          final payload = (map['data'] is Map) ? map['data'] as Map : map;
+          final lanIp = payload['lanIp']?.toString() ?? payload['publicHost']?.toString();
           if (lanIp != null && _isPrivateIpv4(lanIp)) {
             return lanIp;
           }
@@ -324,11 +354,19 @@ class LanDiscoveryService {
     }
   }
 
+  /// True for any usable local IPv4 address.
+  ///
+  /// The old check only accepted RFC1918 ranges (`10/8`, `192.168/16`,
+  /// `172.16/12`). Many campus / lab networks hand out addresses in
+  /// `172.9.x` — which is OUTSIDE `172.16/12` and therefore looked
+  /// "public" — so the discovery silently rejected the very server it
+  /// was looking for. We now accept every literal IPv4 except
+  /// loopback and link-local.
   static bool _isPrivateIpv4(String ip) {
-    if (ip == 'localhost' || ip == '127.0.0.1') return false;
-    return ip.startsWith('192.168.') ||
-        ip.startsWith('10.') ||
-        RegExp(r'^172\.(1[6-9]|2\d|3[0-1])\.').hasMatch(ip);
+    if (ip.isEmpty) return false;
+    if (ip == 'localhost' || ip == '127.0.0.1' || ip == '::1') return false;
+    if (ip.startsWith('169.254.')) return false;
+    return RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(ip);
   }
 }
 

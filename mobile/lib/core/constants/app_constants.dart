@@ -33,11 +33,17 @@ class AppConstants {
 
   static String get discoveredMediaHost => _discoveredMediaHost;
 
+  /// Human-readable media host for the UI. Falls back to a placeholder
+  /// when no host has been discovered yet, so the user is not shown a
+  /// broken "http://:8888".
+  static String get mediaHostDisplay {
+    final host = mediaHost;
+    return host.isEmpty ? 'chưa phát hiện (đang tìm trong LAN…)' : host;
+  }
+
   static String get mediaHost {
     if (_customMediaHost.isNotEmpty) return _customMediaHost;
-    if (_discoveredMediaHost.isNotEmpty && _discoveredMediaHost != '192.168.1.88') {
-      return _discoveredMediaHost;
-    }
+    if (_discoveredMediaHost.isNotEmpty) return _discoveredMediaHost;
     final apiUri = Uri.tryParse(baseUrl);
     if (apiUri != null &&
         apiUri.host.isNotEmpty &&
@@ -46,8 +52,10 @@ class AppConstants {
         apiUri.host != '127.0.0.1') {
       return apiUri.host;
     }
-    // Dynamic default: auto-updated by LanDiscoveryService on Wi-Fi connect
-    return '172.9.8.239';
+    // No host is known yet. Returning an empty string makes the caller
+    // fall back to LAN auto-discovery instead of dialling a hard-coded
+    // IP that belongs to another network. See `LanDiscoveryService`.
+    return '';
   }
 
   static const String cdnBaseUrl = 'https://omnicast.tv';
@@ -80,6 +88,7 @@ class AppConstants {
   static const String dataSaverKey = 'app_data_saver';
   static const String customBaseUrlKey = 'custom_base_url';
   static const String customMediaHostKey = 'custom_media_host';
+  static const String discoveredMediaHostKey = 'discovered_media_host';
 
   /// Derive WebSocket base URL from baseUrl (e.g. https://... -> wss://...)
   static String get socketUrl {
