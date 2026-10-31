@@ -16,6 +16,7 @@ import { LoggerService } from './common/utils/logger.service';
 import { isOriginAllowed, parseAllowedOrigins } from './common/utils/cors';
 
 import { setupSwagger } from './common/swagger/swagger.config';
+import { PROMPT_VERSION } from './ai-curator/ai-curator.prompts';
 
 // Global BigInt JSON serialization support
 if (typeof (BigInt.prototype as any).toJSON !== 'function') {
@@ -154,10 +155,11 @@ async function bootstrap() {
   //   key empty OR === "dummy-key"  → heuristic-fallback-v1
   //   any other non-empty string     → gpt-4o-omnicast-v3
   //
-  // Bumped to include the prompt version (curator-prompt-v4.0.0) so
-  // you can verify in Vercel logs which prompt family is live. See
-  // backend/src/ai-curator/ai-curator.prompts.ts for the full prompt
-  // template and version history.
+  // Bumped to include the prompt version so you can verify in Vercel
+  // logs which prompt family is live. The version is read from the
+  // PROMPT_VERSION constant so the banner can never drift from the
+  // actual prompt. See backend/src/ai-curator/ai-curator.prompts.ts
+  // for the full prompt template and version history.
   const openaiKey = configService.get<string>('OPENAI_API_KEY');
   const usingRealModel = !!openaiKey && openaiKey !== 'dummy-key';
   const modelTag = usingRealModel
@@ -168,7 +170,7 @@ async function bootstrap() {
     'Bootstrap',
   );
   logger.log(
-    `📝 AI Curator prompt: curator-prompt-v4.0.0 (consolidated, JSON schema + few-shot, 7 fallback categories)`,
+    `📝 AI Curator prompt: ${PROMPT_VERSION} (consolidated, JSON schema + few-shot, GROUNDING RULES, server-verified grounding score)`,
     'Bootstrap',
   );
 }

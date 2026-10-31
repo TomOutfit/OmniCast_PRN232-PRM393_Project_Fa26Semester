@@ -3,7 +3,7 @@
 > **Owner:** OmniCast PRN232 (AI Content Curation)  
 > **Stack:** NestJS (Backend) · Next.js (Web Studio) · Flutter (Mobile Studio)  
 > **RBAC:** `STAFF` · `ADMIN` only  
-> **Current model:** `gpt-4o-omnicast-v3` · **Current prompt:** `curator-prompt-v4.0.0` (consolidated single-call)
+> **Current model:** `gpt-4o-omnicast-v3` · **Current prompt:** `curator-prompt-v5.0.0` (consolidated single-call + grounding)
 
 ---
 
@@ -26,10 +26,10 @@ flowchart LR
     subgraph NestJS["Backend · Single-Call Pipeline"]
         C[Controller]
         S[Service]
-        P[Prompt Builder<br/>curator-prompt-v4.0.0]
+        P[Prompt Builder<br/>curator-prompt-v5.0.0<br/>+ GROUNDING RULES]
         Z[Zod Schema Validator]
         R[Retry Helper<br/>exp backoff + jitter]
-        H[Heuristic Fallback<br/>7 categories]
+        H[Heuristic Fallback<br/>description-driven]
         DB[(Prisma<br/>LiveEvent<br/>AiCuratorReport)]
         AL[AuditLogger]
         OAI[OpenAI API<br/>gpt-4o]
@@ -87,7 +87,7 @@ flowchart LR
    `confidence` field is **NOT** persisted (no DB column), only returned
    in the API response.
 
-### Heuristic fallback (7 categories)
+### Heuristic fallback
 
 | Category | Key matches | Production format | Special handling |
 |----------|-------------|-------------------|------------------|
@@ -99,6 +99,99 @@ flowchart LR
 | `COMEDY` | `hài`, `hài kịch`, `truyện cười`, `stand-up` | Multi-cam studio + live audience, FAST_PACED | +12 commercial, +10 appeal |
 | `TALKSHOW` | `talkshow`, `talk show`, `trò chuyện`, `phỏng vấn` | 2-4 guest conversation, MODERATE | +8 content, +5 commercial |
 | _Other_ | (any) | Generic talkshow+documentary hybrid | Default weights |
+
+---
+
+## Grounding overhaul (prompt v5 — 2026-10-31)
+
+Prompt v5 fixes the core complaint that "the AI report doesn't match
+the program". Three things changed:
+
+### 1. The prompt now carries the full program context
+
+| Field | Before | After |
+|-------|--------|-------|
+| `Category` | hard-coded `"Chương trình"` from the web client | the real `channel.category` |
+| `Tags` | dropped by the client (never sent) | sent and rendered in the prompt |
+| `Language` | dropped by the client (never sent) | sent and rendered in the prompt |
+| `Duration` | not sent at all | sent as seconds, rendered as `1h 30m` |
+
+### 2. `GROUNDING RULES` block
+
+The prompt now carries six rules that take priority over everything
+else:
+
+1. **SOURCE-ONLY** — every factual claim must be traceable to the
+   program input. No invented names, numbers, dates, or guests.
+2. **NO FILLER** — the bullet arrays may be *empty*. A thin
+   description is allowed to produce zero highlights.
+3. **DECLARE GAPS, DON'T GUESS** — missing information goes into
+   `infoGaps` instead of being invented.
+4. **QUOTE VERBATIM** — `sourceExcerpts` must be copied character for
+   character from the description.
+5. **GENERALISED JUDGEMENTS ARE ALLOWED** — editorial judgements are
+   fine as long as they are phrased as judgements.
+6. **HONEST NUMBERS** — a thin description scores *lower*.
+
+The few-shot section was also replaced: the old single sports example
+biased the model toward sports phrasing. v5 ships **three** examples
+(news with a rich description, documentary with a medium description,
+and a thin description) that demonstrate the JSON structure and the
+grounding behaviour without biasing toward a genre.
+
+### 3. The backend verifies the grounding itself
+
+The model reports `groundingScore`, but the backend **never trusts
+it**. `computeGroundingScore()` recomputes the score from the source
+text on every run:
+
+| Component | Weight | What it measures |
+|-----------|--------|------------------|
+| Coverage | 0–70 | Share of the description's key terms (stopwords removed) that appear in the generated content assessment |
+| Citation honesty | 0–30 | Share of `sourceExcerpts` that are verbatim in the description (normalised: lowercased, diacritics stripped) |
+| Source richness ceiling | cap | The score can never exceed `100 × (distinct key terms / 20)` — a one-line description caps the score low even when quoted back perfectly |
+| Fabrication penalty | −12 each | Each excerpt that isn't in the source. Any fabrication also caps the score at 45 |
+
+The recomputed score **overwrites** the model's value, and it is used
+to discount the report's `confidence`:
+
+| Grounding score | Confidence impact |
+|-----------------|-------------------|
+| ≥ 70 | No penalty |
+| 55–69 | Mild discount (`(70 − score) × 0.5`) |
+| < 55 | Up to a 20-point discount, scaled linearly |
+
+### Grounding block (new response field)
+
+```json
+"grounding": {
+  "sourceExcerpts": ["cứu hộ 8 người bị lũ quét ở Nghệ An"],
+  "infoGaps": ["Không rõ tình trạng cứu hộ hiện tại"],
+  "groundingScore": 88
+}
+```
+
+The block is persisted inside the `sentimentAnalysis` JSON blob, so no
+Prisma migration is required. Legacy rows written before v5 simply
+return an empty grounding block with a score of `0`.
+
+### Heuristic fallback now reads the description too
+
+The old fallback returned a fixed set of template bullets chosen by
+channel category — it never read the description, so a program with a
+rich description got the same generic "Tường thuật trực tiếp diễn
+biến kịch tính" bullet as a program with no description at all.
+
+The fallback now **extracts** the assessment from the real description:
+
+- `summary` → the first meaningful sentence(s)
+- `highlights` → sentences carrying distinctive content (numbers,
+  proper nouns, quoted names)
+- `strengths` → the most information-dense sentences
+- `weaknesses` → derived from the declared information gaps
+
+When the description is too thin to support a claim, the arrays are
+left **empty** rather than padded with filler.
 
 ---
 
@@ -128,7 +221,8 @@ Content-Type: application/json
 | `category` | string | max 60 chars · optional | Channel category (e.g. `SPORTS`, `MUSIC`) |
 | `language` | string | ISO 639-1 · optional | Broadcast language |
 | `scheduledAt` | string | ISO 8601 · optional | Planned air time (anchors editorial decision) |
-| `tags` | string[] | max 10 tags · optional | Tags to enrich sentiment prompt |
+| `tags` | string[] | max 20 tags · optional | Tags to enrich sentiment prompt |
+| `duration` | number | 0–86,400 (seconds) · optional | Program duration — used to judge pacing and pick a fitting slot |
 
 **Success response** — `AiCuratorReport` (preview mode, never persisted):
 
@@ -173,8 +267,17 @@ Content-Type: application/json
     "overallScore": 92,
     "grade": "S"
   },
+  "grounding": {
+    "sourceExcerpts": [
+      "Trận chung kết giải bóng đá lớn nhất hành tinh"
+    ],
+    "infoGaps": [
+      "Không rõ tên các cầu thủ tham dự"
+    ],
+    "groundingScore": 88
+  },
   "aiModelVersion": "gpt-4o-omnicast-v3",
-  "promptVersion": "curator-prompt-v4.0.0",
+  "promptVersion": "curator-prompt-v5.0.0",
   "processingTimeMs": 1340,
   "pipelineMs": 1340,
   "openaiCallMs": 1180,
@@ -217,7 +320,7 @@ Accept: text/event-stream
 
 ```
 event: meta
-data: {"type":"started","promptVersion":"curator-prompt-v4.0.0","model":"gpt-4o","startedAt":"2026-10-19T..."}
+data: {"type":"started","promptVersion":"curator-prompt-v5.0.0","model":"gpt-4o","startedAt":"2026-10-19T..."}
 
 event: delta
 data: {"text":"{\n  \"sentiment"}
@@ -304,7 +407,7 @@ Content-Type: application/json
   "formatAssessment": { "...": "..." },
   "scoringBreakdown": { "...": "..." },
   "aiModelVersion": "gpt-4o-omnicast-v3",
-  "promptVersion": "curator-prompt-v4.0.0",
+  "promptVersion": "curator-prompt-v5.0.0",
   "processingTimeMs": 1340,
   "pipelineMs": 1340,
   "openaiCallMs": 1180,
@@ -403,8 +506,9 @@ Returns aggregated stats over the time window. Used by the Web Studio dashboard.
 | `contentAssessment` | object | `{ summary, highlights[], strengths[], weaknesses[], narrativeFlow, targetAudienceDetails }` |
 | `formatAssessment` | object | `{ productionFormat, pacing, visualAudioRequirements[], interactivityLevel, technicalRecommendations }` |
 | `scoringBreakdown` | object | `{ contentQuality, productionValue, audienceAppeal, complianceSafety, commercialPotential, overallScore, grade }` |
+| `grounding` | object | `{ sourceExcerpts[], infoGaps[], groundingScore }` — the evidence trail. `groundingScore` is always recomputed server-side |
 | `aiModelVersion` | string | `"gpt-4o-omnicast-v3"` or `"heuristic-fallback-v1"` |
-| `promptVersion` | string | e.g. `"curator-prompt-v4.0.0"` — bumped when prompt family changes |
+| `promptVersion` | string | e.g. `"curator-prompt-v5.0.0"` — bumped when prompt family changes |
 | `processingTimeMs` | number | Total pipeline wall-clock time (alias of `pipelineMs`) |
 | `pipelineMs` | number | Total pipeline wall-clock time |
 | `openaiCallMs` | number \| undefined | Time inside the single OpenAI call (undefined in heuristic) |
@@ -474,9 +578,12 @@ Has OPENAI_API_KEY?
 └─ NO  → Heuristic fallback (heuristic-fallback-v1)
 ```
 
-The heuristic path covers 7 channel categories with non-generic treatment:
-SPORTS, NEWS, MUSIC/SHOW/ENTERTAINMENT, KIDS, DOCUMENTARY, COMEDY, TALKSHOW.
-Other categories fall through to a generic talkshow+documentary hybrid.
+The heuristic path is **description-driven**: it extracts the content
+assessment from the real program description rather than returning
+category templates (see "Heuristic fallback now reads the description
+too" above). Category-specific handling still applies to the format
+assessment and the score weights for SPORTS, NEWS, MUSIC/SHOW/
+ENTERTAINMENT, KIDS, DOCUMENTARY, COMEDY and TALKSHOW.
 
 ---
 
@@ -518,7 +625,7 @@ Every cold-start logs two lines so operators can confirm which pipeline is live:
 
 ```
 [Bootstrap] 🤖 AI Curator model: gpt-4o-omnicast-v3 (REAL — OpenAI GPT-4o, single consolidated call, Zod-validated, retry-aware)
-[Bootstrap] 📝 AI Curator prompt: curator-prompt-v4.0.0 (consolidated, JSON schema + few-shot, 7 fallback categories)
+[Bootstrap] 📝 AI Curator prompt: curator-prompt-v5.0.0 (consolidated, JSON schema + few-shot, GROUNDING RULES, server-verified grounding score)
 ```
 
 If `OPENAI_API_KEY` is missing, the first line shows `heuristic-fallback-v1 (no OPENAI_API_KEY — local rules engine)`.
@@ -614,6 +721,7 @@ npm run start:dev
 
 | Date | Change |
 |------|--------|
+| 2026-10-31 | **Prompt v5 grounding overhaul:** added the `GROUNDING RULES` block (source-only claims, no filler, declare gaps, quote verbatim), replaced the single sports few-shot with three diverse examples (news / documentary / thin description), added `Duration` / `Language` / `Tags` / real channel `Category` to the prompt input, added the `grounding` response field (`sourceExcerpts` / `infoGaps` / `groundingScore`), added backend-side `computeGroundingScore()` (key-term coverage + citation verification + source-richness ceiling + fabrication penalty) that **overwrites** the model-reported score, added the grounding-based confidence discount, rewrote the heuristic fallback to extract the content assessment from the real description instead of returning category templates, relaxed the bullet-count bounds (`highlights` 0–8, `strengths` 0–5, `weaknesses` 0–4), added the `duration` field to the preview DTO / validator / web + mobile clients, added the "Độ bám sát nội dung" section to the web + mobile report UIs, fixed the Curator Studio bug where a fresh report was not shown until the curator re-clicked the row, fixed the Curator Studio bug where a background refetch replaced the report with a loader, fixed the web client dropping `category` / `tags` / `language` from the analyze payload |
 | 2026-10-19 | **Premium AI quality overhaul:** consolidated 3 OpenAI calls → 1, added Zod validation + exp. backoff retry, added prompt versioning, added `pipelineMs`/`openaiCallMs`/`openaiRetries`/`validationError` fields, added streaming endpoint (`GET /analyze-stream`), expanded heuristic fallback to 7 categories, upgraded confidence formula |
 | 2026-10-19 | Added startup banner (`[Bootstrap] AI Curator model: ...` + `AI Curator prompt: ...`) so operators can see which pipeline is wired up |
 | 2026-10-19 | Promoted `OPENAI_API_KEY` from optional to **required in production** — `.env.example` updated with explicit instructions |
