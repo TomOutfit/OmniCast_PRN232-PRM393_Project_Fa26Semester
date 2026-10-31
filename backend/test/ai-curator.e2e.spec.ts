@@ -311,6 +311,13 @@ test('E2E: POST /ai-curator/analyze → 200 OK returns preview report (no `id`)'
   assert.ok(report.sentimentAnalysis);
   assert.ok(report.complianceAssessment);
   assert.equal(typeof report.confidence, 'number');
+  // Grounding (v5): the evidence trail is always present.
+  assert.ok(report.grounding, 'preview report exposes grounding');
+  assert.ok(Array.isArray(report.grounding.sourceExcerpts));
+  assert.ok(Array.isArray(report.grounding.infoGaps));
+  assert.equal(typeof report.grounding.groundingScore, 'number');
+  assert.ok(report.grounding.groundingScore >= 0);
+  assert.ok(report.grounding.groundingScore <= 100);
 });
 
 test('E2E: POST /ai-curator/analyze → 400 BadRequest when title < 3 chars', async () => {

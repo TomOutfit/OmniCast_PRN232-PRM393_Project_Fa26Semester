@@ -596,3 +596,265 @@ test('confidence for age-restricted content is in the lower half', async () => {
     `expected low confidence on age-restricted doc, got ${report.confidence}`,
   );
 });
+// ---------------------------------------------------------------
+// Grounding (prompt v5 — 2026-10-31)
+//
+// The grounding block records WHERE each claim came from, which
+// information was MISSING, and how closely the report tracks the
+// source text. The score is always recomputed server-side; the
+// model-reported number is never trusted.
+// ---------------------------------------------------------------
+
+test('grounding block is present on every report (heuristic path)', async () => {
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Chung kết World Cup 2026',
+      description:
+        'Trận chung kết giải bóng đá lớn nhất hành tinh, trực tiếp từ sân vận động với bình luận viên chuyên sâu.',
+      channelName: 'VTV3 HD',
+      category: 'SPORTS',
+      tags: ['the thao'],
+    },
+    'user-1',
+  );
+
+  assert.ok(report.grounding, 'grounding must be present');
+  assert.ok(Array.isArray(report.grounding.sourceExcerpts));
+  assert.ok(Array.isArray(report.grounding.infoGaps));
+  assert.ok(typeof report.grounding.groundingScore === 'number');
+  assert.ok(report.grounding.groundingScore >= 0);
+  assert.ok(report.grounding.groundingScore <= 100);
+});
+
+test('grounding sourceExcerpts are verbatim excerpts of the description', async () => {
+  const { service } = makeService();
+  const description =
+    'Cập nhật tin nóng về cứu hộ 8 người bị lũ quét ở Nghệ An và phát biểu của Bộ trưởng Bộ TT&TT.';
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Bản tin thời sự 19h',
+      description,
+      channelName: 'VTV1',
+      category: 'NEWS',
+    },
+    'user-1',
+  );
+
+  const excerpts = report.grounding.sourceExcerpts as string[];
+  assert.ok(excerpts.length > 0, 'expected at least one excerpt');
+  for (const excerpt of excerpts) {
+    assert.ok(
+      description.includes(excerpt),
+      `excerpt is not a verbatim slice of the description: "${excerpt}"`,
+    );
+  }
+});
+
+test('a thin description produces NO invented bullets', async () => {
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Chương trình âm nhạc số 7',
+      description: 'Chương trình âm nhạc.',
+      channelName: 'VTV6',
+      category: 'MUSIC',
+    },
+    'user-1',
+  );
+
+  // The old implementation always returned 3 generic highlights and
+  // 2 strengths regardless of the source. The new one must not pad.
+  assert.deepEqual(report.contentAssessment.highlights, []);
+  assert.deepEqual(report.contentAssessment.strengths, []);
+  // The weakness points at the missing description instead.
+  assert.ok(report.contentAssessment.weaknesses.length > 0);
+  // And the missing info is declared in infoGaps.
+  assert.ok(report.grounding.infoGaps.length > 0);
+  // A report about a one-line description cannot be well grounded.
+  assert.ok(
+    report.grounding.groundingScore <= 50,
+    `expected a low grounding score for a thin description, got ${report.grounding.groundingScore}`,
+  );
+});
+
+test('the content assessment is derived from the real description', async () => {
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Chuyện đời người thợ mộc',
+      description:
+        'Phim tài liệu ngắn về nghề mộc truyền thống ở vùng Tây Bắc, qua lời kể của ba thế hệ thợ mộc.',
+      channelName: 'VTV4',
+      category: 'DOCUMENTARY',
+    },
+    'user-1',
+  );
+
+  const summary: string = report.contentAssessment.summary;
+  assert.ok(
+    summary.includes('mộc') || summary.includes('tây bắc'),
+    `summary should quote the description, got: "${summary}"`,
+  );
+  // The highlights must mention something from the source, not the
+  // old generic sports/news templates.
+  const highlights: string[] = report.contentAssessment.highlights;
+  assert.ok(highlights.length > 0);
+  const joined = highlights.join(' ').toLowerCase();
+  assert.ok(
+    joined.includes('mộc') || joined.includes('thợ'),
+    `highlights should be grounded in the description, got: "${joined}"`,
+  );
+  assert.ok(
+    !joined.includes('tường thuật trực tiếp diễn biến kịch tính'),
+    'must not fall back to the old SPORTS template',
+  );
+});
+
+test('grounding score is LOWER when the model fabricates its citations', async () => {
+  const { service } = makeService();
+  const description = 'Trận chung kết giải bóng đá lớn nhất hành tinh.';
+  const programInput = {
+    title: 'Chung kết World Cup 2026',
+    description,
+    channel: { name: 'VTV3', category: 'SPORTS' },
+  };
+  const contentAssessment = {
+    summary: 'Trận chung kết giải bóng đá lớn nhất hành tinh.',
+    highlights: ['Trận chung kết giải bóng đá lớn nhất hành tinh'],
+    strengths: [] as string[],
+    weaknesses: [] as string[],
+  };
+
+  // Reach into the private scoring helper — the model-facing API
+  // can't fabricate excerpts without an OpenAI key, but the scoring
+  // rule itself must be verifiable.
+  const svc = service as any;
+  const honest = svc.computeGroundingScore(programInput, {
+    contentAssessment,
+    sourceExcerpts: ['Trận chung kết giải bóng đá lớn nhất hành tinh'],
+  });
+  const fabricated = svc.computeGroundingScore(programInput, {
+    contentAssessment,
+    sourceExcerpts: [
+      'Bình luận viên nổi tiếng John Smith trực tiếp từ Madrid',
+    ],
+  });
+
+  assert.ok(
+    fabricated.score < honest.score,
+    `a fabricated citation must lower the score (honest=${honest.score}, fabricated=${fabricated.score})`,
+  );
+  assert.equal(honest.fabricatedExcerpts, 0);
+  assert.equal(fabricated.fabricatedExcerpts, 1);
+  // A fabricated quote is capped hard.
+  assert.ok(fabricated.score <= 45);
+});
+
+test('the backend OVERWRITES the model-reported grounding score', async () => {
+  const { service } = makeService();
+  const svc = service as any;
+
+  const report = svc.reportFromConsolidated(
+    {
+      title: 'Chương trình âm nhạc',
+      description: 'Chương trình âm nhạc.',
+      channel: { name: 'VTV6', category: 'MUSIC' },
+    },
+    {
+      sentiment: {
+        overallSentiment: 'neutral',
+        hypeLevel: 'low',
+        audienceEngagement: 40,
+      },
+      compliance: {
+        isAgeRestricted: false,
+        ageRating: 'PG',
+        flaggedContent: [],
+        recommendedBroadcastWindow: 'EVENING',
+      },
+      editorial: {
+        broadcastSuitability: 'STANDARD',
+        suggestedTimeSlot: '20:00 - 21:00',
+        targetAudienceVibe: 'Khán giả nghe nhạc.',
+        riskWarnings: 'Phù hợp mọi đối tượng.',
+        contentAssessment: {
+          summary: 'Chương trình âm nhạc.',
+          highlights: [],
+          strengths: [],
+          weaknesses: [],
+          narrativeFlow: 'Chưa đủ thông tin.',
+          targetAudienceDetails: 'Chưa đủ thông tin.',
+        },
+        formatAssessment: {
+          productionFormat: 'Chương trình âm nhạc',
+          pacing: 'MODERATE',
+          visualAudioRequirements: ['Âm thanh stereo'],
+          interactivityLevel: 'MEDIUM',
+          technicalRecommendations: 'Cần mô tả thêm.',
+        },
+        scoringBreakdown: {
+          contentQuality: 45,
+          productionValue: 55,
+          audienceAppeal: 40,
+          complianceSafety: 96,
+          commercialPotential: 55,
+          overallScore: 57,
+          grade: 'C',
+        },
+        // The model claims a perfect grounding score — the backend
+        // must not believe it.
+        grounding: {
+          sourceExcerpts: ['một trích dẫn hoàn toàn bịa đặt'],
+          infoGaps: [],
+          groundingScore: 100,
+        },
+      },
+    },
+  );
+
+  assert.ok(report.grounding);
+  assert.notEqual(report.grounding.groundingScore, 100);
+  assert.ok(report.grounding.groundingScore <= 45);
+});
+
+test('duration is accepted by the preview DTO and forwarded', async () => {
+  const { service } = makeService();
+  const report: any = await service.analyzePreview(
+    {
+      title: 'Bản tin thời sự 19h',
+      description: 'Cập nhật tin tức trong ngày tại Việt Nam.',
+      channelName: 'VTV1',
+      category: 'NEWS',
+      duration: 1800,
+    },
+    'user-1',
+  );
+  // The report itself doesn't expose the duration, but the pipeline
+  // must not have thrown and must still produce a valid report.
+  assert.ok(report.grounding);
+  assert.ok(report.contentAssessment.summary);
+});
+
+test('grounding is persisted alongside the report and read back', async () => {
+  const { service, prisma } = makeService();
+  seedProgram(prisma, {
+    title: 'Chuyện đời người thợ mộc',
+    description:
+      'Phim tài liệu ngắn về nghề mộc truyền thống ở vùng Tây Bắc, qua lời kể của ba thế hệ thợ mộc.',
+    channel: { id: 'channel-3', name: 'VTV4', category: 'DOCUMENTARY' },
+  });
+
+  const out: any = await service.curateContent(
+    { programId: 'program-1' },
+    'user-1',
+  );
+  assert.ok(out.grounding, 'the returned report exposes grounding');
+  assert.ok(typeof out.grounding.groundingScore === 'number');
+
+  // Persisted inside the sentimentAnalysis JSON blob.
+  const persisted = prisma.lastCreateArgs.data.sentimentAnalysis;
+  assert.ok(persisted.grounding, 'grounding is persisted in the JSON blob');
+  assert.ok(Array.isArray(persisted.grounding.sourceExcerpts));
+  assert.ok(typeof persisted.grounding.groundingScore === 'number');
+});
