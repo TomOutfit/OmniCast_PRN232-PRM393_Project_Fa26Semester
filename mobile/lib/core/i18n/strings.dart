@@ -258,6 +258,14 @@ class AppStrings {
       'en': 'Channel name (optional)',
     },
     'curator.channelHint': {'vi': 'VD: VTV3 HD', 'en': 'e.g. Sports HD'},
+    'curator.durationFieldLabel': {
+      'vi': 'Thời lượng (phút, tùy chọn)',
+      'en': 'Duration (minutes, optional)',
+    },
+    'curator.durationHint': {
+      'vi': 'VD: 45',
+      'en': 'e.g. 45',
+    },
 
     // Buttons
     'curator.runAnalysisButton': {
