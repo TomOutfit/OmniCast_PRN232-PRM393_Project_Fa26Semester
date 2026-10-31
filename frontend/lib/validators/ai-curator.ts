@@ -38,6 +38,17 @@ export const aiCuratorRequestSchema = z.object({
     .max(LIMITS.AI_TAGS_MAX, `Tối đa ${LIMITS.AI_TAGS_MAX} tag`)
     .optional(),
 
+  /**
+   * Program duration in seconds. The model uses it to judge pacing
+   * and to avoid suggesting a slot that can't hold the content.
+   */
+  duration: z
+    .number()
+    .int('Thời lượng phải là số nguyên')
+    .min(0, 'Thời lượng không thể âm')
+    .max(LIMITS.DURATION_MAX_SEC, `Thời lượng tối đa ${LIMITS.DURATION_MAX_SEC} giây`)
+    .optional(),
+
   channelName: z.string().max(120).optional().or(z.literal('')),
 });
 export type AiCuratorRequestInput = z.infer<typeof aiCuratorRequestSchema>;

@@ -63,9 +63,38 @@ export function toReportShape(
     contentAssessment: history.contentAssessment,
     formatAssessment: history.formatAssessment,
     scoringBreakdown: history.scoringBreakdown,
+    grounding: history.grounding,
     confidence: history.confidence,
     agentTimings: history.agentTimings,
     aiModelVersion: history.aiModelVersion,
     processingTimeMs: history.processingTimeMs,
   };
+}
+
+/**
+ * Which branch the right-hand report panel should render.
+ *
+ *   - `loading`  — the detail query is still in flight AND there is
+ *                   no report to show yet.
+ *   - `report`   — a report exists; render it (even if a background
+ *                   refetch is in flight — the loader must never hide
+ *                   content the curator is already reading).
+ *   - `analyzing`— the model is currently working on this program and
+ *                   there is no report yet.
+ *   - `empty`    — nothing to show; render the empty state.
+ *
+ * Kept as a pure function so the branching rule is unit-testable
+ * without a DOM (the page itself renders via `renderToString`).
+ */
+export type ReportPanelState = 'loading' | 'report' | 'analyzing' | 'empty';
+
+export function resolveReportPanelState(input: {
+  hasReport: boolean;
+  isFetching: boolean;
+  isAnalyzing: boolean;
+}): ReportPanelState {
+  if (input.hasReport) return 'report';
+  if (input.isAnalyzing) return 'analyzing';
+  if (input.isFetching) return 'loading';
+  return 'empty';
 }
