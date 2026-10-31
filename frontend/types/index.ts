@@ -298,6 +298,21 @@ export interface ScoringBreakdown {
   grade: 'S' | 'A' | 'B' | 'C' | 'D';
 }
 
+/**
+ * Evidence trail for a curator report (prompt v5).
+ *
+ * `groundingScore` is recomputed server-side on every run — it is
+ * never the model's own self-assessment.
+ */
+export interface AiCuratorGrounding {
+  /** Verbatim quotes taken from the program description. */
+  sourceExcerpts: string[];
+  /** Information a curator would need that the description lacks. */
+  infoGaps: string[];
+  /** How closely the report tracks the source (0-100). */
+  groundingScore: number;
+}
+
 export interface AiCuratorReport {
   broadcastSuitability: 'PRIME_TIME' | 'STANDARD' | 'RESTRICTED';
   suggestedTimeSlot: string;
@@ -317,6 +332,11 @@ export interface AiCuratorReport {
   contentAssessment?: ContentAssessment;
   formatAssessment?: FormatAssessment;
   scoringBreakdown?: ScoringBreakdown;
+  /**
+   * Evidence trail: verbatim source quotes, declared information
+   * gaps, and the server-computed grounding score.
+   */
+  grounding?: AiCuratorGrounding;
   aiModelVersion: string;
   processingTimeMs: number;
   /**

@@ -65,6 +65,8 @@ export interface AnalyzeRequest {
   language?: string;
   scheduledAt?: string;
   tags?: string[];
+  /** Program duration in seconds (used for pacing / slot analysis). */
+  duration?: number;
   channelName?: string;
 }
 
