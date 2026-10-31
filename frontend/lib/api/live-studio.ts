@@ -4,6 +4,10 @@
 
 import apiClient, { getApiBaseUrl } from '@/lib/api';
 import {
+  rewriteMediaHostForClient,
+  rewriteMediaUrlForClient,
+} from '@/lib/net-host';
+import {
   deleteCloudinaryAsset,
   signCloudinaryUpload,
   uploadToCloudinaryDirect,
@@ -148,33 +152,22 @@ export async function fetchIngestConfig(): Promise<IngestConfig> {
   const res = await apiClient.get('/programs/studio/live/ingest-config');
   const data = res.data;
 
-  // Wi-Fi Stream Optimization: If accessed from another device on the same LAN,
-  // adapt any localhost URLs to the active LAN hostname
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1' && !window.location.hostname.includes('vercel.app')
-  ) {
-    const lanHost = window.location.hostname;
-    const rewrite = (u?: string) =>
-      u ? u.replace(/\b(localhost|127\.0\.0\.1)\b/g, lanHost) : u;
+  // Wi-Fi Stream Optimization: when the browser runs on a LAN device,
+  // any `localhost` / stale-IP MediaMTX URL is rewritten to the host
+  // the browser is currently using. This uses the ONE shared rule in
+  // `lib/net-host.ts` (the same one `lib/utils.ts` uses), so the
+  // ingest URLs and the playback URLs can never disagree.
+  const publicHost = rewriteMediaHostForClient(data.publicHost);
 
-    return {
-      ...data,
-      publicHost:
-        data.publicHost === 'localhost' || data.publicHost === '127.0.0.1'
-          ? lanHost
-          : data.publicHost,
-      hlsUrl: rewrite(data.hlsUrl)!,
-      hlsIndexUrlTemplate: rewrite(data.hlsIndexUrlTemplate)!,
-      webrtcUrl: rewrite(data.webrtcUrl)!,
-      whipUrl: rewrite(data.whipUrl)!,
-      whipUrlTemplate: rewrite(data.whipUrlTemplate)!,
-    };
-  }
-
-  return data;
+  return {
+    ...data,
+    publicHost,
+    hlsUrl: rewriteMediaUrlForClient(data.hlsUrl)!,
+    hlsIndexUrlTemplate: rewriteMediaUrlForClient(data.hlsIndexUrlTemplate)!,
+    webrtcUrl: rewriteMediaUrlForClient(data.webrtcUrl)!,
+    whipUrl: rewriteMediaUrlForClient(data.whipUrl)!,
+    whipUrlTemplate: rewriteMediaUrlForClient(data.whipUrlTemplate)!,
+  };
 }
 
 export async function startWebcamLive(

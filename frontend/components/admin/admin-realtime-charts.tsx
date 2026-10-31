@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/lib/api';
 import { useChannelCategories, useChannels } from '@/lib/hooks/useChannels';
 import { useLiveNow } from '@/lib/hooks/usePrograms';
 import { useDbPoolMetrics } from '@/lib/hooks/useDbPool';
@@ -185,7 +186,12 @@ export function AdminRealtimeCharts() {
     const measurePing = async () => {
       try {
         const start = performance.now();
-        await fetch('/api/health/ping', { method: 'GET', cache: 'no-store' }).catch(() => null);
+        // Use the shared axios client so the ping hits the SAME backend
+        // the rest of the app talks to. A relative URL would go to the
+        // Next.js dev server (and, in production, be rewritten to the
+        // deployed API), which measures the wrong round-trip time on a
+        // LAN.
+        await apiClient.get('/health/ping').catch(() => null);
         const end = performance.now();
         const rtt = Math.round(end - start);
         if (isMounted.current && rtt > 0 && rtt < 2000) {

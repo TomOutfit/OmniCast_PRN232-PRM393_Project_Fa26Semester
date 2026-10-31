@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketBaseUrl } from '@/lib/net-host';
 import { LiveComment, fetchLiveEventComments, postLiveEventComment } from '@/lib/api/live';
 
 export interface BroadcasterAnnouncement {
@@ -114,23 +115,11 @@ export function useLiveSession(
   useEffect(() => {
     if (!eventId) return;
 
-    let socketBase = 'http://localhost:3000';
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname;
-      const isLocalOrLan =
-        host === 'localhost' ||
-        host === '127.0.0.1' ||
-        /^192\.168\.\d+\.\d+$/.test(host) ||
-        /^10\.\d+\.\d+\.\d+$/.test(host) ||
-        /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
-
-      if (isLocalOrLan) {
-        socketBase = `http://${host}:3000`;
-      } else {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnicast-api.vercel.app';
-        socketBase = apiUrl.replace(/\/api.*$/, '');
-      }
-    }
+    // Same origin rule as the Axios client and the other socket hook
+    // (see `lib/net-host.ts`). The old inline RFC1918 regex made the
+    // socket fall back to production while the REST calls stayed on
+    // the local backend.
+    const socketBase = getSocketBaseUrl();
 
     const token =
       typeof window !== 'undefined'

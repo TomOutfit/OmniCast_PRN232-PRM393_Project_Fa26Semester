@@ -15,6 +15,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketBaseUrl } from '@/lib/net-host';
 
 // Types
 export interface LiveEvent {
@@ -102,23 +103,12 @@ export function useLiveStream(
       return;
     }
 
-    let socketBase = 'http://localhost:3000';
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname;
-      const isLocalOrLan =
-        host === 'localhost' ||
-        host === '127.0.0.1' ||
-        /^192\.168\.\d+\.\d+$/.test(host) ||
-        /^10\.\d+\.\d+\.\d+$/.test(host) ||
-        /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host);
-
-      if (isLocalOrLan) {
-        socketBase = `http://${host}:3000`;
-      } else {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnicast-api.vercel.app';
-        socketBase = apiUrl.replace(/\/api.*$/, '');
-      }
-    }
+    // Resolve the Socket.IO origin with the SAME rule as the Axios
+    // client (see `lib/net-host.ts`): on a LAN host we talk to the
+    // backend on this machine, everywhere else to the deployed API.
+    // The old inline RFC1918 regex made the socket jump to production
+    // while the REST calls stayed local.
+    const socketBase = getSocketBaseUrl();
 
     debug(`Connecting to ${socketBase}/live`);
 
