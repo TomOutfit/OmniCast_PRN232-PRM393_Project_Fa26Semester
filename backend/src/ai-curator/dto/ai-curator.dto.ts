@@ -8,12 +8,22 @@ import {
   IsBoolean,
   IsOptional,
   IsArray,
+  ArrayMaxSize,
   IsDateString,
   IsIn,
+  IsInt,
+  Max,
+  Min,
   MaxLength,
   MinLength,
   ValidateIf,
 } from 'class-validator';
+
+/**
+ * Maximum number of tags accepted on a preview payload. Mirrors the
+ * frontend's `LIMITS.AI_TAGS_MAX` and the `TAGS_MAX` column limit.
+ */
+export const AI_TAGS_MAX = 20;
 
 /**
  * Mode 1 — Curate an EXISTING live event (program already saved in DB).
@@ -78,7 +88,20 @@ export class AnalyzeContentPreviewDto {
   @ApiPropertyOptional({ description: 'Optional tags to enrich the sentiment prompt' })
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(AI_TAGS_MAX)
   tags?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      'Program duration in seconds. Used to judge pacing and to pick a time slot that can actually hold the program.',
+    minimum: 0,
+    maximum: 86400,
+  })
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  @Max(86400)
+  duration?: number;
 
   @ApiPropertyOptional({ description: 'Display name of the parent channel' })
   @IsString()

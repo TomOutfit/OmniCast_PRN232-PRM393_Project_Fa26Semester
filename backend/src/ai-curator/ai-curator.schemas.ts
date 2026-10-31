@@ -35,7 +35,15 @@ const ShortText = z.string().min(1).max(600);
 /** A multi-line string capped at 1500 chars. */
 const LongText = z.string().min(1).max(1500);
 
-/** Non-empty string array, 1-10 items, each ≤ 300 chars. */
+/**
+ * Non-empty string array, 1-10 items, each ≤ 300 chars.
+ *
+ * Kept as the generic default; individual fields override the bounds
+ * with `.min()` / `.max()` because the right number of bullets depends
+ * on how much source material the program actually has (see the
+ * GROUNDING RULES in `ai-curator.prompts.ts` — a thin description
+ * must be allowed to produce ZERO highlights rather than filler).
+ */
 const ShortTextList = z
   .array(z.string().min(1).max(300))
   .min(1)
@@ -68,9 +76,12 @@ export const ComplianceAssessmentSchema = z.object({
 
 export const ContentAssessmentSchema = z.object({
   summary: LongText,
-  highlights: ShortTextList.min(3).max(5),
-  strengths: ShortTextList.min(2).max(4),
-  weaknesses: ShortTextList.min(1).max(3),
+  // Relaxed bounds (v5): a program with a rich description can
+  // support up to 8 highlights, while a thin description may have
+  // none at all. The upper bound is 8 / 5 / 4 respectively.
+  highlights: ShortTextList.min(0).max(8),
+  strengths: ShortTextList.min(0).max(5),
+  weaknesses: ShortTextList.min(0).max(4),
   narrativeFlow: ShortText,
   targetAudienceDetails: ShortText,
 });
@@ -94,6 +105,41 @@ export const ScoringBreakdownSchema = z.object({
 });
 
 // ───────────────────────────────────────────────────────────────
+// GROUNDING (v5)
+//
+// The grounding block is what makes a report auditable: it records
+// WHERE each claim came from, which facts were missing from the
+// source, and how closely the generated text actually tracks the
+// program description.
+//
+// `groundingScore` is intentionally NOT trusted from the model — the
+// backend recomputes it in `computeGroundingScore()` and overwrites
+// whatever the model produced. The field is kept in the schema so a
+// model that omits it still validates.
+// ───────────────────────────────────────────────────────────────
+
+export const GroundingSchema = z.object({
+  /**
+   * Verbatim excerpts copied from the program description that
+   * support the report's claims. The backend verifies each excerpt
+   * actually appears in the source text (normalised) and penalises
+   * fabricated quotes.
+   */
+  sourceExcerpts: z.array(z.string().min(1).max(400)).max(6),
+  /**
+   * Facts the curator would need but which are NOT present in the
+   * program description. Populating this instead of inventing
+   * content is the core anti-hallucination rule of prompt v5.
+   */
+  infoGaps: z.array(z.string().min(1).max(300)).max(5),
+  /**
+   * How closely the report tracks the source (0-100). Always
+   * recomputed server-side — the model's own number is advisory only.
+   */
+  groundingScore: z.number().min(0).max(100),
+});
+
+// ───────────────────────────────────────────────────────────────
 // TOP-LEVEL EDITORIAL DECISION
 // ───────────────────────────────────────────────────────────────
 
@@ -111,6 +157,12 @@ export const EditorialDecisionSchema = z.object({
   contentAssessment: ContentAssessmentSchema,
   formatAssessment: FormatAssessmentSchema,
   scoringBreakdown: ScoringBreakdownSchema,
+  /**
+   * Evidence trail for the editorial verdict. Optional in the schema
+   * (older prompt versions don't emit it) but ALWAYS present in a
+   * report the backend returns — the service fills it in.
+   */
+  grounding: GroundingSchema.optional(),
 });
 
 // ───────────────────────────────────────────────────────────────
