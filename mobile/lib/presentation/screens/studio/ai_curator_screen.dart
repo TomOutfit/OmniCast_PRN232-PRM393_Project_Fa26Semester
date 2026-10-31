@@ -70,6 +70,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _channelController = TextEditingController();
+  final _durationController = TextEditingController();
 
   // Programs list (for apply-curation flow)
   List<_ScheduledProgram> _programs = [];
@@ -99,6 +100,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     _titleController.dispose();
     _descController.dispose();
     _channelController.dispose();
+    _durationController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -163,6 +165,10 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     });
 
     try {
+      // Duration is expressed in MINUTES in the form; the API takes
+      // seconds. An unparseable / empty value is simply omitted so the
+      // backend treats the duration as unknown.
+      final durationMinutes = int.tryParse(_durationController.text.trim());
       final report = await _curatorRepo.analyze(
         title: title,
         description: _descController.text.trim().isEmpty
@@ -171,6 +177,9 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         channelName: _channelController.text.trim().isEmpty
             ? null
             : _channelController.text.trim(),
+        duration: (durationMinutes != null && durationMinutes > 0)
+            ? durationMinutes * 60
+            : null,
       );
 
       if (!mounted) return;
@@ -385,6 +394,16 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             controller: _channelController,
             label: appT(context, 'curator.channelFieldLabel'),
             hint: appT(context, 'curator.channelHint'),
+          ),
+          const SizedBox(height: 12),
+
+          // Duration field (in minutes). Optional — but it lets the
+          // model judge pacing and pick a slot that fits.
+          _buildTextField(
+            controller: _durationController,
+            label: appT(context, 'curator.durationFieldLabel'),
+            hint: appT(context, 'curator.durationHint'),
+            keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
 
@@ -926,6 +945,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     String? hint,
     int maxLines = 1,
     int? maxLength,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,6 +965,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           controller: controller,
           maxLines: maxLines,
           maxLength: maxLength,
+          keyboardType: keyboardType,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
@@ -1088,6 +1109,14 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         // 3. Format & Technical Production (Format, pacing, interactivity, A/V specs)
         if (r.formatAssessment != null) ...[
           _buildFormatAssessmentCard(r),
+          const SizedBox(height: 16),
+        ],
+
+        // 4. Grounding — how closely the report tracks the program
+        //    description, with verbatim source quotes and the list of
+        //    information the description still lacks.
+        if (r.grounding != null) ...[
+          _buildGroundingCard(r),
           const SizedBox(height: 16),
         ],
 
@@ -1706,6 +1735,178 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 ],
               ),
             )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Grounding card — "Độ bám sát nội dung".
+  ///
+  /// Shows how closely the report tracks the program description, the
+  /// verbatim quotes it was built from, and what information the
+  /// description still lacks. The score is recomputed by the
+  /// backend, so it is a measure of evidence, not of the model's
+  /// self-assessment.
+  Widget _buildGroundingCard(AiCuratorReport r) {
+    final g = r.grounding;
+    if (g == null) return const SizedBox.shrink();
+
+    final score = g.groundingScore.clamp(0, 100);
+    final Color color;
+    final String verdict;
+    if (score >= 70) {
+      color = AppColors.success;
+      verdict = 'Báo cáo bám sát tốt với mô tả chương trình.';
+    } else if (score >= 55) {
+      color = AppColors.warning;
+      verdict = 'Báo cáo bám sát mô tả ở mức chấp nhận được.';
+    } else {
+      color = AppColors.error;
+      verdict = 'Báo cáo bám sát nội dung yếu — nên rà soát lại mô tả.';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1320),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.link_rounded,
+                color: Color(0xFF00E5FF),
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'ĐỘ BÁM SÁT NỘI DUNG',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF00E5FF),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              Text(
+                '$score%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'JetBrainsMono',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: score / 100.0,
+              minHeight: 6,
+              backgroundColor: const Color(0x14FFFFFF),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            verdict,
+            style: const TextStyle(
+              color: Color(0xFF8FA3BF),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          if (g.sourceExcerpts.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'TRÍCH DẪN TỪ MÔ TẢ NGUỒN',
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8FA3BF),
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...g.sourceExcerpts.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.25),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    '"$e"',
+                    style: const TextStyle(
+                      color: Color(0xFFD6E2F0),
+                      fontSize: 11,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (g.infoGaps.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'THIẾU THÔNG TIN TRONG MÔ TẢ',
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8FA3BF),
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...g.infoGaps.map(
+              (gap) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 5, right: 8),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 12,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        gap,
+                        style: const TextStyle(
+                          color: Color(0xFFD6E2F0),
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ],
       ),
