@@ -163,6 +163,39 @@ class ScoringBreakdown {
   }
 }
 
+class AiCuratorGrounding {
+  /// Verbatim quotes copied from the program description.
+  final List<String> sourceExcerpts;
+
+  /// Information a curator would need that the description lacks.
+  final List<String> infoGaps;
+
+  /// How closely the report tracks the source (0..100). Always
+  /// recomputed server-side — the model's own number is ignored.
+  final int groundingScore;
+
+  const AiCuratorGrounding({
+    required this.sourceExcerpts,
+    required this.infoGaps,
+    required this.groundingScore,
+  });
+
+  factory AiCuratorGrounding.fromJson(Map<String, dynamic> json) {
+    return AiCuratorGrounding(
+      sourceExcerpts: ((json['sourceExcerpts'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      infoGaps: ((json['infoGaps'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      groundingScore: (json['groundingScore'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// True when the report tracks the source well enough to trust.
+  bool get isWellGrounded => groundingScore >= 55;
+}
+
 class AiCuratorReport {
   final String broadcastSuitability; // PRIME_TIME | STANDARD | RESTRICTED
   final String suggestedTimeSlot; // "21:00 - 23:00"
@@ -174,6 +207,7 @@ class AiCuratorReport {
   final ContentAssessment? contentAssessment;
   final FormatAssessment? formatAssessment;
   final ScoringBreakdown? scoringBreakdown;
+  final AiCuratorGrounding? grounding;
   final String aiModelVersion;
   final int processingTimeMs;
   final int? tokenUsed;
@@ -200,6 +234,7 @@ class AiCuratorReport {
     this.contentAssessment,
     this.formatAssessment,
     this.scoringBreakdown,
+    this.grounding,
     required this.aiModelVersion,
     required this.processingTimeMs,
     this.tokenUsed,
@@ -302,6 +337,16 @@ class AiCuratorReport {
       );
     }
 
+    // Parse grounding (v5). The block may live at the top level or
+    // inside the sentimentAnalysis JSON blob (that's where the
+    // backend persists it).
+    AiCuratorGrounding? grounding;
+    final groundingMap = (json['grounding'] as Map?)?.cast<String, dynamic>() ??
+        (rawSentiment['grounding'] as Map?)?.cast<String, dynamic>();
+    if (groundingMap != null && groundingMap.isNotEmpty) {
+      grounding = AiCuratorGrounding.fromJson(groundingMap);
+    }
+
     return AiCuratorReport(
       broadcastSuitability:
           (json['broadcastSuitability'] as String?) ?? 'STANDARD',
@@ -318,6 +363,7 @@ class AiCuratorReport {
       contentAssessment: contentAssessment,
       formatAssessment: formatAssessment,
       scoringBreakdown: scoringBreakdown,
+      grounding: grounding,
       aiModelVersion: (json['aiModelVersion'] as String?) ?? 'heuristic-v1',
       processingTimeMs: (json['processingTimeMs'] as num?)?.toInt() ?? 0,
       tokenUsed: (json['tokenUsed'] as num?)?.toInt(),
@@ -470,6 +516,7 @@ class AiCuratorRepository {
     String? language,
     String? scheduledAt,
     List<String>? tags,
+    int? duration,
     String? channelName,
   }) async {
     try {
@@ -484,6 +531,7 @@ class AiCuratorRepository {
           if (scheduledAt != null && scheduledAt.isNotEmpty)
             'scheduledAt': scheduledAt,
           if (tags != null && tags.isNotEmpty) 'tags': tags,
+          if (duration != null && duration > 0) 'duration': duration,
           if (channelName != null && channelName.isNotEmpty)
             'channelName': channelName,
         },
