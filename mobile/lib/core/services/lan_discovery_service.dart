@@ -173,11 +173,14 @@ class LanDiscoveryService {
           // Prime candidates in the local Wi-Fi subnet
           final candidates = <String>{
             '$subnet.1', // Default Gateway / Router
+            '$subnet.2',
+            '$subnet.100', // Common DHCP reservations / server range
+            '$subnet.101',
+            '$subnet.102',
+            '$subnet.200',
+            '$subnet.239', // Host machine in previous session
             '$subnet.162', // Host machine detected in FA26 lab
             '$subnet.88', // Legacy static fallback
-            '$subnet.100', // Common DHCP reservations
-            '$subnet.101',
-            '$subnet.2',
             '$subnet.10',
             '$subnet.20',
             '$subnet.50',
@@ -187,6 +190,8 @@ class LanDiscoveryService {
           if (deviceLastOctet > 1) {
             candidates.add('$subnet.${deviceLastOctet - 1}');
             candidates.add('$subnet.${deviceLastOctet + 1}');
+            if (deviceLastOctet > 2) candidates.add('$subnet.${deviceLastOctet - 2}');
+            candidates.add('$subnet.${deviceLastOctet + 2}');
           }
 
           // Probe all candidates concurrently with fast timeouts
@@ -255,16 +260,28 @@ class LanDiscoveryService {
   }
 
   /// Probe a specific host on a port to see if MediaMTX is active.
-  Future<bool> _probeMediaMtx(String host, int port, {Duration timeout = const Duration(milliseconds: 400)}) async {
+  /// Seamlessly probes via HTTPS port 443 for domain/tunnels and HTTP for LAN IPs.
+  Future<bool> _probeMediaMtx(String host, int port, {Duration timeout = const Duration(milliseconds: 500)}) async {
     HttpClient? client;
     try {
       client = HttpClient()..connectionTimeout = timeout;
-      final uri = Uri.parse('http://$host:$port/');
+      client.badCertificateCallback = (cert, host, port) => true;
+
+      final isLiteral = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host);
+      final isLocal = host == 'localhost' || host == '127.0.0.1';
+      final Uri uri;
+      if (!isLiteral && !isLocal) {
+        // Public domain / tunnel -> probe HTTPS on standard port
+        uri = Uri.parse(host.startsWith('http') ? host : 'https://$host/');
+      } else {
+        uri = Uri.parse('http://$host:$port/');
+      }
+
       final request = await client.getUrl(uri).timeout(timeout);
       final response = await request.close().timeout(timeout);
 
       // MediaMTX typically returns 404 Not Found (or 200/302) on root "/"
-      // Any HTTP response proves a web server is answering on this port.
+      // Any HTTP response proves a web server is answering on this host/port.
       final serverHeader = response.headers.value('server')?.toLowerCase() ?? '';
       if (serverHeader.contains('mediamtx') || response.statusCode == 404 || response.statusCode == 200) {
         return true;
@@ -282,6 +299,7 @@ class LanDiscoveryService {
     HttpClient? client;
     try {
       client = HttpClient()..connectionTimeout = timeout;
+      client.badCertificateCallback = (cert, host, port) => true;
       final base = AppConstants.baseUrl;
       final uri = Uri.parse('$base/programs/studio/lan-discovery');
       final request = await client.getUrl(uri).timeout(timeout);
@@ -291,13 +309,26 @@ class LanDiscoveryService {
         final text = await response.transform(utf8.decoder).join();
         final map = jsonDecode(text);
         if (map is Map) {
-          // The API wraps every payload in an envelope:
-          //   { success, statusCode, data: { lanIp, publicHost, ... } }
-          // so the fields live one level down. Older builds read them
-          // from the top level, which made this tier ALWAYS fail and
-          // silently fall through to the slower UDP / subnet probes.
           final payload = (map['data'] is Map) ? map['data'] as Map : map;
-          final lanIp = payload['lanIp']?.toString() ?? payload['publicHost']?.toString();
+          final publicBaseUrl = payload['publicBaseUrl']?.toString().trim();
+          final publicHost = payload['publicHost']?.toString().trim();
+          final lanIp = payload['lanIp']?.toString().trim();
+
+          // 1. If backend advertises a public base URL (Cloudflare tunnel, production domain),
+          // prioritize it because it works from ALL networks (any Wi-Fi, 4G/5G).
+          if (publicBaseUrl != null && publicBaseUrl.isNotEmpty) {
+            final parsed = Uri.tryParse(publicBaseUrl);
+            if (parsed != null && parsed.host.isNotEmpty) {
+              return parsed.host;
+            }
+          }
+
+          // 2. Check publicHost (can be tunnel host or public domain)
+          if (publicHost != null && publicHost.isNotEmpty && _isValidHost(publicHost)) {
+            return publicHost;
+          }
+
+          // 3. Fall back to lanIp
           if (lanIp != null && _isPrivateIpv4(lanIp)) {
             return lanIp;
           }
@@ -352,6 +383,13 @@ class LanDiscoveryService {
     } finally {
       socket?.close();
     }
+  }
+
+  static bool _isValidHost(String host) {
+    if (host.isEmpty) return false;
+    if (host == 'localhost' || host == '127.0.0.1' || host == '::1') return false;
+    if (host.startsWith('169.254.')) return false;
+    return true;
   }
 
   /// True for any usable local IPv4 address.
