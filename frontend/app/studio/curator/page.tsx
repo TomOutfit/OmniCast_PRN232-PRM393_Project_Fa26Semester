@@ -265,21 +265,30 @@ export default function CuratorStudioPage() {
    * Use case: a curator wants a quick read before committing.
    */
   const handleAnalyze = async (row: CuratorRow) => {
+    const cleanTags = (row.tags ?? [])
+      .map((t) => (typeof t === 'string' ? t.trim() : ''))
+      .filter((t) => t.length > 0);
+
     const payload: AiCuratorRequestInput = {
-      title: row.title,
-      description: row.description || undefined,
-      channelName: row.channelName,
-      scheduledAt: row.scheduledAt,
-      category: row.category || undefined,
-      tags: row.tags?.length ? row.tags : undefined,
-      language: row.language || undefined,
-      duration: row.duration,
+      title: row.title?.trim() ?? '',
+      description: row.description?.trim() || undefined,
+      channelName: row.channelName?.trim() || undefined,
+      scheduledAt: row.scheduledAt || undefined,
+      category: row.category?.trim() || undefined,
+      tags: cleanTags.length > 0 ? cleanTags : undefined,
+      language: row.language?.trim() || undefined,
+      duration: typeof row.duration === 'number' && !Number.isNaN(row.duration) ? row.duration : undefined,
     };
     const parsed = aiCuratorRequestSchema.safeParse(payload);
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
       logWarn('[ai-curator] validation failed', firstIssue);
-      toast.warning(firstIssue?.message ?? 'Vui lòng kiểm tra dữ liệu đầu vào');
+      let errorMsg = firstIssue?.message;
+      if (!errorMsg || errorMsg.includes('String must contain at least 1 character')) {
+        const fieldName = firstIssue?.path?.join('.') || 'đầu vào';
+        errorMsg = `Dữ liệu trường "${fieldName}" không được để trống`;
+      }
+      toast.warning(errorMsg);
       return;
     }
 

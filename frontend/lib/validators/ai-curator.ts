@@ -23,9 +23,11 @@ export const aiCuratorRequestSchema = z.object({
   category: z.string().max(60).optional().or(z.literal('')),
   language: z
     .string()
+    .trim()
     .min(2, 'Mã ngôn ngữ tối thiểu 2 ký tự')
     .max(10)
-    .optional(),
+    .optional()
+    .or(z.literal('')),
 
   scheduledAt: z
     .string()
@@ -34,8 +36,23 @@ export const aiCuratorRequestSchema = z.object({
     .or(z.literal('')),
 
   tags: z
-    .array(z.string().trim().min(1).max(LIMITS.TAG_MAX_LEN))
-    .max(LIMITS.AI_TAGS_MAX, `Tối đa ${LIMITS.AI_TAGS_MAX} tag`)
+    .preprocess(
+      (val) => {
+        if (!Array.isArray(val)) return val;
+        return val
+          .map((t) => (typeof t === 'string' ? t.trim() : ''))
+          .filter((t) => t.length > 0);
+      },
+      z
+        .array(
+          z
+            .string()
+            .trim()
+            .min(1, 'Tag không được để trống')
+            .max(LIMITS.TAG_MAX_LEN, `Tag tối đa ${LIMITS.TAG_MAX_LEN} ký tự`),
+        )
+        .max(LIMITS.AI_TAGS_MAX, `Tối đa ${LIMITS.AI_TAGS_MAX} tag`),
+    )
     .optional(),
 
   /**
