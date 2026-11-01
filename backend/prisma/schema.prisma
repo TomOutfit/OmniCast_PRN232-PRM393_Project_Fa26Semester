@@ -64,6 +64,15 @@ model RefreshToken {
   @@index([userId], map: "idx_refresh_token_user")
 }
 
+model LiveMediaEndpointConfig {
+  id        String   @id @default("primary") @db.VarChar(32)
+  publicHost String  @db.VarChar(255)
+  hlsUrl    String   @db.VarChar(1000)
+  whipUrl   String   @db.VarChar(1000)
+  webrtcUrl String   @db.VarChar(1000)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(6)
+}
+
 /// One-time, short-lived token used for password recovery flows.
 /// The raw token is sent to the user via email (not persisted); the
 /// SHA-256 hash is stored. On consumption `usedAt` is stamped so the
