@@ -46,7 +46,7 @@ const FAQ_ITEMS: FaqItem[] = [
     category: 'viewer',
     question: 'Làm thế nào để xem lịch phát sóng EPG 24/7 và đặt thông báo nhắc giờ?',
     answer:
-      'Bạn truy cập mục "Lịch Phát Sóng (EPG)" trên thanh điều hướng để xem toàn bộ 25 kênh phát sóng. Nhấp vào bất kỳ chương trình nào để xem tóm tắt nội dung, phân loại độ tuổi và nhấn nút "Thêm vào Watchlist". Trên ứng dụng di động Flutter, hệ thống sẽ tự động lên lịch thông báo đẩy (FCM) nhắc bạn trước giờ phát sóng 15 phút.',
+      'Bạn truy cập mục "Lịch Phát Sóng (EPG)" trên thanh điều hướng để xem lịch của các kênh hiện có. Mở một chương trình để xem tóm tắt nội dung, phân loại độ tuổi và thêm vào Watchlist.',
     tags: ['epg', 'lịch chiếu', 'thông báo', 'watchlist', 'nhắc giờ'],
   },
   {
@@ -317,11 +317,11 @@ export default function HelpPage() {
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Xem Luồng & Lịch EPG</h3>
-                <span className="text-[11px] font-mono text-cyan-400">25 Kênh sóng 24/7</span>
+                <span className="text-[11px] font-mono text-cyan-400">Kênh và lịch phát sóng</span>
               </div>
             </div>
             <p className="text-xs text-dark-300 leading-relaxed">
-              Cách tra cứu lịch phát, bật âm thanh Dolby 5.1, chuyển đổi luồng phát và thêm vào
+              Cách tra cứu lịch phát, điều khiển phát lại và thêm chương trình vào
               Watchlist yêu thích.
             </p>
           </div>
@@ -589,24 +589,21 @@ export default function HelpPage() {
             <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base">Hệ Thống Đang Vận Hành Bình Thường</h3>
+                <h3 className="font-bold text-white text-base">Trung Tâm Hỗ Trợ</h3>
                 <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
-                  99.98% Uptime
+                  HƯỚNG DẪN
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Tất cả 25 kênh sóng truyền hình, cụm NestJS API Gateway và Bunny CDN đang hoạt động
-                ổn định.
+                Xem hướng dẫn sử dụng, thông tin tài khoản và cách xử lý các lỗi thường gặp.
               </p>
             </div>
           </div>
           <a
-            href="https://status.omnicast.tv"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/docs"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.05] text-xs font-semibold text-slate-200 hover:bg-white/10 transition flex-shrink-0"
           >
-            Trang giám sát live
+            Mở tài liệu
             <ExternalLink className="h-3 w-3" />
           </a>
         </section>

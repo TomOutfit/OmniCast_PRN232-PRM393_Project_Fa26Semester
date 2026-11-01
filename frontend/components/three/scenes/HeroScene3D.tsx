@@ -21,11 +21,11 @@ interface HeroScene3DProps {
 }
 
 const DEFAULT_CHANNELS: ChannelCard3DData[] = [
-  { id: '1', title: 'Omni Sport 1', subtitle: 'Thể thao trực tiếp', category: 'SPORTS', color: '#0e1625', isLive: true },
-  { id: '2', title: 'Omni Cine 4K', subtitle: 'Điện ảnh Hollywood', category: 'CINE', color: '#0e1625', isLive: true },
-  { id: '3', title: 'Omni News', subtitle: 'Tin tức 24/7', category: 'NEWS', color: '#0e1625', isLive: true },
+  { id: '1', title: 'Omni Sport 1', subtitle: 'Thể thao', category: 'SPORTS', color: '#0e1625', isLive: false },
+  { id: '2', title: 'Omni Cine', subtitle: 'Điện ảnh', category: 'CINE', color: '#0e1625', isLive: false },
+  { id: '3', title: 'Omni News', subtitle: 'Tin tức', category: 'NEWS', color: '#0e1625', isLive: false },
   { id: '4', title: 'Omni Music', subtitle: 'Âm nhạc & MV', category: 'MUSIC', color: '#0e1625', isLive: false },
-  { id: '5', title: 'Omni Tech', subtitle: 'Công nghệ & AI', category: 'TECH', color: '#0e1625', isLive: true },
+  { id: '5', title: 'Omni Tech', subtitle: 'Công nghệ & AI', category: 'TECH', color: '#0e1625', isLive: false },
   { id: '6', title: 'Omni Kids', subtitle: 'Thiếu nhi', category: 'KIDS', color: '#0e1625', isLive: false },
 ];
 

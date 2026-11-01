@@ -119,7 +119,7 @@ export default function SearchPage() {
           <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">
             <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
             <h3 className="text-base font-bold text-white mb-1">Hãy nhập từ khóa để bắt đầu tìm kiếm</h3>
-            <p className="text-xs text-slate-400">Hệ thống sẽ tự động quét qua toàn bộ 25 kênh truyền hình trực tiếp và kho bản ghi VOD 4K.</p>
+            <p className="text-xs text-slate-400">Tìm kiếm trong các kênh, lịch phát sóng và kho nội dung hiện có.</p>
           </div>
         ) : total === 0 ? (
           <div className="text-center py-16 rounded-3xl bg-[#090f1a] border border-[#162338]">

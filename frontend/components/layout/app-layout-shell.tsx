@@ -9,7 +9,7 @@ import { MobileFab } from './mobile-fab';
 import { PageTransition3D } from '@/components/three/PageTransition3D';
 import { Spatial3DProvider, useSpatial3D } from '@/lib/three/spatial-context';
 import { SpatialUniverseModal } from '@/components/three/SpatialUniverseModal';
-import { SpatialLauncherButton } from '@/components/three/SpatialLauncherButton';
+import { ThemeToggle } from './theme-toggle';
 
 function SpatialUniverseHost() {
   const { isOpen, close } = useSpatial3D();
@@ -29,6 +29,9 @@ export function AppLayoutShell({ children }: { children: React.ReactNode }) {
     return (
       <Spatial3DProvider>
         <SkipLink />
+        <div className="fixed right-4 top-4 z-[60]">
+          <ThemeToggle compact />
+        </div>
         <main id="main-content" className="min-h-screen w-full flex flex-col relative z-10">
           <PageTransition3D>{children}</PageTransition3D>
         </main>
@@ -48,7 +51,6 @@ export function AppLayoutShell({ children }: { children: React.ReactNode }) {
       <div className="relative z-10">
         <Footer />
       </div>
-      <SpatialLauncherButton />
       <MobileFab />
       <BackToTop />
       <SpatialUniverseHost />

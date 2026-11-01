@@ -93,7 +93,7 @@ export const ROLE_META: Record<UserRole, RoleMeta> = {
     pillClass:
       'bg-cyan-950/70 border-cyan-500/50 text-cyan-300',
     dotClass: 'bg-cyan-400',
-    description: 'Khán giả 4K HDR – xem trực tiếp & VOD',
+    description: 'Khán giả – theo dõi nội dung và lịch phát sóng',
   },
   STAFF: {
     label: 'Biên tập viên',
@@ -226,7 +226,7 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
     minRole: 'GUEST',
     links: [
       { label: 'Lịch Phát Sóng EPG 24h', href: '/epg' },
-      { label: 'Danh Sách 25 Kênh Live', href: '/channels' },
+      { label: 'Danh Sách Kênh', href: '/channels' },
       { label: 'Catch-Up Xem Lại 7 Ngày', href: '/epg' },
       { label: 'Kho Bản Ghi Cloud VOD', href: '/recordings' },
     ],
@@ -237,8 +237,8 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
     accentClass: 'text-cyan-400',
     minRole: 'GUEST',
     links: [
-      { label: 'Multi-Cam 4K UHD 60FPS', href: '/' },
-      { label: 'Âm Thanh Dolby Atmos 5.1', href: '/' },
+      { label: 'Trải Nghiệm Live', href: '/live-demo' },
+      { label: 'Lịch Phát Sóng', href: '/epg' },
       { label: 'Gói Dịch Vụ OmniPass', href: '/settings' },
     ],
   },
@@ -327,9 +327,9 @@ export function getFooterColumnsForRole(
 // ------------------------------------------------------------
 
 export interface StatusBanner {
-  /** Big green text, e.g. "ALL 25 CHANNELS BROADCASTING NOMINAL". */
+  /** Concise role-specific navigation context. */
   status: string;
-  /** Side metadata chips, e.g. "DOLBY ATMOS 5.1 CERTIFIED". */
+  /** Related product areas. */
   chips: { label: string; accent?: 'cyan' | 'purple' | 'amber' | 'emerald' }[];
   /** Pulse dot color. */
   pulse: 'emerald' | 'cyan' | 'purple' | 'amber';
@@ -338,46 +338,45 @@ export interface StatusBanner {
 }
 
 const PUBLIC_BANNER: StatusBanner = {
-  statusLabel: 'NETWORK STATUS',
-  status: 'ALL 25 CHANNELS BROADCASTING NOMINAL (4K HDR 60FPS)',
+  statusLabel: 'OMNICAST',
+  status: 'Nội dung trực tuyến và theo lịch phát sóng',
   chips: [
-    { label: 'SATELLITE SYNC: UTC+7 (HANOI)' },
-    { label: 'DOLBY ATMOS 5.1 CERTIFIED' },
-    { label: 'HEVC / H.265 LOW LATENCY' },
+    { label: 'KÊNH' },
+    { label: 'LIVE' },
+    { label: 'EPG' },
   ],
-  pulse: 'emerald',
+  pulse: 'cyan',
 };
 
 const VIEWER_BANNER: StatusBanner = {
   statusLabel: 'PHÁT SÓNG & CÁ NHÂN',
-  status: 'BẠN ĐANG XEM Ở PHIÊN [VIEWER] – KHUYẾN NGHỊ BẬT HDR 4K',
+  status: 'Hồ sơ và danh sách theo dõi của bạn',
   chips: [
-    { label: 'GÓI: OMNIPASS FREE', accent: 'cyan' },
-    { label: 'CHẤT LƯỢNG: AUTO (SD → 4K)' },
-    { label: 'LỊCH SỬ XEM: ĐÃ ĐỒNG BỘ' },
+    { label: 'WATCHLIST', accent: 'cyan' },
+    { label: 'HỒ SƠ' },
+    { label: 'LỊCH PHÁT SÓNG' },
   ],
   pulse: 'cyan',
 };
 
 const STAFF_BANNER: StatusBanner = {
   statusLabel: 'TRẠNG THÁI STUDIO',
-  status: 'STUDIO OPERATIONAL · AI CURATOR READY · 0.8ms P50',
+  status: 'Công cụ quản lý nội dung và lịch phát sóng',
   chips: [
-    { label: 'CPU: 34% · RAM: 6.2 / 16 GB', accent: 'purple' },
-    { label: 'LIVE EVENTS: 4 ĐANG PHÁT', accent: 'purple' },
-    { label: 'HÀNG ĐỢI EPG: 12 CHƯƠNG TRÌNH' },
+    { label: 'LIVE STUDIO', accent: 'purple' },
+    { label: 'AI CURATOR', accent: 'purple' },
+    { label: 'EPG' },
   ],
   pulse: 'purple',
 };
 
 const ADMIN_BANNER: StatusBanner = {
   statusLabel: 'SYSTEM HEALTH',
-  status: 'ALL SERVICES GREEN · 99.97% UPTIME (30D) · 0 SECURITY INCIDENTS',
+  status: 'Quản trị thành viên và nhật ký hệ thống',
   chips: [
-    { label: 'API P95: 142ms', accent: 'amber' },
-    { label: 'DB POOL: 38/100', accent: 'amber' },
-    { label: 'CDN: 25/25 NODES ONLINE', accent: 'emerald' },
-    { label: 'AUDIT: 1,247 SỰ KIỆN / 24H' },
+    { label: 'THÀNH VIÊN', accent: 'amber' },
+    { label: 'PHÂN QUYỀN', accent: 'amber' },
+    { label: 'AUDIT LOG', accent: 'emerald' },
   ],
   pulse: 'emerald',
 };
@@ -407,20 +406,20 @@ export interface QuickAction {
 
 export const QUICK_ACTIONS: Record<UserRole, QuickAction[]> = {
   GUEST: [
-    { label: 'Xem Truyền Hình', href: '/channels', icon: Tv, description: '25 kênh 4K', accent: 'cyan' },
+    { label: 'Xem Truyền Hình', href: '/channels', icon: Tv, description: 'Danh sách kênh', accent: 'cyan' },
     { label: 'Lịch Phát Sóng', href: '/epg', icon: Calendar, description: 'EPG 24 giờ', accent: 'cyan' },
     { label: 'Mua OmniPass', href: '/settings', icon: Sparkles, description: 'Mở kênh Premium', accent: 'amber' },
   ],
   VIEWER: [
     { label: 'Danh Sách Yêu Thích', href: '/watchlist', icon: Bookmark, description: 'Xem sau của bạn', accent: 'cyan' },
-    { label: 'Lịch Sử Xem', href: '/profile', icon: ListChecks, description: '7 ngày gần nhất', accent: 'cyan' },
-    { label: 'Nâng Cấp OmniPass', href: '/settings', icon: Sparkles, description: '4K HDR + Dolby', accent: 'amber' },
+    { label: 'Lịch Sử Xem', href: '/profile', icon: ListChecks, description: 'Hoạt động gần đây', accent: 'cyan' },
+    { label: 'Nâng Cấp OmniPass', href: '/settings', icon: Sparkles, description: 'Gói nội dung nâng cao', accent: 'amber' },
   ],
   STAFF: [
     { label: 'Mở Live Studio', href: '/studio', icon: Radio, description: 'Phát trực tiếp', accent: 'purple' },
     { label: 'AI Curator', href: '/studio/curator', icon: Wand2, description: 'Phân tích nội dung', accent: 'purple' },
-    { label: 'Xếp Lịch EPG', href: '/epg', icon: Calendar, description: '12 chương trình chờ', accent: 'cyan' },
-    { label: 'Kiểm Duyệt', href: '/studio', icon: ListChecks, description: '3 chờ duyệt', accent: 'emerald' },
+    { label: 'Xếp Lịch EPG', href: '/epg', icon: Calendar, description: 'Quản lý lịch phát', accent: 'cyan' },
+    { label: 'Kiểm Duyệt', href: '/studio', icon: ListChecks, description: 'Quản lý nội dung', accent: 'emerald' },
   ],
   ADMIN: [
     { label: 'Bảng Điều Khiển', href: '/admin', icon: Gauge, description: 'Tổng quan hệ thống', accent: 'amber' },

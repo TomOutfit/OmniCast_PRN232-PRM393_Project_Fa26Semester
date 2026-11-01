@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -32,6 +32,11 @@ import { AdminRealtimeCharts } from '@/components/admin/admin-realtime-charts';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
+  const [isClientReady, setIsClientReady] = useState(false);
+
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -55,7 +60,7 @@ export default function AdminDashboardPage() {
   const totalChannels = channelsData?.meta?.total ?? 0;
   const liveChannels: LiveEvent[] = Array.isArray(liveEvents) ? liveEvents : (liveEvents as any)?.data ?? [];
 
-  if (authLoading || (!user && !authLoading)) {
+  if (!isClientReady || authLoading || (!user && !authLoading)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
@@ -114,7 +119,7 @@ export default function AdminDashboardPage() {
                 Bảng Điều Khiển Quản Trị Hệ Thống
               </h1>
               <p className="text-xs text-slate-300/80 mt-1 max-w-xl">
-                Giám sát toàn diện 25 kênh phát sóng, dữ liệu telemetry, hoạt động người dùng và luồng sự kiện trực tiếp 24/7.
+                Theo dõi hoạt động người dùng, kênh nội dung, nhật ký quản trị và sự kiện trực tiếp.
               </p>
             </div>
             <div className="flex items-center gap-3">

@@ -3,28 +3,19 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const cardVariants = cva(
-  'relative rounded-2xl border transition-all duration-300 text-white overflow-hidden',
+  'relative rounded-lg border transition-all duration-200 text-foreground overflow-hidden',
   {
     variants: {
       variant: {
-        default:
-          'bg-gradient-to-b from-[#0e1726]/90 to-[#070b12]/95 border-[#1b2b42] shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-md before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
-        elevated:
-          'bg-gradient-to-b from-[#111e32]/95 to-[#090f1a]/95 border-[#233854] shadow-[0_15px_40px_rgba(0,0,0,0.7)] backdrop-blur-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-cyan-400/30 before:to-transparent',
-        interactive:
-          'bg-gradient-to-b from-[#0d1624]/90 to-[#070b12]/95 border-[#18273d] hover:border-cyan-500/50 hover:shadow-[0_15px_35px_rgba(0,242,254,0.15)] hover:-translate-y-1 backdrop-blur-md cursor-pointer before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent hover:before:via-cyan-400/50',
-        neon:
-          'bg-gradient-to-b from-[#0c1829] to-[#060c16] border-cyan-500/40 shadow-[0_0_25px_rgba(0,242,254,0.2)] backdrop-blur-xl before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-cyan-500/10 before:via-cyan-400 before:to-cyan-500/10',
-        cyber3d:
-          'card-3d-surface text-white',
-        glass3d:
-          'glass-3d-panel text-white',
-        gold3d:
-          'card-3d-gold text-white',
-        outline:
-          'border border-dashed border-[#1f314d] bg-transparent hover:bg-[#0c1626]/40',
-        ghost:
-          'border-transparent bg-transparent hover:bg-[#0e192a]/50',
+        default: 'surface-card',
+        elevated: 'surface-card surface-card-elevated',
+        interactive: 'surface-card surface-card-interactive cursor-pointer',
+        neon: 'surface-card surface-card-accent',
+        cyber3d: 'surface-card',
+        glass3d: 'surface-card',
+        gold3d: 'surface-card',
+        outline: 'surface-card-outline',
+        ghost: 'surface-card-ghost',
       },
     },
     defaultVariants: {
@@ -63,7 +54,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      'text-lg font-black tracking-tight text-white font-display leading-tight',
+      'text-lg font-black tracking-tight text-foreground font-display leading-tight',
       className
     )}
     {...props}
@@ -77,7 +68,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-xs text-slate-400 leading-relaxed', className)}
+    className={cn('text-xs text-muted-foreground leading-relaxed', className)}
     {...props}
   />
 ));

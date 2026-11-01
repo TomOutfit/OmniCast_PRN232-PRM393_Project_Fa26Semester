@@ -129,8 +129,8 @@ describe('getFooterColumnsForRole', () => {
 describe('getStatusBannerForRole', () => {
   it('returns the public banner when not authenticated', () => {
     const b = getStatusBannerForRole(null, false);
-    expect(b.statusLabel).toBe('NETWORK STATUS');
-    expect(b.status).toContain('BROADCASTING NOMINAL');
+    expect(b.statusLabel).toBe('OMNICAST');
+    expect(b.status).toContain('Nội dung trực tuyến');
   });
 
   it('returns the viewer banner for VIEWER', () => {
@@ -141,13 +141,13 @@ describe('getStatusBannerForRole', () => {
   it('returns the studio banner for STAFF', () => {
     const b = getStatusBannerForRole('STAFF', true);
     expect(b.statusLabel).toBe('TRẠNG THÁI STUDIO');
-    expect(b.status).toContain('AI CURATOR READY');
+    expect(b.status).toContain('quản lý nội dung');
   });
 
   it('returns the system health banner for ADMIN', () => {
     const b = getStatusBannerForRole('ADMIN', true);
     expect(b.statusLabel).toBe('SYSTEM HEALTH');
-    expect(b.status).toContain('UPTIME');
+    expect(b.status).toContain('nhật ký hệ thống');
   });
 });
 

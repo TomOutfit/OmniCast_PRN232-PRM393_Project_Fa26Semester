@@ -274,7 +274,7 @@ export function Footer() {
             </Link>
 
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              Nền tảng truyền hình trực tuyến thế hệ mới với EPG thời gian thực, Multi-Cam 4K UHD
+              Quản lý lịch phát sóng, nội dung video và tương tác trực tiếp trên đa nền tảng.
               và âm thanh vòm Dolby Atmos.
             </p>
 

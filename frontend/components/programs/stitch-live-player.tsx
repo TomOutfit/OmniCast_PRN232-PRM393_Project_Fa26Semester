@@ -55,7 +55,7 @@ export function StitchLivePlayer({ initialEvent, channelId }: StitchLivePlayerPr
   const [volume, setVolume] = useState(80);
   const [activeCamIndex, setActiveCamIndex] = useState<number>(0);
   const [commentaryTrack, setCommentaryTrack] = useState('TV 1 (Quang Huy & Anh Ngọc)');
-  const [resolution, setResolution] = useState('4K UHD 60FPS');
+  const [resolution, setResolution] = useState('Tự động');
   const [isCinemaMode, setIsCinemaMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'stats' | 'mvp'>('chat');
   
@@ -287,13 +287,13 @@ export function StitchLivePlayer({ initialEvent, channelId }: StitchLivePlayerPr
                 </div>
                 <div>
                   <span className="text-[10px] font-mono font-black uppercase tracking-widest text-cyan-400 bg-cyan-950/80 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                    4K ULTRA HD 60FPS • DOLBY ATMOS 5.1
+                    TRUYỀN HÌNH TRỰC TUYẾN
                   </span>
                   <h3 className="text-base md:text-lg font-black text-white mt-2 max-w-lg leading-snug">
-                    {activeEvent?.title || 'OmniCast 4K Live Broadcast Stream'}
+                    {activeEvent?.title || 'OmniCast Live Stream'}
                   </h3>
                   <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    Đang phát sóng trực tiếp • {activeEvent?.channel?.name || 'OmniCast Satellite Direct'}
+                    {activeEvent?.status === 'LIVE' ? 'Đang phát sóng trực tiếp' : 'Nội dung trực tuyến'} • {activeEvent?.channel?.name || 'OmniCast'}
                   </p>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export function StitchLivePlayer({ initialEvent, channelId }: StitchLivePlayerPr
                     onChange={(e) => setResolution(e.target.value)}
                     className="bg-[#121c2c] border border-[#20314a] text-cyan-400 font-mono text-[10px] font-extrabold rounded-lg px-2 py-0.5 focus:outline-none focus:border-cyan-400 cursor-pointer"
                   >
-                    <option value="4K UHD 60FPS">4K UHD</option>
+                    <option value="Tự động">Tự động</option>
                     <option value="1080p60 FHD">1080p60</option>
                     <option value="720p60 HD">720p60</option>
                   </select>

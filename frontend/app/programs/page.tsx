@@ -31,7 +31,7 @@ import type { ProgramPoster } from '@/components/three/scenes/ProgramsScene3D';
 const CATEGORIES = [
   { key: 'ALL', label: 'Tất Cả Thể Loại' },
   { key: 'SPORTS', label: 'Thể Thao' },
-  { key: 'CINE', label: 'Điện Ảnh 4K' },
+  { key: 'CINE', label: 'Điện Ảnh' },
   { key: 'DRAMA', label: 'Phim Truyện' },
   { key: 'SHOW', label: 'Show Truyền Hình' },
   { key: 'NEWS', label: 'Tin Tức Thời Sự' },
@@ -128,7 +128,7 @@ export default function ProgramsHubPage() {
               Trung Tâm Chương Trình & Sự Kiện Phát Sóng
             </h1>
             <p className="text-xs text-slate-300/80 mt-1 max-w-xl leading-relaxed">
-              Theo dõi toàn bộ các trận cầu tâm điểm, phim chiếu rạp và talkshow trực tiếp đang lên sóng trên hệ thống 25 kênh OmniCast qua hiển thị 3D tương tác.
+              Khám phá sự kiện trực tiếp, chương trình sắp phát và nội dung theo kênh qua danh sách lịch phát sóng.
             </p>
           </div>
 

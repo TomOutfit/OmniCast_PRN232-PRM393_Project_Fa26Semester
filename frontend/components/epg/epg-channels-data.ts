@@ -42,7 +42,7 @@ export interface RealEpgChannel {
 }
 
 export const CATEGORY_FILTERS = [
-  { id: 'ALL', label: 'Tất Cả (25 Kênh)' },
+  { id: 'ALL', label: 'Tất Cả' },
   { id: 'SPORTS', label: 'Thể Thao' },
   { id: 'CINE', label: 'Điện Ảnh' },
   { id: 'DRAMA', label: 'Phim Truyện' },

@@ -37,7 +37,7 @@ export default function BroadcastingStandardsPage() {
     <LegalPageLayout
       currentTab="standards"
       title="Tiêu Chuẩn Phát Sóng"
-      subtitle="Bộ quy tắc biên tập, phân loại nội dung điện ảnh truyền hình và thông số kỹ thuật truyền dẫn trực tuyến trên toàn bộ 25 kênh sóng thuộc OmniCast Network."
+      subtitle="Bộ quy tắc biên tập, phân loại nội dung điện ảnh truyền hình và tiêu chuẩn xuất bản nội dung trên OmniCast."
       lastUpdated="16 Tháng 10, 2026"
       version="v2.4"
       toc={STANDARDS_TOC}

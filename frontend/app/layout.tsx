@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Toaster } from 'sonner';
 import { Providers } from './providers';
 import { AppLayoutShell } from '@/components/layout/app-layout-shell';
-import { Global3DBackground } from '@/components/three/Global3DBackground';
-import { CursorFollowerDOM } from '@/components/three/primitives/CursorFollower3D';
 import './globals.css';
+
+const themeBootstrap = `(function(){try{var m=localStorage.getItem('omnicast.theme');var light=m==='light'||(m==='system'&&!matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.classList.toggle('light',light);r.classList.toggle('dark',!light);r.dataset.theme=light?'light':'dark';r.style.colorScheme=light?'light':'dark'}catch(e){}})()`;
 
 export const metadata: Metadata = {
   title: {
@@ -46,13 +45,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#0ea5e9' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f131d' },
-  ],
+  themeColor: '#0d1415',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -61,8 +56,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="vi" className="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -78,20 +74,8 @@ export default function RootLayout({
           Bỏ qua tới nội dung
         </a>
         <Providers>
-          <Global3DBackground />
-          <CursorFollowerDOM />
           <AppLayoutShell>{children}</AppLayoutShell>
         </Providers>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#1c1f2a',
-              color: '#dfe2f1',
-              border: '1px solid #3a494b',
-            },
-          }}
-        />
       </body>
     </html>
   );

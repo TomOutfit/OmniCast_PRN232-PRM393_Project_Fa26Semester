@@ -33,9 +33,9 @@ interface HeroSpotlightItem {
   isLive: boolean;
   channelName: string;
   channelSlug: string;
-  viewers: string;
-  quality: string;
-  audio: string;
+  viewers?: string;
+  quality?: string;
+  audio?: string;
   rating?: number;
   backdropUrl: string;
   targetHref: string;
@@ -45,16 +45,22 @@ interface ShowcasePosterItem {
   id: string;
   title: string;
   category: string;
-  rating: number;
+  rating?: number;
   year: number;
-  quality: string;
-  audio: string;
+  quality?: string;
+  audio?: string;
   channel: string;
   poster: string;
   href: string;
 }
 
 export function OmniCastHomeExperience() {
+  const [isClientReady, setIsClientReady] = useState(false);
+
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
+
   // ── 1. DYNAMIC DATA FROM BACKEND API ──────────────────────────────────────
   const { data: channelsData, isLoading: loadingChannels } = useChannels({
     isActive: true,
@@ -62,12 +68,12 @@ export function OmniCastHomeExperience() {
   });
 
   const channels = useMemo<Channel[]>(() => {
-    if (!channelsData) return [];
+    if (!isClientReady || !channelsData) return [];
     if (Array.isArray(channelsData)) return channelsData;
     if (Array.isArray((channelsData as any).data)) return (channelsData as any).data;
     if (Array.isArray((channelsData as any).items)) return (channelsData as any).items;
     return [];
-  }, [channelsData]);
+  }, [channelsData, isClientReady]);
 
   const { data: liveNowList, isLoading: loadingLive } = useLiveNow();
   const { data: liveEventsData } = useLiveEvents({ limit: 12 });
@@ -75,9 +81,24 @@ export function OmniCastHomeExperience() {
     limit: 10,
     isFeatured: false,
   });
+  const channelsLoading = !isClientReady || loadingChannels;
+  const liveLoading = !isClientReady || loadingLive;
+  const recordingsLoading = !isClientReady || loadingRecs;
+  const [homeDataTimedOut, setHomeDataTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!liveLoading && !channelsLoading) {
+      setHomeDataTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setHomeDataTimedOut(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [channelsLoading, liveLoading]);
 
   // ── 2. DYNAMIC HERO SPOTLIGHTS ───────────────────────────────────────────
   const heroSpotlights = useMemo<HeroSpotlightItem[]>(() => {
+    if (!isClientReady) return [];
+
     const liveItems = Array.isArray(liveNowList) ? liveNowList : (liveNowList as any)?.data ?? [];
     const scheduledItems = liveEventsData?.data ?? [];
     const combined = [...liveItems, ...scheduledItems];
@@ -90,11 +111,11 @@ export function OmniCastHomeExperience() {
         const backdrop =
           event.thumbnailUrl ||
           getCategoryThumbnail(event.channel?.category || 'SPORTS', idx);
-        const viewers = event.viewerCount
+        const viewers = event.viewerCount > 0
           ? event.viewerCount >= 1000
             ? `${(event.viewerCount / 1000).toFixed(1)}K`
             : `${event.viewerCount}`
-          : `${(24 + idx * 9).toFixed(1)}K`;
+          : undefined;
 
         return {
           id: event.id || `spot-${idx}`,
@@ -108,9 +129,9 @@ export function OmniCastHomeExperience() {
           channelName,
           channelSlug,
           viewers,
-          quality: '4K UHD 60FPS',
-          audio: 'DOLBY AUDIO',
-          rating: 9.8,
+          quality: event.quality || undefined,
+          audio: event.audioFormat || undefined,
+          rating: typeof event.rating === 'number' ? event.rating : undefined,
           backdropUrl: backdrop,
           targetHref: `/channels/${channelSlug}`,
         };
@@ -120,27 +141,28 @@ export function OmniCastHomeExperience() {
     if (channels.length > 0) {
       return channels.slice(0, 6).map((ch, idx) => ({
         id: `spot-${ch.id}`,
-        title: `${ch.name.toUpperCase()} - ${ch.tagline?.toUpperCase() || 'PHÁT SÓNG 24/7'}`,
-        headline: ch.description || `Kênh truyền hình trực tuyến ${ch.name} chất lượng cao 4K HDR`,
+        title: ch.name.toUpperCase(),
+        headline: ch.description || `Khám phá chương trình trên ${ch.name}.`,
         category: (ch.category || 'LIVE').toUpperCase(),
-        badge: 'TRỰC TIẾP 24/7',
-        isLive: true,
+        badge: 'KÊNH',
+        isLive: false,
         channelName: ch.name,
         channelSlug: ch.slug,
-        viewers: ch.totalViews ? `${(ch.totalViews / 1000000).toFixed(1)}M` : '35.0K',
-        quality: '4K 60FPS',
-        audio: 'DOLBY 5.1',
-        rating: 9.9,
+        quality: undefined,
+        audio: undefined,
+        rating: undefined,
         backdropUrl: ch.badgeUrl || ch.logoUrl || getCategoryThumbnail(ch.category, idx),
         targetHref: `/channels/${ch.slug}`,
       }));
     }
 
     return [];
-  }, [liveNowList, liveEventsData, channels]);
+  }, [liveNowList, liveEventsData, channels, isClientReady]);
 
   // ── 3. DYNAMIC SHOWCASE VOD RECORDINGS ────────────────────────────────────
   const showcasePosters = useMemo<ShowcasePosterItem[]>(() => {
+    if (!isClientReady) return [];
+
     const list = Array.isArray(recordingsData)
       ? recordingsData
       : (recordingsData as any)?.data ?? [];
@@ -152,10 +174,10 @@ export function OmniCastHomeExperience() {
           id: r.id,
           title: r.title,
           category: r.category || 'VOD',
-          rating: 4.9,
+          rating: typeof r.rating === 'number' ? r.rating : undefined,
           year,
-          quality: '4K HDR',
-          audio: 'Dolby Atmos',
+          quality: r.quality || undefined,
+          audio: r.audioFormat || undefined,
           channel: channelName,
           poster: r.thumbnailUrl || getCategoryThumbnail(r.category || 'CINE', idx),
           href: `/programs/recording/${r.id}`,
@@ -163,7 +185,7 @@ export function OmniCastHomeExperience() {
       });
     }
     return [];
-  }, [recordingsData]);
+  }, [recordingsData, isClientReady]);
 
   // ── 4. CAROUSEL SLIDE STATE ───────────────────────────────────────────────
   const [activeSpotlightIdx, setActiveSpotlightIdx] = useState(0);
@@ -198,12 +220,9 @@ export function OmniCastHomeExperience() {
       {/* ── 1. VTVGo-Style 3D Angled Hero Carousel ────────────────────── */}
       <section className="relative w-full overflow-hidden pt-3 md:pt-5">
         
-        {/* Soft Ambient Background Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-red-600/10 blur-[130px] rounded-full pointer-events-none" />
-
         <div className="max-w-[1720px] mx-auto px-4 lg:px-8 relative z-10">
           
-          {loadingLive && !currentHero ? (
+          {(liveLoading || channelsLoading) && !currentHero && !homeDataTimedOut ? (
             <div className="w-full aspect-[16/9] max-h-[520px] rounded-3xl bg-[#09111e] border border-[#16253c] flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
               <span className="text-xs font-mono text-cyan-300">Đang tải luồng sự kiện trực tiếp...</span>
@@ -257,8 +276,12 @@ export function OmniCastHomeExperience() {
                   href={currentHero.targetHref}
                   className="absolute inset-0 flex items-center justify-center z-30 group/play"
                 >
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600/90 group-hover/play:bg-red-500 text-white flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.7)] group-hover/play:scale-110 transition-transform">
-                    <Play className="w-7 h-7 md:w-9 md:h-9 fill-current ml-1" />
+                  <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full ${currentHero.isLive ? 'bg-red-600/90 group-hover/play:bg-red-500 shadow-[0_0_24px_rgba(239,68,68,0.45)]' : 'bg-cyan-600/90 group-hover/play:bg-cyan-500 shadow-[0_0_24px_rgba(8,127,134,0.35)]'} text-white flex items-center justify-center group-hover/play:scale-105 transition-transform`}>
+                    {currentHero.isLive ? (
+                      <Play className="w-6 h-6 md:w-7 md:h-7 fill-current ml-1" />
+                    ) : (
+                      <Tv className="w-6 h-6 md:w-7 md:h-7" />
+                    )}
                   </div>
                 </Link>
 
@@ -276,9 +299,11 @@ export function OmniCastHomeExperience() {
                     <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-black/70 backdrop-blur-md text-cyan-300 border border-cyan-500/30">
                       {currentHero.channelName}
                     </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-black/60">
-                      {currentHero.quality}
-                    </span>
+                    {currentHero.quality && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-black/60">
+                        {currentHero.quality}
+                      </span>
+                    )}
                   </div>
 
                   {/* Main White Lower-Third Box (VTVGo Signature) */}
@@ -344,7 +369,27 @@ export function OmniCastHomeExperience() {
               )}
 
             </div>
-          ) : null}
+          ) : (
+            <div className="surface-card mx-auto flex min-h-[240px] w-full max-w-4xl flex-col items-start justify-center gap-4 rounded-lg p-6 md:p-8">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">OMNICAST</p>
+                <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl">
+                  Chưa có chương trình để phát
+                </h1>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                  Danh sách sẽ xuất hiện khi có kênh hoặc sự kiện được xuất bản.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/channels" className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+                  Xem kênh
+                </Link>
+                <Link href="/epg" className="rounded-md border border-[hsl(var(--border))] px-4 py-2 text-sm font-semibold text-foreground hover:bg-[var(--surface-container-high)]">
+                  Mở lịch phát sóng
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Centered Dots Indicator (VTVGo Style) */}
           {heroLen > 1 && (
@@ -371,7 +416,7 @@ export function OmniCastHomeExperience() {
       </section>
 
       {/* ── 2. Dòng Kênh Truyền Hình (VTVGo Exact Signature Style) ──── */}
-      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-3">
+      <section className={cn('max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-3', !channelsLoading && channels.length === 0 && 'hidden')}>
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -414,7 +459,7 @@ export function OmniCastHomeExperience() {
             ref={channelScrollRef}
             className="flex items-center gap-3 overflow-x-auto scrollbar-none"
           >
-            {loadingChannels && channels.length === 0 ? (
+            {channelsLoading && channels.length === 0 ? (
               <div className="flex items-center gap-3 py-2">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div
@@ -486,14 +531,14 @@ export function OmniCastHomeExperience() {
 
         {/* 5-Column Vertical Poster Showcase Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-          {loadingRecs && showcasePosters.length === 0 ? (
+          {recordingsLoading && showcasePosters.length === 0 ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
                 className="aspect-[2/3] w-full rounded-2xl bg-[#09111e] border border-[#16253c] animate-pulse"
               />
             ))
-          ) : (
+          ) : showcasePosters.length > 0 ? (
             showcasePosters.map((item) => (
               <ChannelCardTilt key={item.id} intensity={10} className="h-full">
                 <div className="group relative h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#0e1726]/95 via-[#08101d]/95 to-[#04070e]/98 border border-[#1b2b42] hover:border-cyan-400/70 hover:shadow-[0_20px_45px_rgba(0,242,254,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent group-hover:before:via-cyan-400/80 cursor-pointer">
@@ -509,16 +554,20 @@ export function OmniCastHomeExperience() {
                     {/* Gradient Vignette */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#04070e] via-transparent to-black/30 pointer-events-none" />
 
-                    <div className="absolute top-2.5 left-2.5 z-10">
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase tracking-wider bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(0,242,254,0.6)]">
-                        {item.quality}
-                      </span>
-                    </div>
+                    {item.quality && (
+                      <div className="absolute top-2.5 left-2.5 z-10">
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase tracking-wider bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(0,242,254,0.6)]">
+                          {item.quality}
+                        </span>
+                      </div>
+                    )}
 
-                    <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-black bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
-                      <Star className="w-2.5 h-2.5 fill-amber-300" />
-                      {item.rating}
-                    </div>
+                    {item.rating !== undefined && (
+                      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-black bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                        <Star className="w-2.5 h-2.5 fill-amber-300" />
+                        {item.rating.toFixed(1)}
+                      </div>
+                    )}
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3.5 space-y-2 backdrop-blur-[1px]">
                       <Link
@@ -529,7 +578,7 @@ export function OmniCastHomeExperience() {
                         XEM NGAY
                       </Link>
                       <div className="text-[10px] text-center text-slate-300 font-mono font-bold">
-                        {item.audio} • {item.channel}
+                        {[item.audio, item.channel].filter(Boolean).join(' · ')}
                       </div>
                     </div>
                   </div>
@@ -551,6 +600,14 @@ export function OmniCastHomeExperience() {
                 </div>
               </ChannelCardTilt>
             ))
+          ) : (
+            <div className="col-span-full flex min-h-40 flex-col items-start justify-center gap-3 rounded-lg border border-dashed border-[hsl(var(--border))] px-5 py-6 text-left">
+              <p className="text-sm font-semibold text-foreground">Thư viện chưa có bản ghi để hiển thị</p>
+              <p className="max-w-xl text-sm text-muted-foreground">Các chương trình đã xuất bản sẽ xuất hiện tại đây.</p>
+              <Link href="/channels" className="text-sm font-semibold text-cyan-600 hover:text-cyan-700">
+                Khám phá kênh
+              </Link>
+            </div>
           )}
         </div>
       </section>

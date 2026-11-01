@@ -494,9 +494,7 @@ export function VideoPlayer({
   const handleActivateVipDemo = () => {
     try { window.localStorage.setItem(VIP_STORAGE_KEY, 'true'); } catch { /* ignore */ }
     setIsVip(true);
-    toast.success('Đã kích hoạt gói OmniPass VIP!', {
-      description: 'Bạn đã mở khóa toàn bộ 25 kênh phát sóng 4K chất lượng cao.',
-    });
+    toast.success('Đã kích hoạt quyền OmniPass demo trên thiết bị này.');
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -546,13 +544,13 @@ export function VideoPlayer({
 
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40">
-              GÓI THUÊ BAO OMNIPASS VIP 4K
+              OMNIPASS · BẢN DEMO
             </span>
             <h3 className="text-xl sm:text-2xl font-black text-white font-display">
               {channelName}
             </h3>
             <p className="text-xs text-slate-300">
-              Kênh này thuộc nhóm 20 kênh bản quyền Premium độ phân giải 4K HDR. Vui lòng nâng cấp gói thuê bao để thưởng thức.
+              Nội dung này yêu cầu quyền OmniPass. Nâng cấp trong bản demo để tiếp tục.
             </p>
           </div>
 
@@ -565,7 +563,7 @@ export function VideoPlayer({
               <span className="block text-[11px] text-slate-400">Quét mã VNPAY / MoMo</span>
               <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
                 <CheckCircle2 className="w-3 h-3" />
-                Mở khóa ngay 25 kênh
+                Kích hoạt quyền demo
               </span>
             </div>
           </div>

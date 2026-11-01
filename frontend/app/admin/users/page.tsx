@@ -40,6 +40,11 @@ const roleColors: Record<string, string> = {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
+  const [isClientReady, setIsClientReady] = useState(false);
+
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -111,7 +116,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  if (authLoading || (!user && !authLoading)) {
+  if (!isClientReady || authLoading || (!user && !authLoading)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-400" />

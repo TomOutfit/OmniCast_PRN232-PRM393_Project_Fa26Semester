@@ -576,7 +576,7 @@ message AuditEntry {
                         <td className="px-4 py-2.5 text-white">/api/channels</td>
                         <td className="px-4 py-2.5 text-slate-400 font-sans">GUEST</td>
                         <td className="px-4 py-2.5 text-slate-400 font-sans">
-                          Lấy danh sách 25 kênh sóng truyền hình
+                          Lấy danh sách các kênh đang được cấu hình
                         </td>
                       </tr>
                       <tr>

@@ -98,7 +98,6 @@ export default function RecordingsPage() {
         id: r.id,
         title: r.title,
         category: (r.category as any) || 'CINE',
-        rating: 9.2,
         year: 2025,
         isLive: false,
       })),

@@ -74,9 +74,15 @@ export function MobileFab() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // Hide on auth + studio/admin (those have their own nav)
+  // Keep the shortcut on content discovery screens; do not cover players or forms.
+  const showOnRoute =
+    pathname === '/' ||
+    ['/channels', '/programs', '/epg', '/recordings', '/watchlist'].includes(
+      pathname ?? '',
+    );
   const hide =
     isLoading ||
+    !showOnRoute ||
     pathname === '/login' ||
     pathname === '/register' ||
     pathname?.startsWith('/auth') ||

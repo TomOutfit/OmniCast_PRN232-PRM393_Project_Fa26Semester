@@ -96,13 +96,13 @@ export default function ChannelsPage() {
         id: c.id,
         name: c.name,
         category: c.category,
-        isLive: true,
+        isLive: liveChannelMap.has(c.id),
       })),
-    [channels]
+    [channels, liveChannelMap]
   );
 
   const categories = [
-    { key: 'ALL', label: 'Tất Cả (25 Kênh)' },
+    { key: 'ALL', label: 'Tất Cả' },
     { key: 'SPORTS', label: 'Thể Thao' },
     { key: 'CINE', label: 'Điện Ảnh 4K' },
     { key: 'DRAMA', label: 'Phim Truyện' },
