@@ -3,6 +3,7 @@
 // ============================================================
 
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ProgramsController } from './programs.controller';
 import { ProgramsService } from './programs.service';
@@ -26,6 +27,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(), // for @Cron decorators
+    AuthModule,
     AuditLoggerModule,
     IngestModule,
     NotificationsModule,

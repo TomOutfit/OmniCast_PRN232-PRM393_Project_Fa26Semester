@@ -43,6 +43,7 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { createCloudflareTurnIceServers } from '../common/utils/cloudflare-turn';
 import { AuditLoggerService } from '../audit-logger/audit-logger.service';
 import { EpgNowService } from './epg-now.service';
 import * as os from 'os';
@@ -61,6 +62,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import {
   detectLanIpv4,
   getMediaPublicHost,
+  isPublicHttpsMediaUrl,
   isIpOnThisMachine,
   pickMediaBaseUrl,
   rewriteMediaHost,
@@ -411,6 +413,12 @@ function enforcePublishGate(
 export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveStudioService.name);
   private udpServer: dgram.Socket | null = null;
+  private liveMediaEndpointConfig: {
+    publicHost: string;
+    hlsUrl: string;
+    whipUrl: string;
+    webrtcUrl: string;
+  } | null = null;
 
   onModuleInit() {
     this.startUdpDiscoveryResponder();
@@ -458,6 +466,22 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
       this.udpServer = server;
     } catch (e: any) {
       this.logger.warn(`[LAN Discovery UDP] Could not bind UDP socket: ${e?.message}`);
+    }
+  }
+
+  async refreshMediaEndpointConfig() {
+    try {
+      this.liveMediaEndpointConfig = await this.prisma.liveMediaEndpointConfig.findUnique({
+        where: { id: 'primary' },
+        select: {
+          publicHost: true,
+          hlsUrl: true,
+          whipUrl: true,
+          webrtcUrl: true,
+        },
+      });
+    } catch {
+      this.liveMediaEndpointConfig = null;
     }
   }
 
@@ -564,6 +588,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
         description: true,
         thumbnailUrl: true,
         streamUrl: true,
+        tags: true,
         status: true,
         startedAt: true,
         endedAt: true,
@@ -592,6 +617,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    *     audit log is self-explanatory.
    */
   async curateLive(dto: CurateLiveDto, userId: string) {
+    await this.refreshMediaEndpointConfig();
     if (!dto.recordingIds?.length) {
       throw new BadRequestException('recordingIds must not be empty.');
     }
@@ -798,6 +824,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    */
   getIngestConfig() {
     const lanIp = detectLanIpv4();
+    const stored = this.liveMediaEndpointConfig;
 
     // The host every client should use. It resolves, in order:
     //   1. `MEDIAMTX_PUBLIC_BASE_URL` (explicit tunnel / production URL)
@@ -805,7 +832,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
     //      address of THIS machine, so a stale value left over from
     //      another network can never be advertised to viewers.
     //   3. The auto-detected LAN IPv4.
-    const publicHost = getMediaPublicHost();
+    const publicHost = stored?.publicHost ?? getMediaPublicHost();
 
     // Per-protocol base URLs. The `MEDIAMTX_*_URL` overrides are a
     // convenience for exotic setups; they are only honoured when they
@@ -813,24 +840,27 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
     // from a previous network (pointing at an IP this machine no
     // longer owns) would otherwise silently win over the freshly
     // detected one and every viewer would get a dead stream.
-    const hlsBase = pickMediaBaseUrl(
-      process.env.MEDIAMTX_HLS_URL,
-      'http',
-      publicHost,
-      '8888',
-    );
-    const webrtcBase = pickMediaBaseUrl(
-      process.env.MEDIAMTX_WEBRTC_URL,
-      'ws',
-      publicHost,
-      '8889',
-    );
-    const whipBase = pickMediaBaseUrl(
-      process.env.MEDIAMTX_WHIP_URL,
-      'http',
-      publicHost,
-      '8889',
-    );
+    const hlsBase = stored?.hlsUrl.replace(/\/+$/, '') ??
+      pickMediaBaseUrl(
+        process.env.MEDIAMTX_HLS_URL,
+        'http',
+        publicHost,
+        '8888',
+      );
+    const webrtcBase = stored?.webrtcUrl.replace(/\/+$/, '') ??
+      pickMediaBaseUrl(
+        process.env.MEDIAMTX_WEBRTC_URL,
+        'ws',
+        publicHost,
+        '8889',
+      );
+    const whipBase = stored?.whipUrl.replace(/\/+$/, '') ??
+      pickMediaBaseUrl(
+        process.env.MEDIAMTX_WHIP_URL,
+        'http',
+        publicHost,
+        '8889',
+      );
     const rtmpBase = pickMediaBaseUrl(
       process.env.MEDIAMTX_RTMP_URL,
       'rtmp',
@@ -838,9 +868,16 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
       '1935',
     );
 
+    // Browser clients on HTTPS require secure WHIP/HLS endpoints. This
+    // flag lets clients distinguish a public deployment from LAN-only
+    // auto-discovery without attempting a publish to loopback.
+    const publicEndpointConfigured =
+      isPublicHttpsMediaUrl(hlsBase) && isPublicHttpsMediaUrl(whipBase);
+
     return {
       publicHost,
       lanIp,
+      publicEndpointConfigured,
       hlsUrl: hlsBase,
       hlsIndexUrlTemplate: `${hlsBase}/{slug}/index.m3u8`,
       webrtcUrl: webrtcBase,
@@ -863,6 +900,27 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
         whipPort: 8889,
       },
     };
+  }
+
+  async getTurnIceServers() {
+    try {
+      const iceServers = await createCloudflareTurnIceServers({
+        keyId: process.env.CLOUDFLARE_TURN_KEY_ID,
+        apiToken: process.env.CLOUDFLARE_TURN_API_TOKEN,
+      });
+      const relayAvailable = iceServers.some((server) => {
+        const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+        return urls.some(
+          (url) => url.startsWith('turn:') || url.startsWith('turns:'),
+        );
+      });
+      return { iceServers, relayAvailable };
+    } catch (error) {
+      this.logger.warn(
+        `Cloudflare TURN credentials unavailable: ${(error as Error).message}`,
+      );
+      return { iceServers: [], relayAvailable: false };
+    }
   }
 
   /**
@@ -905,6 +963,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    * them straight into MediaMTX.
    */
   async startWebcamLive(dto: WebcamLiveStartDto, userId: string) {
+    await this.refreshMediaEndpointConfig();
     const channel = await this.findChannel(dto.channelSlug);
     if (!channel) {
       throw new NotFoundException(`Channel not found: ${dto.channelSlug}`);
@@ -1924,6 +1983,7 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
    * Used by the viewer app to show "LIVE NOW" indicators.
    */
   async getActiveLiveStreams() {
+    await this.refreshMediaEndpointConfig();
     const liveEvents = await this.prisma.liveEvent.findMany({
       where: {
         status: EventStatus.LIVE,
@@ -1962,7 +2022,10 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
         description: event.description,
         // The persisted URL may carry a stale LAN IP — rewrite it so the
         // viewer is pointed at the host that is reachable right now.
-        streamUrl: rewriteMediaHost(event.streamUrl),
+        streamUrl: event.tags?.includes('studio-webcam-live') &&
+            isPublicHttpsMediaUrl(hlsIndexUrl)
+          ? hlsIndexUrl
+          : rewriteMediaHost(event.streamUrl),
         hlsUrl: hlsIndexUrl,
         sourceRecordingId: recTag ? recTag.replace('rec:', '') : null,
         startedAt: event.startedAt?.toISOString(),

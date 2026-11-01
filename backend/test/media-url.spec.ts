@@ -30,6 +30,7 @@ import {
   isIpOnThisMachine,
   isLiteralIpv4,
   isPrivateIpv4,
+  isPublicHttpsMediaUrl,
   pickMediaBaseUrl,
   rewriteMediaHost,
 } from '../src/common/utils/media-url';
@@ -85,6 +86,16 @@ test('isPrivateIpv4 recognises loopback and RFC1918 ranges', () => {
   assert.equal(isPrivateIpv4('172.31.255.254'), true);
   assert.equal(isPrivateIpv4('8.8.8.8'), false);
   assert.equal(isPrivateIpv4(''), false);
+});
+
+test('isPublicHttpsMediaUrl accepts secure public origins only', () => {
+  assert.equal(isPublicHttpsMediaUrl('https://media.example.com'), true);
+  assert.equal(isPublicHttpsMediaUrl('http://media.example.com'), false);
+  assert.equal(isPublicHttpsMediaUrl('https://127.0.0.1:8889'), false);
+  assert.equal(isPublicHttpsMediaUrl('https://[::1]:8889'), false);
+  assert.equal(isPublicHttpsMediaUrl('https://192.168.1.20:8889'), false);
+  assert.equal(isPublicHttpsMediaUrl('https://media.local'), false);
+  assert.equal(isPublicHttpsMediaUrl('not a url'), false);
 });
 
 // ---------------------------------------------------------------------

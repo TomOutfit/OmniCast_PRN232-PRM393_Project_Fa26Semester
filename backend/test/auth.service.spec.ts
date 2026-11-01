@@ -111,11 +111,40 @@ function makeService() {
   const usersService = { findById: async (id: string) => prisma.users.find((u) => u.id === id) ?? null } as any;
   const jwtService = {
     sign: (payload: any, opts?: any) => `jwt.${payload.sub}.${opts?.expiresIn ?? '1h'}`,
+    verifyAsync: async (token: string) => {
+      const match = /^jwt\.([^.]+)\./.exec(token);
+      if (!match) throw new Error('invalid token');
+      return { sub: match[1] };
+    },
   } as any;
   const configService = { get: (_: string) => 'test' } as any;
-  const service = new AuthService(prisma as any, usersService, jwtService, configService);
+  const auditLogger = { log: async () => undefined } as any;
+  const service = new AuthService(
+    prisma as any,
+    usersService,
+    jwtService,
+    configService,
+    auditLogger,
+  );
   return { service, prisma };
 }
+
+test('MediaMTX publish auth accepts active Staff/Admin access tokens only', async () => {
+  const { service, prisma } = makeService();
+  prisma.users.push(
+    { id: 'staff-1', role: 'STAFF', isActive: true },
+    { id: 'admin-1', role: 'ADMIN', isActive: true },
+    { id: 'viewer-1', role: 'VIEWER', isActive: true },
+    { id: 'inactive-1', role: 'STAFF', isActive: false },
+  );
+
+  assert.equal(await service.authorizeMediaMtxPublish('jwt.staff-1.1h'), true);
+  assert.equal(await service.authorizeMediaMtxPublish('jwt.admin-1.1h'), true);
+  assert.equal(await service.authorizeMediaMtxPublish('jwt.viewer-1.1h'), false);
+  assert.equal(await service.authorizeMediaMtxPublish('jwt.inactive-1.1h'), false);
+  assert.equal(await service.authorizeMediaMtxPublish('invalid'), false);
+  assert.equal(await service.authorizeMediaMtxPublish(undefined), false);
+});
 
 // ---------------------------------------------------------------------
 // register

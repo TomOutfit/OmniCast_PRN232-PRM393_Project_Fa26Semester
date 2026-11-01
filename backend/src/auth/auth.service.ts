@@ -35,6 +35,27 @@ export class AuthService {
     private readonly auditLogger: AuditLoggerService,
   ) {}
 
+  async authorizeMediaMtxPublish(token: string | undefined): Promise<boolean> {
+    if (!token) return false;
+
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sub?: string }>(token);
+      if (!payload.sub) return false;
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { role: true, isActive: true },
+      });
+
+      return (
+        user?.isActive !== false &&
+        (user?.role === UserRole.STAFF || user?.role === UserRole.ADMIN)
+      );
+    } catch {
+      return false;
+    }
+  }
+
   async register(registerDto: RegisterDto) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },

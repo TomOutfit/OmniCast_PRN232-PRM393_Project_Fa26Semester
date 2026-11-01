@@ -41,10 +41,41 @@ export function isLiteralIpv4(host: string): boolean {
 /** True for loopback / link-local / RFC1918 private addresses. */
 export function isPrivateIpv4(ip: string): boolean {
   if (!ip) return false;
-  if (ip === 'localhost' || ip === '127.0.0.1') return true;
+  if (ip === 'localhost' || ip.startsWith('127.') || ip.startsWith('0.')) return true;
   if (ip.startsWith('10.') || ip.startsWith('192.168.')) return true;
   if (ip.startsWith('169.254.')) return true;
   return /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip);
+}
+
+/** True when a media endpoint is suitable for clients on the public web. */
+export function isPublicHttpsMediaUrl(rawUrl: string | undefined | null): boolean {
+  if (!rawUrl) return false;
+
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase();
+    if (
+      url.protocol !== 'https:' ||
+      url.username ||
+      url.password ||
+      host === 'localhost' ||
+      host === '[::]' ||
+      host === '[::1]' ||
+      host.startsWith('[fc') ||
+      host.startsWith('[fd') ||
+      host.startsWith('[fe80:') ||
+      host.endsWith('.localhost') ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal') ||
+      isPrivateIpv4(host)
+    ) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

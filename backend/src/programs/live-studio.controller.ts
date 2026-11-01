@@ -17,6 +17,7 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  UnauthorizedException,
   Param,
   Post,
   Query,
@@ -44,6 +45,7 @@ import { StudioCatalogService } from './studio-catalog.service';
 import { StorageService } from './storage.service';
 import { SocialService } from './social.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
 import {
   CurateLiveDto,
   AddToLibraryDto,
@@ -54,7 +56,10 @@ import {
   WebcamLiveStopDto,
 } from './dto/live-studio.dto';
 import { LiveStreamGateway } from '../websocket/live-stream.gateway';
-import { rewriteMediaHost } from '../common/utils/media-url';
+import {
+  isPublicHttpsMediaUrl,
+  rewriteMediaHost,
+} from '../common/utils/media-url';
 
 // ============================================================
 // DTOs for Mobile Push-to-Live
@@ -72,6 +77,10 @@ class MobileStopLiveDto {
   channelSlug: string;
 }
 
+interface MediaMtxAuthDto {
+  token?: string;
+}
+
 @ApiTags('studio')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,7 +94,19 @@ export class LiveStudioController {
     private readonly liveStreamGateway: LiveStreamGateway,
     private readonly socialService: SocialService,
     private readonly prisma: PrismaService,
+    private readonly authService: AuthService,
   ) {}
+
+  @Public()
+  @Post('media-auth')
+  @HttpCode(HttpStatus.OK)
+  async authorizeMediaMtxPublish(@Body() dto: MediaMtxAuthDto) {
+    const allowed = await this.authService.authorizeMediaMtxPublish(dto.token);
+    if (!allowed) {
+      throw new UnauthorizedException('A valid Staff/Admin access token is required to publish.');
+    }
+    return { success: true };
+  }
 
   // ============================================================
   // 0a. Mobile Push-to-Live: Start streaming from mobile camera
@@ -191,6 +212,7 @@ export class LiveStudioController {
   })
   @ApiResponse({ status: 200, description: '200 OK — LAN discovery config' })
   async getLanDiscovery() {
+    await this.studioService.refreshMediaEndpointConfig();
     const config = this.studioService.getIngestConfig();
     return {
       status: 'ok',
@@ -216,7 +238,18 @@ export class LiveStudioController {
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   async getIngestConfig() {
+    await this.studioService.refreshMediaEndpointConfig();
     return this.studioService.getIngestConfig();
+  }
+
+  @Get('live/ice-servers')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Issue short-lived TURN credentials for a staff broadcaster.',
+  })
+  @ApiResponse({ status: 200, description: 'ICE server configuration' })
+  async getLiveIceServers() {
+    return this.studioService.getTurnIceServers();
   }
 
   @Post('live/webcam/start')
@@ -269,17 +302,24 @@ export class LiveStudioController {
   @ApiResponse({ status: 200, description: '200 OK — Stream URL info' })
   @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
   async getStreamUrl(@Param('channelSlug') channelSlug: string) {
+    await this.studioService.refreshMediaEndpointConfig();
     const liveEvent = await this.studioService.getCurrentLiveEvent(channelSlug);
 
     const ingest = this.studioService.getIngestConfig();
     const channelHlsUrl = `${ingest.hlsUrl}/${channelSlug}/index.m3u8`;
 
     if (liveEvent) {
+      const useConfiguredWebcamHls =
+        liveEvent.tags?.includes('studio-webcam-live') &&
+        isPublicHttpsMediaUrl(ingest.hlsUrl);
       return {
         isLive: true,
         type: 'live',
-        // Rewrite a stale LAN IP to the host that is reachable now.
-        streamUrl: rewriteMediaHost(liveEvent.streamUrl || channelHlsUrl),
+        // Webcam sessions use today's configured base instead of an old
+        // stored URL that may contain an obsolete tunnel port.
+        streamUrl: useConfiguredWebcamHls
+          ? channelHlsUrl
+          : rewriteMediaHost(liveEvent.streamUrl || channelHlsUrl),
         hlsUrl: channelHlsUrl,
         eventId: liveEvent.id,
         title: liveEvent.title,

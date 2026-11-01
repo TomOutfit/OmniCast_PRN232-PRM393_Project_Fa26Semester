@@ -33,6 +33,16 @@
 logLevel: info
 logDestinations: [stdout]
 
+# Authenticate WHIP publishes against OmniCast. Read/playback stays public.
+authMethod: http
+authHTTPAddress: http://127.0.0.1:3000/api/v1/programs/studio/media-auth
+authHTTPExclude:
+  - action: read
+  - action: playback
+  - action: api
+  - action: metrics
+  - action: pprof
+
 # - RTMP ingest ------------------------------------------------
 rtmp: true
 rtmpAddress: :1935
