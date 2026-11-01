@@ -118,7 +118,13 @@ function extractFieldErrors(payload: unknown): Record<string, string[]> {
  */
 function singleMessage(messages: string[] | undefined, fallback: string): string {
   if (!messages || messages.length === 0) return fallback;
-  return messages.join(', ');
+  return messages
+    .map((m) =>
+      m.includes('String must contain at least 1 character')
+        ? 'Dữ liệu trường bắt buộc không được để trống.'
+        : m,
+    )
+    .join(', ');
 }
 
 /**
@@ -191,7 +197,10 @@ export function parseApiError(err: unknown): ApiError {
   // Plain Error / anything else
   if (err instanceof Error) {
     return new ApiError({
-      message: err.message || FRIENDLY_FALLBACK.UNKNOWN,
+      message:
+        err.message?.includes('String must contain at least 1 character')
+          ? 'Dữ liệu trường bắt buộc không được để trống.'
+          : err.message || FRIENDLY_FALLBACK.UNKNOWN,
       status: null,
       code: 'UNKNOWN',
     });
