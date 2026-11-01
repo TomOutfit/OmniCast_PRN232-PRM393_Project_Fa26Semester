@@ -68,6 +68,8 @@ export interface PublishCameraViaWhipOptions {
   onState?: (state: WhipConnectionState, detail?: string) => void;
   /** Optional ICE servers. LAN deployments usually need none. */
   iceServers?: RTCIceServer[];
+  /** OmniCast access token used to authorize MediaMTX publish. */
+  authorizationToken?: string;
   /** Abort the publish attempt. */
   signal?: AbortSignal;
 }
@@ -202,7 +204,14 @@ async function applyCodecPreferences(
 export async function publishCameraViaWhip(
   options: PublishCameraViaWhipOptions,
 ): Promise<WhipPublisher> {
-  const { url, stream, onState, iceServers = [], signal } = options;
+  const {
+    url,
+    stream,
+    onState,
+    iceServers = [],
+    authorizationToken,
+    signal,
+  } = options;
 
   if (!navigator.mediaDevices || !window.RTCPeerConnection) {
     throw new Error('Trình duyệt này không hỗ trợ WebRTC — không thể phát trực tiếp.');
@@ -272,6 +281,9 @@ export async function publishCameraViaWhip(
         method: 'POST',
         headers: {
           'Content-Type': 'application/sdp',
+          ...(authorizationToken
+            ? { Authorization: `Bearer ${authorizationToken}` }
+            : {}),
         },
         body: pc.localDescription?.sdp ?? offer.sdp ?? '',
       });
@@ -368,7 +380,12 @@ export async function publishCameraViaWhip(
           try {
             await fetch(sessionUrl, {
               method: 'DELETE',
-              headers: sessionEtag ? { 'If-Match': sessionEtag } : undefined,
+              headers: {
+                ...(authorizationToken
+                  ? { Authorization: `Bearer ${authorizationToken}` }
+                  : {}),
+                ...(sessionEtag ? { 'If-Match': sessionEtag } : {}),
+              },
             });
           } catch {
             /* the server may already have dropped the session */

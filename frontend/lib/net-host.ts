@@ -87,6 +87,69 @@ export const BACKEND_PORT = 3000;
  */
 export const MEDIAMTX_PORTS = new Set(['8888', '8889', '1935']);
 
+function isPrivateMediaHost(host: string): boolean {
+  if (
+    host === 'localhost' ||
+    host === '[::]' ||
+    host === '[::1]' ||
+    host.startsWith('[fc') ||
+    host.startsWith('[fd') ||
+    host.startsWith('[fe80:') ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal')
+  ) {
+    return true;
+  }
+
+  if (!isLiteralIpv4(host)) return false;
+  const octets = host.split('.').map(Number);
+  return (
+    octets[0] === 0 ||
+    octets[0] === 10 ||
+    octets[0] === 127 ||
+    (octets[0] === 169 && octets[1] === 254) ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+    (octets[0] === 192 && octets[1] === 168)
+  );
+}
+
+/** Return a user-facing reason when a WHIP URL cannot work in this browser. */
+export function getMediaIngestError(
+  url: string,
+  options: {
+    publicClient: boolean;
+    securePage: boolean;
+    publicEndpointConfigured: boolean;
+  },
+): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return 'Cấu hình WHIP không hợp lệ. Hãy kiểm tra MEDIAMTX_WHIP_URL ở máy chủ.';
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return 'Cấu hình WHIP phải dùng HTTP hoặc HTTPS.';
+  }
+
+  if (
+    options.publicClient &&
+    (!options.publicEndpointConfigured ||
+      parsed.protocol !== 'https:' ||
+      isPrivateMediaHost(parsed.hostname.toLowerCase()))
+  ) {
+    return 'Máy chủ MediaMTX chưa có endpoint HTTPS công khai. Cấu hình MEDIAMTX_PUBLIC_BASE_URL và MEDIAMTX_PUBLIC_HOST trỏ tới máy chủ có thể truy cập từ Internet.';
+  }
+
+  if (options.securePage && parsed.protocol !== 'https:') {
+    return 'Trang đang chạy HTTPS nhưng máy chủ WHIP dùng HTTP. Hãy cấu hình MediaMTX qua HTTPS để tránh Mixed Content.';
+  }
+
+  return null;
+}
+
 /**
  * The host this browser is currently using, when it is a machine-local
  * / LAN address (a literal IPv4).

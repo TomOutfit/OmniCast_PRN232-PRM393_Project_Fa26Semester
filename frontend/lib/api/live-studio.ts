@@ -107,6 +107,8 @@ export interface AddFromCatalogInput {
 export interface IngestConfig {
   /** LAN IP / hostname of the machine running MediaMTX. */
   publicHost: string;
+  /** True only when both playback and WHIP use public HTTPS endpoints. */
+  publicEndpointConfigured?: boolean;
   lanIp?: string;
   /** Base HLS URL, e.g. `http://192.168.2.74:8888`. */
   hlsUrl: string;
@@ -168,6 +170,19 @@ export async function fetchIngestConfig(): Promise<IngestConfig> {
     whipUrl: rewriteMediaUrlForClient(data.whipUrl)!,
     whipUrlTemplate: rewriteMediaUrlForClient(data.whipUrlTemplate)!,
   };
+}
+
+export async function fetchLiveIceServers(): Promise<RTCIceServer[]> {
+  try {
+    const res = await apiClient.get('/programs/studio/live/ice-servers', {
+      timeout: 10000,
+    });
+    const iceServers = res.data?.iceServers;
+    return Array.isArray(iceServers) ? iceServers : [];
+  } catch {
+    // Direct ICE remains available when a TURN provider is not configured.
+    return [];
+  }
 }
 
 export async function startWebcamLive(

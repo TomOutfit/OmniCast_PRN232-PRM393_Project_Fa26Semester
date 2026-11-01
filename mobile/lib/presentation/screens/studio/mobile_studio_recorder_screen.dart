@@ -345,34 +345,89 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   Future<void> _startLiveStreaming() async {
     HapticFeedback.heavyImpact();
 
-    // Wi-Fi Auto-Discovery: ensure mediaHost is resolved to local Wi-Fi broadcaster
-    await LanDiscoveryService().autoDiscoverMediaHost(timeout: const Duration(milliseconds: 600));
-
-    var whipUrl = await _liveApiService?.getWhipUrl() ?? '';
-    final mediaHost = AppConstants.mediaHost;
-    if (whipUrl.isNotEmpty) {
-      // Only redirect to the locally discovered host when the URL points
-      // at a literal IP. A DNS host (tunnel / production) must be left
-      // untouched, otherwise remote publishing breaks.
-      final whipUri = Uri.tryParse(whipUrl);
-      final whipHost = whipUri?.host ?? '';
-      final isLiteral = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(whipHost);
-      if (mediaHost.isNotEmpty && (isLiteral || whipHost == 'localhost' || whipHost == '127.0.0.1')) {
-        whipUrl = whipUrl.replaceFirst(
-          RegExp(r'^(?:https?:\/\/)?([^\/:]+):8889'),
-          'http://$mediaHost:8889',
+    final publishToken = await TokenStorageHelper().getAccessToken();
+    if (publishToken == null || publishToken.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Hãy đăng nhập lại bằng tài khoản STAFF/ADMIN để phát trực tiếp.'),
+            backgroundColor: _danger,
+          ),
         );
       }
-    } else if (mediaHost.isNotEmpty) {
-      whipUrl = 'http://$mediaHost:8889';
+      return;
+    }
+    _liveApiService?.setAuthToken(publishToken);
+
+    var whipUrl = await _liveApiService?.getWhipUrl() ?? '';
+    if (whipUrl.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không tải được máy chủ WHIP. Hãy kiểm tra API và cấu hình MediaMTX HTTPS công khai trên backend.',
+            ),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
+    }
+
+    var whipUri = Uri.tryParse(whipUrl);
+    if (whipUri == null || !whipUri.hasAuthority) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Địa chỉ WHIP từ máy chủ không hợp lệ.'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
+    }
+
+    final whipHost = whipUri.host.toLowerCase();
+    final isLoopback =
+        whipHost == 'localhost' || whipHost == '127.0.0.1' || whipHost == '::1';
+    final isPrivateIpv4 = RegExp(
+      r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)',
+    ).hasMatch(whipHost);
+    if (isLoopback || isPrivateIpv4) {
+      // Resolve stale local URLs only for LAN MediaMTX; preserve public
+      // DNS endpoints so a local discovery result cannot hijack them.
+      final discovery = await LanDiscoveryService().autoDiscoverMediaHost(
+        timeout: const Duration(milliseconds: 600),
+      );
+      final discoveredHost = discovery.success ? discovery.host : null;
+      if (discoveredHost != null && discoveredHost.isNotEmpty) {
+        whipUri = whipUri.replace(host: discoveredHost);
+        whipUrl = whipUri.toString();
+      } else if (isLoopback) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'WHIP đang trỏ tới localhost nhưng không tìm thấy MediaMTX trong mạng Wi-Fi.',
+              ),
+              backgroundColor: _danger,
+            ),
+          );
+        }
+        return;
+      }
     }
 
     // Configure WebRTC publisher
     _webrtcPublisher = WebRTCPublisherService();
+    final iceServers = await _liveApiService?.getIceServers() ?? const [];
     _webrtcPublisher!.configure(
       WebRTCPublisherConfig(
         serverUrl: whipUrl,
         streamKey: widget.channel?.slug ?? 'default',
+        authToken: publishToken,
+        iceServers: iceServers,
         videoConstraints: VideoConstraints(
           width: 1280,
           height: 720,

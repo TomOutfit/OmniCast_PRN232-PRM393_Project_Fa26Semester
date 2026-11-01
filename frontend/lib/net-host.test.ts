@@ -17,6 +17,7 @@ import {
   rewriteMediaHostForClient,
   getClientMediaHost,
   MEDIAMTX_PORTS,
+  getMediaIngestError,
 } from './net-host';
 
 /** Pretend the browser runs on the given host. */
@@ -183,5 +184,47 @@ describe('getClientMediaHost', () => {
 describe('MEDIAMTX_PORTS', () => {
   it('matches the backend port set', () => {
     expect([...MEDIAMTX_PORTS].sort()).toEqual(['1935', '8888', '8889']);
+  });
+});
+
+describe('getMediaIngestError', () => {
+  it('rejects HTTP WHIP from a secure page', () => {
+    expect(
+      getMediaIngestError('http://192.168.1.20:8889', {
+        publicClient: false,
+        securePage: true,
+        publicEndpointConfigured: false,
+      }),
+    ).toContain('Mixed Content');
+  });
+
+  it('rejects a loopback endpoint for a public client', () => {
+    expect(
+      getMediaIngestError('http://127.0.0.1:8889', {
+        publicClient: true,
+        securePage: true,
+        publicEndpointConfigured: false,
+      }),
+    ).toContain('HTTPS công khai');
+  });
+
+  it('accepts a configured public HTTPS endpoint', () => {
+    expect(
+      getMediaIngestError('https://media.example.com', {
+        publicClient: true,
+        securePage: true,
+        publicEndpointConfigured: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('allows an HTTP endpoint in local development', () => {
+    expect(
+      getMediaIngestError('http://192.168.1.20:8889', {
+        publicClient: false,
+        securePage: false,
+        publicEndpointConfigured: false,
+      }),
+    ).toBeNull();
   });
 });

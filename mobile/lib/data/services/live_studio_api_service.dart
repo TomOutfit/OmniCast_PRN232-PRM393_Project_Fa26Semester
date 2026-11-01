@@ -16,6 +16,35 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+bool _isPrivateOrLoopbackHost(String host) {
+  final normalized = host.toLowerCase();
+  if (normalized == 'localhost' ||
+      normalized == '::1' ||
+      normalized == '::' ||
+      normalized.startsWith('fc') ||
+      normalized.startsWith('fd') ||
+      normalized.startsWith('fe80:') ||
+      normalized.endsWith('.localhost') ||
+      normalized.endsWith('.local') ||
+      normalized.endsWith('.internal')) {
+    return true;
+  }
+
+  final octets = normalized.split('.').map(int.tryParse).toList();
+  if (octets.length != 4 || octets.any((octet) => octet == null)) {
+    return false;
+  }
+
+  final first = octets[0]!;
+  final second = octets[1]!;
+  return first == 0 ||
+      first == 10 ||
+      first == 127 ||
+      (first == 169 && second == 254) ||
+      (first == 172 && second >= 16 && second <= 31) ||
+      (first == 192 && second == 168);
+}
+
 /// Response from the backend when starting a live stream
 class PushToLiveResponse {
   final bool success;
@@ -233,7 +262,30 @@ class LiveStudioApiService {
       if (response.statusCode == 200 &&
           whipUrl is String &&
           whipUrl.isNotEmpty) {
-        return whipUrl.replaceFirst(RegExp(r'/+$'), '');
+        final normalizedUrl = whipUrl.replaceFirst(RegExp(r'/+$'), '');
+        final apiUri = Uri.tryParse(_baseUrl);
+        final mediaUri = Uri.tryParse(normalizedUrl);
+        final apiHost = apiUri?.host ?? '';
+        final mediaHost = mediaUri?.host ?? '';
+        final isRemoteApi =
+            apiHost.isNotEmpty && !_isPrivateOrLoopbackHost(apiHost);
+
+        if (isRemoteApi && data['publicEndpointConfigured'] != true) {
+          debugPrint(
+            '[LiveStudioApi] Public API has no public HTTPS MediaMTX endpoint',
+          );
+          return null;
+        }
+        if (isRemoteApi &&
+            (mediaUri?.scheme != 'https' ||
+                _isPrivateOrLoopbackHost(mediaHost))) {
+          debugPrint(
+            '[LiveStudioApi] Refusing a private or insecure WHIP URL from a public API',
+          );
+          return null;
+        }
+
+        return normalizedUrl;
       }
 
       debugPrint('[LiveStudioApi] Invalid WHIP ingest configuration');
@@ -241,6 +293,23 @@ class LiveStudioApiService {
     } on DioException catch (e) {
       debugPrint('[LiveStudioApi] getWhipUrl error: ${e.message}');
       return null;
+    }
+  }
+
+  /// Get short-lived TURN credentials for publishing from restrictive networks.
+  Future<List<Map<String, dynamic>>> getIceServers() async {
+    try {
+      final response = await _dio.get('/v1/programs/studio/live/ice-servers');
+      final data = response.data;
+      final servers = data is Map ? data['iceServers'] : null;
+      if (servers is! List) return const [];
+      return servers
+          .whereType<Map>()
+          .map((server) => Map<String, dynamic>.from(server))
+          .toList(growable: false);
+    } on DioException catch (e) {
+      debugPrint('[LiveStudioApi] getIceServers error: ${e.message}');
+      return const [];
     }
   }
 

@@ -49,14 +49,20 @@ import {
   type WhipConnectionState,
   type WhipPublisher,
 } from '@/lib/webrtc/whip-client';
-import { stopWebcamLiveOnUnmount } from '@/lib/api/live-studio';
+import {
+  fetchLiveIceServers,
+  stopWebcamLiveOnUnmount,
+} from '@/lib/api/live-studio';
 import {
   useIngestConfig,
   useStartWebcamLive,
   useStopWebcamLive,
 } from '@/lib/hooks/useLiveStudio';
 import { createCameraComposer } from '@/lib/camera/compose-stream';
-import { resolveMediaHostForClient } from '@/lib/net-host';
+import {
+  getMediaIngestError,
+  isLocalOrLanHost,
+} from '@/lib/net-host';
 import type { Channel } from '@/types';
 
 type BroadcasterPhase =
@@ -181,6 +187,18 @@ export function WebcamLiveBroadcaster({
       return;
     }
 
+    const ingestError = getMediaIngestError(ingestConfig.whipUrl, {
+      publicClient: !isLocalOrLanHost(window.location.hostname),
+      securePage: window.location.protocol === 'https:',
+      publicEndpointConfigured: ingestConfig.publicEndpointConfigured === true,
+    });
+    if (ingestError) {
+      setError(ingestError);
+      setPhase('error');
+      toast.error(ingestError);
+      return;
+    }
+
     setError(null);
     setStatusDetail('Đang mở camera…');
     setPhase('capturing');
@@ -247,16 +265,17 @@ export function WebcamLiveBroadcaster({
     setStatusDetail('Đang kết nối tới máy chủ phát trực tiếp…');
 
     const whipUrl = `${ingestConfig.whipUrl}/${channel.slug}/whip`;
+    const authorizationToken = localStorage.getItem('accessToken');
     const controller = new AbortController();
     abortRef.current = controller;
 
-    let publisher: WhipPublisher | null = null;
-    let whipWarning: string | null = null;
-
+    let publisher: WhipPublisher;
     try {
       publisher = await publishCameraViaWhip({
         url: whipUrl,
         stream,
+        iceServers: await fetchLiveIceServers(),
+        authorizationToken: authorizationToken || undefined,
         onState: (state: WhipConnectionState, detail?: string) => {
           if (state === 'publishing') {
             setStatusDetail('Đang thiết lập phiên phát…');
@@ -270,48 +289,38 @@ export function WebcamLiveBroadcaster({
       });
       publisherRef.current = publisher;
     } catch (whipErr) {
-      // If external WHIP server (MediaMTX) is unreachable or blocked by Mixed Content (HTTPS -> HTTP),
-      // follow the resilient pattern (like mobile studio): keep the camera active and proceed to live
-      console.warn('[WebcamLiveBroadcaster] MediaMTX WHIP unavailable, falling back to Studio Live mode:', whipErr);
-      whipWarning = (whipErr as Error)?.message || 'Máy chủ MediaMTX không khả dụng';
+      const message =
+        (whipErr as Error)?.message || 'Máy chủ MediaMTX không khả dụng';
+      setError(message);
+      setPhase('error');
+      setStatusDetail('');
+      releaseCamera();
+      toast.error(`Không thể kết nối máy chủ phát: ${message}`);
+      return;
     }
 
     try {
-      // 3. Register the LiveEvent on the backend.
-      //
-      // The media host is decided by the BACKEND (`ingestConfig.publicHost`):
-      // it resolves `MEDIAMTX_PUBLIC_BASE_URL` → `MEDIAMTX_PUBLIC_HOST` →
-      // the auto-detected LAN IP, so it is always the address that is
-      // actually reachable. The browser hostname is only a fallback for
-      // the case where the ingest config could not be loaded, and it
-      // uses the shared host rule from `lib/net-host.ts`.
-      const configHost = ingestConfig?.publicHost || ingestConfig?.lanIp || '';
-      const resolvedMediaHost = configHost || resolveMediaHostForClient();
-
+      // Register with the HLS URL resolved by backend config. Passing a
+      // hostname alone makes it append :8888, breaking HTTPS proxies on
+      // the default port 443.
       const result = await startMutation.mutateAsync({
         channelSlug: channel.slug,
         title: defaultTitle?.trim() || undefined,
-        mediaHost: resolvedMediaHost,
       });
 
       eventIdRef.current = result.eventId;
       setEventId(result.eventId);
       setPhase('live');
-      setStatusDetail(publisher ? 'Đã phát trực tiếp!' : 'Đang phát trực tiếp (Studio Live)');
+      setStatusDetail('Đã phát trực tiếp!');
       setElapsed(0);
 
       // 4. Bitrate sampler.
-      if (publisher) {
-        statsTimerRef.current = setInterval(async () => {
-          const stats = await publisher.getStats().catch(() => null);
-          if (!stats) return;
-          setVideoKbps(stats.videoKbps);
-          setAudioKbps(stats.audioKbps);
-        }, 1500);
-      } else {
-        setVideoKbps(1500);
-        setAudioKbps(128);
-      }
+      statsTimerRef.current = setInterval(async () => {
+        const stats = await publisher.getStats().catch(() => null);
+        if (!stats) return;
+        setVideoKbps(stats.videoKbps);
+        setAudioKbps(stats.audioKbps);
+      }, 1500);
 
       elapsedTimerRef.current = setInterval(() => {
         setElapsed((prev) => prev + 1);
@@ -319,21 +328,9 @@ export function WebcamLiveBroadcaster({
 
       onLiveChange?.({ eventId: result.eventId, live: true });
 
-      if (publisher) {
-        toast.success(
-          `Đã BẬT LIVE WEBCAM trên kênh ${channel.name}! Chia sẻ link /live/${result.eventId} để mọi người xem cùng lúc.`,
-        );
-      } else {
-        toast.success(
-          `Đã BẬT LIVE trên kênh ${channel.name}! (Chế độ Studio Live — Người xem có thể vào xem và tương tác)`,
-          {
-            description: whipWarning
-              ? `Lưu ý MediaMTX: ${whipWarning}`
-              : undefined,
-            duration: 6000,
-          },
-        );
-      }
+      toast.success(
+        `Đã BẬT LIVE WEBCAM trên kênh ${channel.name}! Chia sẻ link /live/${result.eventId} để mọi người xem cùng lúc.`,
+      );
     } catch (err) {
       const message = (err as Error)?.message || 'Không thể phát trực tiếp.';
       setError(message);

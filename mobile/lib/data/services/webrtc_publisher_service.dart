@@ -63,6 +63,12 @@ class WebRTCPublisherConfig {
   /// Stream key (channel identifier)
   final String streamKey;
 
+  /// Access token for MediaMTX publish authorization.
+  final String? authToken;
+
+  /// Short-lived ICE/TURN servers returned by the backend.
+  final List<Map<String, dynamic>> iceServers;
+
   /// Video constraints
   final VideoConstraints videoConstraints;
 
@@ -75,6 +81,8 @@ class WebRTCPublisherConfig {
   const WebRTCPublisherConfig({
     required this.serverUrl,
     required this.streamKey,
+    this.authToken,
+    this.iceServers = const [],
     this.videoConstraints = const VideoConstraints(),
     this.audioConstraints = const AudioConstraints(),
     this.debug = false,
@@ -138,6 +146,7 @@ class WebRTCPublisherService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
   RTCSessionDescription? _localDescription;
+  Completer<bool>? _iceConnectedCompleter;
   bool _isBroadcasting = false;
 
   // Callbacks
@@ -212,8 +221,7 @@ class WebRTCPublisherService {
       final success = await _createPeerConnection();
 
       if (!success) {
-        _updateState(BroadcastState.error);
-        return false;
+        throw StateError('Could not create a WebRTC peer connection.');
       }
 
       // Create and set local description
@@ -230,14 +238,15 @@ class WebRTCPublisherService {
       final modifiedOffer = RTCSessionDescription(modifiedSdp, offer.type);
 
       await _peerConnection!.setLocalDescription(modifiedOffer);
+      await _waitForIceGathering();
+      final gatheredOffer =
+          (await _peerConnection!.getLocalDescription()) ?? modifiedOffer;
 
       // Send offer to MediaMTX via WHIP protocol
-      final answerSdp = await _sendWhipOffer(modifiedSdp);
+      final answerSdp = await _sendWhipOffer(gatheredOffer.sdp ?? modifiedSdp);
 
       if (answerSdp == null) {
-        _updateState(BroadcastState.error);
-        onError?.call('Failed to get answer from server');
-        return false;
+        throw StateError('Failed to get answer from MediaMTX.');
       }
 
       // Set remote description (answer from server)
@@ -245,15 +254,28 @@ class WebRTCPublisherService {
         RTCSessionDescription(answerSdp, 'answer'),
       );
 
+      final iceConnected = await _iceConnectedCompleter!.future.timeout(
+        const Duration(seconds: 25),
+        onTimeout: () => false,
+      );
+      if (!iceConnected) {
+        throw TimeoutException(
+          'WebRTC ICE connection timed out. Check that UDP 8189 is reachable from this network.',
+        );
+      }
+
       _isBroadcasting = true;
       _updateState(BroadcastState.broadcasting);
       onBroadcastStatusChanged?.call(true);
 
-      debugPrint('[WebRTCPublisher] Broadcasting started: ${_config!.streamKey}');
+      debugPrint(
+          '[WebRTCPublisher] Broadcasting started: ${_config!.streamKey}');
 
       return true;
     } catch (e) {
       debugPrint('[WebRTCPublisher] Error starting broadcast: $e');
+      await _cleanup();
+      _iceConnectedCompleter = null;
       _updateState(BroadcastState.error);
       onError?.call('Broadcast error: $e');
       return false;
@@ -349,17 +371,20 @@ class WebRTCPublisherService {
 
     final configuration = <String, dynamic>{
       'sdpSemantics': 'unified-plan',
-      'iceServers': [
-        {
-          'urls': [
-            'stun:stun.l.google.com:19302',
-            'stun:stun1.l.google.com:19302',
-          ],
-        },
-      ],
+      'iceServers': _config!.iceServers.isNotEmpty
+          ? _config!.iceServers
+          : [
+              {
+                'urls': [
+                  'stun:stun.l.google.com:19302',
+                  'stun:stun1.l.google.com:19302',
+                ],
+              },
+            ],
     };
 
     _peerConnection = await createPeerConnection(configuration);
+    _iceConnectedCompleter = Completer<bool>();
 
     // Add local tracks to peer connection
     if (_localStream != null) {
@@ -372,7 +397,14 @@ class WebRTCPublisherService {
     _peerConnection!.onIceConnectionState = (state) {
       debugPrint('[WebRTCPublisher] ICE connection state: $state');
 
-      if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+        if (!(_iceConnectedCompleter?.isCompleted ?? true)) {
+          _iceConnectedCompleter!.complete(true);
+        }
+      } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        if (!(_iceConnectedCompleter?.isCompleted ?? true)) {
+          _iceConnectedCompleter!.complete(false);
+        }
         onError?.call('ICE connection failed');
         _updateState(BroadcastState.error);
       }
@@ -384,6 +416,35 @@ class WebRTCPublisherService {
     };
 
     return true;
+  }
+
+  Future<void> _waitForIceGathering() async {
+    final peerConnection = _peerConnection;
+    if (peerConnection == null) return;
+
+    bool isComplete() =>
+        peerConnection.iceGatheringState
+            ?.toString()
+            .toLowerCase()
+            .contains('complete') ??
+        false;
+
+    if (isComplete()) return;
+
+    final completer = Completer<void>();
+    peerConnection.onIceGatheringState = (state) {
+      if (state.toString().toLowerCase().contains('complete') &&
+          !completer.isCompleted) {
+        completer.complete();
+      }
+    };
+
+    if (isComplete()) completer.complete();
+
+    await completer.future.timeout(
+      const Duration(seconds: 4),
+      onTimeout: () {},
+    );
   }
 
   Future<String?> _sendWhipOffer(String offerSdp) async {
@@ -403,7 +464,11 @@ class WebRTCPublisherService {
       final response = await _httpPost(
         whipUrl,
         offerSdp,
-        {'Content-Type': 'application/sdp'},
+        {
+          'Content-Type': 'application/sdp',
+          if (_config!.authToken?.isNotEmpty == true)
+            'Authorization': 'Bearer ${_config!.authToken}',
+        },
       );
 
       if (response != null) {
@@ -441,7 +506,8 @@ class WebRTCPublisherService {
     // Parse the offer to understand the media
     // In a real implementation, you would generate a proper answer
     // For now, return null to indicate we couldn't establish connection
-    debugPrint('[WebRTCPublisher] Using fallback mode - connection may not work');
+    debugPrint(
+        '[WebRTCPublisher] Using fallback mode - connection may not work');
     return null;
   }
 
@@ -485,6 +551,9 @@ class WebRTCPublisherService {
 
       final request = await client.deleteUrl(uri);
       request.headers.set('Content-Type', 'application/sdp');
+      if (_config!.authToken?.isNotEmpty == true) {
+        request.headers.set('Authorization', 'Bearer ${_config!.authToken}');
+      }
 
       await request.close();
       client.close();
