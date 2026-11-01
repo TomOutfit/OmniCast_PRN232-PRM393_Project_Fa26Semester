@@ -282,6 +282,16 @@ Write-Host ''
 Write-Host '    Press Ctrl+C to stop.' -ForegroundColor DarkGray
 Write-Host ''
 
+$authUrl = 'http://127.0.0.1:3000/api/v1/programs/studio/media-auth'
+if (Test-Path $EnvFile) {
+  $authLine = Get-Content $EnvFile | Where-Object { $_ -match '^MEDIAMTX_AUTH_URL=' } | Select-Object -First 1
+  if ($authLine -match '^MEDIAMTX_AUTH_URL=(.+)$' -and -not [string]::IsNullOrWhiteSpace($Matches[1])) {
+    $authUrl = $Matches[1].Trim().Trim('"').Trim("'")
+  }
+}
+$env:MTX_AUTHMETHOD = 'http'
+$env:MTX_AUTHHTTPADDRESS = $authUrl
+
 Push-Location $MediaMtxDir
 try {
   & $ExePath $LocalConfigFile

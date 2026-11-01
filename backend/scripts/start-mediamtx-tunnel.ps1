@@ -2,11 +2,9 @@
 # OmniCast - Start MediaMTX with Cloudflare HTTPS Tunnel
 # ============================================================
 #
-# Enables real-time camera streaming that works seamlessly on:
-#   1. Web Deployment on Vercel (https://omnicast-fe.vercel.app)
-#      -> ZERO Mixed-Content errors (HTTPS to HTTPS).
-#   2. Mobile Flutter APK
-#      -> Works over Wi-Fi, 4G, 5G from anywhere.
+# Publishes the HLS playback endpoint over HTTPS for remote viewers.
+# WHIP signaling and WebRTC ICE remain on the MediaMTX host network;
+# this quick tunnel does not expose UDP ICE or enable remote publishing.
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File backend\scripts\start-mediamtx-tunnel.ps1
@@ -127,27 +125,41 @@ Write-Host " [Local WHIP Ingest]  : http://localhost:$WebRtcPort" -ForegroundCol
 Write-Host " [LAN IP]             : $LanIp" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Green
 
-# 6b. Publish the tunnel URL as MEDIAMTX_PUBLIC_BASE_URL in backend/.env
-# The backend resolves the media host from this variable first, so every
-# newly created live event is handed the tunnel URL (HTTPS — no mixed
-# content on the Vercel deployment) instead of a LAN IP that only works
-# for devices on this Wi-Fi.
+# 6b. Publish the tunnel URL only as the HLS playback endpoint.
+# The backend keeps the local WHIP endpoint separate.
+# The remote HLS viewer uses this URL; mobile camera ingest still needs
+# a separately reachable WHIP endpoint and WebRTC ICE path.
 $EnvFile = Join-Path $BackendDir '.env'
 if (Test-Path $EnvFile) {
   try {
     $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     $envText = [System.IO.File]::ReadAllText($EnvFile, [System.Text.Encoding]::UTF8)
-    $pattern = '(?m)^MEDIAMTX_PUBLIC_BASE_URL=.*$'
+    $pattern = '(?m)^MEDIAMTX_HLS_URL=.*$'
     if ($envText -match $pattern) {
-      $envText = [regex]::Replace($envText, $pattern, "MEDIAMTX_PUBLIC_BASE_URL=$TunnelUrl")
+      $envText = [regex]::Replace($envText, $pattern, "MEDIAMTX_HLS_URL=$TunnelUrl")
     } else {
-      $envText = $envText.TrimEnd() + "`r`nMEDIAMTX_PUBLIC_BASE_URL=$TunnelUrl`r`n"
+      $envText = $envText.TrimEnd() + "`r`nMEDIAMTX_HLS_URL=$TunnelUrl`r`n"
     }
+    $basePattern = '(?m)^MEDIAMTX_PUBLIC_BASE_URL=.*$'
+    $envText = [regex]::Replace($envText, $basePattern, 'MEDIAMTX_PUBLIC_BASE_URL=')
+    $whipPattern = '(?m)^MEDIAMTX_WHIP_URL=.*$'
+    $envText = [regex]::Replace(
+      $envText,
+      $whipPattern,
+      "MEDIAMTX_WHIP_URL=http://${LanIp}:$WebRtcPort"
+    )
+    $webrtcPattern = '(?m)^MEDIAMTX_WEBRTC_URL=.*$'
+    $envText = [regex]::Replace(
+      $envText,
+      $webrtcPattern,
+      "MEDIAMTX_WEBRTC_URL=ws://${LanIp}:$WebRtcPort"
+    )
     [System.IO.File]::WriteAllText($EnvFile, $envText, $Utf8NoBom)
-    Write-Host "==> MEDIAMTX_PUBLIC_BASE_URL set to $TunnelUrl" -ForegroundColor Green
+    Write-Host "==> MEDIAMTX_HLS_URL set to $TunnelUrl" -ForegroundColor Green
+    Write-Host "    WHIP remains LAN-only; remote mobile publishing needs public WHIP and ICE endpoints." -ForegroundColor Yellow
     Write-Host "    (restart the backend to pick it up)" -ForegroundColor DarkGray
   } catch {
-    Write-Warn "Could not update MEDIAMTX_PUBLIC_BASE_URL: $_"
+    Write-Warning "Could not update MEDIAMTX_HLS_URL: $_"
   }
 }
 
@@ -158,6 +170,25 @@ $syncScript = @"
 const { PrismaClient } = require('$prismaPath');
 const prisma = new PrismaClient();
 async function main() {
+  const uri = new URL('$TunnelUrl');
+  await prisma.liveMediaEndpointConfig.upsert({
+    where: { id: 'primary' },
+    create: {
+      id: 'primary',
+      publicHost: uri.hostname,
+      hlsUrl: '$TunnelUrl',
+      whipUrl: '$TunnelUrl',
+      webrtcUrl: 'wss://' + uri.hostname,
+    },
+    update: {
+      publicHost: uri.hostname,
+      hlsUrl: '$TunnelUrl',
+      whipUrl: '$TunnelUrl',
+      webrtcUrl: 'wss://' + uri.hostname,
+    },
+  });
+  console.log('⚡ Registered LiveMediaEndpointConfig in Cloud DB: ' + uri.hostname);
+
   const events = await prisma.liveEvent.findMany({
     where: { status: 'LIVE' },
     include: { channel: true }
@@ -194,7 +225,8 @@ Write-Host "    -> Zero Mixed-Content errors, plays seamlessly via HTTPS!" -Fore
 Write-Host ""
 Write-Host " 3. View on Mobile Flutter APK:" -ForegroundColor Yellow
 Write-Host "    Open OmniCast APK -> Go to Live Room" -ForegroundColor White
-Write-Host "    -> Plays seamlessly over Wi-Fi or 4G!" -ForegroundColor White
+Write-Host "    -> HLS playback is available over the HTTPS tunnel." -ForegroundColor White
+Write-Host "    Mobile camera publishing outside this LAN needs public WHIP and reachable WebRTC ICE." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Press [Ctrl+C] to stop streaming and close tunnel." -ForegroundColor Gray
 

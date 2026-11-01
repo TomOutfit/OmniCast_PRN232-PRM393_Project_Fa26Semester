@@ -73,7 +73,8 @@ $ErrorActionPreference = 'Stop'
 # replace them idempotently without touching anything else.
 $RulePrefix = 'OmniCast Dev'
 
-$UdpPorts = @(8189)   # MediaMTX WebRTC ICE
+$TcpIcePorts = @(8189) # MediaMTX WebRTC ICE fallback
+$UdpPorts = @(8189)    # MediaMTX WebRTC ICE
 
 # Parse the comma-separated port list into a clean int array.
 $PortList = @(
@@ -87,6 +88,7 @@ $PortList = @(
 if ($PortList.Count -eq 0) {
     throw 'No ports were given. Pass them as a comma-separated list, e.g. -Ports 3000,3001.'
 }
+$TcpPorts = @($PortList + $TcpIcePorts) | Sort-Object -Unique
 
 function Test-Admin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -112,7 +114,7 @@ if ($DryRun) {
     Get-NetConnectionProfile -ErrorAction SilentlyContinue |
         ForEach-Object { Write-Host ("    {0,-24} {1}" -f $_.Name, $_.NetworkCategory) }
     Write-Host ''
-    foreach ($port in $PortList) {
+    foreach ($port in $TcpPorts) {
         Write-Host ("  + TCP {0}  (inbound, Profile Any)" -f $port)
     }
     foreach ($port in $UdpPorts) {
@@ -147,7 +149,7 @@ function Invoke-FirewallSetup {
 
         Write-Host 'Creating rules for ALL network profiles...' -ForegroundColor Cyan
 
-        foreach ($port in $PortList) {
+        foreach ($port in $TcpPorts) {
             $name = "$RulePrefix TCP $port"
             New-NetFirewallRule `
                 -DisplayName $name `

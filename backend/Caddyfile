@@ -1,0 +1,11 @@
+{$MEDIAMTX_PUBLIC_HOST} {
+	route {
+		@whip path */whip
+		reverse_proxy @whip {$MEDIAMTX_UPSTREAM_HOST}:8889
+
+		@whep path */whep
+		reverse_proxy @whep {$MEDIAMTX_UPSTREAM_HOST}:8889
+
+		reverse_proxy {$MEDIAMTX_UPSTREAM_HOST}:8888
+	}
+}

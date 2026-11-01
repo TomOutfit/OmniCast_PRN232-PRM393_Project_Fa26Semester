@@ -43,8 +43,8 @@ Hệ thống được thiết kế theo chuẩn doanh nghiệp phát thanh - tru
 | 🗄️ **Cơ Sở Dữ Liệu & Storage** | Supabase PostgreSQL 15 | [Supabase Console](https://supabase.com/dashboard/project/tktexqtqfnlfynbytjpw) *(Seoul Region Pooler)* |
 | 📦 **GitHub Release v1.2.0** | GitHub Releases | [Release v1.2.0 Tag](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/tag/v1.2.0) |
 | 📱 **Bản cài APK ARM64 (Khuyên dùng)** | Android Smartphone | [Tải `app-arm64-v8a-release.apk` (41.0 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/app-arm64-v8a-release.apk) |
-| 📱 **Bản cài APK ARMv7** | Android 32-bit | [Tải `app-armeabi-v7a-release.apk` (34.4 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/app-armeabi-v7a-release.apk) |
-| 💻 **Bản cài APK x86_64** | Giả lập PC / Emulator | [Tải `app-x86_64-release.apk` (43.7 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/app-x86_64-release.apk) |
+| 📱 **Bản cài APK ARMv7** | Android 32-bit | [Tải `app-armeabi-v7a-release.apk` (34.5 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/app-armeabi-v7a-release.apk) |
+| 💻 **Bản cài APK x86_64** | Giả lập PC / Emulator | [Tải `app-x86_64-release.apk` (43.9 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/app-x86_64-release.apk) |
 | 📑 **Báo Cáo Kỹ Thuật Dự Án (PDF)** | Báo Cáo Kỹ Thuật Đồ Án | [Tải `OmniCast_Comprehensive_Project_Report.pdf` (1.3 MB)](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/download/v1.2.0/OmniCast_Comprehensive_Project_Report.pdf) |
 
 ---

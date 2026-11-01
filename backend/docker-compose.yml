@@ -18,9 +18,9 @@
 # WHIP publish: http://<host>:8889/{stream_key}/whip
 # WebRTC: ws://<host>:8889/{stream_key}
 #
-# `MEDIAMTX_PUBLIC_HOST` must be the LAN IP of the machine running
-# Docker, otherwise phones on the same Wi-Fi cannot complete the
-# WebRTC ICE handshake. The value is read from `backend/.env`.
+# Set `MEDIAMTX_PUBLIC_HOST` to the public DNS name of this server.
+# Public deployment should use `MEDIAMTX_BIND_ADDRESS=127.0.0.1` so
+# HTTP ingest/playback stays behind Caddy; ICE port 8189 remains public.
 # ============================================================
 
 services:
@@ -42,19 +42,23 @@ services:
     # would fail to start with "unexpected argument".
     command: ["/mediamtx.yml"]
     environment:
+      MTX_AUTHMETHOD: http
+      MTX_AUTHHTTPADDRESS: "${MEDIAMTX_AUTH_URL:-http://host.docker.internal:3000/api/v1/programs/studio/media-auth}"
       # A container only sees the Docker bridge interface, never the
       # host's LAN adapter, so `webrtcIPsFromInterfaces` alone would
       # advertise an unreachable address. This tells MediaMTX which
       # extra ICE candidate to hand out to browsers.
       # (Env vars take precedence over the YAML file in MediaMTX.)
       MTX_WEBRTCADDITIONALHOSTS: "${MEDIAMTX_PUBLIC_HOST:-127.0.0.1}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       # RTMP ingest - for OBS, mobile apps
-      - "1935:1935"
+      - "${MEDIAMTX_BIND_ADDRESS:-0.0.0.0}:1935:1935/tcp"
       # HLS output - for web and mobile players
-      - "8888:8888"
+      - "${MEDIAMTX_BIND_ADDRESS:-0.0.0.0}:8888:8888/tcp"
       # WebRTC - for low-latency streaming (WHIP publish / WHEP playback)
-      - "8889:8889"
+      - "${MEDIAMTX_BIND_ADDRESS:-0.0.0.0}:8889:8889/tcp"
       # WebRTC ICE - media flows over UDP, so the UDP mapping is the
       # one that actually matters. Without it the browser's ICE
       # handshake never completes and the WHIP publish times out.
@@ -63,20 +67,36 @@ services:
       - "8189:8189/tcp"
       # API - upstream restricts the `api` action to loopback IPs,
       # so this is only reachable from the Docker host itself.
-      - "9997:9997"
+      - "127.0.0.1:9997:9997/tcp"
       # Metrics (Prometheus format) - same loopback restriction.
-      - "9998:9998"
+      - "127.0.0.1:9998:9998/tcp"
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
       - media-data:/var/media
 
-    # The upstream image is built `FROM scratch` - it contains no
-    # shell and no wget/curl, so a `wget`-based healthcheck could
-    # never succeed and would permanently mark the container
-    # "unhealthy". The MediaMTX binary itself is the only executable
-    # available, and it exits 0 for `--version`, so use that.
+  caddy:
+    image: caddy:2
+    container_name: omnicast-media-proxy
+    profiles: ["public"]
+    restart: unless-stopped
+    depends_on:
+      - mediamtx
+    environment:
+      MEDIAMTX_PUBLIC_HOST: "${MEDIAMTX_PUBLIC_HOST:?Set MEDIAMTX_PUBLIC_HOST to the public media DNS name}"
+      MEDIAMTX_UPSTREAM_HOST: mediamtx
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+    # Validate the mounted Caddy configuration without requiring a
+    # shell or an HTTP health endpoint in the minimal container.
     healthcheck:
-      test: ["CMD", "/mediamtx", "--version"]
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -94,6 +114,10 @@ services:
 
 volumes:
   media-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
     driver: local
 
 networks:
