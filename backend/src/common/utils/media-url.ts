@@ -207,6 +207,25 @@ export function rewriteMediaHost(url: string | null | undefined): string {
     return trimmed;
   }
 
+  // 1. Explicit public base URL (Cloudflare Tunnel, reverse proxy, production domain)
+  // Rewrites the entire origin (scheme, host, port) so tunnels terminating on 443 HTTPS work cleanly.
+  const explicitBase = (process.env.MEDIAMTX_PUBLIC_BASE_URL || '').trim();
+  if (explicitBase) {
+    try {
+      const baseUrl = new URL(explicitBase);
+      parsed.protocol = baseUrl.protocol;
+      parsed.hostname = baseUrl.hostname;
+      parsed.port = baseUrl.port;
+      const basePath = baseUrl.pathname.replace(/\/$/, '');
+      if (basePath) {
+        parsed.pathname = `${basePath}${parsed.pathname}`;
+      }
+      return parsed.toString();
+    } catch {
+      // not a valid URL, fall through
+    }
+  }
+
   const current = getMediaPublicHost();
   if (!current || host === current) {
     return trimmed;
@@ -237,7 +256,23 @@ export function pickMediaBaseUrl(
   host: string,
   port: string,
 ): string {
-  const fallback = `${scheme}://${host}:${port}`;
+  // If an explicit public base URL is configured and rawUrl is not provided,
+  // adapt scheme and port from explicitBase so that public tunnel endpoints (HTTPS, no 8888) format cleanly.
+  const explicitBase = (process.env.MEDIAMTX_PUBLIC_BASE_URL || '').trim();
+  let fallback = `${scheme}://${host}:${port}`;
+  if (explicitBase) {
+    try {
+      const baseUrl = new URL(explicitBase);
+      const isWs = scheme === 'ws' || scheme === 'wss';
+      const targetScheme = isWs
+        ? (baseUrl.protocol === 'https:' ? 'wss' : 'ws')
+        : (baseUrl.protocol || `${scheme}:`).replace(':', '');
+      const portPart = baseUrl.port ? `:${baseUrl.port}` : '';
+      fallback = `${targetScheme}://${baseUrl.hostname}${portPart}${baseUrl.pathname.replace(/\/$/, '')}`;
+    } catch {
+      // not a URL, fallback as-is
+    }
+  }
 
   if (!rawUrl) return fallback;
 

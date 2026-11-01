@@ -857,6 +857,8 @@ export class LiveStudioService implements OnModuleInit, OnModuleDestroy {
       lanDiscovery: {
         enabled: true,
         ip: lanIp,
+        publicHost,
+        publicBaseUrl: (process.env.MEDIAMTX_PUBLIC_BASE_URL || '').trim() || undefined,
         hlsPort: 8888,
         whipPort: 8889,
       },

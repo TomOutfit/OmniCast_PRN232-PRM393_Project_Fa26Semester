@@ -211,6 +211,24 @@ test('rewriteMediaHost rewrites a stale MediaMTX URL to the current host', () =>
   );
 });
 
+test('rewriteMediaHost rewrites stale MediaMTX URL to public tunnel when MEDIAMTX_PUBLIC_BASE_URL is set', () => {
+  withEnv(
+    {
+      MEDIAMTX_PUBLIC_BASE_URL: 'https://omnicast-tunnel.trycloudflare.com',
+      MEDIAMTX_PUBLIC_HOST: '',
+    },
+    () => {
+      const rewritten = rewriteMediaHost(
+        'http://172.9.8.239:8888/omni-sport/live/index.m3u8',
+      );
+      assert.equal(
+        rewritten,
+        'https://omnicast-tunnel.trycloudflare.com/omni-sport/live/index.m3u8',
+      );
+    },
+  );
+});
+
 test('rewriteMediaHost rewrites every MediaMTX port', () => {
   withEnv(
     {
@@ -340,6 +358,24 @@ test('pickMediaBaseUrl falls back for an unparsable override', () => {
   assert.equal(
     pickMediaBaseUrl('not a url', 'http', '192.168.1.29', '8888'),
     'http://192.168.1.29:8888',
+  );
+});
+
+test('pickMediaBaseUrl uses MEDIAMTX_PUBLIC_BASE_URL when override is not set', () => {
+  withEnv(
+    {
+      MEDIAMTX_PUBLIC_BASE_URL: 'https://omnicast-tunnel.trycloudflare.com',
+    },
+    () => {
+      assert.equal(
+        pickMediaBaseUrl(undefined, 'http', 'omnicast-tunnel.trycloudflare.com', '8888'),
+        'https://omnicast-tunnel.trycloudflare.com',
+      );
+      assert.equal(
+        pickMediaBaseUrl(undefined, 'ws', 'omnicast-tunnel.trycloudflare.com', '8889'),
+        'wss://omnicast-tunnel.trycloudflare.com',
+      );
+    },
   );
 });
 

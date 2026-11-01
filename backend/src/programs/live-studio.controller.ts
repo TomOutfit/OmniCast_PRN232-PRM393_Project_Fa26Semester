@@ -196,6 +196,7 @@ export class LiveStudioController {
       status: 'ok',
       lanIp: (config as any).lanIp || config.publicHost,
       publicHost: config.publicHost,
+      publicBaseUrl: (config as any).lanDiscovery?.publicBaseUrl,
       hlsUrl: config.hlsUrl,
       whipUrl: config.whipUrl,
       webrtcUrl: config.webrtcUrl,
