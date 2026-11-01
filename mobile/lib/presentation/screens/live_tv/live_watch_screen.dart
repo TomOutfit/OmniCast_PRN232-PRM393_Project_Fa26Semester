@@ -832,6 +832,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         : (ev.externalUrl?.isNotEmpty == true
             ? ev.externalUrl!
             : '');
+    final fallbackUrl = ev.externalUrl?.isNotEmpty == true && ev.externalUrl != streamUrl
+        ? ev.externalUrl
+        : 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Stack(
@@ -839,12 +842,13 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         children: [
           OmniPlayer(
             url: streamUrl,
+            fallbackSrc: fallbackUrl,
             posterUrl: ev.thumbnailUrl,
             autoPlay: true,
             showControls: true,
             isPremium: ev.isPrivate,
             channelName: ev.channel?.name,
-            allowFallback: false,
+            allowFallback: true,
             isLive: true,
           ),
 
@@ -1055,9 +1059,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'Trải nghiệm tặng quà giả lập an toàn · KHÔNG mất tiền thật',
-                    style: TextStyle(
+                  Text(
+                    _myBalance > 0 || _streamerBalance > 0
+                        ? 'Ví bạn: $_myBalanceđ · Quỹ nhận: $_streamerBalanceđ'
+                        : 'Trải nghiệm tặng quà giả lập an toàn · KHÔNG mất tiền thật',
+                    style: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 11,
                     ),
@@ -1100,10 +1106,14 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       channelName: chName,
       eventTitle: _event?.title,
       eventId: widget.eventId,
+      initialStreamerBalance: _streamerBalance,
+      initialUserBalance: _myBalance,
       onDonated: (result) {
         if (!mounted) return;
         setState(() {
           _latestSuperChat = result;
+          if (result.streamerBalance != null) _streamerBalance = result.streamerBalance!;
+          if (result.donorBalance != null) _myBalance = result.donorBalance!;
         });
 
         // Spawn reaction celebration particles

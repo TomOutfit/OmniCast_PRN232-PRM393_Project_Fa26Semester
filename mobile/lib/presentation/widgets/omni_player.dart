@@ -126,6 +126,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
   static const int _maxLiveRetries = 10;
   Timer? _liveRetryTimer;
   bool _isLiveRetrying = false;
+  StreamSubscription<LanDiscoveryResult>? _discoverySub;
 
   bool get _isLiveStream =>
       widget.isLive ||
@@ -136,6 +137,17 @@ class _OmniPlayerState extends State<OmniPlayer> {
   @override
   void initState() {
     super.initState();
+    // Reactive listener for Wi-Fi LAN auto-discovery: immediately reloads player when host is found
+    _discoverySub = LanDiscoveryService().onDiscovery.listen((res) {
+      if (res.success && res.host != null && mounted && (_hasError || _isLiveRetrying)) {
+        debugPrint('[OmniPlayer] ⚡ Reactive discovery event received: ${res.host}');
+        _liveRetryTimer?.cancel();
+        _liveRetryTimer = null;
+        _retryCount = 0;
+        _initialize(widget.url);
+      }
+    });
+
     // YouTube embeds are handled by WebView.
     // Google Drive videos stream directly in native player with live fallback.
     if (_isYouTubeEmbed(widget.url)) {
@@ -219,36 +231,38 @@ class _OmniPlayerState extends State<OmniPlayer> {
       final looksLikeMediaMtx = lower.contains(':8888/');
 
       // Wi-Fi Stream Optimization: If URL contains a valid non-loopback IP,
-      // auto-adopt it as discovered host if no custom host is configured.
+      // use it as an initial hint only if no host is configured or discovered yet.
       if (isLiteralHost &&
           rawHost != '127.0.0.1' &&
           !rawHost.startsWith('169.254.') &&
-          !AppConstants.hasCustomMediaHost) {
+          !AppConstants.hasCustomMediaHost &&
+          AppConstants.discoveredMediaHost.isEmpty) {
         AppConstants.setDiscoveredMediaHost(rawHost);
       }
 
       final host = AppConstants.mediaHost;
 
-      // Rewrite a stale literal-IP host to the currently known media
-      // host. When no host is known yet (fresh install, no discovery
-      // result) the original URL is kept so the player can still try.
+      // Rewrite a stale literal-IP host to the currently known media host.
       final shouldRewrite = isLiteralHost || isLoopback;
       if (shouldRewrite && host.isNotEmpty) {
+        final isHostDomain = !RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host) && host != 'localhost';
         if (looksLikeMediaMtx) {
-          // Rewrite scheme://[old_host]:8888/ to http://$host:8888/
-          target = target.replaceFirst(
-            RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
-            'http://$host:8888/',
-          );
+          if (isHostDomain) {
+            // Tunnel or public domain: route via HTTPS on standard 443 port
+            target = target.replaceFirst(
+              RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
+              'https://$host/',
+            );
+          } else {
+            // Local Wi-Fi / LAN IP: route via HTTP on port 8888
+            target = target.replaceFirst(
+              RegExp(r'^(?:https?:\/\/)?([^\/:]+):8888\/'),
+              'http://$host:8888/',
+            );
+          }
         } else {
           final cleanPath = target.startsWith('/') ? target.substring(1) : target;
-          target = 'http://$host:8888/$cleanPath';
-        }
-        // MediaMTX requires cookieCheck=1 on initial HLS manifest requests to bypass the 302 redirect
-        if (!target.contains('cookieCheck=')) {
-          target = target.contains('?')
-              ? '$target&cookieCheck=1'
-              : '$target?cookieCheck=1';
+          target = isHostDomain ? 'https://$host/$cleanPath' : 'http://$host:8888/$cleanPath';
         }
         return target;
       }
@@ -337,6 +351,10 @@ class _OmniPlayerState extends State<OmniPlayer> {
           LanDiscoveryService().autoDiscoverMediaHost().then((res) {
             if (res.success && res.host != null && mounted) {
               debugPrint('[OmniPlayer] ⚡ Wi-Fi Auto-Discovery resolved mediaHost to: ${res.host}');
+              _liveRetryTimer?.cancel();
+              _liveRetryTimer = null;
+              _retryCount = 0;
+              _initialize(widget.url);
             }
           });
         }
@@ -356,6 +374,17 @@ class _OmniPlayerState extends State<OmniPlayer> {
               _initialize(videoUrl);
             }
           });
+          return;
+        }
+
+        // Live camera retries exhausted on this network:
+        // If allowFallback is true and fallbackSrc is available, seamlessly fallback to cloud stream
+        // so the screen NEVER breaks on other Wi-Fi networks!
+        if (widget.allowFallback && widget.fallbackSrc != null && widget.fallbackSrc!.isNotEmpty) {
+          debugPrint('[OmniPlayer] 📡 Live stream unreachable on this network; falling back to cloud relay: ${widget.fallbackSrc}');
+          _usedFallback = true;
+          _showFallbackToast('🔁 Đang chuyển sang luồng phát sóng dự phòng đám mây…');
+          _initialize(widget.fallbackSrc!);
           return;
         }
 
@@ -436,6 +465,7 @@ class _OmniPlayerState extends State<OmniPlayer> {
 
   @override
   void dispose() {
+    _discoverySub?.cancel();
     _liveRetryTimer?.cancel();
     _disposeController();
     super.dispose();
