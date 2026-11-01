@@ -634,16 +634,22 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
                 const SizedBox(height: 4),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _formatVnd(_streamerBalance),
-                    key: ValueKey<int>(_streamerBalance),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'JetBrainsMono',
-                    ),
-                  ),
+                  child: _isLoadingInfo && _streamerBalance == 0
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF59E0B)),
+                        )
+                      : Text(
+                          _formatVnd(_streamerBalance),
+                          key: ValueKey<int>(_streamerBalance),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'JetBrainsMono',
+                          ),
+                        ),
                 ),
               ],
             ),
