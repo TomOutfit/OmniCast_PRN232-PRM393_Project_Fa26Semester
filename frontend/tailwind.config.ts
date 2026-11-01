@@ -94,24 +94,24 @@ const config: Config = {
 
         // Surface scale (deep navy → almost black)
         surface: {
-          DEFAULT: '#0f131d',           // page bg
-          dim: '#0f131d',
-          bright: '#353944',
-          'container-lowest': '#0a0e18',
-          'container-low': '#171b26',
-          container: '#1c1f2a',
-          'container-high': '#262a35',
-          'container-highest': '#313540',
-          variant: '#313540',
-          tint: '#00dce6',
-          inverse: '#dfe2f1',
+          DEFAULT: 'var(--surface)',
+          dim: 'var(--surface-dim)',
+          bright: 'var(--surface-bright)',
+          'container-lowest': 'var(--surface-container-lowest)',
+          'container-low': 'var(--surface-container-low)',
+          container: 'var(--surface-container)',
+          'container-high': 'var(--surface-container-high)',
+          'container-highest': 'var(--surface-container-highest)',
+          variant: 'var(--surface-variant)',
+          tint: 'var(--surface-tint)',
+          inverse: 'var(--surface-inverse)',
         },
 
         // Text / foreground
         'on-surface': {
-          DEFAULT: '#dfe2f1',
-          variant: '#b9cacb',
-          inverse: '#2c303b',
+          DEFAULT: 'hsl(var(--foreground))',
+          variant: 'hsl(var(--muted-foreground))',
+          inverse: 'hsl(var(--background))',
         },
 
         // Secondary · ice blue
@@ -148,13 +148,13 @@ const config: Config = {
 
         // Outline
         outline: {
-          DEFAULT: '#849495',
-          variant: '#3a494b',
+          DEFAULT: 'var(--outline)',
+          variant: 'var(--outline-variant)',
         },
 
         // Brand aliases (Stitch uses `bg-surface`, `text-on-surface`)
-        background: '#0f131d',
-        foreground: '#dfe2f1',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
       },
 
       fontFamily: {

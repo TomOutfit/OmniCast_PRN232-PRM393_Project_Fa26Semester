@@ -46,6 +46,8 @@ function resolveMode(mode: ThemeMode): 'light' | 'dark' {
 function applyThemeClass(resolved: 'light' | 'dark') {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.style.colorScheme = resolved;
   if (resolved === 'dark') {
     root.classList.add('dark');
     root.classList.remove('light');
@@ -53,6 +55,9 @@ function applyThemeClass(resolved: 'light' | 'dark') {
     root.classList.add('light');
     root.classList.remove('dark');
   }
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', resolved === 'dark' ? '#0d1415' : '#f4f7f6');
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

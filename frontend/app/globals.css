@@ -10,35 +10,76 @@
     --font-display: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-jetbrains: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --background: 222 41% 7%;        /* #070b12 - Deep Obsidian Broadcast Dark */
-    --foreground: 222 30% 95%;
-
-    --card: 222 35% 10%;            /* #0d1522 */
-    --card-foreground: 222 30% 95%;
-
-    --popover: 222 35% 10%;
-    --popover-foreground: 222 30% 95%;
-
-    --primary: 187 100% 50%;         /* #00f2fe - Stitch Cyan */
-    --primary-foreground: 187 100% 10%;
-
-    --secondary: 213 100% 80%;       /* #9bcbff - Stitch Ice Blue */
-    --secondary-foreground: 210 100% 16%;
-
-    --muted: 222 30% 16%;
-    --muted-foreground: 195 14% 75%;
-
-    --accent: 25 100% 55%;           /* #ff5722 - Glowing Live Orange */
+    color-scheme: dark;
+    --background: 190 15% 7%;
+    --foreground: 165 12% 93%;
+    --card: 190 13% 11%;
+    --card-foreground: 165 12% 93%;
+    --popover: 190 13% 11%;
+    --popover-foreground: 165 12% 93%;
+    --primary: 184 92% 42%;
+    --primary-foreground: 190 35% 8%;
+    --secondary: 35 82% 55%;
+    --secondary-foreground: 25 60% 9%;
+    --muted: 190 12% 16%;
+    --muted-foreground: 185 9% 68%;
+    --accent: 26 88% 55%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 6 100% 65%;
+    --destructive: 4 76% 56%;
     --destructive-foreground: 0 0% 100%;
+    --border: 190 12% 21%;
+    --input: 190 12% 24%;
+    --ring: 184 92% 42%;
+    --surface: #0d1415;
+    --surface-dim: #091011;
+    --surface-bright: #283536;
+    --surface-container-lowest: #080e0f;
+    --surface-container-low: #111a1b;
+    --surface-container: #172122;
+    --surface-container-high: #202d2e;
+    --surface-container-highest: #2a3839;
+    --surface-variant: #354344;
+    --surface-tint: #00aab4;
+    --surface-inverse: #dce8e6;
+    --outline: #879795;
+    --outline-variant: #465756;
+    --radius: 0.5rem;
+  }
 
-    --border: 222 30% 18%;           /* #1a2332 */
-    --input: 222 30% 18%;
-    --ring: 187 100% 50%;
-
-    --radius: 0.75rem;
+  :root.light {
+    color-scheme: light;
+    --background: 150 18% 97%;
+    --foreground: 190 16% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 190 16% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 190 16% 13%;
+    --primary: 184 94% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 31 88% 46%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 150 12% 92%;
+    --muted-foreground: 190 8% 39%;
+    --accent: 26 83% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 4 68% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 180 10% 84%;
+    --input: 180 10% 78%;
+    --ring: 184 94% 30%;
+    --surface: #f4f7f6;
+    --surface-dim: #e8efed;
+    --surface-bright: #ffffff;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f8faf9;
+    --surface-container: #ffffff;
+    --surface-container-high: #edf3f1;
+    --surface-container-highest: #e4ece9;
+    --surface-variant: #dce6e3;
+    --surface-tint: #087f86;
+    --surface-inverse: #263533;
+    --outline: #61716e;
+    --outline-variant: #c2cfcb;
   }
 
   * {
@@ -46,23 +87,17 @@
   }
 
   html {
-    overflow-x: hidden;
-    max-width: 100vw;
+    overflow-x: clip;
     width: 100%;
   }
 
   body {
-    overflow-x: hidden;
-    max-width: 100vw;
+    overflow-x: clip;
     width: 100%;
-    background-color: #070b12;
-    color: #f1f5f9;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-image:
-      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(0, 242, 254, 0.08), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(155, 203, 255, 0.05), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255, 87, 34, 0.03), transparent 70%);
-    background-attachment: fixed;
+    transition: background-color 180ms ease, color 180ms ease;
   }
 }
 
@@ -73,14 +108,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #090e17;
+    background: var(--surface-dim);
   }
   ::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 9999px;
+    background: var(--outline-variant);
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #00f2fe;
+    background: var(--surface-tint);
   }
 
   /* Stitch Live Badge with glowing pulse */
@@ -102,22 +137,55 @@
 
   /* Glass Card — Stitch cyber broadcast style */
   .glass-stitch {
-    background: rgba(13, 21, 34, 0.75);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.05) inset,
-      0 16px 36px -12px rgba(0, 0, 0, 0.65);
+    background: color-mix(in srgb, var(--surface-container) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
   }
 
   .glass-stitch-glow {
-    background: rgba(15, 24, 40, 0.85);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(0, 242, 254, 0.3);
-    box-shadow:
-      0 0 20px rgba(0, 242, 254, 0.15),
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 20px 40px -15px rgba(0, 0, 0, 0.8);
+    background: var(--surface-container);
+    backdrop-filter: blur(14px);
+    border: 1px solid hsl(var(--primary) / 0.38);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .surface-card {
+    color: hsl(var(--foreground));
+    background: var(--surface-container);
+    border-color: hsl(var(--border));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
+  .surface-card-elevated {
+    background: var(--surface-container-high);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .surface-card-interactive {
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .surface-card-interactive:hover {
+    border-color: hsl(var(--primary) / 0.48);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    transform: translateY(-1px);
+  }
+
+  .surface-card-accent {
+    border-color: hsl(var(--primary) / 0.45);
+  }
+
+  .surface-card-outline {
+    color: hsl(var(--foreground));
+    border: 1px dashed hsl(var(--border));
+    background: transparent;
+  }
+
+  .surface-card-ghost {
+    color: hsl(var(--foreground));
+    border-color: transparent;
+    background: transparent;
   }
 
   /* Glowing Live Timeline Marker */
@@ -265,6 +333,190 @@
       linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  }
+}
+
+html.light,
+html.light body {
+  color-scheme: light;
+  background-color: hsl(var(--background));
+}
+
+html.light #main-content {
+  color: hsl(var(--foreground));
+}
+
+.theme-toggle {
+  display: inline-flex;
+  min-width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  color: hsl(var(--muted-foreground));
+  background: var(--surface-container-low);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.theme-toggle:hover {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.55);
+  background: var(--surface-container-high);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.theme-toggle-compact {
+  width: 36px;
+  padding: 0;
+}
+
+.light .studio-glass-card,
+.light .glass-3d-panel,
+.light .card-3d-surface {
+  color: hsl(var(--foreground));
+  background: var(--surface-container);
+  border-color: hsl(var(--border));
+  box-shadow: 0 4px 16px rgba(24, 42, 39, 0.08);
+}
+
+.light .studio-glass-card:hover,
+.light .card-3d-surface:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 8px 24px rgba(24, 42, 39, 0.12);
+}
+
+.light .studio-spatial-canvas {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+}
+
+/* Re-skin legacy route surfaces through shared tokens when light mode is active. */
+html.light :is(
+  [class*="bg-[#0"],
+  [class*="bg-[#1"],
+  [class*="bg-dark-7"],
+  [class*="bg-dark-8"],
+  [class*="bg-dark-9"],
+  [class*="bg-slate-7"],
+  [class*="bg-slate-8"],
+  [class*="bg-slate-9"],
+  [class*="bg-gray-8"],
+  [class*="bg-gray-9"],
+  [class*="bg-zinc-8"],
+  [class*="bg-zinc-9"],
+  [class*="bg-cyan-9"],
+  [class*="bg-blue-9"],
+  [class*="bg-purple-9"],
+  [class*="bg-amber-9"],
+  [class*="bg-rose-9"],
+  [class*="bg-emerald-9"]
+) {
+  color: hsl(var(--foreground)) !important;
+  background-color: color-mix(in srgb, var(--surface-container) 96%, transparent) !important;
+  border-color: hsl(var(--border) / 0.9) !important;
+  box-shadow: 0 1px 3px rgba(22, 42, 38, 0.08);
+}
+
+html.light :is([class*="from-[#0"], [class*="to-[#0"]) {
+  --tw-gradient-from: var(--surface-container-low);
+  --tw-gradient-to: var(--surface-container);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+html.light :is(
+  [class*="bg-[#0"],
+  [class*="bg-[#1"],
+  [class*="bg-dark-7"],
+  [class*="bg-dark-8"],
+  [class*="bg-dark-9"],
+  [class*="bg-slate-7"],
+  [class*="bg-slate-8"],
+  [class*="bg-slate-9"],
+  [class*="bg-gray-8"],
+  [class*="bg-gray-9"],
+  [class*="bg-zinc-8"],
+  [class*="bg-zinc-9"],
+  [class*="from-[#0"],
+  [class*="to-[#0"]
+):is(.text-white, [class*="text-slate-100"], [class*="text-slate-200"], [class*="text-gray-100"], [class*="text-dark-100"], [class*="text-dark-200"], [class*="text-dark-300"], [class*="text-dark-400"], [class*="text-primary-cyan"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+html.light :is(
+  [class*="bg-[#0"],
+  [class*="bg-[#1"],
+  [class*="bg-dark-7"],
+  [class*="bg-dark-8"],
+  [class*="bg-dark-9"],
+  [class*="bg-slate-7"],
+  [class*="bg-slate-8"],
+  [class*="bg-slate-9"],
+  [class*="bg-gray-8"],
+  [class*="bg-gray-9"],
+  [class*="bg-zinc-8"],
+  [class*="bg-zinc-9"],
+  [class*="from-[#0"],
+  [class*="to-[#0"]
+) :is(.text-white, [class*="text-slate-100"], [class*="text-slate-200"], [class*="text-slate-300"], [class*="text-slate-400"], [class*="text-gray-100"], [class*="text-gray-200"], [class*="text-gray-300"], [class*="text-gray-400"], [class*="text-dark-100"], [class*="text-dark-200"], [class*="text-dark-300"], [class*="text-dark-400"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+html.light :is(#main-content, header, footer, nav, [role="menu"], [role="dialog"], aside) :is([class*="text-slate-100"], [class*="text-slate-200"], [class*="text-gray-100"], [class*="text-dark-100"], [class*="text-dark-200"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+html.light :is(#main-content, header, footer, nav, [role="menu"], [role="dialog"], aside) :is([class*="text-slate-400"], [class*="text-slate-500"], [class*="text-gray-400"], [class*="text-gray-500"], [class*="text-dark-400"], [class*="text-dark-500"]) {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+html.light #main-content :is([class*="text-cyan-100"], [class*="text-cyan-200"], [class*="text-cyan-300"], [class*="text-purple-200"], [class*="text-purple-300"], [class*="text-amber-200"], [class*="text-amber-300"], [class*="text-emerald-200"], [class*="text-emerald-300"]) {
+  color: #175c60 !important;
+}
+
+html.light #main-content :is(button, a)[class*="bg-gradient-to-"]:is([class*="text-white"], .text-white),
+html.light #main-content .badge-live-neon {
+  color: #ffffff !important;
+}
+
+html.light [class*="border-[#"],
+html.light [class*="border-dark-"],
+html.light [class*="border-slate-8"],
+html.light [class*="border-slate-9"],
+html.light [class*="border-gray-8"],
+html.light [class*="border-gray-9"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+html.light [class*="hover:bg-[#0"]:hover,
+html.light [class*="hover:bg-dark-8"]:hover,
+html.light [class*="hover:bg-dark-9"]:hover,
+html.light [class*="hover:bg-slate-8"]:hover,
+html.light [class*="hover:bg-slate-9"]:hover {
+  color: hsl(var(--foreground)) !important;
+  background-color: var(--surface-container-high) !important;
+}
+
+html.light [class*="hover:text-white"]:hover {
+  color: hsl(var(--foreground)) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -622,4 +874,46 @@
     pointer-events: none;
     opacity: 0.6;
   }
+}
+
+
+html.light header {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(22, 42, 38, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light header [class*="bg-[#03060a]"] {
+  background-color: #eaf1ef !important;
+  border-color: #d6e2de !important;
+}
+
+html.light footer {
+  background-color: #edf3f1 !important;
+  border-color: #d6e2de !important;
+  color: #263533 !important;
+}
+
+html.light footer [class*="bg-[#03060a]"] {
+  background-color: #e4ece9 !important;
+  border-color: #d6e2de !important;
+}
+
+html.light :is([role="menu"], [role="dialog"]) {
+  background-color: #ffffff !important;
+  border-color: #d6e2de !important;
+  color: #192624 !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12) !important;
+}
+
+html.light .theme-toggle {
+  background-color: #ffffff !important;
+  border-color: #cbdad5 !important;
+  color: #175c60 !important;
+}
+
+html.light .theme-toggle:hover {
+  background-color: #e8f2ef !important;
+  border-color: #087f86 !important;
+  color: #087f86 !important;
 }

@@ -28,7 +28,11 @@ import {
   CreditCard,
   LogOut,
   ShieldAlert,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react';
+import { useTheme, type ThemeMode } from '@/lib/theme/theme-provider';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
@@ -36,7 +40,8 @@ export default function SettingsPage() {
   const { locale, setLocale } = useI18n();
   const changePassword = useChangePassword();
 
-  const [activeSection, setActiveSection] = useState<'omnipass' | 'playback' | 'security'>('omnipass');
+  const { mode: currentThemeMode, setMode: setThemeMode, resolved: resolvedTheme } = useTheme();
+  const [activeSection, setActiveSection] = useState<'omnipass' | 'playback' | 'security' | 'appearance'>('omnipass');
   const [resolutionPref, setResolutionPref] = useState('4k');
   const [audioPref, setAudioPref] = useState('dolby');
   const [dvrAutoSave, setDvrAutoSave] = useState(true);
@@ -170,6 +175,7 @@ export default function SettingsPage() {
               { key: 'omnipass', label: 'Gói Dịch Vụ OmniPass VIP', icon: Crown },
               { key: 'playback', label: 'Tùy Chọn Phát Sóng 4K & Audio', icon: Video },
               { key: 'security', label: 'Bảo Mật & Đổi Mật Khẩu', icon: Lock },
+              { key: 'appearance', label: 'Giao Diện & Theme Sáng / Tối', icon: Sun },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeSection === tab.key;
@@ -601,6 +607,121 @@ export default function SettingsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-bold text-red-300">Đăng xuất mọi thiết bị</div>
                         <div className="text-[11px] text-slate-400 mt-0.5">Thu hồi tất cả refresh token trên điện thoại, tablet, web khác</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 4: Appearance & Theme Sáng/Tối */}
+            {activeSection === 'appearance' && (
+              <div className="space-y-6">
+                <div className="p-6 md:p-8 rounded-3xl card-3d-surface relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-5 h-5 text-cyan-400" />
+                      <h3 className="text-xl font-black font-display text-foreground">
+                        Tùy Chỉnh Giao Diện & Chủ Đề
+                      </h3>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-cyan-400 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30">
+                      CHỦ ĐỀ ĐANG DÙNG: {resolvedTheme === 'dark' ? 'TỐI (DARK)' : 'SÁNG (LIGHT)'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mb-6 leading-relaxed max-w-2xl">
+                    OmniCast hỗ trợ chế độ Tối (Dark cinematic) tối ưu cho không gian rạp phim gia đình và chế độ Sáng (Light mode) rõ nét, dễ chịu dưới ánh sáng ban ngày.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Theme Option: Dark */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThemeMode('dark');
+                        toast.success('Đã kích hoạt Giao diện Tối (Dark Mode)');
+                      }}
+                      className={cn(
+                        'p-5 rounded-2xl border text-left transition-all relative overflow-hidden cursor-pointer group',
+                        currentThemeMode === 'dark'
+                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_20px_rgba(0,242,254,0.2)]'
+                          : 'bg-surface-container-low hover:bg-surface-container-high border-border hover:border-cyan-400/40'
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-400 shadow-md">
+                          <Moon className="w-4 h-4" />
+                        </div>
+                        {currentThemeMode === 'dark' && (
+                          <span className="w-5 h-5 rounded-full bg-cyan-400 text-black flex items-center justify-center text-xs font-black">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-sm text-foreground mb-1">Chế độ Tối (Dark)</div>
+                      <div className="text-[11px] text-muted-foreground leading-relaxed">
+                        Tối ưu xem ban đêm, độ tương phản cao, bảo vệ mắt và tiết kiệm pin OLED.
+                      </div>
+                    </button>
+
+                    {/* Theme Option: Light */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThemeMode('light');
+                        toast.success('Đã kích hoạt Giao diện Sáng (Light Mode)');
+                      }}
+                      className={cn(
+                        'p-5 rounded-2xl border text-left transition-all relative overflow-hidden cursor-pointer group',
+                        currentThemeMode === 'light'
+                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_20px_rgba(0,242,254,0.2)]'
+                          : 'bg-surface-container-low hover:bg-surface-container-high border-border hover:border-cyan-400/40'
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-white border border-slate-300 flex items-center justify-center text-amber-500 shadow-md">
+                          <Sun className="w-4 h-4" />
+                        </div>
+                        {currentThemeMode === 'light' && (
+                          <span className="w-5 h-5 rounded-full bg-cyan-400 text-black flex items-center justify-center text-xs font-black">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-sm text-foreground mb-1">Chế độ Sáng (Light)</div>
+                      <div className="text-[11px] text-muted-foreground leading-relaxed">
+                        Tươi sáng, thanh lịch, độ tương phản sắc nét, dễ quan sát ngoài trời.
+                      </div>
+                    </button>
+
+                    {/* Theme Option: System */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThemeMode('system');
+                        toast.success('Đã bật tự động chuyển đổi theo hệ thống thiết bị');
+                      }}
+                      className={cn(
+                        'p-5 rounded-2xl border text-left transition-all relative overflow-hidden cursor-pointer group',
+                        currentThemeMode === 'system'
+                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_20px_rgba(0,242,254,0.2)]'
+                          : 'bg-surface-container-low hover:bg-surface-container-high border-border hover:border-cyan-400/40'
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-surface-container border border-border flex items-center justify-center text-cyan-400 shadow-md">
+                          <Laptop className="w-4 h-4" />
+                        </div>
+                        {currentThemeMode === 'system' && (
+                          <span className="w-5 h-5 rounded-full bg-cyan-400 text-black flex items-center justify-center text-xs font-black">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-sm text-foreground mb-1">Theo hệ thống (Auto)</div>
+                      <div className="text-[11px] text-muted-foreground leading-relaxed">
+                        Tự động đồng bộ theo cài đặt Dark/Light của Windows, macOS, Android, iOS.
                       </div>
                     </button>
                   </div>

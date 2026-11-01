@@ -39,6 +39,7 @@ import {
 import { SearchBar } from './search-bar';
 import { NotificationBell } from './notification-bell';
 import { NowPlayingBar } from './now-playing-bar';
+import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -146,7 +147,7 @@ export function Navbar() {
         // The now-playing-bar handles its own horizontal overflow
         // through `overflow-x-auto` on the inner scroller.
         'sticky top-0 z-50 w-full',
-        'border-b bg-[#070b12]/92 backdrop-blur-2xl',
+        'border-b bg-surface-container/92 backdrop-blur-2xl text-foreground',
         'transition-all duration-300',
         scrolled
           ? 'border-cyan-500/25 shadow-[0_12px_36px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.12)_inset]'
@@ -154,17 +155,15 @@ export function Navbar() {
       )}
     >
       {/* ── 1. Top Utility Bar (slim, role-aware) ──────────────────── */}
-      <div className="hidden md:block border-b border-[#0e1726] bg-[#03060a]">
+      <div className="hidden md:block border-b border-border/50 bg-surface-container-lowest/90 text-muted-foreground">
         <div className="max-w-[1720px] w-full mx-auto px-4 lg:px-6 h-7 flex items-center justify-between text-[10px] font-mono">
           {/* Left: status indicator */}
           <div className="flex items-center gap-3 text-slate-500">
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-400 font-bold">LIVE</span>
-              <span>25 kênh · 4K HDR</span>
+              <Radio className="h-3 w-3 text-cyan-500" aria-hidden="true" />
+              <span className="font-bold text-foreground">OMNICAST</span>
+              <span>Live · VOD · Lịch phát sóng</span>
             </span>
-            <span className="text-slate-700">|</span>
-            <span className="hidden lg:inline">DOLBY ATMOS 5.1 · HEVC H.265 · Latency &lt;1.2s</span>
           </div>
 
           {/* Right: quick links */}
@@ -218,7 +217,7 @@ export function Navbar() {
                   className="w-full h-full object-contain p-0.5 drop-shadow-[0_0_6px_rgba(0,242,254,0.8)]"
                 />
               </div>
-              <span className="hidden sm:inline text-base sm:text-lg font-black tracking-tight text-white">
+              <span className="hidden sm:inline text-base sm:text-lg font-black tracking-tight text-foreground">
                 Omni<span className="text-cyan-400">Cast</span>
               </span>
             </Link>
@@ -248,7 +247,7 @@ export function Navbar() {
                       'inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 whitespace-nowrap border',
                       isActive
                         ? cn(linkAccent, 'font-black')
-                        : 'text-slate-300 hover:text-white hover:bg-[#0e1726] border-transparent',
+                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-container-high border-transparent',
                     )}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -275,6 +274,7 @@ export function Navbar() {
 
             {/* Search bar (inline, ⌘K accessible) */}
             <SearchBar />
+            <ThemeToggle compact />
 
             {/* Quick Watchlist – only for VIEWER+ */}
             {(userRole === 'VIEWER' || userRole === 'STAFF' || userRole === 'ADMIN') && (
@@ -371,7 +371,7 @@ export function Navbar() {
                 {isUserMenuOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 mt-2 w-64 rounded-xl border border-[#1e2d44] bg-[#0c1421] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                    className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-surface-container p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-foreground"
                   >
                     <div className="px-3 py-2 border-b border-[#1a273b] mb-1">
                       <p className="text-xs font-semibold text-white truncate">
@@ -587,7 +587,31 @@ export function Navbar() {
 
       {/* Mobile Drawer */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-[#1a273b] bg-[#070b12] p-3 space-y-1">
+        <div className="md:hidden border-t border-border bg-surface-container/98 backdrop-blur-2xl p-3 space-y-1 shadow-2xl animate-in fade-in duration-200">
+          {/* Mobile Quick Action Bar (Theme & Language) */}
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/60">
+            <div className="flex items-center gap-2">
+              <ThemeToggle showLabel className="h-8 px-2.5 text-[11px]" />
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="h-8 px-2.5 rounded-xl border border-border/70 hover:border-cyan-400/50 bg-surface-container-low text-[11px] font-mono font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              >
+                <span>{locale === 'vi' ? '🇻🇳 VIE' : '🇬🇧 ENG'}</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                openSpatial3D();
+              }}
+              className="h-8 px-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/30 text-cyan-400 text-[11px] font-black flex items-center gap-1.5"
+            >
+              <Compass className="w-3.5 h-3.5 animate-spin-slow" />
+              <span>3D SPATIAL</span>
+            </button>
+          </div>
           {/* Role pill in mobile */}
           {isAuthenticated && (
             <div
@@ -610,7 +634,7 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-surface-container-high hover:text-cyan-400"
               >
                 <Icon className="w-3.5 h-3.5" />
                 {item.label}
@@ -686,7 +710,7 @@ export function Navbar() {
               <Link
                 href="/profile"
                 onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-surface-container-high hover:text-cyan-400"
               >
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 Hồ sơ cá nhân
@@ -694,7 +718,7 @@ export function Navbar() {
               <Link
                 href="/settings"
                 onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-[#121c2d] hover:text-cyan-400"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-surface-container-high hover:text-cyan-400"
               >
                 <Settings className="w-3.5 h-3.5 text-slate-400" />
                 Cài đặt
