@@ -160,25 +160,25 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    Start([Khán giả nhấn nút ỦNG HỘ STREAMER]) --> OpenModal[Mở hộp thoại Live Donation & Super Chat]
+    Start(["Khán giả nhấn nút ỦNG HỘ STREAMER"]) --> OpenModal["Mở hộp thoại Live Donation & Super Chat"]
     
-    OpenModal --> Notice[Hiển thị Huy hiệu Bảo vệ: CHẾ ĐỘ MÔ PHỎNG 0đ]
-    Notice --> SelectTier[Chọn 1 trong 6 gói quà ảo:<br/>☕ Cà phê 10k | 🧋 Trà sữa 20k | 🍕 Pizza 50k<br/>🎆 Pháo hoa 100k | 🚀 Tên lửa 200k | 💎 Kim cương 500k]
+    OpenModal --> Notice["Hiển thị Huy hiệu Bảo vệ: CHẾ ĐỘ MÔ PHỎNG 0đ"]
+    Notice --> SelectTier["Chọn 1 trong 6 gói quà ảo:<br/>☕ Cà phê 10k · 🧋 Trà sữa 20k · 🍕 Pizza 50k<br/>🎆 Pháo hoa 100k · 🚀 Tên lửa 200k · 💎 Kim cương 500k"]
     
-    SelectTier --> SelectPayment[Chọn cổng thanh toán giả lập:<br/>• Ví MoMo (Sandbox 0đ)<br/>• VNPay QR (Mô phỏng 0đ)<br/>• ZaloPay (Sandbox 0đ)<br/>• Thẻ ATM / Visa (Giả lập 0đ)]
+    SelectTier --> SelectPayment["Chọn cổng thanh toán giả lập:<br/>• Ví MoMo (Sandbox 0đ)<br/>• VNPay QR (Mô phỏng 0đ)<br/>• ZaloPay (Sandbox 0đ)<br/>• Thẻ ATM / Visa (Giả lập 0đ)"]
     
-    SelectPayment --> InputMessage[Nhập tên hiển thị & Lời nhắn Super Chat]
-    InputMessage --> CostCard[Bảng kê đối soát chi phí:<br/>• Số tiền hiển thị: Đã chọn<br/>• Chi phí thực tế bị trừ: 0 ₫ Không mất tiền]
+    SelectPayment --> InputMessage["Nhập tên hiển thị & Lời nhắn Super Chat"]
+    InputMessage --> CostCard["Bảng kê đối soát chi phí:<br/>• Số tiền hiển thị: Đã chọn<br/>• Chi phí thực tế bị trừ: 0 ₫ Không mất tiền"]
     
-    CostCard --> ConfirmClick{Nhấn XÁC NHẬN GỬI MÔ PHỎNG}
+    CostCard --> ConfirmClick{"Nhấn XÁC NHẬN GỬI MÔ PHỎNG"}
     
-    ConfirmClick --> MockProcess[Xử lý giao dịch Mock Gateway<br/>• Tạo mã Token giả lập an toàn<br/>• Tự động phê duyệt trong 800ms]
+    ConfirmClick --> MockProcess["Xử lý giao dịch Mock Gateway<br/>• Tạo mã Token giả lập an toàn<br/>• Tự động phê duyệt trong 800ms"]
     
-    MockProcess --> EmitChat[Gửi tin nhắn Super Chat ghim nổi bật qua WebSocket]
-    EmitChat --> ParticleFX[Kích hoạt hiệu ứng hạt ánh sáng ăn mừng rực rỡ]
-    ParticleFX --> PinCard[Ghim Thẻ Super Chat đổi màu gradient theo mức quà tặng]
-    PinCard --> ToastAlert[Hiển thị thông báo Toast: Ủng hộ thành công 0đ thực tế]
-    ToastAlert --> End([Hoàn tất phiên tương tác an toàn])
+    MockProcess --> EmitChat["Gửi tin nhắn Super Chat ghim nổi bật qua WebSocket"]
+    EmitChat --> ParticleFX["Kích hoạt hiệu ứng hạt ánh sáng ăn mừng rực rỡ"]
+    ParticleFX --> PinCard["Ghim Thẻ Super Chat đổi màu gradient theo mức quà tặng"]
+    PinCard --> ToastAlert["Hiển thị thông báo Toast: Ủng hộ thành công 0đ thực tế"]
+    ToastAlert --> End(["Hoàn tất phiên tương tác an toàn"])
 ```
 
 ---
