@@ -153,11 +153,11 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
   final List<Map<String, dynamic>> _paymentMethods = [
     {
       'id': 'vnpay',
-      'name': 'VietQR / TPBank',
+      'name': 'VietQR / MBBank',
       'subtitle': 'Quét mã 247',
       'icon': Icons.qr_code_scanner_rounded,
       'color': const Color(0xFF005BAA),
-      'bankLabel': 'Cổng TPBank VietQR (Napas 247)',
+      'bankLabel': 'Cổng MBBank VietQR (Napas 247)',
     },
     {
       'id': 'momo',
@@ -303,7 +303,7 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     if (_streamerInfo != null && _streamerInfo!['bankId'] != null) {
       return _streamerInfo!['bankId'].toString();
     }
-    return 'TPB';
+    return 'MB';
   }
 
   String get _bankAccount {

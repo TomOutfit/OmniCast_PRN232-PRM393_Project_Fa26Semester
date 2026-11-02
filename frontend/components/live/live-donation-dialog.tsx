@@ -108,7 +108,7 @@ function getLiveQrImageUrl(
   streamerInfo: StreamerPaymentInfo | null,
   amount: number,
 ) {
-  const bankId = streamerInfo?.bankId || 'TPB';
+  const bankId = streamerInfo?.bankId || 'MB';
   const bankAccount = streamerInfo?.bankAccount || '0935649095';
   const transfer = streamerInfo?.transferSyntax || 'OMNICAST';
   const name = streamerInfo?.accountHolder || 'NGUYEN BINH AN';
@@ -211,9 +211,9 @@ export function LiveDonationDialog({
             channelSlug: 'live',
             streamerId: '',
             streamerName: 'NGUYEN BINH AN',
-            bankId: 'TPB',
+            bankId: 'MB',
             bankAccount: '0935649095',
-            bankName: 'TPBank (Ngân hàng Tiên Phong)',
+            bankName: 'MBBank (Ngân hàng Quân đội)',
             accountHolder: 'NGUYEN BINH AN',
             momoPhone: '0935649095',
             zaloPayAccount: 'NGUYEN BINH AN',
@@ -726,7 +726,7 @@ export function LiveDonationDialog({
                       <p className="text-[10px] font-mono text-purple-700 font-bold">
                         {selectedMethod === 'momo'
                           ? `MoMo: ${streamerInfo?.momoPhone || '0935649095'}`
-                          : `TPBank: ${streamerInfo?.bankAccount || '0935649095'}`}
+                          : `MBBank: ${streamerInfo?.bankAccount || '0935649095'}`}
                       </p>
                     </div>
                   </div>
@@ -735,7 +735,7 @@ export function LiveDonationDialog({
                     <span>Mã VietQR NAPAS 24/7 Chuẩn Quốc Gia</span>
                   </p>
                   <p className="text-[11px] text-slate-400 text-center max-w-xs">
-                    Mở bất kỳ App Ngân Hàng (TPBank, VCB, MB, Techcom...) hoặc Ví MoMo để quét mã thanh toán thật.
+                    Mở bất kỳ App Ngân Hàng (MBBank, Vietcombank, Techcombank, TPBank...) hoặc Ví MoMo để quét mã thanh toán thật.
                   </p>
                 </>
               )}
@@ -747,7 +747,7 @@ export function LiveDonationDialog({
                 <span>Ngân hàng thụ hưởng:</span>
                 <span className="font-bold text-purple-400 flex items-center gap-1.5">
                   <Building className="h-3.5 w-3.5 text-purple-400" />
-                  {streamerInfo?.bankName || 'TPBank (Ngân hàng Tiên Phong)'}
+                  {streamerInfo?.bankName || 'MBBank (Ngân hàng Quân đội)'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-slate-400">

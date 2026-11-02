@@ -228,11 +228,11 @@ export class BillingService {
     const shortId = eventId.replace(/-/g, '').slice(0, 6).toUpperCase();
     const transferSyntax = `OMNICAST ${shortId}`;
 
-    const bankId = this.configService.get<string>('VIETQR_BANK_ID') || 'TPB';
+    const bankId = this.configService.get<string>('VIETQR_BANK_ID') || 'MB';
     const bankAccount =
       this.configService.get<string>('VIETQR_ACCOUNT_NO') || '0935649095';
     const bankName =
-      this.configService.get<string>('VIETQR_BANK_NAME') || 'TPBank (Ngân hàng Tiên Phong)';
+      this.configService.get<string>('VIETQR_BANK_NAME') || 'MBBank (Ngân hàng TMCP Quân đội)';
     const accountHolder =
       this.configService.get<string>('VIETQR_ACCOUNT_NAME') || 'NGUYEN BINH AN';
     const momoPhone =
