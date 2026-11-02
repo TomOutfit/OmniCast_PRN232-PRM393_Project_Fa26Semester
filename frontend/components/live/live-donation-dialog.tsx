@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -31,15 +31,19 @@ import {
   CreditCard,
   Smartphone,
   Info,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import {
   fetchStreamerPaymentInfo,
+  createPayosDonation,
+  fetchPayosDonationStatus,
   sendSandboxDonation,
   fetchUserWallet,
   topupUserWallet,
   type StreamerPaymentInfo,
+  type PayosCheckoutResponse,
 } from '@/lib/api/billing';
 
 export interface LiveDonationDialogProps {
@@ -66,58 +70,57 @@ export const SUPER_CHAT_TIERS = [
 
 export const MOCK_PAYMENT_METHODS = [
   {
-    id: 'momo',
-    name: 'Ví MoMo',
-    tag: 'Sandbox 0đ',
-    color: '#d82d8b',
-    icon: Wallet,
-    bankLabel: 'Ví điện tử MoMo Sandbox',
-  },
-  {
     id: 'vnpay',
-    name: 'VNPay QR',
-    tag: 'Mô phỏng 0đ',
+    name: 'VietQR / Napas 247',
+    tag: 'Quét Mọi Ngân Hàng',
     color: '#005baa',
     icon: QrCode,
-    bankLabel: 'Cổng VietQR / VNPay QR',
+    bankLabel: 'Mã Chuẩn VietQR / Napas 247',
+  },
+  {
+    id: 'momo',
+    name: 'Ví MoMo',
+    tag: 'Mã QR MoMo',
+    color: '#d82d8b',
+    icon: Wallet,
+    bankLabel: 'Ví Điện Tử MoMo QR',
   },
   {
     id: 'zalopay',
-    name: 'ZaloPay',
-    tag: 'Sandbox 0đ',
+    name: 'Ví ZaloPay',
+    tag: 'Mã QR ZaloPay',
     color: '#0068ff',
     icon: Smartphone,
-    bankLabel: 'Ví điện tử ZaloPay Sandbox',
+    bankLabel: 'Ví Điện Tử ZaloPay QR',
   },
   {
     id: 'card',
-    name: 'Thẻ ATM / Visa',
-    tag: 'Giả lập 0đ',
+    name: 'PayOS Checkout',
+    tag: 'Cổng PayOS',
     color: '#10b981',
     icon: CreditCard,
-    bankLabel: 'Cổng Thẻ Quốc Tế & Nội Địa',
+    bankLabel: 'Cổng Thanh Toán PayOS',
   },
 ];
-
 
 function getLiveQrImageUrl(
   method: string,
   streamerInfo: StreamerPaymentInfo | null,
   amount: number,
 ) {
-  const bankAccount = streamerInfo?.bankAccount || '19036888999';
+  const bankId = streamerInfo?.bankId || 'TPB';
+  const bankAccount = streamerInfo?.bankAccount || '0935649095';
   const transfer = streamerInfo?.transferSyntax || 'OMNICAST';
-  const name = streamerInfo?.accountHolder || streamerInfo?.streamerName || 'OMNICAST STUDIO';
-  const momoPhone = streamerInfo?.momoPhone || '0988666777';
+  const name = streamerInfo?.accountHolder || 'NGUYEN BINH AN';
+  const momoPhone = streamerInfo?.momoPhone || '0935649095';
 
-  if (method === 'vnpay' || method === 'card') {
-    return `https://img.vietqr.io/image/MB-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transfer)}&accountName=${encodeURIComponent(name)}`;
+  if (method === 'vnpay' || method === 'card' || method === 'payos') {
+    return `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transfer)}&accountName=${encodeURIComponent(name)}`;
   } else if (method === 'momo') {
     const momoData = `2|99|${momoPhone}|${name}|${amount}|0|0|${transfer}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(momoData)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=${encodeURIComponent(momoData)}`;
   } else {
-    const zaloData = `https://zalopay.vn/pay?acc=${encodeURIComponent(name)}&amount=${amount}&msg=${encodeURIComponent(transfer)}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(zaloData)}`;
+    return `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transfer)}&accountName=${encodeURIComponent(name)}`;
   }
 }
 
@@ -138,6 +141,9 @@ export function LiveDonationDialog({
 
   const [userWalletBalance, setUserWalletBalance] = useState<number | null>(null);
   const [isTopupLoading, setIsTopupLoading] = useState(false);
+  const [payosCheckout, setPayosCheckout] = useState<PayosCheckoutResponse | null>(null);
+  const [paymentStatusError, setPaymentStatusError] = useState<string | null>(null);
+  const payosNotifiedRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -163,13 +169,14 @@ export function LiveDonationDialog({
 
   // Streamer payment details
   const [streamerInfo, setStreamerInfo] = useState<StreamerPaymentInfo | null>(null);
-  const [isLoadingInfo, setIsLoadingInfo] = useState(false);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(true);
 
   // Submission & countdown
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(900); // 15 mins
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const isPayosMode = streamerInfo?.paymentMode === 'payos';
 
   // Initialize donor name from logged-in user
   useEffect(() => {
@@ -185,14 +192,17 @@ export function LiveDonationDialog({
     if (!isOpen || !eventId) return;
 
     let mounted = true;
+    setStreamerInfo(null);
     setIsLoadingInfo(true);
     fetchStreamerPaymentInfo(eventId)
       .then((data) => {
         if (mounted) setStreamerInfo(data);
       })
       .catch(() => {
-        // Fallback default
         if (mounted) {
+          toast.error('Không thể tải cấu hình thanh toán', {
+            description: 'Đã khóa thanh toán PayOS; chỉ chế độ mô phỏng 0đ khả dụng.',
+          });
           setStreamerInfo({
             eventId,
             eventTitle: 'Phát trực tiếp',
@@ -200,14 +210,16 @@ export function LiveDonationDialog({
             channelName: 'OmniCast Channel',
             channelSlug: 'live',
             streamerId: '',
-            streamerName: 'OmniCast Studio',
-            bankAccount: '19036888999',
-            bankName: 'MBBank (Quân Đội)',
-            accountHolder: 'OMNICAST STUDIO',
-            momoPhone: '0988666777',
-            zaloPayAccount: 'OMNICAST STUDIO',
+            streamerName: 'NGUYEN BINH AN',
+            bankId: 'TPB',
+            bankAccount: '0935649095',
+            bankName: 'TPBank (Ngân hàng Tiên Phong)',
+            accountHolder: 'NGUYEN BINH AN',
+            momoPhone: '0935649095',
+            zaloPayAccount: 'NGUYEN BINH AN',
             transferSyntax: `OMNICAST ${eventId.slice(-6).toUpperCase()}`,
             isSandbox: true,
+            paymentMode: 'sandbox',
           });
         }
       })
@@ -232,8 +244,6 @@ export function LiveDonationDialog({
     return () => clearInterval(interval);
   }, [isOpen, step]);
 
-  if (!isOpen) return null;
-
   const currentMethodObj =
     MOCK_PAYMENT_METHODS.find((m) => m.id === selectedMethod) || MOCK_PAYMENT_METHODS[0];
 
@@ -253,9 +263,84 @@ export function LiveDonationDialog({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const handleProceedToQr = () => {
-    setStep('qr_confirm');
+  const handleProceedToQr = async () => {
+    if (!isPayosMode) {
+      setStep('qr_confirm');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setPaymentStatusError(null);
+    try {
+      const checkout = await createPayosDonation({
+        eventId,
+        donorName: donorName.trim() || 'Khán giả OmniCast',
+        amount: selectedTier.amount,
+        paymentMethod: 'payos',
+        giftEmoji: selectedTier.emoji,
+        giftTier: selectedTier.label,
+        message: scMessage.trim(),
+      });
+      setPayosCheckout(checkout);
+      setStep('qr_confirm');
+    } catch (err: any) {
+      toast.error('Không thể tạo thanh toán PayOS', {
+        description: err?.response?.data?.message || err?.message || 'Vui lòng thử lại',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (!isOpen || step !== 'qr_confirm' || !payosCheckout) return;
+
+    let active = true;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const checkStatus = async () => {
+      try {
+        const result = await fetchPayosDonationStatus(
+          payosCheckout.orderCode,
+          payosCheckout.statusToken,
+        );
+        if (!active || payosNotifiedRef.current) return;
+        if (result.status === 'FAILED' || result.status === 'CANCELLED') {
+          setPaymentStatusError('Giao dịch đã bị hủy hoặc thất bại. Bạn có thể tạo đơn mới.');
+          if (interval) clearInterval(interval);
+          return;
+        }
+        if (result.status !== 'COMPLETED') return;
+
+        payosNotifiedRef.current = true;
+        const receipt = {
+          ...payosCheckout,
+          paymentMethod: 'payos',
+          isSandbox: false,
+        };
+        setReceiptData(receipt);
+        setStep('receipt');
+        toast.success('PayOS đã xác nhận thanh toán thành công');
+        onDonationSuccess?.({
+          amount: receipt.amount,
+          donorName: receipt.donorName,
+          giftEmoji: receipt.giftEmoji,
+          streamerName: receipt.streamer.fullName,
+          message: receipt.message || '',
+        });
+      } catch {
+        if (active) {
+          setPaymentStatusError('Chưa thể kiểm tra trạng thái; hệ thống sẽ thử lại.');
+        }
+      }
+    };
+
+    void checkStatus();
+    interval = setInterval(() => void checkStatus(), 4000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isOpen, step, payosCheckout, onDonationSuccess]);
 
   const handleConfirmMockPayment = async () => {
     setIsSubmitting(true);
@@ -304,8 +389,13 @@ export function LiveDonationDialog({
   const handleResetAndClose = () => {
     setStep('configure');
     setReceiptData(null);
+    setPayosCheckout(null);
+    setPaymentStatusError(null);
+    payosNotifiedRef.current = false;
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -322,12 +412,18 @@ export function LiveDonationDialog({
             <div>
               <h3 className="text-base font-black tracking-wide text-white flex items-center gap-2">
                 ỦNG HỘ STREAMER & SUPER CHAT
-                <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 font-mono">
-                  SANDBOX 0đ
+                <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold font-mono ${
+                    isLoadingInfo
+                      ? 'bg-slate-500/20 text-slate-300'
+                      : isPayosMode ? 'bg-sky-500/20 text-sky-300' : 'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    {isLoadingInfo ? 'ĐANG TẢI' : isPayosMode ? 'PAYOS' : 'SANDBOX 0đ'}
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                {step === 'configure' && 'Chọn gói quà và cổng thanh toán mô phỏng'}
+                {step === 'configure' && (isPayosMode
+                  ? 'Tạo liên kết thanh toán PayOS bảo mật'
+                  : 'Chọn gói quà và cổng thanh toán mô phỏng')}
                 {step === 'qr_confirm' && 'Quét mã QR & xác nhận chuyển tiền như thật'}
                 {step === 'receipt' && 'Giao dịch thành công — Tiền đã vào tài khoản Streamer'}
               </p>
@@ -346,7 +442,8 @@ export function LiveDonationDialog({
         {step === 'configure' && (
           <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
             {/* Real-time Balances Hero Bar */}
-            <div className="grid grid-cols-2 gap-2.5">
+            {!isPayosMode && (
+              <div className="grid grid-cols-2 gap-2.5">
               <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-2.5">
                 <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
                   Quỹ Streamer nhận
@@ -374,7 +471,8 @@ export function LiveDonationDialog({
                   {isTopupLoading ? '...' : '+100k'}
                 </button>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Streamer Beneficiary Card */}
             <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-3">
@@ -400,14 +498,26 @@ export function LiveDonationDialog({
             </div>
 
             {/* Zero Real Money Guarantee Banner */}
-            <div className="flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-950/25 p-3 text-emerald-300">
-              <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400 mt-0.5" />
+            <div className={`flex items-start gap-3 rounded-xl p-3 ${
+              isPayosMode
+                ? 'border border-amber-500/40 bg-amber-950/25 text-amber-200'
+                : 'border border-emerald-500/40 bg-emerald-950/25 text-emerald-300'
+            }`}>
+              <ShieldCheck className={`h-5 w-5 shrink-0 mt-0.5 ${
+                isPayosMode ? 'text-amber-400' : 'text-emerald-400'
+              }`} />
               <div className="space-y-0.5 text-xs leading-relaxed">
-                <p className="font-extrabold text-emerald-200">
-                  CAM KẾT 100% AN TOÀN HỌC TẬP · CHI PHÍ THỰC TẾ = 0 ₫
+                <p className="font-extrabold">
+                  {isLoadingInfo
+                    ? 'ĐANG TẢI CẤU HÌNH THANH TOÁN'
+                    : isPayosMode ? 'THANH TOÁN THẬT QUA PAYOS' : 'SANDBOX HỌC TẬP · CHI PHÍ THỰC TẾ = 0 ₫'}
                 </p>
                 <p className="text-slate-300 text-[11px]">
-                  Mọi cổng thanh toán MoMo, VNPay, ZaloPay, Thẻ đều hoạt động ở chế độ Sandbox mô phỏng. Hệ thống <span className="text-emerald-300 font-bold">tuyệt đối KHÔNG trừ tiền thật</span> từ tài khoản ngân hàng của bạn.
+                  {isLoadingInfo
+                    ? 'Vui lòng đợi hệ thống xác định phương thức thanh toán.'
+                    : isPayosMode
+                    ? 'Chỉ thanh toán trên trang PayOS chính thức. Ví Streamer chỉ được cộng sau khi webhook được xác thực.'
+                    : 'Các phương thức thanh toán chỉ mô phỏng; hệ thống không trừ tiền thật từ tài khoản ngân hàng.'}
                 </p>
               </div>
             </div>
@@ -444,46 +554,53 @@ export function LiveDonationDialog({
               </div>
             </div>
 
-            {/* Select Mock Payment Method */}
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 block">
-                2. Chọn ứng dụng cổng thanh toán Sandbox (Mô phỏng 0đ)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {MOCK_PAYMENT_METHODS.map((method) => {
-                  const isSel = selectedMethod === method.id;
-                  const Icon = method.icon;
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setSelectedMethod(method.id)}
-                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                        isSel
-                          ? 'border-cyan-400 bg-cyan-950/30 shadow-sm shadow-cyan-500/20'
-                          : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
-                          style={{ backgroundColor: `${method.color}25` }}
-                        >
-                          <Icon className="h-4 w-4" style={{ color: method.color }} />
+            {/* Payment method selection is only relevant for the sandbox simulator. */}
+            {!isPayosMode ? (
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 block">
+                  2. Chọn ứng dụng cổng thanh toán Sandbox (Mô phỏng 0đ)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {MOCK_PAYMENT_METHODS.map((method) => {
+                    const isSel = selectedMethod === method.id;
+                    const Icon = method.icon;
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setSelectedMethod(method.id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                          isSel
+                            ? 'border-cyan-400 bg-cyan-950/30 shadow-sm shadow-cyan-500/20'
+                            : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
+                            style={{ backgroundColor: `${method.color}25` }}
+                          >
+                            <Icon className="h-4 w-4" style={{ color: method.color }} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white leading-tight">
+                              {method.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400">{method.tag}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-white leading-tight">
-                            {method.name}
-                          </p>
-                          <p className="text-[10px] text-slate-400">{method.tag}</p>
-                        </div>
-                      </div>
-                      {isSel && <CheckCircle2 className="h-4 w-4 text-cyan-400" />}
-                    </button>
-                  );
-                })}
+                        {isSel && <CheckCircle2 className="h-4 w-4 text-cyan-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-3 text-xs text-sky-100">
+                <span className="font-bold">Cổng thanh toán:</span> PayOS · Mã QR được tạo
+                trong trang thanh toán chính thức.
+              </div>
+            )}
 
             {/* Donor Name & Message */}
             <div className="space-y-3">
@@ -520,10 +637,15 @@ export function LiveDonationDialog({
             <button
               type="button"
               onClick={handleProceedToQr}
+              disabled={isSubmitting || isLoadingInfo}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-98 transition-all"
             >
-              <span>TIẾP TỤC ĐẾN MÀN HÌNH QUÉT QR & XÁC NHẬN</span>
-              <ArrowRight className="h-4 w-4" />
+              <span>{isLoadingInfo ? 'ĐANG TẢI CẤU HÌNH...' : isSubmitting ? 'ĐANG TẠO THANH TOÁN...' : isPayosMode
+                ? 'TẠO LIÊN KẾT THANH TOÁN PAYOS'
+                : 'TIẾP TỤC ĐẾN MÀN HÌNH QUÉT QR'}</span>
+              {isSubmitting
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <ArrowRight className="h-4 w-4" />}
             </button>
           </div>
         )}
@@ -541,153 +663,158 @@ export function LiveDonationDialog({
                 <ArrowLeft className="h-4 w-4" />
                 <span>Quay lại chọn quà</span>
               </button>
-              <div className="flex items-center gap-1 text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+              {!isPayosMode && <div className="flex items-center gap-1 text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
                 <Clock className="h-3.5 w-3.5" />
                 <span>Hết hạn: {formatTime(countdown)}</span>
-              </div>
+              </div>}
             </div>
 
-            {/* Realistic QR Matrix Card */}
+            {/* Payment QR comes from PayOS only in live mode; sandbox keeps its simulator. */}
             <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-inner">
-              <div className="relative flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-[280px]">
-                {/* Method Brand Badge */}
-                <div
-                  className="mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white"
-                  style={{ backgroundColor: currentMethodObj.color }}
-                >
-                  {currentMethodObj.bankLabel}
-                </div>
-
-                {/* Official Scannable Dynamic QR Code */}
-                <div className="relative w-56 h-56 flex items-center justify-center bg-slate-50 rounded-xl overflow-hidden shadow-inner">
-                  <img
-                    src={getLiveQrImageUrl(selectedMethod, streamerInfo, selectedTier.amount)}
-                    alt="Mã QR Chuyển Tiền"
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(streamerInfo?.transferSyntax || 'OMNICAST')}`;
-                    }}
-                  />
-                </div>
-
-                <div className="mt-2 text-center">
-                  <p className="text-[11px] font-extrabold text-slate-800">
-                    {streamerInfo?.accountHolder || 'OMNICAST STUDIO'}
+              {isPayosMode && payosCheckout ? (
+                <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">
+                    <QrCode className="h-9 w-9" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Thanh toán an toàn qua PayOS</h4>
+                    <p className="mt-1 text-xs text-slate-300">
+                      PayOS sẽ hiển thị QR ngân hàng cho giao dịch {formatVnd(payosCheckout.amount)}.
+                    </p>
+                  </div>
+                  <a
+                    href={payosCheckout.checkoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-xs font-black text-slate-950 hover:bg-sky-400"
+                  >
+                    MỞ TRANG THANH TOÁN PAYOS <ArrowRight className="h-4 w-4" />
+                  </a>
+                  <p className="text-[11px] text-slate-400">
+                    Đơn hàng #{payosCheckout.orderCode} · Ví chỉ được cộng sau khi PayOS xác nhận.
                   </p>
-                  <p className="text-[10px] font-mono text-slate-500 font-bold">
-                    {selectedMethod === 'momo'
-                      ? streamerInfo?.momoPhone || '0988666777'
-                      : streamerInfo?.bankAccount || '19036888999'}
+                  {paymentStatusError && (
+                    <p role="status" className="text-xs text-amber-300">{paymentStatusError}</p>
+                  )}
+                  <p role="status" className="text-[11px] text-slate-400">
+                    Đang chờ PayOS xác nhận thanh toán...
                   </p>
                 </div>
-              </div>
-
-              <p className="mt-3 text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <QrCode className="h-4 w-4 text-cyan-400" />
-                <span>Quét mã qua ứng dụng {currentMethodObj.name} hoặc Banking</span>
-              </p>
-              <p className="text-[11px] text-slate-400">
-                (Tự động nhận diện số tiền {formatVnd(selectedTier.amount)} & tài khoản Streamer)
-              </p>
+              ) : (
+                <>
+                  <div className="relative flex flex-col items-center justify-center p-3.5 bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-[280px]">
+                    <div
+                      className="mb-2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white"
+                      style={{ backgroundColor: currentMethodObj.color }}
+                    >
+                      {currentMethodObj.bankLabel}
+                    </div>
+                    <div className="relative w-56 h-56 flex items-center justify-center bg-slate-50 rounded-xl overflow-hidden shadow-inner">
+                      <img
+                        src={getLiveQrImageUrl(selectedMethod, streamerInfo, selectedTier.amount)}
+                        alt="Mã QR mô phỏng"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(streamerInfo?.transferSyntax || 'OMNICAST')}`;
+                        }}
+                      />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <p className="text-[11px] font-extrabold text-slate-800">
+                        {streamerInfo?.accountHolder || 'NGUYEN BINH AN'}
+                      </p>
+                      <p className="text-[10px] font-mono text-purple-700 font-bold">
+                        {selectedMethod === 'momo'
+                          ? `MoMo: ${streamerInfo?.momoPhone || '0935649095'}`
+                          : `TPBank: ${streamerInfo?.bankAccount || '0935649095'}`}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <QrCode className="h-4 w-4 text-cyan-400" />
+                    <span>Mã VietQR NAPAS 24/7 Chuẩn Quốc Gia</span>
+                  </p>
+                  <p className="text-[11px] text-slate-400 text-center max-w-xs">
+                    Mở bất kỳ App Ngân Hàng (TPBank, VCB, MB, Techcom...) hoặc Ví MoMo để quét mã thanh toán thật.
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* Transfer Details Breakdown (Like a real banking invoice) */}
+            {/* Transfer details with single-click copy buttons */}
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-slate-400 pb-2 border-b border-slate-800/80">
-                <span>Cổng nạp tiền:</span>
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: currentMethodObj.color }}
-                  />
-                  {currentMethodObj.bankLabel}
+                <span>Ngân hàng thụ hưởng:</span>
+                <span className="font-bold text-purple-400 flex items-center gap-1.5">
+                  <Building className="h-3.5 w-3.5 text-purple-400" />
+                  {streamerInfo?.bankName || 'TPBank (Ngân hàng Tiên Phong)'}
                 </span>
               </div>
-
               <div className="flex justify-between items-center text-slate-400">
-                <span>Người nhận (Streamer tạo luồng):</span>
-                <span className="font-bold text-cyan-300">
-                  {streamerInfo?.accountHolder || 'OMNICAST STUDIO'}
-                </span>
+                <span>Chủ tài khoản:</span>
+                <span className="font-bold text-white uppercase">{streamerInfo?.accountHolder || 'NGUYEN BINH AN'}</span>
               </div>
-
               <div className="flex justify-between items-center text-slate-400">
-                <span>Số tài khoản / Số ví:</span>
+                <span>Số tài khoản:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-white">
-                    {selectedMethod === 'momo'
-                      ? streamerInfo?.momoPhone || '0988666777'
-                      : streamerInfo?.bankAccount || '19036888999'}
-                  </span>
+                  <span className="font-mono text-sm font-extrabold text-cyan-300">{streamerInfo?.bankAccount || '0935649095'}</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      copyText(
-                        selectedMethod === 'momo'
-                          ? streamerInfo?.momoPhone || '0988666777'
-                          : streamerInfo?.bankAccount || '19036888999',
-                        'account',
-                      )
-                    }
-                    className="p-1 rounded bg-slate-800 text-slate-300 hover:text-white"
+                    onClick={() => copyText(streamerInfo?.bankAccount || '0935649095', 'acc')}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    title="Sao chép số tài khoản"
                   >
-                    {copiedKey === 'account' ? (
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
+                    {copiedKey === 'acc' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
-
               <div className="flex justify-between items-center text-slate-400">
                 <span>Số tiền chuyển:</span>
-                <span className="font-mono text-sm font-extrabold text-amber-400">
-                  {formatVnd(selectedTier.amount)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-slate-400 pt-1">
-                <span>Nội dung chuyển tiền:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-emerald-300 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
-                    {streamerInfo?.transferSyntax || `OMNICAST ${eventId.slice(-6).toUpperCase()}`}
-                  </span>
+                  <span className="font-mono text-sm font-extrabold text-amber-400">{formatVnd(selectedTier.amount)}</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      copyText(
-                        streamerInfo?.transferSyntax ||
-                          `OMNICAST ${eventId.slice(-6).toUpperCase()}`,
-                        'syntax',
-                      )
-                    }
-                    className="p-1 rounded bg-slate-800 text-slate-300 hover:text-white"
+                    onClick={() => copyText(selectedTier.amount.toString(), 'amount')}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    title="Sao chép số tiền"
                   >
-                    {copiedKey === 'syntax' ? (
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
+                    {copiedKey === 'amount' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
-
-              {/* Zero Real Cost Row */}
-              <div className="flex justify-between items-center pt-2 border-t border-slate-800 text-emerald-400 font-bold">
+              <div className="flex justify-between items-center text-slate-400">
+                <span>Nội dung chuyển khoản:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-slate-200">{streamerInfo?.transferSyntax || 'OMNICAST'}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyText(streamerInfo?.transferSyntax || 'OMNICAST', 'syntax')}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    title="Sao chép nội dung"
+                  >
+                    {copiedKey === 'syntax' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center text-slate-400 pt-2 border-t border-slate-800">
                 <span className="flex items-center gap-1.5 text-[11px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  Chi phí thực tế bị trừ:
+                  Xác nhận giao dịch:
                 </span>
                 <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-300 font-mono">
-                  0 ₫ (Miễn phí 100%)
+                  Hỗ trợ quét thật & Demo
                 </span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-1">
-              <button
+              {isPayosMode && (
+                <p className="text-center text-[11px] text-slate-400">
+                  Sau khi thanh toán trên PayOS, hệ thống sẽ tự kiểm tra webhook xác thực.
+                </p>
+              )}
+              {!isPayosMode && <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleConfirmMockPayment}
@@ -704,7 +831,7 @@ export function LiveDonationDialog({
                     <span>XÁC NHẬN ĐÃ CHUYỂN TIỀN (MÔ PHỎNG 0đ THỰC TẾ)</span>
                   </>
                 )}
-              </button>
+              </button>}
 
               <button
                 type="button"
@@ -728,17 +855,21 @@ export function LiveDonationDialog({
 
             <div>
               <h4 className="text-lg font-black text-white">
-                GIAO DỊCH NẠP MÔ PHỎNG THÀNH CÔNG!
+                {receiptData.isSandbox
+                  ? 'GIAO DỊCH MÔ PHỎNG THÀNH CÔNG!'
+                  : 'PAYOS ĐÃ XÁC NHẬN THANH TOÁN!'}
               </h4>
               <p className="text-xs text-emerald-400 font-bold mt-1">
-                Số tiền đã được ghi có trực tiếp vào tài khoản của Người làm Stream!
+                {receiptData.isSandbox
+                  ? 'Số dư mô phỏng đã được ghi có vào ví Streamer.'
+                  : 'Giao dịch đã được PayOS xác thực và ghi có vào ví Streamer.'}
               </p>
             </div>
 
             {/* Official Electronic Receipt Card */}
             <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-left text-xs space-y-2">
               <div className="flex justify-between text-slate-400 pb-2 border-b border-slate-800">
-                <span>Mã giao dịch (Sandbox Token):</span>
+                <span>{receiptData.isSandbox ? 'Mã giao dịch (Sandbox):' : 'Mã giao dịch PayOS:'}</span>
                 <span className="font-mono text-cyan-400 font-bold text-[11px]">
                   {receiptData.donationId ? receiptData.donationId.slice(0, 18) : 'TX-SBX-2026-MOCK'}
                 </span>
@@ -751,12 +882,12 @@ export function LiveDonationDialog({
                 </span>
               </div>
 
-              <div className="flex justify-between text-slate-400">
+              {receiptData.isSandbox && <div className="flex justify-between text-slate-400">
                 <span>Số dư mới của Streamer:</span>
                 <span className="font-mono font-extrabold text-amber-400">
                   {formatVnd(receiptData.streamer.walletBalance)}
                 </span>
-              </div>
+              </div>}
 
               <div className="flex justify-between text-slate-400">
                 <span>Gói quà Super Chat:</span>
@@ -773,9 +904,11 @@ export function LiveDonationDialog({
               </div>
 
               <div className="flex justify-between text-slate-400 pt-2 border-t border-slate-800">
-                <span className="text-emerald-400 font-bold">Chi phí người xem bị trừ:</span>
-                <span className="font-mono font-black text-emerald-400">
-                  0 ₫ (Không mất tiền)
+                <span className={`${receiptData.isSandbox ? 'text-emerald-400' : 'text-slate-300'} font-bold`}>
+                  {receiptData.isSandbox ? 'Chi phí người xem bị trừ:' : 'Đã thanh toán:'}
+                </span>
+                <span className={`font-mono font-black ${receiptData.isSandbox ? 'text-emerald-400' : 'text-white'}`}>
+                  {receiptData.isSandbox ? '0 ₫ (Không mất tiền)' : formatVnd(receiptData.amount)}
                 </span>
               </div>
             </div>

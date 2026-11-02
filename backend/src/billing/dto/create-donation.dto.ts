@@ -10,6 +10,7 @@ import {
   IsOptional,
   Min,
   Max,
+  MaxLength,
   IsIn,
 } from 'class-validator';
 
@@ -28,6 +29,7 @@ export class CreateSandboxDonationDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   donorName: string;
 
   @ApiProperty({
@@ -40,12 +42,12 @@ export class CreateSandboxDonationDto {
   amount: number;
 
   @ApiProperty({
-    description: 'Payment method chosen (1 of 4 mock apps)',
+    description: 'Sandbox payment method or PayOS checkout',
     example: 'momo',
-    enum: ['momo', 'vnpay', 'zalopay', 'card'],
+    enum: ['momo', 'vnpay', 'zalopay', 'card', 'payos'],
   })
   @IsString()
-  @IsIn(['momo', 'vnpay', 'zalopay', 'card'])
+  @IsIn(['momo', 'vnpay', 'zalopay', 'card', 'payos'])
   paymentMethod: string;
 
   @ApiProperty({
@@ -55,6 +57,7 @@ export class CreateSandboxDonationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(10)
   giftEmoji?: string;
 
   @ApiProperty({
@@ -64,6 +67,7 @@ export class CreateSandboxDonationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(100)
   giftTier?: string;
 
   @ApiProperty({
@@ -73,5 +77,6 @@ export class CreateSandboxDonationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(500)
   message?: string;
 }

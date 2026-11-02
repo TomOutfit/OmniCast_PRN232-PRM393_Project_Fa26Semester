@@ -336,7 +336,11 @@ class ProgramsBloc extends Bloc<ProgramsEvent, ProgramsState> {
     emit(ProgramsLoading());
     try {
       final liveEvents = await _programsRepository.getLiveNow();
-      final todaySchedule = await _programsRepository.getEpgSchedule(date: DateTime.now());
+      var todaySchedule = await _programsRepository.getEpgSchedule(date: DateTime.now());
+      if (todaySchedule.isEmpty) {
+        final page = await _programsRepository.getPrograms(limit: 30);
+        todaySchedule = page.items;
+      }
       emit(ProgramsLoaded(
         programs: liveEvents,
         liveEvents: todaySchedule,

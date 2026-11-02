@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BillingService } from './billing.service';
 import { VerifyAndroidReceiptDto } from './dto/verify-receipt.dto';
 import { CreateSandboxDonationDto } from './dto/create-donation.dto';
+import { PayosStatusDto } from './dto/payos-status.dto';
 
 @ApiTags('billing')
 @Controller('billing')
@@ -76,6 +77,31 @@ export class BillingController {
       } catch (_) {}
     }
     return this.billing.processSandboxDonation(dto, donorUserId);
+  }
+
+  @Post('live-donation/payos')
+  @ApiOperation({
+    summary: 'Create a PayOS checkout link; live charges require explicit server-side configuration.',
+  })
+  async createPayosDonation(
+    @Request() req: any,
+    @Body() dto: CreateSandboxDonationDto,
+  ) {
+    return this.billing.createPayosDonation(dto, req.user?.sub);
+  }
+
+  @Post('live-donation/payos/status')
+  @ApiOperation({ summary: 'Read the status of a PayOS donation using its private status token.' })
+  async getPayosDonationStatus(
+    @Body() body: PayosStatusDto,
+  ) {
+    return this.billing.getPayosDonationStatus(body.orderCode, body.statusToken);
+  }
+
+  @Post('payos/webhook')
+  @ApiOperation({ summary: 'Receive and verify PayOS payment webhooks.' })
+  async payosWebhook(@Body() body: any) {
+    return this.billing.handlePayosWebhook(body);
   }
 
   @Post('wallet/topup-sandbox')

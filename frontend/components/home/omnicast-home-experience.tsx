@@ -16,13 +16,14 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
+import { format, parseISO, isToday, addSeconds } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ChannelLogo } from '@/components/ui/channel-logo';
 import { useChannels } from '@/lib/hooks/useChannels';
 import { useLiveNow, useLiveEvents, useRecordings } from '@/lib/hooks/usePrograms';
 import { getCategoryThumbnail } from '@/components/epg/epg-channels-data';
 import { ChannelCardTilt } from '@/components/three';
-import type { Channel } from '@/types';
+import type { Channel, LiveEvent } from '@/types';
 
 interface HeroSpotlightItem {
   id: string;
@@ -54,6 +55,32 @@ interface ShowcasePosterItem {
   href: string;
 }
 
+function formatScheduleTime(scheduledAt?: string, duration?: number): string {
+  if (!scheduledAt) return '20:00';
+  try {
+    const d = parseISO(scheduledAt);
+    const startStr = format(d, 'HH:mm');
+    if (duration && duration > 0) {
+      const endD = addSeconds(d, duration);
+      return `${startStr} - ${format(endD, 'HH:mm')}`;
+    }
+    return startStr;
+  } catch {
+    return '20:00';
+  }
+}
+
+function formatScheduleDate(scheduledAt?: string): string {
+  if (!scheduledAt) return 'Hôm nay';
+  try {
+    const d = parseISO(scheduledAt);
+    if (isToday(d)) return `Hôm nay · ${format(d, 'HH:mm')}`;
+    return format(d, 'dd/MM · HH:mm');
+  } catch {
+    return 'Hôm nay';
+  }
+}
+
 export function OmniCastHomeExperience() {
   const [isClientReady, setIsClientReady] = useState(false);
 
@@ -76,7 +103,51 @@ export function OmniCastHomeExperience() {
   }, [channelsData, isClientReady]);
 
   const { data: liveNowList, isLoading: loadingLive } = useLiveNow();
-  const { data: liveEventsData } = useLiveEvents({ limit: 12 });
+  const { data: liveEventsData, isLoading: loadingLiveEvents } = useLiveEvents({ limit: 24 });
+  const [scheduleTab, setScheduleTab] = useState<'all' | 'live' | 'today' | 'prime'>('all');
+
+  const scheduleEvents = useMemo<LiveEvent[]>(() => {
+    if (!isClientReady) return [];
+    const list: LiveEvent[] = [];
+    if (Array.isArray(liveEventsData?.data)) {
+      list.push(...liveEventsData.data);
+    }
+    if (Array.isArray(liveNowList)) {
+      liveNowList.forEach((liveEv) => {
+        if (!list.some((e) => e.id === liveEv.id)) {
+          list.unshift(liveEv);
+        }
+      });
+    }
+    return list;
+  }, [liveEventsData?.data, liveNowList, isClientReady]);
+
+  const filteredScheduleEvents = useMemo(() => {
+    return scheduleEvents.filter((ev) => {
+      if (scheduleTab === 'live') {
+        return ev.status === 'LIVE';
+      }
+      if (scheduleTab === 'today') {
+        if (!ev.scheduledAt) return true;
+        try {
+          return isToday(parseISO(ev.scheduledAt));
+        } catch {
+          return true;
+        }
+      }
+      if (scheduleTab === 'prime') {
+        if (!ev.scheduledAt) return true;
+        try {
+          const h = parseISO(ev.scheduledAt).getHours();
+          return h >= 20 && h <= 22;
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [scheduleEvents, scheduleTab]);
+
   const { data: recordingsData, isLoading: loadingRecs } = useRecordings({
     limit: 10,
     isFeatured: false,
@@ -507,7 +578,174 @@ export function OmniCastHomeExperience() {
         </div>
       </section>
 
-      {/* ── 3. Kho Nội Dung Mới & Bom Tấn Đề Xuất (Showcase Grid) ────── */}
+      {/* ── 3. Lịch Phát Sóng LiveStream & Khung Giờ Vàng (Broadcast Schedule) ── */}
+      <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#142236] pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm shadow-red-500/10">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                EPG LIVE SCHEDULE
+              </span>
+              <span className="text-xs font-mono text-cyan-400">
+                {filteredScheduleEvents.length} Chương trình
+              </span>
+            </div>
+            <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 mt-1">
+              <Calendar className="w-5 h-5 text-cyan-400" />
+              Lịch Phát Sóng LiveStream & Khung Giờ Vàng
+            </h2>
+            <p className="text-xs text-slate-400">
+              Lịch phát sóng đồng bộ trực tiếp từ các kênh truyền hình OmniCast, cập nhật thời gian thực
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'live', label: 'Đang Live', isLive: true },
+              { id: 'prime', label: 'Giờ Vàng (20h-23h)' },
+              { id: 'today', label: 'Hôm nay' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setScheduleTab(tab.id as any)}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer',
+                  scheduleTab === tab.id
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(0,242,254,0.25)]'
+                    : 'bg-[#0b1320] border-[#18283e] text-slate-400 hover:text-white hover:border-slate-600',
+                )}
+              >
+                {tab.isLive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                )}
+                {tab.label}
+              </button>
+            ))}
+
+            <Link
+              href="/epg"
+              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 border border-cyan-500/30 px-3 py-1.5 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 transition-colors ml-1"
+            >
+              Xem Lịch EPG →
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {loadingLiveEvents && filteredScheduleEvents.length === 0 ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[16/10] w-full rounded-2xl bg-[#09111e] border border-[#16253c] animate-pulse"
+              />
+            ))
+          ) : filteredScheduleEvents.length > 0 ? (
+            filteredScheduleEvents.slice(0, 8).map((ev) => (
+              <div
+                key={ev.id}
+                className="group relative rounded-2xl overflow-hidden bg-gradient-to-b from-[#0a111c] via-[#070d17] to-[#040810] border border-[#18283e] hover:border-cyan-400/60 transition-all duration-300 flex flex-col justify-between hover:shadow-[0_12px_30px_rgba(0,242,254,0.15)] hover:-translate-y-1"
+              >
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#060a12]">
+                  <Image
+                    src={ev.thumbnailUrl || getCategoryThumbnail(ev.channel?.category || 'SHOW')}
+                    alt={ev.title}
+                    fill
+                    unoptimized
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#040810] via-black/30 to-transparent" />
+
+                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                    {ev.status === 'LIVE' ? (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        ĐANG PHÁT
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black font-mono uppercase bg-black/80 backdrop-blur-md text-amber-300 border border-amber-500/40 shadow-sm">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        {formatScheduleTime(ev.scheduledAt, ev.duration)}
+                      </span>
+                    )}
+                  </div>
+
+                  {ev.quality && (
+                    <div className="absolute top-2.5 right-2.5 z-10">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-black uppercase tracking-wider bg-black/80 text-cyan-300 border border-cyan-500/30">
+                        {ev.quality === 'UHD_4K'
+                          ? '4K UHD'
+                          : ev.quality === 'FULL_HD_1080P'
+                          ? '1080P'
+                          : ev.quality}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 flex flex-col flex-1 justify-between space-y-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {ev.channel && (
+                        <ChannelLogo
+                          slug={ev.channel.slug}
+                          name={ev.channel.name}
+                          size="sm"
+                          className="w-5 h-5 rounded-md pointer-events-none"
+                        />
+                      )}
+                      <span className="text-[11px] font-bold text-slate-400 truncate">
+                        {ev.channel?.name || 'OmniCast Live'}
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/60 font-mono font-bold ml-auto uppercase">
+                        {ev.channel?.category || 'LIVE'}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-2 group-hover:text-cyan-300 transition-colors font-display">
+                      {ev.title}
+                    </h3>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#142033] flex items-center justify-between text-xs">
+                    <span className="text-[11px] font-mono text-slate-400">
+                      {ev.status === 'LIVE'
+                        ? `${ev.viewerCount || 120} đang xem`
+                        : formatScheduleDate(ev.scheduledAt)}
+                    </span>
+
+                    <Link
+                      href={ev.status === 'LIVE' ? `/live/${ev.id}` : `/programs/${ev.id}`}
+                      className={cn(
+                        'px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md',
+                        ev.status === 'LIVE'
+                          ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30'
+                          : 'bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-black border border-cyan-500/40 shadow-cyan-500/10',
+                      )}
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      {ev.status === 'LIVE' ? 'XEM LIVE' : 'CHI TIẾT'}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full p-8 rounded-2xl bg-[#09111e] border border-[#16253c] text-center space-y-2">
+              <Calendar className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-300">
+                Chưa có chương trình phát sóng phù hợp trong danh mục này
+              </p>
+              <p className="text-xs text-slate-500">
+                Vui lòng chọn bộ lọc khác hoặc mở Lịch EPG để xem đầy đủ 7 ngày phát sóng.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── 4. Kho Nội Dung Mới & Bom Tấn Đề Xuất (Showcase Grid) ────── */}
       <section className="max-w-[1720px] w-full mx-auto px-4 lg:px-8 space-y-4">
         
         <div className="flex items-center justify-between border-b border-[#142236] pb-3">

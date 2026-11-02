@@ -5,7 +5,7 @@
 import 'reflect-metadata';
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { BillingService } from '../src/billing/billing.service';
 
 class FakePrisma {
@@ -32,6 +32,36 @@ describe('BillingService.verifyAndroidReceipt', () => {
     prisma = new FakePrisma();
     cfg = new FakeConfig();
     svc = new BillingService(prisma as any, cfg as any);
+  });
+
+  describe('BillingService PayOS safeguards', () => {
+    test('keeps real PayOS checkout disabled unless explicitly enabled', async () => {
+      const svc = new BillingService(new FakePrisma() as any, new FakeConfig() as any);
+      await assert.rejects(
+        () =>
+          svc.createPayosDonation({
+            eventId: 'event-1',
+            donorName: 'Viewer',
+            amount: 10000,
+            paymentMethod: 'momo',
+          }),
+        (error: any) => error instanceof BadRequestException,
+      );
+    });
+
+    test('rejects unsigned PayOS webhooks before accessing payment records', async () => {
+      const svc = new BillingService(new FakePrisma() as any, new FakeConfig() as any);
+      await assert.rejects(
+        () =>
+          svc.handlePayosWebhook({
+            code: '00',
+            success: true,
+            data: { orderCode: 123456789, amount: 10000, code: '00' },
+            signature: '0'.repeat(64),
+          }),
+        (error: any) => error instanceof BadRequestException,
+      );
+    });
   });
 
   test('stamps 30 days for the monthly product (dev stub)', async () => {

@@ -428,13 +428,20 @@ class _HomeScreenState extends State<HomeScreen>
                   builder: (context, state) {
                     final upcoming = <LiveEventModel>[];
                     if (state is ProgramsLoaded) {
-                      upcoming.addAll(
-                        state.liveEvents.where(
-                          (p) =>
-                              p.isScheduled &&
-                              p.scheduledAt.isAfter(DateTime.now()),
-                        ),
-                      );
+                      final futureEvents = state.liveEvents.where(
+                        (p) =>
+                            p.isScheduled &&
+                            p.scheduledAt.isAfter(DateTime.now().subtract(const Duration(hours: 6))),
+                      ).toList();
+
+                      if (futureEvents.isNotEmpty) {
+                        upcoming.addAll(futureEvents);
+                      } else {
+                        upcoming.addAll(state.liveEvents.where((p) => p.isScheduled));
+                        if (upcoming.isEmpty && state.programs.isNotEmpty) {
+                          upcoming.addAll(state.programs);
+                        }
+                      }
                       upcoming.sort(
                         (a, b) => a.scheduledAt.compareTo(b.scheduledAt),
                       );

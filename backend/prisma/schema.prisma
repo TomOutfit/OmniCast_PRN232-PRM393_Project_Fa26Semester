@@ -673,6 +673,11 @@ model StreamDonation {
   streamerId     String    @db.Uuid
   amount         Int
   paymentMethod  String    @db.VarChar(50)
+  paymentStatus  String    @default("COMPLETED") @db.VarChar(20)
+  payosOrderCode Int?      @unique
+  payosPaymentLinkId String? @db.VarChar(100)
+  payosCheckoutUrl String?  @db.VarChar(1000)
+  payosStatusTokenHash String? @unique @db.VarChar(64)
   giftEmoji      String    @default("🎉") @db.VarChar(10)
   giftTier       String?   @db.VarChar(100)
   message        String?   @db.VarChar(500)
@@ -688,4 +693,3 @@ model StreamDonation {
   @@index([streamerId], map: "idx_stream_donation_streamer")
   @@index([eventId], map: "idx_stream_donation_event")
 }
-

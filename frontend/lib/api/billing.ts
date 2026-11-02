@@ -14,6 +14,7 @@ export interface StreamerPaymentInfo {
   streamerName: string;
   streamerAvatar?: string;
   streamerBio?: string;
+  bankId?: string;
   bankAccount: string;
   bankName: string;
   accountHolder: string;
@@ -21,6 +22,7 @@ export interface StreamerPaymentInfo {
   zaloPayAccount: string;
   transferSyntax: string;
   isSandbox: boolean;
+  paymentMode: 'sandbox' | 'payos';
   walletBalance?: number;
 }
 
@@ -60,6 +62,26 @@ export interface SandboxDonationResponse {
     walletBalance: number;
   } | null;
   notification: string;
+}
+
+export interface PayosCheckoutResponse {
+  success: boolean;
+  isSandbox: false;
+  donationId: string;
+  orderCode: number;
+  statusToken: string;
+  checkoutUrl: string;
+  amount: number;
+  paymentMethod: 'payos';
+  giftEmoji: string;
+  giftTier?: string;
+  donorName: string;
+  message?: string;
+  streamer: {
+    id: string;
+    fullName: string;
+    walletBalance: number;
+  };
 }
 
 export interface UserWalletData {
@@ -114,6 +136,24 @@ export async function sendSandboxDonation(
   payload: SandboxDonationPayload,
 ): Promise<SandboxDonationResponse> {
   const { data } = await apiClient.post('/billing/live-donation/sandbox', payload);
+  return data;
+}
+
+export async function createPayosDonation(
+  payload: SandboxDonationPayload,
+): Promise<PayosCheckoutResponse> {
+  const { data } = await apiClient.post('/billing/live-donation/payos', payload);
+  return data;
+}
+
+export async function fetchPayosDonationStatus(
+  orderCode: number,
+  statusToken: string,
+): Promise<{ status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED' }> {
+  const { data } = await apiClient.post('/billing/live-donation/payos/status', {
+    orderCode,
+    statusToken,
+  });
   return data;
 }
 

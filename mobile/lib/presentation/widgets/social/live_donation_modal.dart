@@ -153,11 +153,11 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
   final List<Map<String, dynamic>> _paymentMethods = [
     {
       'id': 'vnpay',
-      'name': 'VietQR / MBBank',
+      'name': 'VietQR / TPBank',
       'subtitle': 'Quét mã 247',
       'icon': Icons.qr_code_scanner_rounded,
       'color': const Color(0xFF005BAA),
-      'bankLabel': 'Cổng MBBank VietQR (Napas 247)',
+      'bankLabel': 'Cổng TPBank VietQR (Napas 247)',
     },
     {
       'id': 'momo',
@@ -296,37 +296,45 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     if (_streamerInfo != null && _streamerInfo!['accountHolder'] != null) {
       return _streamerInfo!['accountHolder'].toString().toUpperCase();
     }
-    return 'OMNICAST STUDIO';
+    return 'NGUYEN BINH AN';
+  }
+
+  String get _bankId {
+    if (_streamerInfo != null && _streamerInfo!['bankId'] != null) {
+      return _streamerInfo!['bankId'].toString();
+    }
+    return 'TPB';
   }
 
   String get _bankAccount {
     if (_streamerInfo != null && _streamerInfo!['bankAccount'] != null) {
       return _streamerInfo!['bankAccount'].toString();
     }
-    return '19036888999';
+    return '0935649095';
   }
 
   String get _momoPhone {
     if (_streamerInfo != null && _streamerInfo!['momoPhone'] != null) {
       return _streamerInfo!['momoPhone'].toString();
     }
-    return '0988666777';
+    return '0935649095';
   }
 
   String get _qrImageUrl {
     final amount = _selectedAmount;
     final syntax = Uri.encodeComponent(_transferSyntax);
     final holder = Uri.encodeComponent(_accountHolder);
+    final bank = _bankId;
+    final acc = _bankAccount;
 
     if (_selectedPaymentMethod == 'vnpay' || _selectedPaymentMethod == 'card') {
-      // Official authentic VietQR banking standard image
-      return 'https://img.vietqr.io/image/MB-$_bankAccount-compact2.png?amount=$amount&addInfo=$syntax&accountName=$holder';
+      // Official authentic VietQR banking standard image (NAPAS 24/7)
+      return 'https://img.vietqr.io/image/$bank-$acc-compact2.png?amount=$amount&addInfo=$syntax&accountName=$holder';
     } else if (_selectedPaymentMethod == 'momo') {
       final momoData = Uri.encodeComponent('2|99|$_momoPhone|$_accountHolder|$amount|0|0|$_transferSyntax');
-      return 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=$momoData';
+      return 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=$momoData';
     } else {
-      final zaloData = Uri.encodeComponent('https://zalopay.vn/pay?acc=$holder&amount=$amount&msg=$syntax');
-      return 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=$zaloData';
+      return 'https://img.vietqr.io/image/$bank-$acc-compact2.png?amount=$amount&addInfo=$syntax&accountName=$holder';
     }
   }
 

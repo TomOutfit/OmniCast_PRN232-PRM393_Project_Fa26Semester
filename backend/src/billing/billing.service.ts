@@ -20,6 +20,8 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
+import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { LiveStreamGateway } from '../websocket/live-stream.gateway';
@@ -48,6 +50,7 @@ export interface StreamerPaymentInfo {
   streamerName: string;
   streamerAvatar?: string;
   streamerBio?: string;
+  bankId: string;
   bankAccount: string;
   bankName: string;
   accountHolder: string;
@@ -55,13 +58,42 @@ export interface StreamerPaymentInfo {
   zaloPayAccount: string;
   transferSyntax: string;
   isSandbox: boolean;
+  paymentMode: 'sandbox' | 'payos';
   walletBalance: number;
+}
+
+interface PayosWebhook {
+  code: string;
+  success: boolean;
+  data: {
+    orderCode: number;
+    amount: number;
+    code: string;
+  };
+  signature: string;
+}
+
+function payosSignatureString(data: Record<string, unknown>): string {
+  return Object.keys(data)
+    .sort()
+    .map((key) => {
+      const value = data[key];
+      const normalized =
+        value === null || value === undefined
+          ? ''
+          : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value);
+      return `${encodeURIComponent(key)}=${encodeURIComponent(normalized)}`;
+    })
+    .join('&');
 }
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
   private readonly isProd: boolean;
+  private readonly payosMode: 'sandbox' | 'live';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -71,6 +103,32 @@ export class BillingService {
   ) {
     this.isProd =
       this.configService.get<string>('NODE_ENV') === 'production';
+    this.payosMode =
+      this.configService.get<string>('PAYOS_MODE') === 'live' ? 'live' : 'sandbox';
+  }
+
+  private getPayosConfig() {
+    const clientId = this.configService.get<string>('PAYOS_CLIENT_ID');
+    const apiKey = this.configService.get<string>('PAYOS_API_KEY');
+    const checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
+    const returnUrl = this.configService.get<string>('PAYOS_RETURN_URL');
+    const cancelUrl = this.configService.get<string>('PAYOS_CANCEL_URL');
+    if (!clientId || !apiKey || !checksumKey || !returnUrl || !cancelUrl) {
+      throw new ServiceUnavailableException(
+        'PayOS live checkout needs credentials and explicit return/cancel URLs',
+      );
+    }
+    return { clientId, apiKey, checksumKey, returnUrl, cancelUrl };
+  }
+
+  private isValidPayosSignature(data: Record<string, unknown>, signature: string) {
+    const checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
+    if (!checksumKey || !/^[a-f0-9]{64}$/i.test(signature)) return false;
+    const expected = createHmac('sha256', checksumKey)
+      .update(payosSignatureString(data))
+      .digest();
+    const received = Buffer.from(signature, 'hex');
+    return received.length === expected.length && timingSafeEqual(received, expected);
   }
 
   /**
@@ -170,6 +228,16 @@ export class BillingService {
     const shortId = eventId.replace(/-/g, '').slice(0, 6).toUpperCase();
     const transferSyntax = `OMNICAST ${shortId}`;
 
+    const bankId = this.configService.get<string>('VIETQR_BANK_ID') || 'TPB';
+    const bankAccount =
+      this.configService.get<string>('VIETQR_ACCOUNT_NO') || '0935649095';
+    const bankName =
+      this.configService.get<string>('VIETQR_BANK_NAME') || 'TPBank (Ngân hàng Tiên Phong)';
+    const accountHolder =
+      this.configService.get<string>('VIETQR_ACCOUNT_NAME') || 'NGUYEN BINH AN';
+    const momoPhone =
+      this.configService.get<string>('VIETQR_MOMO_PHONE') || '0935649095';
+
     return {
       eventId: event.id,
       eventTitle: event.title,
@@ -180,15 +248,265 @@ export class BillingService {
       streamerName,
       streamerAvatar: streamer?.avatarUrl || undefined,
       streamerBio: streamer?.bio || undefined,
-      bankAccount: '19036888999',
-      bankName: 'MBBank (Quân Đội)',
-      accountHolder: cleanStreamerName,
-      momoPhone: '0988666777',
+      bankId,
+      bankAccount,
+      bankName,
+      accountHolder,
+      momoPhone,
       zaloPayAccount: cleanStreamerName,
       transferSyntax,
-      isSandbox: true,
+      isSandbox: this.payosMode !== 'live',
+      paymentMode: this.payosMode === 'live' ? 'payos' : 'sandbox',
       walletBalance: Number((streamer as any)?.walletBalance ?? 0),
     };
+  }
+
+  async createPayosDonation(dto: CreateSandboxDonationDto, donorUserId?: string) {
+    if (this.payosMode !== 'live') {
+      throw new BadRequestException(
+        'PayOS live checkout is disabled; sandbox mode never charges real money',
+      );
+    }
+    const payos = this.getPayosConfig();
+    const event = await this.prisma.liveEvent.findUnique({
+      where: { id: dto.eventId },
+      include: { channel: { include: { owner: true } } },
+    });
+    if (!event) throw new NotFoundException('Không tìm thấy sự kiện phát sóng');
+
+    let streamer = event.channel?.owner;
+    if (!streamer) {
+      streamer = await this.prisma.user.findFirst({ where: { role: 'STAFF' } });
+      if (!streamer) streamer = await this.prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    }
+    if (!streamer) {
+      throw new BadRequestException('Không tìm thấy tài khoản người tạo nội dung cho buổi phát này');
+    }
+
+    const orderCode = randomInt(100_000_000, 2_147_483_647);
+    const statusToken = randomBytes(32).toString('hex');
+    const shortDescription = `OC${String(orderCode).slice(-7)}`;
+    const donorName = (dto.donorName.trim() || 'Khán giả ẩn danh').slice(0, 255);
+    const donation = await this.prisma.streamDonation.create({
+      data: {
+        eventId: event.id,
+        donorId: donorUserId || null,
+        donorName,
+        streamerId: streamer.id,
+        amount: dto.amount,
+        paymentMethod: 'payos',
+        paymentStatus: 'PENDING',
+        payosOrderCode: orderCode,
+        payosStatusTokenHash: createHash('sha256').update(statusToken).digest('hex'),
+        giftEmoji: (dto.giftEmoji || '🎉').slice(0, 10),
+        giftTier: (dto.giftTier || 'Ủng hộ trực tiếp').slice(0, 100),
+        message: (dto.message?.trim() || 'Chúc buổi livestream thành công!').slice(0, 500),
+        isSandbox: false,
+      },
+    });
+
+    const signaturePayload = {
+      amount: dto.amount,
+      cancelUrl: payos.cancelUrl,
+      description: shortDescription,
+      orderCode,
+      returnUrl: payos.returnUrl,
+    };
+    const signature = createHmac('sha256', payos.checksumKey)
+      .update(
+        `amount=${signaturePayload.amount}&cancelUrl=${signaturePayload.cancelUrl}&description=${signaturePayload.description}&orderCode=${signaturePayload.orderCode}&returnUrl=${signaturePayload.returnUrl}`,
+      )
+      .digest('hex');
+
+    try {
+      const response = await axios.post(
+        'https://api-merchant.payos.vn/v2/payment-requests',
+        {
+          ...signaturePayload,
+          buyerName: donation.donorName.slice(0, 100),
+          items: [
+            {
+              name: (dto.giftTier || 'Ủng hộ livestream').slice(0, 100),
+              quantity: 1,
+              price: dto.amount,
+            },
+          ],
+          signature,
+        },
+        {
+          headers: {
+            'x-client-id': payos.clientId,
+            'x-api-key': payos.apiKey,
+            'content-type': 'application/json',
+          },
+          timeout: 10_000,
+        },
+      );
+      const result = response.data?.data;
+      if (response.data?.code !== '00' || !result?.checkoutUrl) {
+        throw new Error('PayOS did not return a valid checkout link');
+      }
+
+      await this.prisma.streamDonation.update({
+        where: { id: donation.id },
+        data: {
+          payosPaymentLinkId: result.paymentLinkId,
+          payosCheckoutUrl: result.checkoutUrl,
+        },
+      });
+
+      return {
+        success: true,
+        isSandbox: false,
+        donationId: donation.id,
+        orderCode,
+        statusToken,
+        checkoutUrl: result.checkoutUrl,
+        amount: donation.amount,
+        paymentMethod: 'payos',
+        giftEmoji: donation.giftEmoji,
+        giftTier: donation.giftTier,
+        donorName: donation.donorName,
+        message: donation.message,
+        streamer: {
+          id: streamer.id,
+          fullName: streamer.fullName,
+          walletBalance: Number(streamer.walletBalance ?? 0),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `PayOS checkout creation failed for donation ${donation.id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException('Không thể tạo liên kết thanh toán PayOS');
+    }
+  }
+
+  async getPayosDonationStatus(orderCode: number, statusToken: string) {
+    if (
+      !Number.isSafeInteger(orderCode) ||
+      orderCode <= 0 ||
+      !/^[a-f0-9]{64}$/i.test(statusToken)
+    ) {
+      throw new BadRequestException('Thông tin giao dịch PayOS không hợp lệ');
+    }
+    const statusTokenHash = createHash('sha256').update(statusToken).digest('hex');
+    const donation = await this.prisma.streamDonation.findFirst({
+      where: {
+        payosOrderCode: orderCode,
+        payosStatusTokenHash: statusTokenHash,
+      },
+      select: { paymentStatus: true },
+    });
+    if (!donation) throw new NotFoundException('Không tìm thấy giao dịch PayOS');
+    return { status: donation.paymentStatus };
+  }
+
+  async handlePayosWebhook(webhook: PayosWebhook) {
+    if (
+      !webhook?.data ||
+      !webhook.signature ||
+      !this.isValidPayosSignature(webhook.data, webhook.signature)
+    ) {
+      throw new BadRequestException('Chữ ký webhook PayOS không hợp lệ');
+    }
+    if (!Number.isSafeInteger(webhook.data.orderCode) || webhook.data.orderCode <= 0) {
+      throw new BadRequestException('Mã đơn hàng PayOS không hợp lệ');
+    }
+
+    const donation = await this.prisma.streamDonation.findUnique({
+      where: { payosOrderCode: webhook.data.orderCode },
+      select: {
+        id: true,
+        amount: true,
+        streamerId: true,
+        eventId: true,
+        paymentStatus: true,
+        donorId: true,
+        donorName: true,
+        giftEmoji: true,
+        giftTier: true,
+        message: true,
+        createdAt: true,
+      },
+    });
+    if (!donation) throw new NotFoundException('Không tìm thấy đơn hàng PayOS');
+    if (donation.amount !== webhook.data.amount) {
+      throw new BadRequestException('Số tiền webhook PayOS không khớp đơn hàng');
+    }
+    if (!webhook.success || webhook.code !== '00' || webhook.data.code !== '00') {
+      return { success: true, status: donation.paymentStatus };
+    }
+    if (donation.paymentStatus === 'COMPLETED') {
+      return { success: true, status: 'COMPLETED' };
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.streamDonation.updateMany({
+        where: { id: donation.id, paymentStatus: 'PENDING' },
+        data: { paymentStatus: 'COMPLETED' },
+      });
+      if (claimed.count === 0) return null;
+
+      const streamer = await tx.user.update({
+        where: { id: donation.streamerId },
+        data: { walletBalance: { increment: BigInt(donation.amount) } },
+        select: { id: true, fullName: true, walletBalance: true },
+      });
+      await tx.notification.create({
+        data: {
+          userId: donation.streamerId,
+          type: 'SYSTEM_ANNOUNCEMENT',
+          title: '🎁 Bạn nhận được ủng hộ mới qua PayOS!',
+          message: `Bạn vừa nhận ${donation.amount.toLocaleString('vi-VN')}₫ qua PayOS.`,
+          eventId: donation.eventId,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: donation.donorId,
+          action: 'PAYOS_DONATION_COMPLETED',
+          entityType: 'STREAMER_WALLET',
+          entityId: donation.streamerId,
+          newValues: {
+            donationId: donation.id,
+            orderCode: webhook.data.orderCode,
+            amount: donation.amount,
+            paymentMethod: 'payos',
+          },
+        },
+      });
+      return streamer;
+    });
+    if (!updated) {
+      return { success: true, status: 'COMPLETED', credited: false };
+    }
+
+    try {
+      this.gateway.notifyDonationReceived({
+        eventId: donation.eventId || '',
+        donationId: donation.id,
+        donorName: donation.donorName,
+        streamerId: updated.id,
+        streamerName: updated.fullName,
+        amount: donation.amount,
+        paymentMethod: 'payos',
+        giftEmoji: donation.giftEmoji,
+        giftTier: donation.giftTier || undefined,
+        message: donation.message || undefined,
+        streamerWalletBalance: Number(updated.walletBalance ?? 0),
+        donorId: donation.donorId || undefined,
+        timestamp: donation.createdAt.toISOString(),
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to broadcast PayOS donation ${donation.id}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+    }
+    return { success: true, status: 'COMPLETED', credited: true };
   }
 
   /**
@@ -390,7 +708,7 @@ export class BillingService {
 
     const [receivedDonations, sentDonations] = await Promise.all([
       (this.prisma as any).streamDonation.findMany({
-        where: { streamerId: userId },
+        where: { streamerId: userId, paymentStatus: 'COMPLETED' },
         orderBy: { createdAt: 'desc' },
         take: 30,
         include: {
@@ -400,7 +718,7 @@ export class BillingService {
         },
       }),
       (this.prisma as any).streamDonation.findMany({
-        where: { donorId: userId },
+        where: { donorId: userId, paymentStatus: 'COMPLETED' },
         orderBy: { createdAt: 'desc' },
         take: 30,
         include: {
