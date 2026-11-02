@@ -438,10 +438,12 @@ export class ProgramsService {
       where: {
         channelId: { in: channelIds },
         status: { in: ['SCHEDULED', 'LIVE', 'ENDED', 'ON_DEMAND'] },
-        // Event scheduled to start on this day OR already LIVE / OVERLAPPING
-        AND: [
-          { scheduledAt: { gte: dayStart } },
-          { scheduledAt: { lt: dayEnd } },
+        // Include events that start during the day, remain live across
+        // midnight, or ended during the requested day.
+        OR: [
+          { scheduledAt: { gte: dayStart, lt: dayEnd } },
+          { status: 'LIVE' },
+          { endedAt: { gt: dayStart } },
         ],
       },
       orderBy: { scheduledAt: 'asc' },
@@ -450,6 +452,7 @@ export class ProgramsService {
         title: true,
         description: true,
         scheduledAt: true,
+        endedAt: true,
         duration: true,
         status: true,
         thumbnailUrl: true,

@@ -158,9 +158,12 @@ export default function LiveStreamViewer({
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: isLive, // Enable low latency for live streams
-          backBufferLength: isLive ? 30 : 60,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 5,
+          maxLiveSyncPlaybackRate: 1.25,
+          backBufferLength: isLive ? 20 : 60,
+          maxBufferLength: isLive ? 8 : 30,
+          maxMaxBufferLength: isLive ? 20 : 60,
           startLevel: -1, // Auto quality selection
         });
 

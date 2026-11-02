@@ -388,10 +388,13 @@ export function VideoPlayer({
         // low-latency playlist handling must stay ENABLED. hls.js
         // defaults it to true as well — we set it explicitly so a
         // future default change cannot silently break live playback.
-        lowLatencyMode: true,
-        backBufferLength: 90,       // keep 90 s of buffer for backward seek
-        maxBufferLength: 30,        // cap buffer at 30 s forward
-        maxMaxBufferLength: 120,    // allow up to 120 s when bandwidth is high
+        lowLatencyMode: isLive || Boolean(currentLiveEvent),
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 5,
+        maxLiveSyncPlaybackRate: 1.25,
+        backBufferLength: isLive || Boolean(currentLiveEvent) ? 30 : 90,
+        maxBufferLength: isLive || Boolean(currentLiveEvent) ? 8 : 30,
+        maxMaxBufferLength: isLive || Boolean(currentLiveEvent) ? 20 : 120,
         maxBufferSize: 60 * 1024 * 1024, // 60 MB max buffer
         maxBufferHole: 0.5,        // fill gaps ≤ 0.5 s
       } as any);
@@ -484,6 +487,8 @@ export function VideoPlayer({
     resolvedType,
     hasAccess,
     autoPlay,
+    isLive,
+    currentLiveEvent,
     advanceToFallback,
     applySeek,
     retryHls,

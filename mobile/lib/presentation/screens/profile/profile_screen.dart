@@ -845,7 +845,7 @@ class ProfileScreen extends StatelessWidget {
 // ── REALTIME VIRTUAL WALLET SECTION WIDGET ──────────────────────
 class _VirtualWalletCard extends StatefulWidget {
   final int initialBalance;
-  const _VirtualWalletCard({this.initialBalance = 0});
+  const _VirtualWalletCard() : initialBalance = 0;
 
   @override
   State<_VirtualWalletCard> createState() => _VirtualWalletCardState();
