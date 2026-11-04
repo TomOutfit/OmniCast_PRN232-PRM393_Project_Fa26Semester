@@ -5,15 +5,16 @@
 \label{sec:test}
 
 \bi{
-Chất lượng và độ ổn định của ứng dụng di động OmniCast được bảo đảm thông qua
-chiến lược kiểm thử tự động đa tầng. Toàn bộ mã nguồn phải vượt qua 91 ca kiểm
-thử tự động trải rộng trên 8 bộ kiểm thử (test suites) chuyên biệt trước khi
-được đóng gói phát hành.
+Chất lượng và độ ổn định của ứng dụng di động OmniCast được đánh giá bằng
+kiểm thử tự động đa tầng. Test tree có 91 test trong 8 spec files; GitHub
+Actions run 40630318005 chạy 77 test theo các thư mục data, logic và
+presentation, cả 77 đều đạt. 14 test còn lại nằm ngoài phạm vi lệnh CI đó.
 }{
 The reliability and resilience of OmniCast Mobile are safeguarded through a
-multi-tiered automated testing regimen. The codebase undergoes rigorous
-validation across 91 automated tests distributed over 8 dedicated suites
-prior to continuous integration packaging.
+multi-tiered automated testing regimen. The test tree contains 91 tests in
+8 spec files; GitHub Actions run 40630318005 selected 77 tests from the data,
+logic and presentation directories, and all 77 passed. The remaining 14 tests
+were outside that CI command's scope.
 }
 
 \subsection{\bi{Phân loại các tầng kiểm thử}{Testing Methodology and Layering}}
@@ -54,8 +55,8 @@ The test architecture spans three principal testing tiers:
 \subsection{\bi{Bảng kết quả kiểm thử thực tế}{Empirical Test Results Breakdown}}
 
 \begin{table}[t]
-\caption{\bi{Kết quả thực thi 91 bài kiểm thử tự động của ứng dụng di động.}{Execution
-results of the 91 automated mobile tests.}}
+\caption{\bi{Kết quả thực thi 77 bài kiểm thử mobile trong CI run 40630318005.}{Execution
+results of the 77 mobile tests in CI run 40630318005.}}
 \label{tab:mobile_tests}
 \centering
 \footnotesize
@@ -63,16 +64,16 @@ results of the 91 automated mobile tests.}}
 \toprule
 \textbf{\bi{Bộ kiểm thử (Suite)}{Test Suite}} & \textbf{\bi{Phạm vi kiểm thử}{Scope}} & \textbf{\bi{Số test}{Tests}} & \textbf{\bi{Tỷ lệ}{Rate}} \\
 \midrule
-\texttt{ai\_curator\_repository\_test} & Repository / Mock API & 26 & 100\% \\
-\texttt{ai\_curator\_screen\_test} & Widget / Studio UI & 13 & 100\% \\
-\texttt{auth\_bloc\_test} & State / Session & 14 & 100\% \\
-\texttt{watchlist\_bloc\_test} & State / Offline & 13 & 100\% \\
-\texttt{watchlist\_item\_model\_test} & Data model / JSON & 9 & 100\% \\
-\texttt{save\_to\_watchlist\_test} & Interactive Widget & 7 & 100\% \\
-\texttt{epg\_bloc\_test} & State / Schedule & 6 & 100\% \\
-\texttt{onboarding\_screen\_test} & Presentation / Flow & 3 & 100\% \\
+\texttt{ai\_curator\_repository\_test} & Repository / Mock API & 25 & 100\% \\
+\texttt{ai\_curator\_screen\_test} & Widget / Studio UI & 10 & 100\% \\
+\texttt{auth\_bloc\_test} & State / Session & 13 & 100\% \\
+\texttt{watchlist\_bloc\_test} & State / Offline & 10 & 100\% \\
+\texttt{watchlist\_item\_model\_test} & Data model / JSON & 8 & 100\% \\
+\texttt{save\_to\_watchlist\_test} & Interactive Widget & 4 & 100\% \\
+\texttt{epg\_bloc\_test} & State / Schedule & 5 & 100\% \\
+\texttt{onboarding\_screen\_test} & Presentation / Flow & 2 & 100\% \\
 \midrule
-\textbf{\bi{Tổng cộng}{Total}} & \textbf{8 \bi{bộ kiểm thử}{suites}} & \textbf{91} & \textbf{100\%} \\
+\textbf{\bi{Trong CI run 40630318005}{In CI run 40630318005}} & \textbf{8 spec files} & \textbf{77} & \textbf{100\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -97,7 +98,11 @@ Within the project's GitHub Actions workflow (\texttt{ci.yml}), the
 - name: Install dependencies
   run: flutter pub get
 - name: Run automated test suite
-  run: flutter test --machine > test-results/mobile-flutter.json
+  run: |
+    flutter test --coverage --machine \
+      test/data test/logic test/presentation > test-results-raw.json
+    node ../.github/scripts/parse-mobile-test.js \
+      test-results-raw.json test-results.json
 - name: Build release APK
   run: flutter build apk --split-per-abi
 \end{lstlisting}

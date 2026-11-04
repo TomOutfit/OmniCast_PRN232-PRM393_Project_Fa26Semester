@@ -7,20 +7,20 @@
 \subsection{\bi{Tổng quan phân tầng}{Layered Overview}}
 
 \bi{
-Hệ thống được tổ chức theo bốn tầng, mỗi tầng chỉ giao tiếp với tầng
-ngay bên dưới. Tầng trình bày gồm cổng web Next.js 15 (33 route) và ứng dụng di
-động Flutter (31 màn hình); tầng API là một tiến trình NestJS duy nhất với 19 module
-nghiệp vụ và hơn 140 endpoint REST; tầng thời gian thực xử lý phát sóng trực tiếp (LiveStream), điều phối phòng Studio, trò chuyện, cảm xúc nổi, quyên góp Super Chat và tín
-hiệu WebRTC; tầng dữ liệu gồm PostgreSQL (21 model Prisma), máy chủ phát trực tuyến
-MediaMTX, dịch vụ lưu trữ đám mây Cloudinary và các API bên ngoài.
+Kiến trúc thể hiện luồng từ hai client đến API và các dịch vụ tích hợp.
+Cổng web Next.js 15 (33 route) và ứng dụng Flutter (31 màn hình) dùng
+NestJS với 19 module nghiệp vụ và hơn 140 endpoint REST. Backend kết nối
+cổng thời gian thực Socket.IO, microservice kiểm toán gRPC, MediaMTX,
+PostgreSQL/Supabase, Cloudinary và các API bên ngoài. Luồng video được
+phân phối từ MediaMTX trực tiếp tới client qua HLS/WebRTC.
 }{
-The system is organised into four layers, each communicating only with
-the layer immediately below it. The presentation layer comprises the
-Next.js 15 web portal (33 routes) and the Flutter mobile application (31 screens); the API
-layer is a single NestJS process with 19 business modules and 140+ REST endpoints; the
-real-time layer handles live broadcasting (LiveStream), studio room orchestration, live chat, floating reactions, Super Chat donations and WebRTC signalling;
-and the data layer consists of PostgreSQL (21 Prisma models), the MediaMTX streaming
-server, Cloudinary storage and external APIs.
+The architecture shows the flow from both clients through the API to
+integrated services. The Next.js 15 portal (33 routes) and Flutter
+application (31 screens) use NestJS, with 19 business modules and 140+
+REST endpoints. The backend connects to the Socket.IO real-time gateway,
+the gRPC audit microservice, MediaMTX, PostgreSQL/Supabase, Cloudinary
+and external APIs. MediaMTX also delivers HLS/WebRTC streams directly
+to clients.
 }
 
 \begin{figure*}[t]

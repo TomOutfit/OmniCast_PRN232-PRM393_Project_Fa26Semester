@@ -25,17 +25,17 @@ deterministic.
 \subsection{\bi{Kết quả thực thi}{Execution Results}}
 
 \bi{
-Hồ sơ kiểm thử ghi nhận các bộ tự động được chạy ngày 28 tháng 10 năm
-2026 và báo cáo 482 kiểm thử đạt. Không lưu giờ chạy, commit SHA hoặc
-runner output gốc để tái kiểm chứng từng kết quả. Riêng bộ Playwright
-được mô tả dưới đây có 6/8 kịch bản đạt trong lần chạy gần nhất được
-ghi nhận.
+GitHub Actions run 40630318005 bắt đầu lúc 11:05:17 và kết thúc lúc
+11:13:45 ICT ngày 28/10/2026, trên commit edafb234. Artifacts ghi
+468/468 test đạt trong phạm vi job (163 backend, 228 web, 77 mobile).
+Workflow mobile chỉ chọn data/logic/presentation; 14 test ngoài phạm
+vi đó chưa nằm trong kết quả này. Bộ Playwright riêng được ghi nhận 6/8.
 }{
-The testing record states that the automated suites ran on 28 October
-2026 and reports 482 passing tests. The time of day, commit SHA and raw
-runner output are not retained for independent verification. The
-Playwright suite described below records 6 of 8 scenarios passing in
-its most recently documented run.
+GitHub Actions run 40630318005 started at 11:05:17 and completed at
+11:13:45 ICT on 28 October 2026, commit edafb234. Its artifacts record
+468/468 passing tests in job scope (163 backend, 228 web, 77 mobile).
+The mobile workflow selected data/logic/presentation; 14 tests outside
+that scope were not included. The separate Playwright record reports 6/8.
 }
 
 \begin{table}[t]
@@ -138,11 +138,10 @@ assertions.
 \subsection{\bi{Bộ kiểm thử di động và kiểm thử E2E}{Mobile Suite and End-to-End Tests}}
 
 \bi{
-Bộ kiểm thử Flutter gồm 91 kiểm thử trong 8 bộ, tổ chức theo cùng
-cấu trúc thư mục với mã nguồn: \texttt{test/data},
-\texttt{test/logic}, \texttt{test/presentation}. Bộ này chạy với
-\texttt{flutter test --coverage}, sinh báo cáo phủ \texttt{lcov.info}
-được tải lên dưới dạng artefact của CI.
+Bộ test tree Flutter có 91 kiểm thử. Workflow run 40630318005 chạy 77
+kiểm thử từ \texttt{test/data}, \texttt{test/logic} và
+\texttt{test/presentation}; \texttt{test/core} và
+\texttt{test/widget\_test.dart} nằm ngoài lệnh CI này.
 
 Bên cạnh đó, một bộ kiểm thử E2E dựa trên Playwright \cite{test}
 thực hiện tám kịch bản trên trình duyệt Chromium: biểu mẫu đăng nhập
@@ -151,11 +150,10 @@ trang EPG không lỗi, trang kênh hiển thị nội dung, trang tìm kiếm
 nhận và hiển thị kết quả, trang chủ hiển thị mặt đất công khai, và hai
 kịch bản kiểm tra hành vi chuyển hướng khi chưa đăng nhập.
 }{
-The Flutter suite contains 91 tests in 8 suites, organised with the
-same directory layout as the source: \texttt{test/data},
-\texttt{test/logic}, \texttt{test/presentation}. It runs with
-\texttt{flutter test --coverage} and produces an \texttt{lcov.info}
-report uploaded as a CI artefact.
+The Flutter test tree contains 91 tests. Workflow run 40630318005
+executed 77 tests from \texttt{test/data}, \texttt{test/logic} and
+\texttt{test/presentation}; \texttt{test/core} and
+\texttt{test/widget\_test.dart} are outside this CI command.
 
 Alongside it, a Playwright-based end-to-end suite \cite{test}
 executes eight scenarios in Chromium: the login form rejects an

@@ -464,7 +464,7 @@
 
         <div class="metrics-banner">
           <span>✓ 142,897 Physical LOC</span>
-          <span>✓ 482/482 Automated Tests (100% Pass)</span>
+          <span>✓ 468/468 Tests Passed in CI Run 40630318005</span>
           <span>✓ WebRTC WHIP/WHEP + Socket.IO /live</span>
         </div>
       </div>
@@ -876,11 +876,11 @@
             </ul>
           </div>
           <div class="card green">
-            <div class="card-title">91 AUTOMATED TESTS (100% PASS)</div>
+            <div class="card-title">91 MOBILE TESTS IN TREE</div>
             <ul>
               <li><strong>56 Unit Tests:</strong> BLoC state transition testing via <code>bloc_test</code>, SQLite repository tests, DTO parsing.</li>
               <li><strong>35 Widget Tests:</strong> Component rendering, button interactions, error banner triggers, and offline mode indicators.</li>
-              <li><strong>Continuous Integration:</strong> Automated test pipeline executes on every commit via GitHub Actions.</li>
+              <li><strong>Archived CI run 40630318005:</strong> 77 selected tests passed; 14 tests outside the workflow paths were not included.</li>
             </ul>
           </div>
         </div>
@@ -936,18 +936,18 @@
                 <tr>
                   <td><strong>Automated Test Suites</strong></td>
                   <td><strong>391 Tests</strong> (163 API + 228 Web)</td>
-                  <td><strong>91 Tests</strong> (Unit + Widgets)</td>
+                  <td><strong>77/77 CI</strong> (91 in test tree)</td>
                 </tr>
                 <tr>
                   <td><strong>Verification Status</strong></td>
-                  <td><strong style="color: var(--omni-green);">100% PASS</strong></td>
-                  <td><strong style="color: var(--omni-green);">100% PASS</strong></td>
+                  <td><strong style="color: var(--omni-green);">391/391 unit tests</strong></td>
+                  <td><strong style="color: var(--omni-green);">77/77 selected tests</strong></td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div style="text-align: center; margin-top: 14px; font-size: 0.9rem; color: var(--omni-green); font-weight: 700;">
-            TOTAL SYSTEM SCALE: 142,897 Lines of Code • 482 Automated Tests • 100% Pass Rate
+            CI RUN 40630318005: 468/468 PASS (163 backend + 228 web + 77 mobile in workflow scope)
           </div>
         </div>
       </div>

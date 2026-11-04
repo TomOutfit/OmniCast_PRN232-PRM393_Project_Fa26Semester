@@ -29,7 +29,7 @@
 \author{\IEEEauthorblockN{\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn} (\texttt{QE170080}), \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}), \textbf{Đồng Hoàng Nguyên}}\\
 \IEEEauthorblockA{\bi{Giảng viên hướng dẫn (Mentor): \textbf{Thầy Huỳnh Vang}}{Mentor / Supervisor: \textbf{Mr. Huỳnh Vang}}\\
 \textbf{FPTU Quy Nhon AI Campus --- FU Cahata}, \bi{Khoa Công nghệ Thông tin, Trường Đại học FPT}{Faculty of Information Technology, FPT University}\\
-\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester} $\cdot$ \bi{Bản cài đặt APK}{Release APK}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/releases/tag/v1.2.0}}}
+\bi{Báo cáo tích hợp môn PRM393}{Integrated PRM393 mobile application report}}}
 \date{}
 
 \maketitle
@@ -47,9 +47,9 @@ từ MediaMTX, phân giải luồng trực tiếp Google Drive, tự động kh�
 và phòng xem tương tác thời gian thực hai chiều (\texttt{LiveWatchScreen}: Live Chat phân nhánh, biểu cảm hạt nổi xúc giác 0ms, quyên góp Super Chat 6 mệnh giá, thông báo ghim từ Host và chuyển chương trình tức thời); (2) bàn điều khiển \texttt{LiveStudioScreen} 4 tab cùng máy quay tác nghiệp hiện trường \texttt{MobileStudioRecorderScreen} hỗ trợ đẩy sóng WebRTC WHIP trực tiếp, mã thời gian SMPTE, đồng hồ âm lượng Stereo VU Meter và máy nhắc chữ Teleprompter HUD; (3) động cơ ngoại tuyến (offline-first) trên
 nền cơ sở dữ liệu SQLite cục bộ với hàng đợi phát lại thao tác bất đồng bộ
 (\texttt{pending\_ops}) và thông báo nhắc lịch chính xác trước 15 phút; cùng (4) hệ thống điều hướng tập trung GoRouter quản lý 31 màn
-hình với cơ chế bảo vệ phiên đăng nhập chặt chẽ. Hệ thống đã được kiểm chứng
-thông qua 91 ca kiểm thử tự động đạt tỷ lệ vượt qua 100\% trong quy trình CI/CD
-GitHub Actions.
+hình với cơ chế bảo vệ phiên đăng nhập chặt chẽ. Test tree có 91 ca;
+GitHub Actions run 40630318005 thực thi 77 ca
+trong phạm vi workflow và cả 77 đều đạt.
 }{
 OmniCast Mobile is an enterprise cross-platform digital broadcast, LiveStream and
 multimedia streaming client engineered at FPTU Quy Nhon AI Campus --- FU Cahata for the PRM393 course under the supervision of Mentor Mr. Huỳnh Vang utilizing
@@ -62,8 +62,8 @@ Chat, 0ms haptic Floating Reactions, 6-tier Super Chat Donations, pinned broadca
 offline-first engine driven by local SQLite storage featuring an asynchronous
 mutation replay queue (\texttt{pending\_ops}) and exact 15-minute advance local alarms; and (4) a declarative GoRouter topology
 governing 31 screens with strict session-guarded route protection. The software
-architecture is verified by 91 automated unit and widget tests achieving a
-100\% pass rate on GitHub Actions CI runners.
+The test tree contains 91 tests. GitHub Actions run 40630318005
+executed 77 tests in workflow scope, and all 77 passed.
 }
 \end{abstract}
 

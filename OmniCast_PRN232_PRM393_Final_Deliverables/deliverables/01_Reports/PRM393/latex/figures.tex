@@ -139,14 +139,14 @@
     \node[omniDarkNode, minimum width=5.0cm, minimum height=1.4cm] (core) at (0,-2.3) {\bi{\textbf{Tầng Core}}{\textbf{Core layer}}\\DI (get\_it) $\cdot$ theme $\cdot$ i18n\\constants $\cdot$ utils $\cdot$ services};
   \end{scope}
 
-  \node[omniAmberNode, right=1.4cm of data] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local Storage}}\\\texttt{omnicast\_local.db}\\Sqflite offline-first};
-  \node[omniRoseNode, right=1.4cm of core] (remote) {\bi{\textbf{Từ xa}}{\textbf{Remote}}\\REST API (NestJS)\\FCM push $\cdot$ Supabase Realtime};
+  \node[omniAmberNode, right=1.4cm of data, minimum width=3.0cm] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local storage}}\\SQLite offline-first};
+  \node[omniRoseNode, below=0.35cm of local, minimum width=3.0cm] (remote) {\bi{\textbf{Dịch vụ từ xa}}{\textbf{Remote services}}\\REST API $\cdot$ FCM $\cdot$ Realtime};
 
-  \draw[omniFlowAccent] (pres) -- node[right, font=\scriptsize] {dispatch} (logic);
-  \draw[omniFlowAccent] (logic) -- node[right, font=\scriptsize] {\bi{gọi}{calls}} (data);
-  \draw[omniFlowTeal] (data) -- (local);
-  \draw[omniFlowRose] (data) -- (remote);
-  \draw[omniFlow, dashed] (core) -- (data);
+  \draw[omniFlowAccent] (pres) -- (logic);
+  \draw[omniFlowAccent] (logic) -- (data);
+  \draw[omniFlow, dashed] (core.north) -- (data.south);
+  \draw[omniFlowTeal] (data.east) -- (local.west);
+  \draw[omniFlowRose] (data.east) -| (remote.west);
 \end{tikzpicture}%
 }
 
@@ -183,7 +183,7 @@
 
   \node[omniNode, below=of gha] (be) {\bi{\textbf{backend job}}{\textbf{backend job}}\\npm ci $\cdot$ prisma generate\\node:test (163)$\cdot$prisma migrate $\cdot$ nest build};
   \node[omniNode, right=of be] (fe) {\bi{\textbf{frontend job}}{\textbf{frontend job}}\\npm ci $\cdot$ vitest run (228)\\tsc --noEmit $\cdot$ next build};
-  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\flutter test (91)$\cdot$flutter build apk};
+  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\CI selected tests (77)$\cdot$flutter build apk};
 
   \node[omniTealNode, below=of be] (sum) {\bi{\textbf{test-summary job}}{\textbf{test-summary job}}\\merge artifacts $\cdot$ generate HTML report\\quality gate};
   \node[omniPurpleNode, right=of sum] (dep) {\bi{\textbf{deploy job}}{\textbf{deploy job}}\\Vercel backend\\Vercel frontend};

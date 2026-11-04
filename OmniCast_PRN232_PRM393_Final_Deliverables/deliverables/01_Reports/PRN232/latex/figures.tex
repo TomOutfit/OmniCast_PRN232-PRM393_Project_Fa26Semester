@@ -127,14 +127,14 @@
   \node[omniAccent, minimum width=6.2cm, below=of pres] (logic) {\bi{\textbf{Tầng Logic (BLoC)}}{\textbf{Logic layer (BLoC)}}\\12 BLoC/Cubit $\cdot$ events $\rightarrow$ states};
   \node[omniTealNode, minimum width=6.2cm, below=of logic] (data) {\bi{\textbf{Tầng Data}}{\textbf{Data layer}}\\10 repositories $\cdot$ 10 models $\cdot$ Dio/AuthInterceptor};
   \node[omniDarkNode, minimum width=6.2cm, below=of data] (core) {\bi{\textbf{Tầng Core}}{\textbf{Core layer}}\\DI (get\_it) $\cdot$ theme $\cdot$ i18n $\cdot$ utilities};
-  \node[omniAmberNode, below left=0.55cm and 0.1cm of core, minimum width=3.0cm] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local storage}}\\SQLite offline-first};
-  \node[omniRoseNode, below right=0.55cm and 0.1cm of core, minimum width=3.0cm] (remote) {\bi{\textbf{Dịch vụ từ xa}}{\textbf{Remote services}}\\REST API $\cdot$ FCM $\cdot$ Realtime};
+  \node[omniAmberNode, right=1.4cm of data, minimum width=3.0cm] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local storage}}\\SQLite offline-first};
+  \node[omniRoseNode, below=0.35cm of local, minimum width=3.0cm] (remote) {\bi{\textbf{Dịch vụ từ xa}}{\textbf{Remote services}}\\REST API $\cdot$ FCM $\cdot$ Realtime};
 
   \draw[omniFlowAccent] (pres) -- (logic);
   \draw[omniFlowAccent] (logic) -- (data);
-  \draw[omniFlow] (data) -- (core);
-  \draw[omniFlowTeal] (core.south) -- (local.north);
-  \draw[omniFlowRose] (core.south) -- (remote.north);
+  \draw[omniFlow, dashed] (core.north) -- (data.south);
+  \draw[omniFlowTeal] (data.east) -- (local.west);
+  \draw[omniFlowRose] (data.east) -| (remote.west);
 \end{tikzpicture}%
 }
 
@@ -171,7 +171,7 @@
 
   \node[omniNode, below=of gha] (be) {\bi{\textbf{backend job}}{\textbf{backend job}}\\npm ci $\cdot$ prisma generate\\node:test (163)$\cdot$prisma migrate $\cdot$ nest build};
   \node[omniNode, right=of be] (fe) {\bi{\textbf{frontend job}}{\textbf{frontend job}}\\npm ci $\cdot$ vitest run (228)\\tsc --noEmit $\cdot$ next build};
-  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\flutter test (91)$\cdot$flutter build apk};
+  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\CI selected tests (77)$\cdot$flutter build apk};
 
   \node[omniTealNode, below=of be] (sum) {\bi{\textbf{test-summary job}}{\textbf{test-summary job}}\\merge artifacts $\cdot$ generate HTML report\\quality gate};
   \node[omniPurpleNode, right=of sum] (dep) {\bi{\textbf{deploy job}}{\textbf{deploy job}}\\Vercel backend\\Vercel frontend};

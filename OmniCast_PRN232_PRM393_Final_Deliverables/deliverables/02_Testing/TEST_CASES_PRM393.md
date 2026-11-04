@@ -17,21 +17,27 @@
   2. **Trần Thanh Sơn** (`TranThanhSonQE170080` — MSSV: `QE170080`)
   3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136` — Mobile Lead Developer)
   4. **Đồng Hoàng Nguyên** (`teng122`)
-- **Tổng số ca kiểm thử:** 28 Test Cases chức năng / Tích hợp + 91 Automated Tests (Flutter Unit & Widget Tests)
+- **Tổng số ca kiểm thử:** 28 Test Cases chức năng / Tích hợp + 91 automated tests có trong test tree Flutter
 - **Phạm vi tài liệu:** Danh mục kịch bản và kết quả được ghi nhận, không phải log chạy có timestamp.
 
 ---
 
 ### Lịch Sử Thực Thi Có Thể Truy Vết
 
-Các bảng bên dưới mô tả test case và expected/observed result; chúng không chứa thời điểm bắt đầu, thời lượng từng test, commit chạy hay runner artifact. Báo cáo hiện ghi bộ Flutter đạt 91 tests và thời lượng tổng 11.23 giây, nhưng không đính kèm log có timestamp hoặc duration từng test. Không thể suy ra thời lượng riêng của từng ca từ số tổng này.
+Các bảng bên dưới là danh mục kịch bản chức năng; chúng không phải kết quả chạy từng ID trong một runner. CI run 40630318005 ghi 77/77 test đạt, duration cộng gộp 4.501 giây. Toàn bộ test tree có 91 test, nhưng workflow run này không chọn test/core và test/widget_test.dart (14 test); không trình bày 77 như thể đã chạy cả 91.
 
-| Mốc | Bằng chứng hiện có | Dữ liệu chưa có |
+| Timestamp ICT (+07:00) | Bằng chứng hiện có | Phạm vi/khoảng trống |
 | :--- | :--- | :--- |
-| 28/10/2026 | Tài liệu PRN232 ghi tổng kết 482 automated tests và lần chạy Playwright 6/8; không xác định đây có phải cùng phiên CI với mobile hay không. | Timestamp và elapsed time của từng Flutter test |
-| Lần chạy được báo cáo | 91 tests / 8 suite; 11.23 giây được ghi trong báo cáo tổng hợp | Runner output, commit SHA, trạng thái theo từng test ID |
+| 28/10/2026 11:06:12-11:06:32 | CI run 40630318005, commit edafb2347b224d05909d47d85fc152f83901097c; Flutter step thành công | 77/77 trong 8 spec files; 4.501 giây tổng theo test events |
+| 29/10/2026 14:17:14-14:22:50 | Run 40834458443: Flutter tests đạt, APK build lỗi compile | Failure ở build, không phải ở 77 test |
+| 29/10/2026 14:19:42-14:25:07 | Run 40834718325 tiếp tục lỗi APK build: import thiếu và dấu ngoặc nhọn thừa | Lỗi được sửa ở commit 64f66fc lúc 14:29:01 |
+| 29/10/2026 14:29:53-14:37:56 | Run 40835801104 đạt trên commit 64f66fc; mobile build và quality gate thành công | Chứng minh build sau fix; không bổ sung 14 test ngoài scope vào run |
 
-Không gán mốc lỗi PRN232 cho các test case mobile. Các lần chạy sau cần lưu test ID, timestamp ISO-8601 có múi giờ, elapsed time do runner đo, status, lỗi, commit SHA và version sửa lỗi.
+Không gán mốc Playwright PRN232 cho test case mobile. Workflow đã lưu elapsed time riêng từng test trong artifact JSON của run 40630318005; bảng case thủ công không ánh xạ 1-1 với những tên test này. Các lần chạy sau cần giữ artifact cùng timestamp, commit SHA, status và lỗi.
+
+Nguồn CI: [run 40630318005](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40630318005), [run 40834458443](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834458443), [run 40834718325](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834718325), [run 40835801104](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40835801104), [latest run 41816740967](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/41816740967). Latest mobile tests and build passed; pipeline failed later at the backend Prisma migration/quality gate.
+
+Raw Flutter results with duration per test are archived in [mobile-test-results.json](ci_runs/40630318005/mobile-test-results.json); artifact scope is described in [README](ci_runs/40630318005/README.md).
 
 ---
 

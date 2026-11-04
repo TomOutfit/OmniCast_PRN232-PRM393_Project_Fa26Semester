@@ -13,7 +13,7 @@ Bảng đối chiếu 100% các hạng mục yêu cầu nộp bài của Giảng
 | 2 | **LaTeX source files** | ✅ ĐẦY ĐỦ | • Phân hệ PRN232: `01_Reports/PRN232/latex/`<br>• Phân hệ PRM393: `01_Reports/PRM393/latex/`<br>(Bao gồm toàn bộ `.tex`, `.bib`, macro TikZ, và bảng số liệu) |
 | 3 | **GitHub repository link or source code** | ✅ ĐẦY ĐỦ | • **GitHub Repo:** [https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester)<br>• **Branch:** `main`<br>• **Chi tiết kiến trúc:** `04_Repository/REPOSITORY.md` |
 | 4 | **Deployed web app & backend** | ✅ ĐANG CHẠY | • **Frontend Web:** [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app)<br>• **Backend API Root:** [https://omnicast-api.vercel.app/api/v1](https://omnicast-api.vercel.app/api/v1)<br>• **API Swagger UI:** [https://omnicast-api.vercel.app/swagger](https://omnicast-api.vercel.app/swagger)<br>• **Tài khoản Demo Admin:** `admin@omnicast.tv` / `Admin123!`<br>• **Hướng dẫn chi tiết:** `03_Deployment/DEPLOYMENT.md` |
-| 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• **Hồ sơ Master Testing:** `02_Testing/OmniCast_Comprehensive_Testing_Report.pdf` (cùng `.html` & `.docx`)<br>• Báo cáo tổng kết 482 tests PASS: `02_Testing/TEST_EXECUTION_REPORT.pdf` (cùng `.html`, `.docx`)<br>• Test cases PRN232 (32 ca): `02_Testing/TEST_CASES_PRN232.pdf` (cùng `.html`, `.docx`)<br>• Test cases PRM393 (28 ca): `02_Testing/TEST_CASES_PRM393.pdf` (cùng `.html`, `.docx`)<br>• Minh chứng E2E: `02_Testing/screenshots/` |
+| 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• **Hồ sơ Master Testing:** `02_Testing/OmniCast_Comprehensive_Testing_Report.pdf` (cùng `.html` & `.docx`)<br>• CI run 40630318005: 468 tests pass trong phạm vi job; JSON artifacts tại `02_Testing/ci_runs/40630318005/`<br>• Test cases PRN232: `02_Testing/TEST_CASES_PRN232.pdf`<br>• Test cases PRM393: `02_Testing/TEST_CASES_PRM393.pdf`<br>• Minh chứng E2E: `02_Testing/screenshots/` |
 | 6 | **PDF version generated from LaTeX** | ✅ ĐẦY ĐỦ | • **PRN232 PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf`<br>• **PRN232 PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf`<br>• **PRM393 PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf`<br>• **PRM393 PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` |
 
 ---
@@ -58,12 +58,12 @@ deliverables/
 │       ├── PRM393_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có trang bìa & ngắt trang)
 │       └── latex/                   # Mã nguồn LaTeX, cover.tex và sơ đồ BLoC/SQLite
 │
-├── 02_Testing/                      # BỘ HỒ SƠ KIỂM THỬ ĐA NỀN TẢNG (482 TESTS)
+├── 02_Testing/                      # TESTING DOSSIER (468 TESTS IN ARCHIVED CI RUN)
 │   ├── TEST_CASES_PRN232.md         # 22 Test cases chi tiết phân hệ Back-End & Web
 │   ├── TEST_CASES_PRM393.md         # 18 Test cases chi tiết phân hệ Di Động
-│   ├── TEST_EXECUTION_REPORT.md     # Báo cáo tổng hợp kết quả thực thi kiểm thử 100% PASS
+│   ├── TEST_EXECUTION_REPORT.md     # CI run 40630318005 có artifacts; ghi nhận latest migration failure
 │   ├── screenshots/                 # 8 ảnh chụp màn hình kiểm thử Playwright E2E
-│   └── test-results/                # Nhật ký kiểm thử gốc (NestJS, Vitest, Flutter)
+│   └── ci_runs/40630318005/         # JSON artifacts gốc (backend, frontend, mobile)
 │
 ├── 03_Deployment/                   # HƯỚNG DẪN TRIỂN KHAI & VẬN HÀNH THỰC TẾ
 │   └── DEPLOYMENT.md                # Cấu hình Vercel, Supabase, Render, MediaMTX
@@ -93,7 +93,7 @@ deliverables/
 | Tiêu chí kỹ thuật | Số lượng thực tế | Mô tả chi tiết |
 | :--- | :---: | :--- |
 | **Quy mô mã nguồn hệ thống** | **142.897 LOC** | 27k LOC Backend, 51k LOC Web, 53k LOC Mobile |
-| **Số ca kiểm thử tự động (CI/CD)** | **482 Tests** | 163 Backend + 228 Web + 91 Mobile (100% PASS) |
+| **Số ca kiểm thử tự động trong CI run 40630318005** | **468 Tests** | 163 Backend + 228 Web + 77 Mobile được chọn bởi workflow; cả 468 đạt |
 | **Kịch bản kiểm thử trình duyệt E2E** | **8 Kịch bản** | Thực hiện qua Playwright, có ảnh chụp minh chứng |
 | **Số lượng Endpoint REST API** | **140+ Endpoints** | Trải rộng trên 19 Modules nghiệp vụ NestJS |
 | **Lược đồ Cơ sở dữ liệu** | **21 Prisma Models** | Chuẩn hóa trên PostgreSQL (Supabase) |
@@ -121,7 +121,7 @@ deliverables/
    - Mã nguồn LaTeX: nằm trong thư mục `latex/` của từng môn tương ứng.
 
 3. **Xem Hồ Sơ Kiểm Thử (Testing Documentation):**
-   - Báo cáo kiểm định 482 tests PASS: [02_Testing/TEST_EXECUTION_REPORT.md](file:///d:/Coder-Program/OmniCast%20-%20PRN232%20+%20PRM393%20Project/deliverables/02_Testing/TEST_EXECUTION_REPORT.md)
+   - Báo cáo CI run 40630318005: [02_Testing/TEST_EXECUTION_REPORT.md](02_Testing/TEST_EXECUTION_REPORT.md)
    - Danh mục 22 Test Cases PRN232: [02_Testing/TEST_CASES_PRN232.md](file:///d:/Coder-Program/OmniCast%20-%20PRN232%20+%20PRM393%20Project/deliverables/02_Testing/TEST_CASES_PRN232.md)
    - Danh mục 18 Test Cases PRM393: [02_Testing/TEST_CASES_PRM393.md](file:///d:/Coder-Program/OmniCast%20-%20PRN232%20+%20PRM393%20Project/deliverables/02_Testing/TEST_CASES_PRM393.md)
    - Ảnh chụp minh chứng E2E: `02_Testing/screenshots/`
