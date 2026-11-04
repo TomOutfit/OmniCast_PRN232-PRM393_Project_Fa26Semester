@@ -56,6 +56,10 @@ function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "", [str
             $namedPdf = Join-Path $Dir $LatexNamedFile
             Copy-Item -Path $pdfName -Destination $namedPdf -Force
             Write-Host "==> Copied $pdfName to $namedPdf" -ForegroundColor Green
+            if ($pdfName -ne $LatexNamedFile -and (Test-Path $pdfName)) {
+                Remove-Item -Path $pdfName -Force -ErrorAction SilentlyContinue
+                Write-Host "==> Cleaned intermediate $pdfName" -ForegroundColor Yellow
+            }
         }
     }
     finally {

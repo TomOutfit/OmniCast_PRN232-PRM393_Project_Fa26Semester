@@ -259,45 +259,27 @@ function writeStats() {
 // --------------------------------------------------- Test results summary
 function writeTestResults() {
   const parseVitest = () => {
-    const f = path.join(ROOT, 'deliverables/02_Testing/test-results/frontend-vitest.json');
+    const f = path.join(ROOT, 'deliverables/02_Testing/ci_runs/40630318005/frontend-test-results.json');
     if (!fs.existsSync(f)) return null;
     const j = JSON.parse(fs.readFileSync(f, 'utf8'));
     return {
-      total: j.numTotalTests,
-      passed: j.numPassedTests,
-      failed: j.numFailedTests,
-      suites: j.numTotalTestSuites,
+      total: j.total,
+      passed: j.passed,
+      failed: j.failed,
+      suites: j.specs.length,
     };
   };
   const parseBackend = () => {
-    const f = path.join(ROOT, 'deliverables/02_Testing/test-results/backend-node-test.log');
+    const f = path.join(ROOT, 'deliverables/02_Testing/ci_runs/40630318005/backend-test-results.json');
     if (!fs.existsSync(f)) return null;
-    const txt = fs.readFileSync(f, 'utf8');
-    let total = 0;
-    let files = 0;
-    const re = /(test[\\/][\w.-]+\.spec\.ts):\s*(\d+) passed,\s*(\d+) failed/g;
-    let m;
-    while ((m = re.exec(txt))) {
-      total += Number(m[2]);
-      files += 1;
-    }
-    return { total, files };
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return { total: j.total, passed: j.passed, failed: j.failed, files: j.specs.length };
   };
   const parseMobile = () => {
-    const f = path.join(ROOT, 'deliverables/02_Testing/test-results/mobile-flutter.json');
+    const f = path.join(ROOT, 'deliverables/02_Testing/ci_runs/40630318005/mobile-test-results.json');
     if (!fs.existsSync(f)) return null;
-    const raw = fs.readFileSync(f);
-    let text = raw.toString('utf8');
-    if (text.indexOf('"type"') === -1) text = raw.toString('utf16le');
-    const objs = [];
-    for (const l of text.split(/\r?\n/).filter(Boolean)) {
-      try { objs.push(JSON.parse(l)); } catch (e) { /* skip */ }
-    }
-    const td = objs.filter((o) => o.type === 'testDone');
-    const pass = td.filter((o) => o.result === 'success').length;
-    const fail = td.filter((o) => o.result !== 'success').length;
-    const suites = new Set(objs.filter((o) => o.type === 'suite').map((o) => o.suite.id)).size;
-    return { total: td.length, pass, fail, suites };
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return { total: j.total, pass: j.passed, fail: j.failed, suites: j.specs.length };
   };
 
   const be = parseBackend();
@@ -318,7 +300,7 @@ function writeTestResults() {
   }
   tex += `\\midrule\n`;
   const grandTotal = (be ? be.total : 0) + (fe ? fe.total : 0) + (mo ? mo.total : 0);
-  const grandPass = (be ? be.total : 0) + (fe ? fe.passed : 0) + (mo ? mo.pass : 0);
+  const grandPass = (be ? be.passed : 0) + (fe ? fe.passed : 0) + (mo ? mo.pass : 0);
   tex += `\\textbf{${bi('Tổng cộng', 'Total')}} & & \\textbf{${grandTotal}} & \\textbf{${grandPass}} \\\\\n`;
   tex += `\\bottomrule\n\\end{tabular}\n`;
   fs.writeFileSync(path.join(OUT, 'table-tests.tex'), tex, 'utf8');

@@ -67,6 +67,7 @@ playwright-report/
 
 # Test outputs & reports
 *-results*.json
+!OmniCast_PRN232_PRM393_Final_Deliverables/deliverables/02_Testing/ci_runs/40630318005/*-test-results.json
 reports/
 coverage/
 

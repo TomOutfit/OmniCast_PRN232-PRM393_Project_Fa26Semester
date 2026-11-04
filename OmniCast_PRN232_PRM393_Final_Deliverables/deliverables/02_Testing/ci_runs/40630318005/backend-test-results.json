@@ -1,0 +1,979 @@
+{
+  "suite": "backend",
+  "title": "Backend Services (NestJS)",
+  "total": 163,
+  "passed": 163,
+  "failed": 0,
+  "durationMs": 12465.985162,
+  "specs": [
+    {
+      "file": "test/ai-curator-stats.service.spec.ts",
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "durationMs": 538.621404,
+      "tests": [
+        {
+          "name": "1 - getStats returns zero counts when there are no reports",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - getStats counts a single report correctly",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - getStats groups by broadcastSuitability",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - getStats computes the average audience engagement",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - getStats returns cacheHitRate of 0 (placeholder until `cached` column lands)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - getStats with period=day only counts reports from the last 24h",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - getStats aggregates top flagged content patterns",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - getStats groups AI model versions",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - getStats counts programsMarkedApplied from liveEvent.lastAppliedAt",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - getStats last7Days is always exactly 7 entries",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/ai-curator.e2e.spec.ts",
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "durationMs": 1343.711023,
+      "tests": [
+        {
+          "name": "1 - E2E: POST /ai-curator/curate → 200 OK when program exists and no cached report",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - E2E: POST /ai-curator/curate → 200 OK with cached:true when report exists",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - E2E: POST /ai-curator/curate → 404 NotFound when programId missing",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - E2E: POST /ai-curator/analyze → 200 OK returns preview report (no `id`)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - E2E: POST /ai-curator/analyze → 400 BadRequest when title < 3 chars",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - E2E: POST /ai-curator/apply/:programId → 200 OK sets lastAppliedAt",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - E2E: POST /ai-curator/apply/:programId → 400 BadRequest when payload empty",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - E2E: GET /ai-curator/history/:programId → 200 OK returns ≤10 items, each cached:false",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - E2E: GET /ai-curator/history/:programId → 200 OK returns [] when never curated",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - E2E: GET /ai-curator/stats → 200 OK returns StatsSummary shape",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - E2E: GET /ai-curator/stats → default period is `week` when no query",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "12 - E2E: GET /ai-curator/stats?period=day → 24h slice",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "13 - E2E: controller routes through NestJS decorator metadata are wired",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/ai-curator.service.spec.ts",
+      "total": 19,
+      "passed": 19,
+      "failed": 0,
+      "durationMs": 1126.346337,
+      "tests": [
+        {
+          "name": "1 - curateContent throws NotFoundException when the program does not exist",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - curateContent returns the latest cached report when one is available",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - curateContent ignores cache when forceRefresh is true",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - curateContent persists a fresh report + writes audit log when none cached",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - analyzePreview does not persist a report",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - analyzePreview rejects titles that are too short",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - analyzePreview returns a fallback compliance verdict for age-restricted content",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - applyCuration throws NotFoundException when the program does not exist",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - applyCuration rejects empty payloads with BadRequestException",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - applyCuration only writes the fields the curator passed in",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - getCurationHistory returns up to 10 reports, newest first",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "12 - curateContent returns all expected fields from the heuristic pipeline",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "13 - applyCuration with markApplied=true sets lastAppliedAt on program",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "14 - applyCuration with markApplied=false does not set lastAppliedAt",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "15 - runPipelineForInput returns pipelineMs, openaiCallMs, and promptVersion (heuristic path)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "16 - curateContent returns confidence in range 0-100",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "17 - analyzePreview returns confidence in range 0-100",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "18 - confidence for clean positive sports content is in the upper half",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "19 - confidence for age-restricted content is in the lower half",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/audit-logger.service.spec.ts",
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "durationMs": 548.75064,
+      "tests": [
+        {
+          "name": "1 - findByEntityType returns only logs with the requested entityType",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - findByEntityType honours the optional action filter",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - findByEntityType honours the optional userId filter",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - findByEntityType orders results by createdAt desc",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - findByEntityType returns an empty array when nothing matches",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - findByEntityType honours skip / take pagination",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - findByEntityType honours from / to date range",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - findByEntityType does NOT also require entityId",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/auth.service.spec.ts",
+      "total": 17,
+      "passed": 17,
+      "failed": 0,
+      "durationMs": 945.955955,
+      "tests": [
+        {
+          "name": "1 - register creates a new user with hashed password",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - register throws ConflictException for duplicate email",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - login rejects unknown email",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - login rejects wrong password",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - login succeeds and updates lastLoginAt",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - login rejects deactivated accounts",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - refreshToken rejects an unknown token",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - refreshToken rejects an expired token",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - refreshToken rotates the token (revokes old, issues new)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - logoutAll revokes every active refresh token for the user",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - logoutAll returns revokedCount=0 when the user has no active sessions",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "12 - logoutAll preserves already-revoked tokens (idempotent)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "13 - logout with a specific refreshToken revokes only that session",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "14 - logout with an unknown refreshToken returns revokedCount=0 (no-op)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "15 - logout without refreshToken revokes the most recent active session",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "16 - logout without refreshToken returns \"No active session\" when user has no active tokens",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "17 - logout is scoped to a single user (does not revoke other users tokens)",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/billing.service.spec.ts",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "durationMs": 845.724078,
+      "tests": [
+        {
+          "name": "1 - stamps 30 days for the monthly product (dev stub)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - stamps 365 days for the yearly product",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - refuses to stamp in production without GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "1 - BillingService.verifyAndroidReceipt",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/channels.service.spec.ts",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "durationMs": 503.310615,
+      "tests": [
+        {
+          "name": "1 - findAll handles pagination meta correctly",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - findAll filters channels by LiveCategory",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - findBySlug returns existing channel with count relations",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - findBySlug throws NotFoundException for nonexistent slug",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - isUuid correctly distinguishes UUIDs from slug strings",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - incrementFollower and decrementFollower update count atomically",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - getCategories returns category groupings",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/epg-filler.spec.ts",
+      "total": 18,
+      "passed": 18,
+      "failed": 0,
+      "durationMs": 546.189109,
+      "tests": [
+        {
+          "name": "1 - splitRecordingsIntoEpisodes leaves short recordings as a single episode",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - splitRecordingsIntoEpisodes splits a 3h recording into 4 episodes of 45m",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - splitRecordingsIntoEpisodes handles a 100-min recording as 3 episodes",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - pickGenreMatchedPool prefers same-category episodes",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - pickGenreMatchedPool falls back to every recording when nothing matches",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - shuffleDeterministic is reproducible for the same seed",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - shuffleDeterministic differs for different seeds",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - computeSeed changes with the day",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - computeSeed changes with the channel",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - expandChannelSchedule fills the entire 24h grid with branded placeholders when the library is too small",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - expandChannelSchedule honours replay cap for a small library",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "12 - expandChannelSchedule reproduces the same schedule for the same (date, channel)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "13 - expandChannelSchedule produces a different order for adjacent days",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "14 - expandChannelSchedule places real events at their exact times",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "15 - expandChannelSchedule surfaces long programmes as separate episodes",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "16 - pickNextEpisode returns the first candidate under the replay cap",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "17 - pickNextEpisode skips items that already hit the cap",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "18 - pickNextEpisode returns null when every item is capped",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/epg-timeline.spec.ts",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "durationMs": 525.148742,
+      "tests": [
+        {
+          "name": "1 - Vietnam timezone (+7) anchors 00:00 VN to 17:00 UTC previous day",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - Daypart classification matches Vietnam broadcast schedule",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - Synthesized filler titles do not repeat consecutively",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - Duration clamps between 15 minutes and 240 minutes",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - 7-Day Carousel generates correct relative dates from -3 to +3",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/ingest-sources.spec.ts",
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "durationMs": 638.816813,
+      "tests": [
+        {
+          "name": "1 - TvmazeSource isConfigured returns true (100% keyless)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - TvmazeSource strips HTML tags from show summary cleanly",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - TvmazeSource calculates correct category prefix for different categories",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - TvmazeSource clamps duration within reasonable bounds (15m to 180m)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - NasaSource isConfigured returns true",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - NasaSource produces deterministic UUID-like hash for recordings",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - MarketWeatherSource isConfigured returns true",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - MarketWeatherSource formats weather bulletin correctly",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - MarketWeatherSource formats crypto financial ticker summary",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - CocktailSource isConfigured returns true with free key",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - CocktailSource wraps drink recipe in localized title and tags",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/live-studio.service.spec.ts",
+      "total": 18,
+      "passed": 18,
+      "failed": 0,
+      "durationMs": 1503.007664,
+      "tests": [
+        {
+          "name": "1 - listBroadcastableRecordings returns only published recordings on the channel",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - listBroadcastableRecordings throws NotFoundException for unknown channel",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - listBroadcastableRecordings filters by case-insensitive search",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - curateLive rejects empty recordingIds",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - curateLive throws NotFoundException for unknown recordingId",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - curateLive REJECTS YouTube recording (anti-piracy)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - curateLive rejects recording from a different channel",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - curateLive creates a LIVE event with the first recording videoUrl",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - curateLive stops any other LIVE event on the same channel first",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - stopLive ends a LIVE event and keeps it as VOD (ON_DEMAND)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - stopLive ends a LIVE event and moves it to ENDED when keepAsVod=false",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "12 - stopLive rejects an event that is already ENDED",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "13 - stopLive throws NotFoundException for unknown eventId",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "14 - addToLibrary REJECTS YouTube URL with ForbiddenException",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "15 - addToLibrary REJECTS Twitch URL with ForbiddenException",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "16 - addToLibrary REJECTS a clearly-dead URL with BadRequestException",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "17 - uploadSelfRecord with visibility=IMMEDIATE creates recording + LIVE event",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "18 - uploadSelfRecord with visibility=PRIVATE persists but does NOT create live event",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/programs.conflict.spec.ts",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "durationMs": 852.901377,
+      "tests": [
+        {
+          "name": "1 - checkScheduleConflict returns silently when there are no conflicts",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - checkScheduleConflict throws ConflictException when an overlap exists",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - checkScheduleConflict emits SQL that compares against effective end time",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - checkScheduleConflict forwards excludeEventId as a SQL parameter",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - checkScheduleConflict omits excludeEventId clause when not provided",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - checkScheduleConflict uses default duration (120m) for events without duration",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - checkScheduleConflict does not throw when the only conflicting row is the one being excluded",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/programs.counter.spec.ts",
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "durationMs": 851.112479,
+      "tests": [
+        {
+          "name": "1 - incrementLiveEventView increments viewerCount for an existing event",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - incrementLiveEventView returns null viewerCount when row missing",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - incrementLiveEventShare increments shareCount for an existing event",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - incrementLiveEventShare returns null shareCount when row missing",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - incrementViewCount increments a recording view counter",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - incrementRecordingShare returns the new share count",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - incrementRecordingShare returns null shareCount when row missing",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - incrementRecordingView (legacy alias) increments view count",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/search.service.spec.ts",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "durationMs": 493.216797,
+      "tests": [
+        {
+          "name": "1 - SearchService returns combined results across channels, events, and recordings",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - SearchService restricts results to channels only when type=channels",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - SearchService restricts results to recordings only when type=recordings",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - SearchService filters results by category parameter",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/users.service.spec.ts",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "durationMs": 601.699329,
+      "tests": [
+        {
+          "name": "1 - throws BadRequest + audits when promoting to ADMIN via enum",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - throws BadRequest when promoting via numeric code \"3\"",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - updates role to STAFF successfully (allowed)",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - rejects non-uuid ids with NotFoundException",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "1 - UsersService.updateRole — admin elevation guard",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    },
+    {
+      "file": "test/watchlist.service.spec.ts",
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "durationMs": 601.4728,
+      "tests": [
+        {
+          "name": "1 - list returns all items when upcomingOnly is false",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "2 - list filters out past programs when upcomingOnly is true",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "3 - list keeps LIVE programs even when scheduledAt is in the past",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "4 - listGrouped buckets items into upcoming/live/past correctly",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "5 - add throws BadRequestException when program does not exist",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "6 - add upserts an item and returns the DTO",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "7 - add reuses existing row when adding the same program twice",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "8 - remove throws NotFoundException for another user's item",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "9 - remove deletes and returns success",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "10 - sync upserts all provided items and skips ones without programId",
+          "status": "passed",
+          "durationMs": 0
+        },
+        {
+          "name": "11 - sync returns removedIds for items deleted server-side",
+          "status": "passed",
+          "durationMs": 0
+        }
+      ]
+    }
+  ]
+}

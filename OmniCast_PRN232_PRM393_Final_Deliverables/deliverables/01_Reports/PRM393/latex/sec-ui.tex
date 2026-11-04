@@ -21,10 +21,8 @@ displays.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.6\columnwidth,height=6.5cm,keepaspectratio]{../figures/01_mobile_home.png}
-\caption{\bi{Giao diện trang chủ OmniCast Mobile (\texttt{HomeScreen}): carousel sự kiện nổi bật,
-thanh chuyển kênh theo thể loại và các chương trình đang/sắp phát sóng.}{The
-OmniCast Mobile home view (\texttt{HomeScreen}): featured broadcast carousel, category selector,
-and live/upcoming electronic programme guide.}}
+\caption{\bi{Giao diện trang chủ OmniCast Mobile (\texttt{HomeScreen}): carousel sự kiện nổi bật, lịch phát sóng LiveStream trực quan theo 4 bộ lọc (Tất cả, Đang Live, Giờ Vàng, Hôm nay), thanh chuyển kênh theo thể loại và các chương trình đang/sắp phát sóng.}{The
+OmniCast Mobile home view (\texttt{HomeScreen}): featured broadcast carousel, interactive LiveStream broadcast schedule with 4 filter chips (All, Live Now, Golden Hour, Today), category selector, and live/upcoming electronic programme guide.}}
 \label{fig:mob_home}
 \end{figure}
 
@@ -98,7 +96,7 @@ Table~\ref{tab:mob_screens} catalogues all 31 concrete screen implementations un
 \midrule
 \multirow{3}{2.9cm}{\textbf{\bi{3. Phòng Xem LiveStream \& VOD (3)}{3. LiveStream \& VOD (3)}}}
   & \texttt{LiveNowScreen} (\texttt{/live}) & Public / Viewer & \bi{Trung tâm Đang Phát Sóng: tự động làm mới 15s, thống kê tổng sự kiện LIVE \& tổng mắt xem CCU, sắp xếp nóng/mới nhất.}{Live Broadcast Hub: 15s auto-refresh, total LIVE events \& aggregate CCU pills, trending/newest sort.} \\
-  & \texttt{LiveWatchScreen} (\texttt{/live/:id}) & Public / Viewer & \bi{Phòng xem LiveStream tương tác: Sảnh chờ \texttt{LiveJoinPromptBanner}, \texttt{OmniPlayer} tự quét LAN IP, Chat phân nhánh, Biểu cảm nổi 0ms Haptic, Super Chat 6 mệnh giá (\texttt{LiveDonationModal}), Thông báo ghim từ Host \& Đổi chương trình tức thời.}{Interactive Live Watch Room: \texttt{LiveJoinPromptBanner}, LAN-aware \texttt{OmniPlayer}, threaded live chat, 0ms haptic floating reactions, 6-tier Super Chat (\texttt{LiveDonationModal}), pinned host banner \& on-the-fly program switch.} \\
+  & \texttt{LiveWatchScreen} (\texttt{/live/:id}) & Public / Viewer & \bi{Phòng xem LiveStream tương tác: Sảnh chờ \texttt{LiveJoinPromptBanner}, \texttt{OmniPlayer} tự quét LAN IP \& bù trễ 1.25x, Chat phân nhánh, Biểu cảm nổi 0ms Haptic, Super Chat PayOS MB Bank 6 mệnh giá (\texttt{LiveDonationModal}), Thông báo ghim từ Host \& Đổi chương trình tức thời.}{Interactive Live Watch Room: \texttt{LiveJoinPromptBanner}, LAN-aware \& 1.25x low-latency \texttt{OmniPlayer}, threaded live chat, 0ms haptic floating reactions, 6-tier PayOS MB Bank Super Chat (\texttt{LiveDonationModal}), pinned host banner \& on-the-fly program switch.} \\
   & \texttt{RecordingWatchScreen} (\texttt{/recordings/:id}) & Public / Viewer & \bi{Màn hình xem lại bản ghi VOD đa luồng, tự động lưu vị trí đang xem, bình luận phân nhánh và gợi ý video liên quan.}{VOD recording playback screen, resume-position tracking, threaded comments and related recordings.} \\
 \midrule
 \multirow{3}{2.9cm}{\textbf{\bi{4. Bàn điều khiển Studio \& Quản trị (5)}{4. Studio \& Admin (5)}}}

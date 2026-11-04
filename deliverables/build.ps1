@@ -7,6 +7,7 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 $MikTexBin = "$env:LOCALAPPDATA\Programs\MiKTeX\miktex\bin\x64"
 $PandocBin = "$env:LOCALAPPDATA\Pandoc"
@@ -24,12 +25,22 @@ function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "", [str
     Write-Host "==> Compiling $File in $Dir..." -ForegroundColor Cyan
     Push-Location $Dir
     try {
-        & xelatex -interaction=nonstopmode $File
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "First pass had warnings or non-zero code ($LASTEXITCODE). Retrying second pass..."
+        $texStderr = Join-Path $env:TEMP "omnicast-xelatex-stderr.log"
+        $previousErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & xelatex -interaction=nonstopmode $File 2> $texStderr
+        $firstPassExit = $LASTEXITCODE
+        $ErrorActionPreference = $previousErrorAction
+        if (Test-Path $texStderr) { Get-Content $texStderr | ForEach-Object { Write-Host $_ } }
+        if ($firstPassExit -ne 0) {
+            Write-Warning "First pass had warnings or non-zero code ($firstPassExit). Retrying second pass..."
         }
-        & xelatex -interaction=nonstopmode $File
-        if ($LASTEXITCODE -ne 0) {
+        $ErrorActionPreference = "Continue"
+        & xelatex -interaction=nonstopmode $File 2> $texStderr
+        $secondPassExit = $LASTEXITCODE
+        $ErrorActionPreference = $previousErrorAction
+        if (Test-Path $texStderr) { Get-Content $texStderr | ForEach-Object { Write-Host $_ } }
+        if ($secondPassExit -ne 0) {
             Write-Error "Compilation failed for $File"
         }
         Write-Host "==> Successfully compiled $File" -ForegroundColor Green
@@ -45,6 +56,10 @@ function Compile-Tex([string]$Dir, [string]$File, [string]$OutputFile = "", [str
             $namedPdf = Join-Path $Dir $LatexNamedFile
             Copy-Item -Path $pdfName -Destination $namedPdf -Force
             Write-Host "==> Copied $pdfName to $namedPdf" -ForegroundColor Green
+            if ($pdfName -ne $LatexNamedFile -and (Test-Path $pdfName)) {
+                Remove-Item -Path $pdfName -Force -ErrorAction SilentlyContinue
+                Write-Host "==> Cleaned intermediate $pdfName" -ForegroundColor Yellow
+            }
         }
     }
     finally {
