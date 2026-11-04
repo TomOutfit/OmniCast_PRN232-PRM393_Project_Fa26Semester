@@ -176,12 +176,12 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
       'bankLabel': 'Ví ZaloPay Sandbox',
     },
     {
-      'id': 'card',
-      'name': 'Thẻ ATM / Visa',
-      'subtitle': 'Giả lập 0đ',
-      'icon': Icons.credit_card_rounded,
+      'id': 'payos',
+      'name': 'PayOS Checkout',
+      'subtitle': 'VietQR 24/7',
+      'icon': Icons.qr_code_2_rounded,
       'color': const Color(0xFF10B981),
-      'bankLabel': 'Cổng Thẻ Nội Địa & Quốc Tế',
+      'bankLabel': 'Cổng PayOS VietQR (Napas 247)',
     },
   ];
 
@@ -327,7 +327,7 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     final bank = _bankId;
     final acc = _bankAccount;
 
-    if (_selectedPaymentMethod == 'vnpay' || _selectedPaymentMethod == 'card') {
+    if (_selectedPaymentMethod == 'vnpay' || _selectedPaymentMethod == 'card' || _selectedPaymentMethod == 'payos') {
       // Official authentic VietQR banking standard image (NAPAS 24/7)
       return 'https://img.vietqr.io/image/$bank-$acc-compact2.png?amount=$amount&addInfo=$syntax&accountName=$holder';
     } else if (_selectedPaymentMethod == 'momo') {

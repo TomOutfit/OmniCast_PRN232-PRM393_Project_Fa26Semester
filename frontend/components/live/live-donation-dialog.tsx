@@ -94,7 +94,7 @@ export const MOCK_PAYMENT_METHODS = [
     bankLabel: 'Ví Điện Tử ZaloPay QR',
   },
   {
-    id: 'card',
+    id: 'payos',
     name: 'PayOS Checkout',
     tag: 'Cổng PayOS',
     color: '#10b981',

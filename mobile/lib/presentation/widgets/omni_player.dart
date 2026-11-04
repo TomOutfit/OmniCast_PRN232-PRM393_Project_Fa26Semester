@@ -323,6 +323,12 @@ class _OmniPlayerState extends State<OmniPlayer> {
         if (totalDuration.inSeconds > widget.initialSeekSeconds) {
           await controller.seekTo(Duration(seconds: widget.initialSeekSeconds));
         }
+      } else if (_isLiveStream) {
+        // Ultra-low latency: jump immediately to live edge
+        final totalDuration = controller.value.duration;
+        if (totalDuration > Duration.zero) {
+          await controller.seekTo(totalDuration);
+        }
       }
 
       if (widget.autoPlay) {
@@ -477,6 +483,12 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (c == null) return;
     final val = c.value;
     final curSec = val.position.inSeconds;
+    if (_isLiveStream && !_userPaused && val.isPlaying && val.duration > Duration.zero) {
+      final drift = val.duration - val.position;
+      if (drift > const Duration(seconds: 5)) {
+        c.seekTo(val.duration);
+      }
+    }
     if (curSec != _lastTickSec ||
         val.isBuffering != _lastBuffering ||
         val.isPlaying != _lastPlaying) {

@@ -389,12 +389,14 @@ export function VideoPlayer({
         // defaults it to true as well — we set it explicitly so a
         // future default change cannot silently break live playback.
         lowLatencyMode: isLive || Boolean(currentLiveEvent),
-        liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
-        maxLiveSyncPlaybackRate: 1.25,
-        backBufferLength: isLive || Boolean(currentLiveEvent) ? 30 : 90,
-        maxBufferLength: isLive || Boolean(currentLiveEvent) ? 8 : 30,
-        maxMaxBufferLength: isLive || Boolean(currentLiveEvent) ? 20 : 120,
+        liveSyncDurationCount: 1.5,
+        liveMaxLatencyDurationCount: 3,
+        maxLiveSyncPlaybackRate: 1.35,
+        liveDurationInfinity: true,
+        backBufferLength: isLive || Boolean(currentLiveEvent) ? 15 : 90,
+        maxBufferLength: isLive || Boolean(currentLiveEvent) ? 6 : 30,
+        maxMaxBufferLength: isLive || Boolean(currentLiveEvent) ? 15 : 120,
+        highBufferWatchdogPeriod: 1,
         maxBufferSize: 60 * 1024 * 1024, // 60 MB max buffer
         maxBufferHole: 0.5,        // fill gaps ≤ 0.5 s
       } as any);

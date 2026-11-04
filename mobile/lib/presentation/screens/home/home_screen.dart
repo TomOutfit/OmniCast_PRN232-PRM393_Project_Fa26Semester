@@ -20,7 +20,6 @@ import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/hero_program_card.dart';
-import '../../widgets/up_next_card.dart';
 import '../../widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -35,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen>
   final ScrollController _scrollController = ScrollController();
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  String _scheduleFilter = 'all';
 
   @override
   void initState() {
@@ -395,30 +395,50 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
 
-              // ── SẮP CHIẾU (UP NEXT) ────────────────────────────────
+              // ── LỊCH PHÁT SÓNG LIVESTREAM & KHUNG GIỜ VÀNG ─────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: _sectionHeader(
-                    icon: Icons.schedule_rounded,
-                    iconColor: const Color(0xFF00E5FF),
-                    title: 'SẮP CHIẾU TIẾP THEO',
-                    trailing: TextButton.icon(
-                      onPressed: () => context.go('/epg'),
-                      icon: const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: Color(0xFF00E5FF),
-                      ),
-                      label: const Text(
-                        'Xem EPG',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionHeader(
+                        icon: Icons.calendar_month_rounded,
+                        iconColor: const Color(0xFF00E5FF),
+                        title: 'LỊCH LIVESTREAM & GIỜ VÀNG',
+                        trailing: TextButton.icon(
+                          onPressed: () => context.go('/epg'),
+                          icon: const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: Color(0xFF00E5FF),
+                          ),
+                          label: const Text(
+                            'Xem Lịch EPG',
+                            style: TextStyle(
+                              color: Color(0xFF00E5FF),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildScheduleFilterChip('all', 'Tất cả'),
+                            const SizedBox(width: 8),
+                            _buildScheduleFilterChip('live', 'Đang Live', isLiveDot: true),
+                            const SizedBox(width: 8),
+                            _buildScheduleFilterChip('prime', 'Giờ Vàng (20h-23h)'),
+                            const SizedBox(width: 8),
+                            _buildScheduleFilterChip('today', 'Hôm nay'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -426,33 +446,39 @@ class _HomeScreenState extends State<HomeScreen>
               SliverToBoxAdapter(
                 child: BlocBuilder<ProgramsBloc, ProgramsState>(
                   builder: (context, state) {
-                    final upcoming = <LiveEventModel>[];
+                    final allItems = <LiveEventModel>[];
                     if (state is ProgramsLoaded) {
-                      final futureEvents = state.liveEvents.where(
-                        (p) =>
-                            p.isScheduled &&
-                            p.scheduledAt.isAfter(DateTime.now().subtract(const Duration(hours: 6))),
-                      ).toList();
-
-                      if (futureEvents.isNotEmpty) {
-                        upcoming.addAll(futureEvents);
-                      } else {
-                        upcoming.addAll(state.liveEvents.where((p) => p.isScheduled));
-                        if (upcoming.isEmpty && state.programs.isNotEmpty) {
-                          upcoming.addAll(state.programs);
-                        }
+                      allItems.addAll(state.liveEvents);
+                      if (allItems.isEmpty) {
+                        allItems.addAll(state.programs);
                       }
-                      upcoming.sort(
-                        (a, b) => a.scheduledAt.compareTo(b.scheduledAt),
-                      );
                     }
-                    if (upcoming.isEmpty) {
+
+                    final filtered = allItems.where((p) {
+                      if (_scheduleFilter == 'live') {
+                        return p.isLive;
+                      } else if (_scheduleFilter == 'prime') {
+                        final h = p.scheduledAt.hour;
+                        return h >= 20 && h <= 23;
+                      } else if (_scheduleFilter == 'today') {
+                        final now = DateTime.now();
+                        final sched = p.scheduledAt;
+                        return sched.year == now.year &&
+                            sched.month == now.month &&
+                            sched.day == now.day;
+                      }
+                      return true;
+                    }).toList();
+
+                    filtered.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+                    if (filtered.isEmpty) {
                       return _emptyState(
                         icon: Icons.event_available_rounded,
-                        text: 'Tất cả chương trình đều đã lên sóng.',
+                        text: 'Không có chương trình phù hợp bộ lọc lịch phát sóng.',
                       );
                     }
-                    return _upNextRail(upcoming.take(10).toList());
+                    return _scheduleRail(filtered.take(12).toList());
                   },
                 ),
               ),
@@ -715,33 +741,186 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _upNextRail(List<LiveEventModel> upcoming) {
+  Widget _buildScheduleFilterChip(String filterId, String label, {bool isLiveDot = false}) {
+    final isSelected = _scheduleFilter == filterId;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _scheduleFilter = filterId;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+              : const Color(0xFF0B1320),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF00E5FF)
+                : const Color(0xFF1E293B),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isLiveDot) ...[
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _scheduleRail(List<LiveEventModel> events) {
     return SizedBox(
-      height: 140,
+      height: 155,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: upcoming.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemCount: events.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final p = upcoming[index];
+          final p = events[index];
           final start = p.scheduledAt;
-          final minutes = start.difference(DateTime.now()).inMinutes;
-          final countdown = minutes < 60
-              ? '$minutes phút nữa'
-              : '${minutes ~/ 60} giờ nữa';
-          return UpNextCard(
-            data: UpNextData(
-              id: p.id,
-              title: p.title,
-              startTime: start,
-              channelName: p.channel?.name ?? 'Kênh',
-              channel: p.channel,
-              startLabel:
-                  '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}',
-              countdownLabel: countdown,
+          final durationSecs = (p.duration != null && p.duration! > 0) ? p.duration! : 3600;
+          final end = p.endedAt ?? start.add(Duration(seconds: durationSecs));
+          final timeStr = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
+          final isPrime = start.hour >= 20 && start.hour <= 23;
+
+          return GestureDetector(
+            onTap: () {
+              if (p.isLive) {
+                context.push('/live/${p.id}');
+              } else {
+                context.push('/program/${p.id}');
+              }
+            },
+            child: Container(
+              width: 240,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0B1320), Color(0xFF070B12)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: p.isLive
+                      ? const Color(0xFFEF4444).withValues(alpha: 0.5)
+                      : (isPrime ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFF1E293B)),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: p.isLive
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.2)
+                              : (isPrime
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                  : const Color(0xFF00E5FF).withValues(alpha: 0.15)),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: p.isLive
+                                ? const Color(0xFFEF4444)
+                                : (isPrime ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          p.isLive ? 'ĐANG LIVE' : (isPrime ? 'GIỜ VÀNG' : 'SẮP PHÁT'),
+                          style: TextStyle(
+                            color: p.isLive
+                                ? const Color(0xFFEF4444)
+                                : (isPrime ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        timeStr,
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    p.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (p.channel != null) ...[
+                        ChannelLogo(
+                          channel: p.channel,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          p.channel?.name ?? 'OmniCast Live',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: Color(0xFF00E5FF),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            onTap: () => context.push('/program/${p.id}'),
           );
         },
       ),
