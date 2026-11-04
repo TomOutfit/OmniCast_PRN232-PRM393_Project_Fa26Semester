@@ -175,8 +175,12 @@ if (Test-Path $EnvFile) {
 
 # 9. Update database active live events with the Tunnel HTTPS URL
 Write-Host "==> Synchronizing Tunnel URL with Active Live Events in Cloud Database..." -ForegroundColor Yellow
+$backendPathClean = $BackendDir.Replace('\', '/')
 $prismaPath = (Join-Path $BackendDir 'node_modules\@prisma\client').Replace('\', '/')
+$dotenvPath = (Join-Path $BackendDir 'node_modules\dotenv').Replace('\', '/')
+$envFilePath = (Join-Path $BackendDir '.env').Replace('\', '/')
 $syncScript = @"
+require('$dotenvPath').config({ path: '$envFilePath' });
 const { PrismaClient } = require('$prismaPath');
 const prisma = new PrismaClient();
 async function main() {
