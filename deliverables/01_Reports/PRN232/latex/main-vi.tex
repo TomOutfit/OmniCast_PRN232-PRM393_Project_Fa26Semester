@@ -29,7 +29,7 @@
 \author{\IEEEauthorblockN{\textbf{Nguyễn Bình An}, \textbf{Trần Thanh Sơn} (\texttt{QE170080}), \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}), \textbf{Đồng Hoàng Nguyên}}\\
 \IEEEauthorblockA{\bi{Giảng viên hướng dẫn (Mentor): \textbf{Thầy Huỳnh Vang}}{Mentor / Supervisor: \textbf{Mr. Huỳnh Vang}}\\
 \textbf{FPTU Quy Nhon AI Campus --- FU Cahata}, \bi{Khoa Công nghệ Thông tin, Trường Đại học FPT}{Faculty of Information Technology, FPT University}\\
-\bi{Kho mã nguồn}{Source Code}: \url{https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester} $\cdot$ \bi{Trực tuyến}{Live}: \url{https://omnicast-fe.vercel.app}}}
+\bi{Báo cáo tích hợp môn PRN232/PRM393}{Integrated PRN232/PRM393 project report}}}
 \date{}
 
 \maketitle
@@ -49,8 +49,8 @@ và (4) quy trình biên tập AI gọi mô hình ngôn ngữ lớn một lần 
 kiểm tra đầu ra theo schema Zod, có đường dự phòng heuristic và dấu vết
 phiên bản đầy đủ. Lược đồ cơ sở dữ liệu gồm 21 model Prisma trên
 PostgreSQL. Toàn bộ hệ thống đã được triển khai trên Vercel và kiểm
-thử bằng 482 kiểm thử tự động trong quy trình tích hợp liên tục năm
-công việc; tất cả đều đạt 100\%.
+thử bằng 468 kiểm thử tự động trong CI run 40630318005; tất cả đều đạt.
+Tổng 468 gồm 163 backend, 228 web và 77 mobile test được chọn trong workflow.
 }{
 OmniCast is a multi-platform digital broadcast scheduling, real-time LiveStream and content delivery
 system developed at FPTU Quy Nhon AI Campus --- FU Cahata for the PRN232 course under the supervision of Mentor Mr. Huỳnh Vang. It comprises a NestJS back end with
@@ -64,8 +64,9 @@ reproducible; and (4) an AI curation pipeline that issues a single large
 language model call, validates the output against a Zod schema, offers
 a heuristic fallback path and records full version provenance. The
 database schema comprises 21 Prisma models on PostgreSQL. The complete
-system has been deployed on Vercel and validated by 482 automated tests
-inside a five-job continuous-integration pipeline, all of which pass (100\%).
+system has been deployed on Vercel and validated by 468 automated tests
+in archived CI run 40630318005: 163 backend, 228 web and 77 mobile tests,
+all of which passed.
 }
 \end{abstract}
 

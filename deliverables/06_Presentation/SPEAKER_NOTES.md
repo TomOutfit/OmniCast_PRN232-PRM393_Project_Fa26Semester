@@ -34,7 +34,7 @@
   > - **PRN232:** Building Cross-Platform Back-End Applications with NestJS, microservices, and a Next.js 15 studio portal.
   > - **PRM393:** Mobile Applications Development with Flutter, Dart, Clean Architecture, and offline-first capabilities.
   > 
-  > Across both disciplines, the system encompasses **142,897 physical lines of code** and **482 automated test suites** executed with a **100% pass rate**."
+  > Across both disciplines, the system encompasses **142,897 physical lines of code**. Archived CI run **40630318005** passed **468 tests** in its job scope: 163 backend, 228 web and 77 mobile. The mobile test tree contains 91 tests; the workflow selected 77."
 
 ---
 
@@ -172,22 +172,22 @@
 * **Speaker Script:**
   > "The mobile client consists of **31 fully implemented screens** across authentication, live discovery, EPG schedule browser, video player, user profiles, and studio management.
   > 
-  > Quality is enforced by **91 automated tests**:
+  > The mobile test tree contains **91 automated tests**:
   > - **56 Unit Tests:** Covering BLoC state transitions, SQLite repositories, and DTO parsing.
   > - **35 Widget Tests:** Verifying gesture interactions, error boundaries, and offline banners.
-  > - All test suites pass with a 100% success rate on our automated CI workflow."
+  > - Archived CI run 40630318005 selected 77 tests from data, logic and presentation; all 77 passed. The other 14 tests were outside that workflow command."
 
 ---
 
 ### PART 3: SYNERGY & LIVE EVALUATION
 
 #### Slide 18: Cross-Platform Synergy Matrix
-* **Visual:** Side-by-side comparative table: PRN232 Back-End vs PRM393 Mobile. Total LOC: 142,897. Total Tests: 482.
+* **Visual:** Side-by-side comparative table: PRN232 Back-End vs PRM393 Mobile. Total LOC: 142,897. Archived CI scope: 468 passed tests.
 * **Speaker Script:**
   > "This matrix highlights the perfect harmony between both courses:
   > - **PRN232** provides the media ingest pipeline, scheduling brain, and relational backbone across 79,568 lines of code and 391 tests.
-  > - **PRM393** provides the high-performance native playback, offline resilience, and consumer interaction across 53,922 lines of code and 91 tests.
-  > - Together, they form an enterprise broadcast network of **142,897 lines of code and 482 automated tests**, all verified and passing."
+  > - **PRM393** provides the high-performance native playback, offline resilience, and consumer interaction across 53,922 lines of code; its test tree contains 91 tests.
+  > - Together, they form an enterprise broadcast system of **142,897 lines of code**. The archived CI run records **468 passing tests** in its configured job scope; the separate Playwright report records 6 of 8."
 
 #### Slide 19: Live Production Deployment & Demo Accounts
 * **Visual:** Live URLs, Vercel deployments, GitHub repo, Swagger docs, demo accounts (`admin@omnicast.tv`, `staff@omnicast.tv`, `viewer1@omnicast.tv`).

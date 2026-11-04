@@ -18,7 +18,26 @@
   3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136`)
   4. **Đồng Hoàng Nguyên** (`teng122`)
 - **Tổng số ca kiểm thử:** 32 Test Cases chức năng / E2E + 391 Automated Tests (163 Backend + 228 Frontend)
-- **Tỷ lệ thực thi:** 100% ĐẠT (PASS)
+- **Phạm vi tài liệu:** Danh mục kịch bản và kết quả được ghi nhận, không phải log chạy có timestamp.
+
+---
+
+### Lịch Sử Thực Thi Có Thể Truy Vết
+
+Các bảng bên dưới là danh mục kịch bản chức năng; chúng không phải kết quả chạy từng ID trong một runner. CI artifacts cho thấy 391 automated tests backend/web đã đạt trong run 40630318005. E2E Playwright có lịch sử riêng: bản ghi PRN232 nêu 6/8 vào 28/10/2026, nhưng không có ID lỗi, thời gian từng test hay commit sửa.
+
+| Thứ tự | Timestamp ICT (+07:00) | Kết quả/mốc | Bằng chứng | Sửa và xác nhận |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | 28/10/2026, giờ không được ghi | Playwright 6/8 | STAFF login timeout; /studio trả HTTP 401 không khớp assertion redirect | Không có fix commit hoặc rerun được ghi |
+| 2 | 28/10/2026 11:05:17-11:13:45 | CI run 40630318005: backend 163/163, frontend 228/228, tổng 391/391 | Commit edafb2347b224d05909d47d85fc152f83901097c; artifacts và job timestamps còn trên GitHub Actions | Thành công; đây không phải Playwright rerun |
+| 3 | 29/10/2026 14:17:14-14:22:50 | Run 40834458443: automated tests đạt, mobile APK build thất bại | Thiếu import trong main.dart và cú pháp thừa trong settings_screen.dart | Được sửa tại commit 64f66fc lúc 14:29:01 |
+| 4 | 29/10/2026 14:29:53-14:37:56 | Run 40835801104 đạt trên commit 64f66fc | Cả ba job test/build và quality gate thành công | Xác nhận bản sửa compile; không xác nhận hai lỗi Playwright |
+
+Artifact cung cấp thời lượng theo từng test cho web/mobile và theo spec cho backend. Các test case chức năng bên dưới chưa được nối với test ID tự động tương ứng, nên không gán elapsed time của unit test vào kịch bản thủ công. Để hoàn thiện Playwright history cần lưu test ID, timestamp ISO-8601 có múi giờ, elapsed time, status, error/trace, commit SHA và commit sửa.
+
+Nguồn CI: [40630318005](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40630318005), [40834458443](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834458443), [40834718325](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834718325), [40835801104](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40835801104), [latest run 41816740967](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/41816740967). In the latest run, backend tests passed but Prisma migration failed with P3018 because relation StreamDonation was missing; the quality gate blocked deployment.
+
+Raw runner results for the timed CI run are archived in [backend](ci_runs/40630318005/backend-test-results.json) and [frontend](ci_runs/40630318005/frontend-test-results.json).
 
 ---
 

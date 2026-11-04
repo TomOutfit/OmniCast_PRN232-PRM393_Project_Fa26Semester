@@ -30,11 +30,31 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 | :--- | :---: | :---: | :--- |
 | **Backend Unit & Integration Tests (NestJS)** | **163** | **100%** | Chạy qua `node:test` trên 16 tệp spec độc lập |
 | **Frontend Unit & Component Tests (Next.js)** | **228** | **100%** | Chạy qua `vitest` trên 76 bộ kiểm thử UI & Hook |
-| **Mobile Unit & Widget Tests (Flutter)** | **91** | **100%** | Chạy qua `flutter test` trên 8 bộ kiểm thử BLoC & Screen |
-| **Tổng số Automated Tests (Codebase)** | **482** | **100%** | **482 Passed / 0 Failed / 0 Skipped** |
-| **Kịch bản E2E Playwright Browser** | **8** | **100%** | Chụp 8 màn hình kiểm thử hành trình người dùng Web |
+| **Mobile tests in CI (Flutter)** | **77** | **100%** | Artifact run 40630318005; CI chọn test/data, test/logic, test/presentation |
+| **Tổng automated tests trong run 40630318005** | **468** | **100%** | **468 Passed / 0 Failed** trong artifacts backend/web/mobile |
+| **E2E smoke có ảnh chụp** | **8** | **8/8 được ghi nhận** | Bộ kịch bản chụp màn hình ở mục 3; không có log runner kèm theo |
+| **Playwright E2E PRN232** | **8** | **6/8 trong lần chạy được mô tả** | Hai lỗi môi trường/assertion ở mục 5; chưa có log thời gian |
 | **Kiểm thử Tích hợp LiveStream & Studio** | **12** | **100%** | Xác minh luồng WHIP/RTMP, HLS, Chat, Polls, Q&A, Commerce |
-| **Thời gian thực thi quy trình CI/CD** | **~4m 12s** | **Thành công** | Ma trận 5 jobs độc lập trên GitHub Actions |
+| **Thời gian thực thi quy trình CI/CD** | **8m 28s** | **Thành công** | Run 40630318005, 2026-10-28 11:05:17-11:13:45 +07:00 |
+
+#### 1.1. Mốc chạy và độ tin cậy của số liệu
+
+GitHub Actions còn lưu artifacts và job timestamps cho run **40630318005**, commit **edafb2347b224d05909d47d85fc152f83901097c**. Timestamp dưới đây được quy đổi từ UTC sang ICT (+07:00). Thời lượng trong artifact là thời gian cộng gộp runner ghi; wall time của bước test có thể dài hơn do khởi động và đóng runner.
+
+| Mốc | Thông tin có thể xác nhận từ tài liệu/kho mã | Thông tin chưa được lưu |
+| :--- | :--- | :--- |
+| 28/10/2026 11:05:17-11:13:45 +07:00 | Run 40630318005, commit edafb234...: backend 163/163, web 228/228, mobile CI subset 77/77; tổng 468/468. | E2E 6/8 được ghi ở tài liệu riêng, không có artifact gắn với run này |
+| 29/10/2026 14:17:14-14:22:50 +07:00 | Run 40834458443: backend/web tests và Flutter tests đạt; APK build thất bại. | Build log ghi lỗi compile Dart |
+| 29/10/2026 14:19:42-14:25:07 +07:00 | Run 40834718325, commit e041fbf...: APK build tiếp tục thất bại; quality gate báo mobile job lỗi. | Không phải unit-test failure |
+| 29/10/2026 14:29:01 +07:00 | Commit 64f66fc thêm import AppConstants/DioClient trong main.dart và xóa dấu ngoặc nhọn thừa trong settings_screen.dart. | Commit sửa được truy vết trong Git |
+| 29/10/2026 14:29:53-14:37:56 +07:00 | Run 40835801104, commit 64f66fc...: ba suite, quality report và deploy thành công. | CI xác nhận build sau bản sửa |
+| 04/11/2026 17:49:30-17:57:28 +07:00 | Run 41816740967: frontend/mobile jobs đạt; backend migration lỗi P3018, thiếu relation StreamDonation; quality gate fail, deploy bị skip. | Chưa thấy run sau xác nhận bản sửa tính đến 04/11/2026 |
+
+Artifact lần chạy thành công ghi duration cộng gộp backend 12.466s, frontend 0.989s và mobile subset 4.501s. Các số cũ 9.42s/14.85s/11.23s và ~4m12s đã được thay bằng số có nguồn. Mobile có 91 test trong toàn test tree, nhưng workflow run này chỉ chọn data/logic/presentation nên artifact CI có 77 test; 14 test ngoài phạm vi job không nằm trong tổng 468.
+
+Nguồn CI: [run 40630318005](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40630318005), [run 40834458443](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834458443), [run 40834718325](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834718325), [run 40835801104](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40835801104), [run mới nhất 41816740967](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/41816740967). Frontend và mobile artifacts giữ duration từng test; backend artifact chỉ có duration theo spec, các duration từng test bằng 0 do runner/parser hiện tại.
+
+Artifacts đã được lưu kèm deliverable: [backend](ci_runs/40630318005/backend-test-results.json), [frontend](ci_runs/40630318005/frontend-test-results.json), [mobile](ci_runs/40630318005/mobile-test-results.json), cùng [ghi chú phạm vi](ci_runs/40630318005/README.md).
 
 ---
 
@@ -43,29 +63,29 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 #### 2.1. Back-End Test Suite (NestJS `node:test`)
 - **Môi trường chạy:** Node.js v24.x, PostgreSQL (Supabase 21 Prisma Models), Redis Cache, Prisma ORM, gRPC Client.
 - **Tổng số ca kiểm thử:** 163 tests trong 16 tệp spec.
-- **Thời gian thực thi:** 9.42 giây.
+- **CI 40630318005:** 163/163; duration artifact 12.466 giây; bước runner 11:06:09-11:06:25 +07:00.
 - **Phân bổ theo tệp kiểm thử:**
   1. `test/ai-curator-stats.service.spec.ts`: 10 tests (Thống kê chỉ số AI, phân nhóm tỷ lệ duyệt nội dung).
-  2. `test/ai-curator.e2e.spec.ts`: 12 tests (Quy trình gọi OpenAI GPT-4o, schema Zod, fallback heuristic).
-  3. `test/ai-curator.service.spec.ts`: 15 tests (Logic biên tập và phân tích ngữ nghĩa nội dung).
+  2. `test/ai-curator.e2e.spec.ts`: 13 tests (Controller and curator API flows).
+  3. `test/ai-curator.service.spec.ts`: 19 tests (Curator pipeline, caching, and persistence).
   4. `test/audit-logger.service.spec.ts`: 8 tests (Kết nối gRPC client tới Standalone Audit Microservice).
-  5. `test/auth.service.spec.ts`: 14 tests (Băm mật khẩu bcrypt 10 rounds, ký JWT, xoay vòng Refresh Token).
-  6. `test/billing.service.spec.ts`: 6 tests (Thanh toán gói thuê bao và đăng ký quyền Premium).
-  7. `test/channels.service.spec.ts`: 11 tests (CRUD danh mục kênh, slugification và phân quyền truy cập).
-  8. `test/epg-filler.spec.ts`: 14 tests (Thuật toán điền lịch 24/7 có hạt giống xác định).
-  9. `test/epg-timeline.spec.ts`: 9 tests (Xử lý dòng thời gian và truy vấn ngày phát sóng).
-  10. `test/ingest-sources.spec.ts`: 10 tests (Chuẩn hóa sự kiện từ YouTube, Twitch, HLS RSS Feed).
-  11. `test/live-studio.service.spec.ts`: 8 tests (Cấu hình luồng WHIP, RTMP key và đồng bộ MediaMTX).
-  12. `test/programs.conflict.spec.ts`: 16 tests (Thuật toán SQL chống trùng lặp lịch phát EPG).
-  13. `test/programs.counter.spec.ts`: 7 tests (Đếm số lượng sự kiện theo danh mục phân cấp).
-  14. `test/search.service.spec.ts`: 9 tests (Tìm kiếm toàn văn bản và lọc đa tiêu chí).
-  15. `test/users.service.spec.ts`: 8 tests (Quản lý hồ sơ người dùng, phân quyền RBAC và khóa tài khoản).
-  16. `test/watchlist.service.spec.ts`: 6 tests (Đồng bộ danh sách theo dõi cá nhân hóa).
+  5. `test/auth.service.spec.ts`: 17 tests (Registration, login, and refresh-token rotation).
+  6. `test/billing.service.spec.ts`: 3 tests (Subscription billing and Premium access).
+  7. `test/channels.service.spec.ts`: 7 tests (Channel CRUD and access control).
+  8. `test/epg-filler.spec.ts`: 18 tests (Deterministic 24/7 schedule filling).
+  9. `test/epg-timeline.spec.ts`: 5 tests (EPG timeline and broadcast-day queries).
+  10. `test/ingest-sources.spec.ts`: 11 tests (YouTube, Twitch, and HLS RSS normalisation).
+  11. `test/live-studio.service.spec.ts`: 18 tests (WHIP/RTMP setup and MediaMTX sync).
+  12. `test/programs.conflict.spec.ts`: 7 tests (SQL schedule-conflict cases).
+  13. `test/programs.counter.spec.ts`: 8 tests (Event and recording counters).
+  14. `test/search.service.spec.ts`: 4 tests (Full-text and filtered search).
+  15. `test/users.service.spec.ts`: 4 tests (Profile, roles, and account states).
+  16. `test/watchlist.service.spec.ts`: 11 tests (Personal watchlist sync).
 
 #### 2.2. Web Front-End Test Suite (Next.js 15 `vitest`)
 - **Môi trường chạy:** Vitest, React Testing Library, JSDOM, TailwindCSS.
 - **Tổng số ca kiểm thử:** 228 tests trong 76 bộ kiểm thử.
-- **Thời gian thực thi:** 14.85 giây.
+- **CI 40630318005:** 228/228; duration artifact 0.989 giây; bước runner 11:05:54-11:05:57 +07:00.
 - **Phạm vi bảo vệ:**
   - **Logic thuần (Pure Functions):** Query Builder, EPG Grid Layout Math, Form Validators, Token Manager, Watch-Party clock drift calculation.
   - **Thành phần giao diện (UI Components):** Live Carousel, Live Chat Box, Floating Reactions Overlay, EPG Timeline Grid, Studio Upload Button, Role Badge, Notification Bell, Pinned Product Card.
@@ -75,17 +95,18 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 
 #### 2.3. Mobile Test Suite (Flutter 3.24+ `flutter test`)
 - **Môi trường chạy:** Flutter SDK 3.24+, Dart 3.5+, Mockito, BLoC Test.
-- **Tổng số ca kiểm thử:** 91 tests trong 8 bộ kiểm thử.
-- **Thời gian thực thi:** 11.23 giây.
+- **Tổng theo CI 40630318005:** 77/77 trong 8 spec files được chọn bởi workflow.
+- **Duration artifact:** 4.501 giây; bước runner 11:06:12-11:06:32 +07:00.
+- **Phạm vi ngoài job:** test/core và test/widget_test.dart; 14 test này không có trong artifact CI run trên.
 - **Phân bổ chi tiết:**
-  1. `test/data/repositories/ai_curator_repository_test.dart`: 26 tests (Mock phản hồi API AI).
-  2. `test/data/watchlist_item_model_test.dart`: 9 tests (Chuyển đổi DTO và tính toán dirty flag SQLite).
-  3. `test/logic/auth_bloc_test.dart`: 14 tests (Luồng phát trạng thái đăng nhập/làm mới token âm thầm).
-  4. `test/logic/watchlist_bloc_test.dart`: 13 tests (Quản lý trạng thái lưu và đồng bộ hai chiều SQLite).
-  5. `test/presentation/save_to_watchlist_button_test.dart`: 7 tests (Kiểm thử tương tác nút bấm).
-  6. `test/presentation/screens/studio/ai_curator_screen_test.dart`: 13 tests (Kiểm thử UI studio di động).
-  7. `test/logic/epg_bloc_test.dart`: 6 tests (Lọc lịch phát sóng theo ngày và múi giờ).
-  8. `test/presentation/screens/onboarding/onboarding_screen_test.dart`: 3 tests (Luồng màn hình chào mừng).
+  1. `test/data/repositories/ai_curator_repository_test.dart`: 25 tests.
+  2. `test/data/watchlist_item_model_test.dart`: 8 tests.
+  3. `test/logic/auth_bloc_test.dart`: 13 tests.
+  4. `test/logic/watchlist_bloc_test.dart`: 10 tests.
+  5. `test/presentation/save_to_watchlist_button_test.dart`: 4 tests.
+  6. `test/presentation/screens/studio/ai_curator_screen_test.dart`: 10 tests.
+  7. `test/logic/epg_bloc_test.dart`: 5 tests.
+  8. `test/presentation/screens/onboarding/onboarding_screen_test.dart`: 2 tests.
 
 ---
 
@@ -125,6 +146,16 @@ Bộ kiểm thử trình duyệt thực hiện 8 kịch bản xuyên suốt hàn
 
 ### 5. Nhật Ký Sửa Lỗi Trong Quá Trình Kiểm Thử (Defect Resolution Log)
 
+**Khả năng truy vết:** BUG-01 đến BUG-05 có mô tả nguyên nhân và giải pháp trong hồ sơ, nhưng không có giờ phát hiện, commit/version khắc phục hoặc lần chạy hồi quy. Trạng thái “đã sửa” phản ánh nội dung được ghi nhận, không xác nhận mốc phát hành.
+
+| Thứ tự | Thời điểm ICT (+07:00) | Kết quả và lỗi quan sát | Nguyên nhân có trong log/commit | Bản sửa và lần xác nhận |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | 28/10/2026, giờ không có trong báo cáo | Playwright 6/8; STAFF login timeout và unauthenticated /studio nhận 401 thay vì redirect assertion | Tài liệu quy lỗi cho seed STAFF thiếu và khác biệt giữa HTTP 401 với assertion; không còn raw Playwright log | Không có mã commit sửa hoặc kết quả chạy lại trong hồ sơ |
+| 2 | 29/10/2026 14:17:14-14:22:50 | Mobile unit tests đạt, APK build và quality gate thất bại | Thiếu import AppConstants/DioClient, dấu ngoặc nhọn thừa ở settings_screen.dart | Lỗi tái hiện ở run 40834718325 |
+| 3 | 29/10/2026 14:29:01 | Commit 64f66fc bổ sung hai import và bỏ ngoặc nhọn thừa | Sửa đúng các lỗi compile được log ở hai run trước | Run 40835801104 đạt, kết thúc 14:37:56; toàn pipeline success |
+
+Với E2E, hệ thống còn thiếu timestamp theo từng test ID và commit sửa. Với lỗi APK, log có thời gian thất bại và commit sửa cụ thể; lần chạy sau xác nhận pipeline thành công.
+
 | Mã lỗi | Mô tả vấn đề phát hiện | Nguyên nhân gốc rễ | Giải pháp đã thực hiện | Trạng thái |
 | :---: | :--- | :--- | :--- | :---: |
 | **BUG-01** | Trình phát di động không mở được luồng phát MediaMTX trên máy thật | Luồng phát trả về URL chứa `localhost:8889` khiến thiết bị di động không kết nối được | Thêm cơ chế `resolveStreamUrl` tự động phân giải sang IP máy chủ nội bộ trong mạng LAN | **ĐÃ SỬA** |
@@ -137,11 +168,11 @@ Bộ kiểm thử trình duyệt thực hiện 8 kịch bản xuyên suốt hàn
 
 ### 6. Kết Luận & Biên Bản Nghiệm Thu Chất Lượng (Quality Sign-Off)
 
-Toàn bộ hệ thống phần mềm **OmniCast** đã hoàn thành 100% các tiêu chí kiểm định chất lượng:
-1. **Tính đúng đắn về mặt logic:** 482/482 bài kiểm thử tự động đạt kết quả PASS (100%).
+Run CI 40630318005 ghi nhận 468/468 test trong các job backend, frontend và mobile subset. Một smoke set có ảnh được báo cáo 8/8; bộ Playwright PRN232 riêng ghi 6/8. Không gộp hai bộ E2E thành một kết quả:
+1. **Automated tests:** 468/468 trong CI artifacts; 14 test mobile ngoài phạm vi job chưa được chạy trong run này.
 2. **Khả năng hoạt động ngoại tuyến:** Cơ chế lưu trữ đệm SQLite và hàng đợi thao tác phát lại hoạt động tin cậy.
 3. **Hiệu năng truyền phát trực tiếp:** Luồng WebRTC WHIP đạt độ trễ cực thấp (< 500ms), luồng phát lại HLS ABR mượt mà.
 4. **Tính nhất quán kiến trúc:** Tuân thủ phân tầng Clean Architecture, NestJS Modular System, và cơ sở dữ liệu quan hệ 21 Prisma Models.
 
-**Xác nhận:** Đủ điều kiện nghiệm thu và đóng gói chính thức cho học phần PRN232 & PRM393.  
+**Trạng thái hồ sơ:** CI run và artifacts có timestamp/commit đã được liên kết trong timeline; Playwright E2E vẫn thiếu artifact theo test ID.  
 *FPTU Quy Nhon AI Campus - FU Cahata, Tháng 10/2026.*

@@ -66,8 +66,7 @@
   \begin{tikzpicture}[remember picture, overlay]
     \fill[omniDeep] (current page.south west) rectangle ($(current page.south east) + (0,6mm)$);
     \draw[omniBorder, line width=0.5pt] ($(current page.south west) + (0,6mm)$) -- ($(current page.south east) + (0,6mm)$);
-    \node[anchor=west, text=omniSlate, font=\tiny] at ($(current page.south west) + (8mm,3mm)$) {Nguyễn Bình An $\cdot$ Trần Thanh Sơn $\cdot$ Nguyễn Vĩnh Phú $\cdot$ Đồng Hoàng Nguyên};
-    \node[anchor=center, text=omniSlate, font=\tiny] at ($(current page.south) + (0,3mm)$) {FPTU Quy Nhon AI Campus --- FU Cahata $\vert$ PRN232 \& PRM393};
+    \node[anchor=west, text=omniSlate, font=\tiny] at ($(current page.south west) + (8mm,3mm)$) {OMNICAST $\vert$ PRN232 + PRM393};
     \node[anchor=east, text=omniCyan, font=\tiny\bfseries] at ($(current page.south east) + (-8mm,3mm)$) {\insertframenumber{} / \inserttotalframenumber{}};
   \end{tikzpicture}
 }
@@ -97,7 +96,7 @@
 
 % ---------- Title Information ----------
 \title{OMNICAST}
-\subtitle{Enterprise Media \& Broadcast Intelligence Network}
+\subtitle{Broadcast. Connect. Discover.}
 \author{Nguyễn Bình An $\cdot$ Trần Thanh Sơn $\cdot$ Nguyễn Vĩnh Phú $\cdot$ Đồng Hoàng Nguyên}
 \institute{FPTU Quy Nhon AI Campus --- FU Cahata $\bullet$ Mentor: Mr. Huỳnh Vang}
 \date{Fall Semester 2026 (FA26)}
@@ -127,7 +126,8 @@
     {\tiny\color{omniSlate}\bfseries FINAL CAPSTONE DEFENSE \& PROJECT PRESENTATION (FALL 2026)}\\[3mm]
 
     {\Huge\bfseries\color{white}OMNI\textcolor{omniCyan}{CAST}}\\[1mm]
-    {\large\bfseries\color{omniSlate}Enterprise Media, Real-Time LiveStream \& Broadcast Intelligence Network}\\[2.5mm]
+    {\Large\bfseries\color{omniSlate}Broadcast. Connect. Discover.}\\[1mm]
+    {\small\color{omniSlate}Enterprise media, real-time LiveStream and broadcast intelligence}\\[2.5mm]
     
     {\color{omniBorder}\rule{0.72\linewidth}{1pt}}\\[2.5mm]
 
@@ -143,7 +143,7 @@
 
     \begin{tikzpicture}
       \node[text=omniGreen, font=\tiny\bfseries] at (-4.2,0) {$\checkmark$ 142,897 Physical LOC};
-      \node[text=omniCyan, font=\tiny\bfseries] at (0,0) {$\checkmark$ 482/482 Automated Tests PASS (100\%)};
+      \node[text=omniCyan, font=\tiny\bfseries] at (0,0) {$\checkmark$ 468/468 Tests Passed in CI Run 40630318005};
       \node[text=omniAmber, font=\tiny\bfseries] at (4.4,0) {$\checkmark$ WebRTC WHIP/WHEP + Socket.IO /live};
     \end{tikzpicture}
     \vspace{2.5mm}
@@ -233,25 +233,20 @@
 % ============================================================
 % SLIDE 4: End-to-End System Architecture (The Big Picture)
 % ============================================================
-\begin{frame}{End-to-End System Architecture}{Dual-Platform Unified Topology (Web, Mobile, NestJS, MediaMTX, gRPC)}
+\begin{frame}{System Architecture}{Web and Mobile Clients with Shared Backend Services}
   \begin{center}
   \begin{tikzpicture}[scale=0.86, every node/.style={transform shape, align=center}]
-    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (web) at (0, 2.2) {Next.js 15 Web Portal\\{\tiny\color{omniSlate}33 Routes $\bullet$ 7-Theme Live $\bullet$ Studio}};
-    \node[draw=omniPurple, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=38mm, minimum height=11mm] (mob) at (0, -0.6) {Flutter Mobile App\\{\tiny\color{omniSlate}31 Screens $\bullet$ 12 BLoCs $\bullet$ SQLite}};
+    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=40mm, minimum height=19mm] (clients) at (0, 0.8) {Web + Mobile Clients\\{\tiny\color{omniSlate}Next.js 15: 33 routes}\\{\tiny\color{omniSlate}Flutter: 31 screens}};
+    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=42mm, minimum height=19mm] (api) at (5.2, 0.8) {NestJS 10 REST API\\{\tiny\color{omniSlate}19 modules $\bullet$ 140+ endpoints}\\{\tiny\color{omniCyan}JWT + RBAC}};
+    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=39mm, minimum height=11mm] (db) at (10.5, 2.5) {PostgreSQL / Supabase\\{\tiny\color{omniSlate}21 Prisma models}};
+    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=39mm, minimum height=11mm] (media) at (10.5, 0.8) {MediaMTX + Cloudinary\\{\tiny\color{omniSlate}WHIP/WHEP $\bullet$ HLS $\bullet$ CDN}};
+    \node[draw=omniSlate, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=39mm, minimum height=11mm] (audit) at (10.5, -0.9) {Audit Logger\\{\tiny\color{omniSlate}gRPC microservice}};
+    \node[text=omniSlate, font=\tiny, align=center] at (5.2,-1.0) {MediaMTX delivers HLS/WebRTC streams to both clients};
 
-    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=34mm, minimum height=11mm] (mtx) at (5.2, 2.2) {MediaMTX + Cloudinary\\{\tiny\color{omniSlate}WHIP/WHEP $\bullet$ HLS $\bullet$ Signed CDN}};
-
-    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=42mm, minimum height=18mm] (api) at (5.2, -0.6) {NestJS 10 Core API\\{\tiny\color{omniSlate}19 Modules $\bullet$ 140+ REST Endpoints}\\{\tiny\color{omniCyan}LiveStreamGateway (Socket.IO /live)}};
-
-    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (db) at (10.5, 0.8) {Supabase PostgreSQL\\{\tiny\color{omniSlate}21 Prisma Models $\bullet$ Pooler :6543}};
-    \node[draw=omniSlate, fill=omniCard, rounded corners=4pt, text=white, font=\footnotesize\bfseries, minimum width=35mm, minimum height=11mm] (grpc) at (10.5, -1.8) {Audit-Logger Microservice\\{\tiny\color{omniSlate}gRPC :50051 $\bullet$ audit\_logger.proto}};
-
-    \draw[-{Latex}, omniCyan, line width=1pt] (web) -- node[above, font=\tiny, text=omniSlate]{REST/WSS} (api.155);
-    \draw[-{Latex}, omniPurple, line width=1pt] (mob) -- node[below, font=\tiny, text=omniSlate]{REST/WSS} (api.195);
-    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (web) -- node[above, font=\tiny, text=omniSlate]{WHIP / HLS} (mtx);
-    \draw[{Latex}-{Latex}, omniAmber, line width=1pt] (mob) -- node[above, font=\tiny, text=omniSlate, sloped]{WHIP / WHEP / HLS} (mtx);
-    \draw[-{Latex}, omniGreen, line width=1pt] (api) -- node[above, font=\tiny, text=omniSlate]{Prisma ORM} (db.west);
-    \draw[-{Latex}, omniSlate, line width=1pt] (api) -- node[below, font=\tiny, text=omniSlate]{gRPC} (grpc.west);
+    \draw[-{Latex}, omniCyan, line width=1pt] (clients.east) -- node[above, font=\tiny, text=omniSlate]{REST / WSS} (api.west);
+    \draw[-{Latex}, omniGreen, line width=1pt] (api.east) -- node[above, font=\tiny, text=omniSlate, sloped]{Prisma ORM} (db.west);
+    \draw[-{Latex}, omniAmber, line width=1pt] (api.east) -- node[above, font=\tiny, text=omniSlate]{WHIP / HLS} (media.west);
+    \draw[-{Latex}, omniSlate, line width=1pt] (api.east) -- node[below, font=\tiny, text=omniSlate, sloped]{gRPC} (audit.west);
   \end{tikzpicture}
   \end{center}
   \vspace*{-2mm}
@@ -263,36 +258,20 @@
 % ============================================================
 % SLIDE 5: End-to-End LiveStream & Live Studio Real-Time Architecture
 % ============================================================
-\begin{frame}{LiveStream \& Live Studio Architecture}{Bi-Directional WebRTC WHIP/WHEP, MediaMTX HLS \& Socket.IO \texttt{/live} Pipeline}
+\begin{frame}{LiveStream \& Live Studio Architecture}{MediaMTX, WebRTC and Socket.IO}
   \begin{center}
   \begin{tikzpicture}[scale=0.78, every node/.style={transform shape, align=center}]
-    % Left: 4 Studio Modes
-    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t1) at (0, 2.4) {Tab 1: Curated Live\\{\tiny\color{omniSlate}VOD Lineup + Anti-Piracy Guard}};
-    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t2) at (0, 1.0) {Tab 2: Self-Record / Camera\\{\tiny\color{omniSlate}WHIP WebRTC + Screen + Dropzone}};
-    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t3) at (0,-0.4) {Tab 3: Public Catalog\\{\tiny\color{omniSlate}Verified HLS/MP4 + HEAD Probe}};
-    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=36mm, minimum height=8.5mm] (t4) at (0,-1.8) {Tab 4: Host Control Console\\{\tiny\color{omniSlate}Pinned Banner + Switch + Stop}};
-
-    % Middle: Orchestration
-    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=12mm] (svc) at (5.2, 1.8) {LiveStudioService\\{\tiny\color{omniCyan}Atomic Event Transition}\\{\tiny\color{omniSlate}\texttt{switchProgramOnLiveEvent}}};
-    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=11mm] (media) at (5.2, 0.2) {MediaMTX + Direct Drive\\{\tiny\color{omniSlate}WHIP :8889 $\rightarrow$ HLS :8888 (\texttt{.m3u8})}\\{\tiny\color{omniSlate}Cloudinary Signed Direct Upload}};
-    \node[draw=omniTeal, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=12mm] (gw) at (5.2,-1.5) {LiveStreamGateway (\texttt{/live})\\{\tiny\color{omniCyan}Rooms: \texttt{event:id} \& \texttt{channel:id}}\\{\tiny\color{omniSlate}CCU $\cdot$ Chat $\cdot$ Reactions $\cdot$ Donations}};
-
-    % Right: Viewer Rooms
-    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (wroom) at (10.6, 1.8) {Web Live Room (\texttt{/live/[id]})\\{\tiny\color{omniSlate}7 Genre Themes $\cdot$ Join Lobby}\\{\tiny\color{omniSlate}Cinema Mode $\cdot$ Lineup Switcher}};
-    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (mroom) at (10.6, 0.1) {Mobile \texttt{LiveWatchScreen}\\{\tiny\color{omniSlate}OmniPlayer + Wi-Fi LAN Discovery}\\{\tiny\color{omniSlate}Zero-Cartoon Retry (10x Backoff)}};
-    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=12mm] (ops) at (10.6,-1.6) {Real-Time Viewer Operations\\{\tiny\color{omniSlate}Threaded Chat $\cdot$ 0ms Haptic Emoji}\\{\tiny\color{omniSlate}6-Tier Super Chat $\cdot$ Host Toast}};
-
-    \draw[-{Latex}, omniBlue, line width=0.8pt] (t1.east) -- (svc.west);
-    \draw[-{Latex}, omniBlue, line width=0.8pt] (t2.east) -- (svc.west);
-    \draw[-{Latex}, omniAmber, line width=0.8pt] (t2.east) -- (media.west);
-    \draw[-{Latex}, omniBlue, line width=0.8pt] (t3.east) -- (svc.west);
-    \draw[-{Latex}, omniTeal, line width=0.8pt] (t4.east) -- (gw.west);
-    \draw[-{Latex}, omniTeal, line width=0.8pt] (svc) -- (gw);
-    \draw[-{Latex}, omniAmber, line width=0.8pt] (media.east) -- (wroom.west);
-    \draw[-{Latex}, omniAmber, line width=0.8pt] (media.east) -- (mroom.west);
-    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (wroom.west);
-    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (mroom.west);
-    \draw[-{Latex}, omniTeal, line width=0.8pt] (gw.east) -- (ops.west);
+    \node[draw=omniPurple, fill=omniCard, rounded corners=3pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=24mm] (studio) at (0,0.5) {Live Studio Inputs\\{\tiny\color{omniSlate}Curated VOD $\bullet$ Camera/Screen WHIP}\\{\tiny\color{omniSlate}Public Catalog $\bullet$ Host Controls}};
+    \node[draw=omniBlue, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=14mm] (svc) at (5.2,1.5) {LiveStudioService\\{\tiny\color{omniCyan}Atomic event transition}};
+    \node[draw=omniAmber, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=14mm] (media) at (5.2,-0.4) {MediaMTX + Direct Drive\\{\tiny\color{omniSlate}WHIP ingest $\rightarrow$ HLS/WHEP}};
+    \node[draw=omniTeal, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=40mm, minimum height=14mm] (gw) at (5.2,-2.3) {LiveStreamGateway /live\\{\tiny\color{omniSlate}Rooms $\bullet$ Chat $\bullet$ Reactions}};
+    \node[draw=omniCyan, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=18mm] (viewers) at (10.6,0.8) {Viewer Clients\\{\tiny\color{omniSlate}Web Live Room $\bullet$ Mobile LiveWatch}\\{\tiny\color{omniSlate}OmniPlayer $\bullet$ Wi-Fi LAN discovery}};
+    \node[draw=omniGreen, fill=omniCard, rounded corners=4pt, text=white, font=\scriptsize\bfseries, minimum width=42mm, minimum height=14mm] (ops) at (10.6,-1.8) {Live Interactions\\{\tiny\color{omniSlate}Threaded chat $\bullet$ Q\&A $\bullet$ Polls}\\{\tiny\color{omniSlate}Donations $\bullet$ Pinned announcements}};
+    \draw[-{Latex}, omniBlue, line width=0.9pt] (studio.east) -- (svc.west);
+    \draw[-{Latex}, omniAmber, line width=0.9pt] (svc.south) -- (media.north);
+    \draw[-{Latex}, omniTeal, line width=0.9pt] (svc.east) -- ++(0.55,0) |- (gw.east);
+    \draw[-{Latex}, omniAmber, line width=0.9pt] (media.east) -- (viewers.west);
+    \draw[-{Latex}, omniTeal, line width=0.9pt] (gw.east) -- (ops.west);
   \end{tikzpicture}
   \end{center}
 \end{frame}
@@ -586,7 +565,7 @@
 % PART 3: SYNERGY, VERIFICATION & DEPLOYMENT
 % ============================================================
 \section{Synergy \& Verification}
-\begin{frame}{Cross-Platform Synergy \& Verification Matrix}{142,897 Physical LOC $\bullet$ 482/482 Automated Tests (100\% Pass)}
+\begin{frame}{Cross-Platform Synergy \& Verification Matrix}{142,897 Physical LOC $\bullet$ 468/468 Tests Passed in Archived CI Run}
   \begin{center}
   \footnotesize
   \renewcommand{\arraystretch}{1.18}
@@ -600,14 +579,14 @@
     \textbf{LiveStream \& Studio} & 7-Theme Live Room + 4-Tab Web Studio (WHIP) & \texttt{LiveWatchScreen} + 4-Tab Studio + ENG Recorder \\
     \textbf{Realtime Operations} & Socket.IO \texttt{/live}: Chat, Emoji, Super Chat, Switch & 0ms Haptic Emoji, 6-Tier Super Chat, LAN Scan \\
     \textbf{Code Volume} & \textbf{79,568 Physical LOC} & \textbf{53,922 Physical LOC} (+ 9,407 Ops/Docs) \\
-    \textbf{Automated Tests} & \textbf{391 Tests} (163 Backend + 228 Web Vitest) & \textbf{91 Tests} (56 Unit + 35 Widget Tests) \\
-    \textbf{Pass Rate} & \textbf{\color{omniGreen}100\% PASS} (+ 8 Playwright E2E) & \textbf{\color{omniGreen}100\% PASS} \\
+    \textbf{Automated Tests in CI run 40630318005} & \textbf{391/391} (163 Backend + 228 Web Vitest) & \textbf{77/77 selected} (91 tests in test tree) \\
+    \textbf{Pass Rate} & \textbf{\color{omniGreen}100\% in this run} (+ separate Playwright record: 6/8) & \textbf{\color{omniGreen}100\% of selected tests} \\
     \bottomrule
   \end{tabularx}
   \end{center}
   \vspace*{-1mm}
   \begin{center}
-    \scriptsize\color{omniGreen}\textbf{TOTAL SYSTEM SCALE: 142,897 Lines of Code $\bullet$ 482/482 Automated Tests PASS $\bullet$ Live on Vercel \& Supabase}
+    \scriptsize\color{omniGreen}\textbf{CI RUN 40630318005: 468/468 PASS (163 backend + 228 web + 77 mobile in workflow scope)}
   \end{center}
 \end{frame}
 
@@ -667,7 +646,8 @@
     \vspace{4mm}
     {\scriptsize\bfseries\color{omniCyan}FPTU QUY NHON AI CAMPUS --- FU CAHATA $\bullet$ MENTOR: THẦY HUỲNH VANG}\\[2mm]
     {\Huge\bfseries\color{white}Thank You for Your Attention!}\\[2mm]
-    {\large\bfseries\color{omniCyan}OmniCast: Enterprise Media \& Broadcast Intelligence Network}\\[3mm]
+    {\Large\bfseries\color{omniCyan}Broadcast. Connect. Discover.}\\[1mm]
+    {\small\color{omniSlate}OmniCast: Enterprise Media \& Broadcast Intelligence Network}\\[3mm]
     {\color{omniBorder}\rule{0.65\linewidth}{1pt}}\\[3mm]
 
     {\footnotesize\color{white}\textbf{Nguyễn Bình An} \ $\bullet$ \ \textbf{Trần Thanh Sơn} (\texttt{QE170080}) \ $\bullet$ \ \textbf{Nguyễn Vĩnh Phú} (\texttt{QE180136}) \ $\bullet$ \ \textbf{Đồng Hoàng Nguyên}}\\[3mm]

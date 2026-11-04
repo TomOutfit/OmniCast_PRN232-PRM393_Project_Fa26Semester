@@ -12,43 +12,33 @@
 % Figure: Overall layered architecture (PRN232)
 % ------------------------------------------------------------
 \newcommand{\figArchitecture}{%
-\begin{tikzpicture}[scale=0.92, transform shape]
-  % --- Presentation layer ---
-  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (web) at (0,4.6) {\textbf{Next.js 15 Web Portal}\\App Router $\cdot$ React 19\\Tailwind Cinema Dark};
-  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (mob) at (4.0,4.6) {\textbf{Flutter 3.x Mobile}\\BLoC $\cdot$ Dio $\cdot$ Sqflite};
+\begin{tikzpicture}[node distance=0.55cm and 0.85cm]
+  \node[omniLabel] (clientLabel) {\bi{\textbf{Ứng dụng}}{\textbf{Clients}}};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple, right=of clientLabel, minimum width=3.0cm] (web) {\textbf{Web Portal}\\Next.js 15 $\cdot$ React 19};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple, below=0.25cm of web, minimum width=3.0cm] (mob) {\textbf{Mobile App}\\Flutter $\cdot$ BLoC};
 
-  % --- API layer ---
-  \node[omniAccent, minimum width=5.4cm, minimum height=1.5cm] (api) at (2.0,2.5) {\textbf{NestJS 10 REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT + RBAC $\cdot$ Swagger/OpenAPI};
-  \node[omniTealNode] (gw) at (2.0,0.9) {\textbf{WebSocket Gateway}\\namespace \texttt{/live}\\Socket.IO $\cdot$ WebRTC signalling};
-  \node[omniTealNode] (grpc) at (5.6,0.9) {\textbf{gRPC Client}\\AuditLogger proto};
+  \node[omniLabel, right=0.8cm of web] (apiLabel) {\bi{\textbf{API}}{\textbf{API}}};
+  \node[omniAccent, right=of apiLabel, minimum width=3.4cm, minimum height=2.0cm] (api) {\textbf{NestJS REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT $\cdot$ RBAC $\cdot$ OpenAPI};
 
-  % --- Microservice ---
-  \node[omniAmberNode] (audit) at (5.6,-0.9) {\textbf{Audit-Logger Microservice}\\NestJS $\cdot$ gRPC server\\Render/own deployment};
+  \node[omniLabel, right=0.8cm of api] (svcLabel) {\bi{\textbf{Dịch vụ}}{\textbf{Services}}};
+  \node[omniTealNode, right=of svcLabel, minimum width=3.1cm] (live) {\textbf{Real-time}\\Socket.IO /live\\WebRTC signalling};
+  \node[omniTealNode, below=0.25cm of live, minimum width=3.1cm] (audit) {\textbf{Audit Logger}\\gRPC service};
+  \node[omniAmberNode, below=0.25cm of audit, minimum width=3.1cm] (media) {\textbf{MediaMTX}\\WHIP ingest $\cdot$ HLS/WebRTC};
 
-  % --- Data layer ---
-  \node[omniDarkNode, minimum width=3.0cm] (db) at (0.2,-0.9) {\textbf{PostgreSQL}\\Supabase\\21 Prisma models};
-  \node[omniDarkNode] (media) at (2.8,-0.9) {\textbf{MediaMTX}\\WHIP ingest\\HLS / WebRTC out};
-  \node[omniDarkNode] (cdn) at (5.0,-0.9) {\textbf{Cloudinary}\\media assets};
-  \node[omniDarkNode] (ext) at (7.2,-0.9) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB\\YouTube/Twitch/RSS};
+  \node[omniLabel, right=0.8cm of live] (dataLabel) {\bi{\textbf{Tích hợp}}{\textbf{Integrations}}};
+  \node[omniDarkNode, right=of dataLabel, minimum width=3.2cm] (db) {\textbf{PostgreSQL / Supabase}\\21 Prisma models};
+  \node[omniDarkNode, below=0.25cm of db, minimum width=3.2cm] (cloud) {\textbf{Cloudinary}\\Media assets};
+  \node[omniDarkNode, below=0.25cm of cloud, minimum width=3.2cm] (external) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB $\cdot$ YouTube\\Twitch $\cdot$ RSS};
 
-  % --- Flows ---
-  \draw[omniFlowAccent] (web) -- (api);
-  \draw[omniFlowAccent] (mob) -- (api);
-  \draw[omniFlow] (api) -- (gw);
-  \draw[omniFlow] (api) -- (grpc);
-  \draw[omniFlowTeal] (grpc) -- (audit);
-  \draw[omniFlow] (api) -- (db);
-  \draw[omniFlow] (api) -- (media);
-  \draw[omniFlow] (api) -- (cdn);
-  \draw[omniFlowAmber] (api) -- (ext);
-  \draw[omniFlow] (media) -- (mob);
-  \draw[omniFlow] (media) -- (web);
-
-  % --- Layer annotations ---
-  \node[omniLabel, anchor=west] at (-1.85,4.6) {\bi{\textbf{Tầng}}{\textbf{Presentation}}};
-  \node[omniLabel, anchor=west] at (-1.85,2.5) {\bi{\textbf{API}}{\textbf{API}}};
-  \node[omniLabel, anchor=west] at (-1.85,0.9) {\bi{\textbf{Real-time}}{\textbf{Real-time}}};
-  \node[omniLabel, anchor=west] at (-1.85,-0.9) {\bi{\textbf{Dữ liệu}}{\textbf{Data}}};
+  \draw[omniFlowAccent] (clientLabel.east) -- (web.west);
+  \draw[omniFlowAccent] (web.east) -- (api.west);
+  \draw[omniFlowAccent] (mob.east) -| (api.south west);
+  \draw[omniFlow] (api.east) -- (live.west);
+  \draw[omniFlow] (live.east) -- (db.west);
+  \draw[omniFlow] (api.east) -- (audit.west);
+  \draw[omniFlowTeal] (audit.east) -- (cloud.west);
+  \draw[omniFlow] (api.east) -- (media.west);
+  \draw[omniFlowAmber] (media.east) -- (external.west);
 \end{tikzpicture}%
 }
 
@@ -149,14 +139,14 @@
     \node[omniDarkNode, minimum width=5.0cm, minimum height=1.4cm] (core) at (0,-2.3) {\bi{\textbf{Tầng Core}}{\textbf{Core layer}}\\DI (get\_it) $\cdot$ theme $\cdot$ i18n\\constants $\cdot$ utils $\cdot$ services};
   \end{scope}
 
-  \node[omniAmberNode, right=1.4cm of data] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local Storage}}\\\texttt{omnicast\_local.db}\\Sqflite offline-first};
-  \node[omniRoseNode, right=1.4cm of core] (remote) {\bi{\textbf{Từ xa}}{\textbf{Remote}}\\REST API (NestJS)\\FCM push $\cdot$ Supabase Realtime};
+  \node[omniAmberNode, right=1.4cm of data, minimum width=3.0cm] (local) {\bi{\textbf{Lưu trữ cục bộ}}{\textbf{Local storage}}\\SQLite offline-first};
+  \node[omniRoseNode, below=0.35cm of local, minimum width=3.0cm] (remote) {\bi{\textbf{Dịch vụ từ xa}}{\textbf{Remote services}}\\REST API $\cdot$ FCM $\cdot$ Realtime};
 
-  \draw[omniFlowAccent] (pres) -- node[right, font=\scriptsize] {dispatch} (logic);
-  \draw[omniFlowAccent] (logic) -- node[right, font=\scriptsize] {\bi{gọi}{calls}} (data);
-  \draw[omniFlowTeal] (data) -- (local);
-  \draw[omniFlowRose] (data) -- (remote);
-  \draw[omniFlow, dashed] (core) -- (data);
+  \draw[omniFlowAccent] (pres) -- (logic);
+  \draw[omniFlowAccent] (logic) -- (data);
+  \draw[omniFlow, dashed] (core.north) -- (data.south);
+  \draw[omniFlowTeal] (data.east) -- (local.west);
+  \draw[omniFlowRose] (data.east) -| (remote.west);
 \end{tikzpicture}%
 }
 
@@ -193,7 +183,7 @@
 
   \node[omniNode, below=of gha] (be) {\bi{\textbf{backend job}}{\textbf{backend job}}\\npm ci $\cdot$ prisma generate\\node:test (163)$\cdot$prisma migrate $\cdot$ nest build};
   \node[omniNode, right=of be] (fe) {\bi{\textbf{frontend job}}{\textbf{frontend job}}\\npm ci $\cdot$ vitest run (228)\\tsc --noEmit $\cdot$ next build};
-  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\flutter test (91)$\cdot$flutter build apk};
+  \node[omniNode, right=of fe] (mob) {\bi{\textbf{mobile job}}{\textbf{mobile job}}\\flutter pub get\\CI selected tests (77)$\cdot$flutter build apk};
 
   \node[omniTealNode, below=of be] (sum) {\bi{\textbf{test-summary job}}{\textbf{test-summary job}}\\merge artifacts $\cdot$ generate HTML report\\quality gate};
   \node[omniPurpleNode, right=of sum] (dep) {\bi{\textbf{deploy job}}{\textbf{deploy job}}\\Vercel backend\\Vercel frontend};
@@ -260,38 +250,19 @@
 % Figure: End-to-End LiveStream & Live Studio Real-Time Architecture
 % ------------------------------------------------------------
 \newcommand{\figLiveStreamArch}{%
-\begin{tikzpicture}[node distance=0.75cm and 1.1cm]
-  % --- Broadcaster / Studio Sources (Left) ---
-  \node[omniPurpleNode, minimum width=3.4cm] (tab1) at (0, 3.3) {\bi{\textbf{Tab 1: Chọn nội dung}}{\textbf{Tab 1: Curated Live}}\\VOD Library $\cdot$ Anti-piracy guard};
-  \node[omniPurpleNode, minimum width=3.4cm] (tab2) at (0, 1.9) {\bi{\textbf{Tab 2: Tự ghi hình / Camera}}{\textbf{Tab 2: Self-Record / Camera}}\\WHIP WebRTC $\cdot$ Screen $\cdot$ Dropzone};
-  \node[omniPurpleNode, minimum width=3.4cm] (tab3) at (0, 0.5) {\bi{\textbf{Tab 3: Kho công khai}}{\textbf{Tab 3: Public Catalog}}\\Verified HLS/MP4 $\cdot$ HEAD probe};
-  \node[omniPurpleNode, minimum width=3.4cm] (tab4) at (0,-0.9) {\bi{\textbf{Tab 4: Điều hành \& Tương tác}}{\textbf{Tab 4: Host Control Console}}\\Pinned announcement $\cdot$ Stop/Switch};
+\begin{tikzpicture}[node distance=0.75cm and 1.0cm]
+  \node[omniPurpleNode, minimum width=3.8cm, minimum height=2.2cm] (studio) at (0,0) {\bi{\textbf{Đầu vào Live Studio}}{\textbf{Live Studio inputs}}\\Curated VOD $\cdot$ Camera/Screen WHIP\\Public catalog $\cdot$ Host controls};
+  \node[omniAccent, minimum width=3.8cm, minimum height=1.5cm] (svc) at (5.2,2.1) {\textbf{LiveStudioService}\\Atomic event transition\\Program switch};
+  \node[omniDarkNode, minimum width=3.8cm, minimum height=1.5cm] (mtx) at (5.2,0) {\textbf{MediaMTX + Cloudinary}\\WHIP ingest $\rightarrow$ HLS/WHEP\\Direct Drive $\cdot$ signed uploads};
+  \node[omniTealNode, minimum width=3.8cm, minimum height=1.5cm] (gateway) at (5.2,-2.1) {\textbf{LiveStreamGateway /live}\\Socket.IO rooms $\cdot$ WebRTC signalling};
+  \node[omniAmberNode, minimum width=4.0cm, minimum height=1.7cm] (viewers) at (10.5,1.0) {\bi{\textbf{Web \& Mobile viewers}}{\textbf{Web \& mobile viewers}}\\Live room $\cdot$ OmniPlayer\\LAN discovery $\cdot$ HLS/WHEP};
+  \node[omniRoseNode, minimum width=4.0cm, minimum height=1.7cm] (ops) at (10.5,-1.7) {\bi{\textbf{Tương tác thời gian thực}}{\textbf{Live interactions}}\\Chat $\cdot$ Q\&A $\cdot$ Polls\\Reactions $\cdot$ Donations $\cdot$ Pinned alerts};
 
-  % --- Ingestion & Orchestration (Middle-Left) ---
-  \node[omniAccent, minimum width=3.8cm, minimum height=1.5cm] (studio) at (4.6, 2.2) {\textbf{LiveStudioService}\\atomic event lifecycle\\\texttt{switchProgramOnLiveEvent}};
-  \node[omniDarkNode, minimum width=3.8cm] (mtx) at (4.6, 0.5) {\textbf{MediaMTX + Cloudinary}\\WHIP/RTSP $\rightarrow$ WHEP/HLS (\texttt{.m3u8})\\Direct Drive proxy $\cdot$ Signed upload};
-  \node[omniTealNode, minimum width=3.8cm, minimum height=1.5cm] (ws) at (4.6,-1.1) {\textbf{LiveStreamGateway (\texttt{/live})}\\Socket.IO rooms (\texttt{event:id})\\WebRTC SDP/ICE signalling};
-
-  % --- Real-Time Events & Viewer Rooms (Right) ---
-  \node[omniAmberNode, minimum width=4.0cm] (webroom) at (9.6, 2.5) {\bi{\textbf{Phòng Live Web (\texttt{/live/[id]})}}{\textbf{Web Live Room (\texttt{/live/[id]})}}\\7 genre lounges $\cdot$ Cinema mode\\Lineup switcher $\cdot$ Join Lobby};
-  \node[omniAmberNode, minimum width=4.0cm] (mobroom) at (9.6, 0.7) {\bi{\textbf{Màn hình Mobile (\texttt{LiveWatch})}}{\textbf{Mobile \texttt{LiveWatchScreen}}}\\OmniPlayer $\cdot$ LAN host discovery\\Zero-cartoon exponential retry};
-  \node[omniRoseNode, minimum width=4.0cm] (ops) at (9.6,-1.1) {\bi{\textbf{Thao tác Tương tác Tức thời}}{\textbf{Interactive Live Operations}}\\Chat \& Reply $\cdot$ 0ms Haptic Reactions\\6-Tier Super Chat $\cdot$ Host Toast};
-
-  % --- Flows ---
-  \draw[omniFlowAccent] (tab1) -- (studio);
-  \draw[omniFlowAccent] (tab2) -- (studio);
-  \draw[omniFlow] (tab2) -- (mtx);
-  \draw[omniFlowAccent] (tab3) -- (studio);
-  \draw[omniFlowTeal] (tab4) -- (ws);
-  \draw[omniFlowTeal] (studio) -- (ws);
-  \draw[omniFlow] (studio) -- (mtx);
-  \draw[omniFlowAccent] (mtx) -- (webroom);
-  \draw[omniFlowAccent] (mtx) -- (mobroom);
-  \draw[omniFlowTeal] (ws) -- (webroom);
-  \draw[omniFlowTeal] (ws) -- (mobroom);
-  \draw[omniFlowRose] (ws) -- (ops);
-  \draw[omniFlowRose, dashed] (ops) -- (mobroom);
-  \draw[omniFlowRose, dashed] (ops) -- (webroom);
+  \draw[omniFlowAccent] (studio.east) -- (svc.west);
+  \draw[omniFlow] (svc.south) -- (mtx.north);
+  \draw[omniFlowTeal] (svc.east) -- ++(0.75,0) |- (gateway.north);
+  \draw[omniFlowAccent] (mtx.east) -- (viewers.west);
+  \draw[omniFlowRose] (gateway.east) -- (ops.west);
 \end{tikzpicture}%
 }
 
@@ -299,18 +270,17 @@
 % Figure: 5-Domain Relational Database Architecture (21 Prisma Models)
 % ------------------------------------------------------------
 \newcommand{\figDatabaseArchitecture}{%
-\begin{tikzpicture}[node distance=0.8cm and 1.0cm]
-  \node[omniAccent, minimum width=3.6cm, minimum height=2.1cm] (d1) at (0, 2.2) {\bi{\textbf{1. Định danh \& Bảo mật}}{\textbf{1. Identity \& Security}}\\\texttt{User} $\cdot$ \texttt{Role}\\\texttt{RefreshToken}};
-  \node[omniTealNode, minimum width=4.0cm, minimum height=2.1cm] (d2) at (4.4, 2.2) {\bi{\textbf{2. Lõi Phát sóng \& EPG}}{\textbf{2. Broadcast Core \& EPG}}\\\texttt{Channel} $\cdot$ \texttt{Program}\\\texttt{Schedule} $\cdot$ \texttt{LiveEvent}\\\texttt{Category} $\cdot$ \texttt{ProgramCategory}};
-  \node[omniPurpleNode, minimum width=4.0cm, minimum height=2.1cm] (d3) at (9.0, 2.2) {\bi{\textbf{3. Tương tác \& Thương mại}}{\textbf{3. Social \& Monetization}}\\\texttt{Comment} $\cdot$ \texttt{Reaction} $\cdot$ \texttt{Donation}\\\texttt{SubscriptionPlan} $\cdot$ \texttt{UserSubscription}\\\texttt{Watchlist} $\cdot$ \texttt{ViewHistory} $\cdot$ \texttt{FavoriteChannel}};
-  \node[omniAmberNode, minimum width=4.2cm, minimum height=1.8cm] (d4) at (2.2,-0.5) {\bi{\textbf{4. Vận hành \& Kiểm toán gRPC}}{\textbf{4. Operations \& gRPC Audit}}\\\texttt{Notification} $\cdot$ \texttt{AuditLog}\\\texttt{WebhookSubscription}};
-  \node[omniRoseNode, minimum width=4.2cm, minimum height=1.8cm] (d5) at (7.2,-0.5) {\bi{\textbf{5. Trí tuệ Nhân tạo (AI Curator)}}{\textbf{5. AI Content Intelligence}}\\\texttt{AiCuratorReport}\\\bi{1-1 với \texttt{Program} (sentiment/compliance)}{1-to-1 with \texttt{Program} (sentiment/compliance)}};
+\begin{tikzpicture}[node distance=0.55cm and 0.65cm]
+  \node[omniAccent, minimum width=4.5cm, minimum height=1.9cm] (d1) at (-2.5,1.35) {\bi{\textbf{1. Định danh \& bảo mật}}{\textbf{1. Identity \& security}}\\\texttt{User} $\cdot$ \texttt{Role}\\\texttt{RefreshToken}};
+  \node[omniTealNode, minimum width=4.7cm, minimum height=1.9cm] (d2) at (2.5,1.35) {\bi{\textbf{2. Phát sóng \& EPG}}{\textbf{2. Broadcast \& EPG}}\\\texttt{Channel} $\cdot$ \texttt{Program}\\\texttt{LiveEvent} $\cdot$ \texttt{Recording}\\\texttt{Category} $\cdot$ \texttt{Schedule}};
+  \node[omniPurpleNode, minimum width=5.0cm, minimum height=1.9cm] (d3) at (7.7,1.35) {\bi{\textbf{3. Tương tác \& thương mại}}{\textbf{3. Social \& monetisation}}\\\texttt{Comment} $\cdot$ \texttt{Reaction} $\cdot$ \texttt{Donation}\\\texttt{SubscriptionPlan} $\cdot$ \texttt{UserSubscription}\\\texttt{Watchlist} $\cdot$ \texttt{ViewHistory}};
+  \node[omniAmberNode, minimum width=5.0cm, minimum height=1.9cm] (d4) at (0,-1.1) {\bi{\textbf{4. Vận hành \& kiểm toán}}{\textbf{4. Operations \& audit}}\\\texttt{Notification} $\cdot$ \texttt{AuditLog}\\\texttt{WebhookSubscription} $\cdot$ \texttt{DeviceToken}};
+  \node[omniRoseNode, minimum width=5.0cm, minimum height=1.9cm] (d5) at (6.0,-1.1) {\bi{\textbf{5. Trí tuệ nội dung AI}}{\textbf{5. AI content intelligence}}\\\texttt{AiCuratorReport}\\\bi{liên kết với \texttt{Program}}{linked to \texttt{Program}}};
 
-  \draw[omniFlowAccent] (d1) -- (d2);
-  \draw[omniFlowTeal] (d2) -- (d3);
-  \draw[omniFlow] (d1) -- (d3);
-  \draw[omniFlowAmber] (d1) -- (d4);
-  \draw[omniFlowRose] (d2) -- (d5);
+  \draw[omniFlowAccent] (d1.east) -- (d2.west);
+  \draw[omniFlowTeal] (d2.east) -- (d3.west);
+  \draw[omniFlowAmber] (d1.south) -- (d4.north);
+  \draw[omniFlowRose] (d2.south east) -- (d5.north west);
 \end{tikzpicture}%
 }
 
@@ -318,20 +288,20 @@
 % Figure: Complete Mobile Navigation & 31-Screen Hierarchy (PRM393)
 % ------------------------------------------------------------
 \newcommand{\figMobileScreenMap}{%
-\begin{tikzpicture}[node distance=0.65cm and 0.9cm]
-  \node[omniDarkNode, minimum width=3.6cm] (root) at (4.5, 3.6) {\textbf{GoRouter Root}\\Splash $\cdot$ Onboarding $\cdot$ Auth (4)};
+\begin{tikzpicture}[node distance=0.55cm]
+  \node[omniDarkNode, minimum width=4.2cm] (root) at (0,3.8) {\textbf{GoRouter Root}\\Splash $\cdot$ Onboarding $\cdot$ Auth};
+  \node[omniAccent, minimum width=5.0cm, below=of root] (shell) {\textbf{MainNavigationShell}\\6 tabs: Home $\cdot$ Channels $\cdot$ Schedule $\cdot$ Saved $\cdot$ History $\cdot$ Profile};
 
-  \node[omniAccent, minimum width=3.8cm] (shell) at (4.5, 2.1) {\textbf{MainNavigationShell (6 Tabs)}\\Home $\cdot$ Channels $\cdot$ Schedule\\Saved $\cdot$ History $\cdot$ Profile};
+  \node[omniRoseNode, minimum width=4.8cm, minimum height=1.7cm] (discovery) at (-3.8,-0.2) {\bi{\textbf{Khám phá \& thư viện}}{\textbf{Discovery \& library}}\\Home $\cdot$ Channels $\cdot$ EPG $\cdot$ Search\\Recordings $\cdot$ Favorites};
+  \node[omniAmberNode, minimum width=4.8cm, minimum height=1.7cm] (playback) at (-3.8,-2.5) {\bi{\textbf{Phát trực tiếp \& xem lại}}{\textbf{Live \& playback}}\\LiveNow $\cdot$ LiveWatch $\cdot$ OmniPlayer\\Watchlist $\cdot$ viewing history};
+  \node[omniPurpleNode, minimum width=4.8cm, minimum height=1.7cm] (studio) at (3.8,-0.2) {\bi{\textbf{Studio \& sáng tạo}}{\textbf{Studio \& creator tools}}\\LiveStudio (4 tabs) $\cdot$ Mobile Recorder\\AI Curator $\cdot$ schedule form};
+  \node[omniTealNode, minimum width=4.8cm, minimum height=1.7cm] (account) at (3.8,-2.5) {\bi{\textbf{Tài khoản \& quản trị}}{\textbf{Account \& administration}}\\Profile $\cdot$ Settings $\cdot$ Notifications\\Admin tools $\cdot$ subscription plans};
 
-  \node[omniRoseNode, minimum width=3.5cm] (live) at (0.2, 0.4) {\bi{\textbf{Cụm Xem Live \& VOD}}{\textbf{Live \& VOD Cluster}}\\\texttt{LiveNowScreen} (\texttt{/live})\\\texttt{LiveWatchScreen} (\texttt{/live/:id})\\\texttt{OmniPlayer} + Super Chat + Chat};
-
-  \node[omniPurpleNode, minimum width=3.6cm] (studio) at (4.5, 0.4) {\bi{\textbf{Cụm Studio Phát sóng}}{\textbf{Broadcast Studio Cluster}}\\\texttt{LiveStudioScreen} (4 Tabs)\\\texttt{MobileStudioRecorderScreen}\\Teleprompter $\cdot$ VU Meter $\cdot$ QC};
-
-  \node[omniTealNode, minimum width=3.5cm] (admin) at (8.8, 0.4) {\bi{\textbf{Cụm Quản trị \& AI}}{\textbf{Admin \& AI Cluster}}\\\texttt{AdminManageScreen} (4 Tabs)\\\texttt{AiCuratorScreen} $\cdot$ Schedule Form\\Notifications $\cdot$ Settings $\cdot$ Sub Plans};
-
+  \coordinate (branch) at (0,1.5);
   \draw[omniFlowAccent] (root) -- (shell);
-  \draw[omniFlowRose] (shell) -- (live);
-  \draw[omniFlow] (shell) -- (studio);
-  \draw[omniFlowTeal] (shell) -- (admin);
+  \draw[omniFlowRose] (shell.south) -- (branch) -| (discovery.north);
+  \draw[omniFlow] (shell.south) -- (branch) -| (studio.north);
+  \draw[omniFlowAmber] (discovery.south) -- (playback.north);
+  \draw[omniFlowTeal] (studio.south) -- (account.north);
 \end{tikzpicture}%
 }

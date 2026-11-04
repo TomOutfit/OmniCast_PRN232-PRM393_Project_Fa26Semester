@@ -342,8 +342,99 @@ MSSV: <code>QE170080</code>)</li>
 </ol></li>
 <li><strong>Tổng số ca kiểm thử:</strong> 32 Test Cases chức năng / E2E
 + 391 Automated Tests (163 Backend + 228 Frontend)</li>
-<li><strong>Tỷ lệ thực thi:</strong> 100% ĐẠT (PASS)</li>
+<li><strong>Phạm vi tài liệu:</strong> Danh mục kịch bản và kết quả được
+ghi nhận, không phải log chạy có timestamp.</li>
 </ul>
+<hr />
+<h3 id="lịch-sử-thực-thi-có-thể-truy-vết">Lịch Sử Thực Thi Có Thể Truy
+Vết</h3>
+<p>Các bảng bên dưới là danh mục kịch bản chức năng; chúng không phải
+kết quả chạy từng ID trong một runner. CI artifacts cho thấy 391
+automated tests backend/web đã đạt trong run 40630318005. E2E Playwright
+có lịch sử riêng: bản ghi PRN232 nêu 6/8 vào 28/10/2026, nhưng không có
+ID lỗi, thời gian từng test hay commit sửa.</p>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Thứ tự</th>
+<th style="text-align: left;">Timestamp ICT (+07:00)</th>
+<th style="text-align: left;">Kết quả/mốc</th>
+<th style="text-align: left;">Bằng chứng</th>
+<th style="text-align: left;">Sửa và xác nhận</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: left;">28/10/2026, giờ không được ghi</td>
+<td style="text-align: left;">Playwright 6/8</td>
+<td style="text-align: left;">STAFF login timeout; /studio trả HTTP 401
+không khớp assertion redirect</td>
+<td style="text-align: left;">Không có fix commit hoặc rerun được
+ghi</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: left;">28/10/2026 11:05:17-11:13:45</td>
+<td style="text-align: left;">CI run 40630318005: backend 163/163,
+frontend 228/228, tổng 391/391</td>
+<td style="text-align: left;">Commit
+edafb2347b224d05909d47d85fc152f83901097c; artifacts và job timestamps
+còn trên GitHub Actions</td>
+<td style="text-align: left;">Thành công; đây không phải Playwright
+rerun</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td style="text-align: left;">29/10/2026 14:17:14-14:22:50</td>
+<td style="text-align: left;">Run 40834458443: automated tests đạt,
+mobile APK build thất bại</td>
+<td style="text-align: left;">Thiếu import trong main.dart và cú pháp
+thừa trong settings_screen.dart</td>
+<td style="text-align: left;">Được sửa tại commit 64f66fc lúc
+14:29:01</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td style="text-align: left;">29/10/2026 14:29:53-14:37:56</td>
+<td style="text-align: left;">Run 40835801104 đạt trên commit
+64f66fc</td>
+<td style="text-align: left;">Cả ba job test/build và quality gate thành
+công</td>
+<td style="text-align: left;">Xác nhận bản sửa compile; không xác nhận
+hai lỗi Playwright</td>
+</tr>
+</tbody>
+</table>
+<p>Artifact cung cấp thời lượng theo từng test cho web/mobile và theo
+spec cho backend. Các test case chức năng bên dưới chưa được nối với
+test ID tự động tương ứng, nên không gán elapsed time của unit test vào
+kịch bản thủ công. Để hoàn thiện Playwright history cần lưu test ID,
+timestamp ISO-8601 có múi giờ, elapsed time, status, error/trace, commit
+SHA và commit sửa.</p>
+<p>Nguồn CI: <a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40630318005">40630318005</a>,
+<a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834458443">40834458443</a>,
+<a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40834718325">40834718325</a>,
+<a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/40835801104">40835801104</a>,
+<a
+href="https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester/actions/runs/41816740967">latest
+run 41816740967</a>. In the latest run, backend tests passed but Prisma
+migration failed with P3018 because relation StreamDonation was missing;
+the quality gate blocked deployment.</p>
+<p>Raw runner results for the timed CI run are archived in <a
+href="ci_runs/40630318005/backend-test-results.json">backend</a> and <a
+href="ci_runs/40630318005/frontend-test-results.json">frontend</a>.</p>
 <hr />
 <h3 id="danh-mục-test-cases-chi-tiết">Danh Mục Test Cases Chi Tiết</h3>
 <h4
