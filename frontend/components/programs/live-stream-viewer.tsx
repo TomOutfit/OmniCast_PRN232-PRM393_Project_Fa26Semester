@@ -157,16 +157,21 @@ export default function LiveStreamViewer({
         // Use hls.js for other browsers
         const hls = new Hls({
           enableWorker: true,
-          lowLatencyMode: isLive, // Enable low latency for live streams
-          liveSyncDurationCount: 1.5,
-          liveMaxLatencyDurationCount: 3,
-          maxLiveSyncPlaybackRate: 1.35,
+          lowLatencyMode: isLive,
+          progressive: true,
+          liveSyncDurationCount: 1,
+          liveMaxLatencyDurationCount: 2.5,
+          maxLiveSyncPlaybackRate: 1.4,
           liveDurationInfinity: true,
-          backBufferLength: isLive ? 15 : 60,
-          maxBufferLength: isLive ? 6 : 30,
-          maxMaxBufferLength: isLive ? 15 : 60,
+          backBufferLength: isLive ? 10 : 60,
+          maxBufferLength: isLive ? 4 : 30,
+          maxMaxBufferLength: isLive ? 10 : 60,
           highBufferWatchdogPeriod: 1,
-          startLevel: -1, // Auto quality selection
+          fragLoadingTimeOut: 4000,
+          manifestLoadingTimeOut: 4000,
+          fragLoadingRetryDelay: 500,
+          manifestLoadingRetryDelay: 500,
+          startLevel: -1,
         });
 
         hls.loadSource(streamUrl);

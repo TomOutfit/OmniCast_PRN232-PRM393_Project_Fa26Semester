@@ -483,10 +483,23 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (c == null) return;
     final val = c.value;
     final curSec = val.position.inSeconds;
+    final justFinishedBuffering = _lastBuffering == true && !val.isBuffering;
+    if (_isLiveStream && justFinishedBuffering && val.isPlaying && val.duration > Duration.zero) {
+      c.seekTo(val.duration);
+    }
+
     if (_isLiveStream && !_userPaused && val.isPlaying && val.duration > Duration.zero) {
       final drift = val.duration - val.position;
-      if (drift > const Duration(seconds: 5)) {
+      if (drift > const Duration(seconds: 4)) {
+        // Hard catch-up if fallen behind
         c.seekTo(val.duration);
+        if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
+      } else if (drift > const Duration(milliseconds: 1800)) {
+        // Adaptive catch-up (1.25x speed boost to eliminate delay seamlessly)
+        if (c.value.playbackSpeed != 1.25) c.setPlaybackSpeed(1.25);
+      } else if (drift <= const Duration(milliseconds: 900)) {
+        // Fully in-sync: maintain exact 1.0x real-time speed
+        if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
       }
     }
     if (curSec != _lastTickSec ||

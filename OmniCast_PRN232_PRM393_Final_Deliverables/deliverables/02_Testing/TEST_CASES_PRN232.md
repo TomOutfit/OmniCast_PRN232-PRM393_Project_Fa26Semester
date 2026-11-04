@@ -18,7 +18,20 @@
   3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136`)
   4. **Đồng Hoàng Nguyên** (`teng122`)
 - **Tổng số ca kiểm thử:** 32 Test Cases chức năng / E2E + 391 Automated Tests (163 Backend + 228 Frontend)
-- **Tỷ lệ thực thi:** 100% ĐẠT (PASS)
+- **Phạm vi tài liệu:** Danh mục kịch bản và kết quả được ghi nhận, không phải log chạy có timestamp.
+
+---
+
+### Lịch Sử Thực Thi Có Thể Truy Vết
+
+Các bảng bên dưới mô tả test case và expected/observed result; chúng không chứa thời điểm bắt đầu, thời lượng từng test, commit chạy hay runner artifact. Báo cáo PRN232 ghi nhận một lần chạy Playwright 6/8 vào ngày 28/10/2026, nhưng không có giờ chạy, test ID, elapsed time hoặc bản sửa/version và kết quả hồi quy. Vì vậy không thể gán lịch sử đó cho các ID TC cụ thể.
+
+| Thứ tự | Thời điểm | Kết quả | Lỗi/nguyên nhân ghi nhận | Phiên bản sửa và chạy lại |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | 28/10/2026, không có giờ | Playwright 6/8 | Đăng nhập STAFF timeout do phụ thuộc dữ liệu seed; guard /studio trả HTTP 401 không khớp assertion redirect | Không được ghi lại |
+| 2 | Sau lần lỗi, chưa có timestamp | Chưa xác minh | Không có log run hay test report để xác nhận lỗi đã được sửa | Không được ghi lại |
+
+Không điền thời gian giả. Để ghi nhận các lần chạy sau, mỗi kết quả cần lưu: test ID, timestamp ISO-8601 có múi giờ, elapsed time do runner đo, status, error/stack trace, commit SHA và commit/version sửa lỗi.
 
 ---
 

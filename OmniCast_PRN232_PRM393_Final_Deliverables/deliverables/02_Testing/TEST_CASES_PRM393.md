@@ -18,7 +18,20 @@
   3. **Nguyễn Vĩnh Phú** (`phunvqe180136` — MSSV: `QE180136` — Mobile Lead Developer)
   4. **Đồng Hoàng Nguyên** (`teng122`)
 - **Tổng số ca kiểm thử:** 28 Test Cases chức năng / Tích hợp + 91 Automated Tests (Flutter Unit & Widget Tests)
-- **Tỷ lệ thực thi:** 100% ĐẠT (PASS)
+- **Phạm vi tài liệu:** Danh mục kịch bản và kết quả được ghi nhận, không phải log chạy có timestamp.
+
+---
+
+### Lịch Sử Thực Thi Có Thể Truy Vết
+
+Các bảng bên dưới mô tả test case và expected/observed result; chúng không chứa thời điểm bắt đầu, thời lượng từng test, commit chạy hay runner artifact. Báo cáo hiện ghi bộ Flutter đạt 91 tests và thời lượng tổng 11.23 giây, nhưng không đính kèm log có timestamp hoặc duration từng test. Không thể suy ra thời lượng riêng của từng ca từ số tổng này.
+
+| Mốc | Bằng chứng hiện có | Dữ liệu chưa có |
+| :--- | :--- | :--- |
+| 28/10/2026 | Tài liệu PRN232 ghi tổng kết 482 automated tests và lần chạy Playwright 6/8; không xác định đây có phải cùng phiên CI với mobile hay không. | Timestamp và elapsed time của từng Flutter test |
+| Lần chạy được báo cáo | 91 tests / 8 suite; 11.23 giây được ghi trong báo cáo tổng hợp | Runner output, commit SHA, trạng thái theo từng test ID |
+
+Không gán mốc lỗi PRN232 cho các test case mobile. Các lần chạy sau cần lưu test ID, timestamp ISO-8601 có múi giờ, elapsed time do runner đo, status, lỗi, commit SHA và version sửa lỗi.
 
 ---
 

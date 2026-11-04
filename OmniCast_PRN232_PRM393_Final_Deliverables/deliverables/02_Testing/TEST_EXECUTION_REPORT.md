@@ -32,9 +32,22 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 | **Frontend Unit & Component Tests (Next.js)** | **228** | **100%** | Chạy qua `vitest` trên 76 bộ kiểm thử UI & Hook |
 | **Mobile Unit & Widget Tests (Flutter)** | **91** | **100%** | Chạy qua `flutter test` trên 8 bộ kiểm thử BLoC & Screen |
 | **Tổng số Automated Tests (Codebase)** | **482** | **100%** | **482 Passed / 0 Failed / 0 Skipped** |
-| **Kịch bản E2E Playwright Browser** | **8** | **100%** | Chụp 8 màn hình kiểm thử hành trình người dùng Web |
+| **E2E smoke có ảnh chụp** | **8** | **8/8 được ghi nhận** | Bộ kịch bản chụp màn hình ở mục 3; không có log runner kèm theo |
+| **Playwright E2E PRN232** | **8** | **6/8 trong lần chạy được mô tả** | Hai lỗi môi trường/assertion ở mục 5; chưa có log thời gian |
 | **Kiểm thử Tích hợp LiveStream & Studio** | **12** | **100%** | Xác minh luồng WHIP/RTMP, HLS, Chat, Polls, Q&A, Commerce |
-| **Thời gian thực thi quy trình CI/CD** | **~4m 12s** | **Thành công** | Ma trận 5 jobs độc lập trên GitHub Actions |
+| **Thời gian thực thi quy trình CI/CD** | **~4m 12s (theo bản ghi cũ)** | **Chưa xác minh** | Không lưu URL run, timestamp, job log hoặc commit SHA |
+
+#### 1.1. Mốc chạy và độ tin cậy của số liệu
+
+Tài liệu PRN232 ghi các bộ kiểm thử tự động được chạy ngày **28/10/2026**; không có giờ bắt đầu/kết thúc, múi giờ, commit SHA hay log runner đi kèm. Ba thời lượng 9.42s, 14.85s và 11.23s dưới đây là số đã được ghi trong bản báo cáo, chưa thể xác minh độc lập từ artifact. Không diễn giải chúng thành thời gian của từng test case.
+
+| Mốc | Thông tin có thể xác nhận từ tài liệu/kho mã | Thông tin chưa được lưu |
+| :--- | :--- | :--- |
+| 28/10/2026 | Báo cáo PRN232 ghi 482 automated tests và 8 kịch bản Playwright; phần kiểm thử PRN232 ghi một lần chạy E2E đạt 6/8. | Giờ chạy, thời lượng từng test, ID test lỗi, log nguyên bản, commit/version chạy |
+| 29/10/2026 15:34 +07:00 | Commit e143904 đồng bộ bộ báo cáo và testing dossier; đây là mốc tài liệu, không phải mốc chạy test. | Không có CI run được liên kết |
+| 02/11/2026 12:54 +07:00 | Commit 514e312 là baseline checkpoint; đây không phải bằng chứng test đã chạy lại. | Không có CI run được liên kết |
+
+Các thời lượng và mốc ngày 28/10 được giữ lại dưới dạng số liệu đã ghi nhận, không gắn timestamp chính xác hơn dữ liệu hiện có. Hồ sơ lỗi không ghi ngày phát hiện, ngày sửa, version/commit khắc phục hoặc lần chạy hồi quy.
 
 ---
 
@@ -43,7 +56,7 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 #### 2.1. Back-End Test Suite (NestJS `node:test`)
 - **Môi trường chạy:** Node.js v24.x, PostgreSQL (Supabase 21 Prisma Models), Redis Cache, Prisma ORM, gRPC Client.
 - **Tổng số ca kiểm thử:** 163 tests trong 16 tệp spec.
-- **Thời gian thực thi:** 9.42 giây.
+- **Thời gian được ghi trong báo cáo cũ:** 9.42 giây; không có timestamp/log runner để kiểm chứng.
 - **Phân bổ theo tệp kiểm thử:**
   1. `test/ai-curator-stats.service.spec.ts`: 10 tests (Thống kê chỉ số AI, phân nhóm tỷ lệ duyệt nội dung).
   2. `test/ai-curator.e2e.spec.ts`: 12 tests (Quy trình gọi OpenAI GPT-4o, schema Zod, fallback heuristic).
@@ -65,7 +78,7 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 #### 2.2. Web Front-End Test Suite (Next.js 15 `vitest`)
 - **Môi trường chạy:** Vitest, React Testing Library, JSDOM, TailwindCSS.
 - **Tổng số ca kiểm thử:** 228 tests trong 76 bộ kiểm thử.
-- **Thời gian thực thi:** 14.85 giây.
+- **Thời gian được ghi trong báo cáo cũ:** 14.85 giây; không có timestamp/log runner để kiểm chứng.
 - **Phạm vi bảo vệ:**
   - **Logic thuần (Pure Functions):** Query Builder, EPG Grid Layout Math, Form Validators, Token Manager, Watch-Party clock drift calculation.
   - **Thành phần giao diện (UI Components):** Live Carousel, Live Chat Box, Floating Reactions Overlay, EPG Timeline Grid, Studio Upload Button, Role Badge, Notification Bell, Pinned Product Card.
@@ -76,7 +89,7 @@ Báo cáo này tổng hợp kết quả thực thi kiểm thử toàn bộ hệ 
 #### 2.3. Mobile Test Suite (Flutter 3.24+ `flutter test`)
 - **Môi trường chạy:** Flutter SDK 3.24+, Dart 3.5+, Mockito, BLoC Test.
 - **Tổng số ca kiểm thử:** 91 tests trong 8 bộ kiểm thử.
-- **Thời gian thực thi:** 11.23 giây.
+- **Thời gian được ghi trong báo cáo cũ:** 11.23 giây; không có timestamp/log runner để kiểm chứng.
 - **Phân bổ chi tiết:**
   1. `test/data/repositories/ai_curator_repository_test.dart`: 26 tests (Mock phản hồi API AI).
   2. `test/data/watchlist_item_model_test.dart`: 9 tests (Chuyển đổi DTO và tính toán dirty flag SQLite).
@@ -125,6 +138,15 @@ Bộ kiểm thử trình duyệt thực hiện 8 kịch bản xuyên suốt hàn
 
 ### 5. Nhật Ký Sửa Lỗi Trong Quá Trình Kiểm Thử (Defect Resolution Log)
 
+**Khả năng truy vết:** BUG-01 đến BUG-05 có mô tả nguyên nhân và giải pháp trong hồ sơ, nhưng không có giờ phát hiện, commit/version khắc phục hoặc lần chạy hồi quy. Trạng thái “đã sửa” phản ánh nội dung được ghi nhận, không xác nhận mốc phát hành.
+
+| Thứ tự | Thời điểm theo hồ sơ | Lỗi E2E được mô tả | Nguyên nhân được mô tả | Mốc sửa/xác nhận |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | 28/10/2026, không có giờ | Đăng nhập STAFF không thoát khỏi /login trước timeout | Phụ thuộc tài khoản STAFF được seed trong DB kiểm thử | Không có commit sửa hay lần chạy lại |
+| 2 | 28/10/2026, không có giờ | Truy cập /studio khi chưa đăng nhập không thỏa assertion redirect | HTTP 401 không khớp các dạng redirect mà assertion chấp nhận | Không có commit sửa hay lần chạy lại |
+
+Không đủ dữ liệu để xác định giây thất bại, thứ tự thời gian chính xác hoặc phiên bản khắc phục; không gán thời gian hay version suy đoán.
+
 | Mã lỗi | Mô tả vấn đề phát hiện | Nguyên nhân gốc rễ | Giải pháp đã thực hiện | Trạng thái |
 | :---: | :--- | :--- | :--- | :---: |
 | **BUG-01** | Trình phát di động không mở được luồng phát MediaMTX trên máy thật | Luồng phát trả về URL chứa `localhost:8889` khiến thiết bị di động không kết nối được | Thêm cơ chế `resolveStreamUrl` tự động phân giải sang IP máy chủ nội bộ trong mạng LAN | **ĐÃ SỬA** |
@@ -137,11 +159,11 @@ Bộ kiểm thử trình duyệt thực hiện 8 kịch bản xuyên suốt hàn
 
 ### 6. Kết Luận & Biên Bản Nghiệm Thu Chất Lượng (Quality Sign-Off)
 
-Toàn bộ hệ thống phần mềm **OmniCast** đã hoàn thành 100% các tiêu chí kiểm định chất lượng:
-1. **Tính đúng đắn về mặt logic:** 482/482 bài kiểm thử tự động đạt kết quả PASS (100%).
+Hồ sơ hiện ghi nhận 482 automated tests PASS và một smoke set 8/8; phần E2E PRN232 mô tả một lần chạy 6/8. Do không có log gốc và timestamp cho từng lần chạy, đây là số liệu báo cáo chưa thể tái kiểm chứng:
+1. **Automated tests:** 482/482 được báo cáo PASS; log runner không được lưu kèm.
 2. **Khả năng hoạt động ngoại tuyến:** Cơ chế lưu trữ đệm SQLite và hàng đợi thao tác phát lại hoạt động tin cậy.
 3. **Hiệu năng truyền phát trực tiếp:** Luồng WebRTC WHIP đạt độ trễ cực thấp (< 500ms), luồng phát lại HLS ABR mượt mà.
 4. **Tính nhất quán kiến trúc:** Tuân thủ phân tầng Clean Architecture, NestJS Modular System, và cơ sở dữ liệu quan hệ 21 Prisma Models.
 
-**Xác nhận:** Đủ điều kiện nghiệm thu và đóng gói chính thức cho học phần PRN232 & PRM393.  
+**Trạng thái hồ sơ:** Cần lưu CI artifacts có timestamp, commit SHA và kết quả từng test trước khi dùng số liệu này như biên bản nghiệm thu có thể truy vết.  
 *FPTU Quy Nhon AI Campus - FU Cahata, Tháng 10/2026.*

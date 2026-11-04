@@ -12,43 +12,33 @@
 % Figure: Overall layered architecture (PRN232)
 % ------------------------------------------------------------
 \newcommand{\figArchitecture}{%
-\begin{tikzpicture}[scale=0.92, transform shape]
-  % --- Presentation layer ---
-  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (web) at (0,4.6) {\textbf{Next.js 15 Web Portal}\\App Router $\cdot$ React 19\\Tailwind Cinema Dark};
-  \node[omniNode, fill=omniPurple!8, draw=omniPurple] (mob) at (4.0,4.6) {\textbf{Flutter 3.x Mobile}\\BLoC $\cdot$ Dio $\cdot$ Sqflite};
+\begin{tikzpicture}[node distance=0.55cm and 0.85cm]
+  \node[omniLabel] (clientLabel) {\bi{\textbf{Ứng dụng}}{\textbf{Clients}}};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple, right=of clientLabel, minimum width=3.0cm] (web) {\textbf{Web Portal}\\Next.js 15 $\cdot$ React 19};
+  \node[omniNode, fill=omniPurple!8, draw=omniPurple, below=0.25cm of web, minimum width=3.0cm] (mob) {\textbf{Mobile App}\\Flutter $\cdot$ BLoC};
 
-  % --- API layer ---
-  \node[omniAccent, minimum width=5.4cm, minimum height=1.5cm] (api) at (2.0,2.5) {\textbf{NestJS 10 REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT + RBAC $\cdot$ Swagger/OpenAPI};
-  \node[omniTealNode] (gw) at (2.0,0.9) {\textbf{WebSocket Gateway}\\namespace \texttt{/live}\\Socket.IO $\cdot$ WebRTC signalling};
-  \node[omniTealNode] (grpc) at (5.6,0.9) {\textbf{gRPC Client}\\AuditLogger proto};
+  \node[omniLabel, right=0.8cm of web] (apiLabel) {\bi{\textbf{API}}{\textbf{API}}};
+  \node[omniAccent, right=of apiLabel, minimum width=3.4cm, minimum height=2.0cm] (api) {\textbf{NestJS REST API}\\19 modules $\cdot$ 140+ endpoints\\JWT $\cdot$ RBAC $\cdot$ OpenAPI};
 
-  % --- Microservice ---
-  \node[omniAmberNode] (audit) at (5.6,-0.9) {\textbf{Audit-Logger Microservice}\\NestJS $\cdot$ gRPC server\\Render/own deployment};
+  \node[omniLabel, right=0.8cm of api] (svcLabel) {\bi{\textbf{Dịch vụ}}{\textbf{Services}}};
+  \node[omniTealNode, right=of svcLabel, minimum width=3.1cm] (live) {\textbf{Real-time}\\Socket.IO /live\\WebRTC signalling};
+  \node[omniTealNode, below=0.25cm of live, minimum width=3.1cm] (audit) {\textbf{Audit Logger}\\gRPC service};
+  \node[omniAmberNode, below=0.25cm of audit, minimum width=3.1cm] (media) {\textbf{MediaMTX}\\WHIP ingest $\cdot$ HLS/WebRTC};
 
-  % --- Data layer ---
-  \node[omniDarkNode, minimum width=3.0cm] (db) at (0.2,-0.9) {\textbf{PostgreSQL}\\Supabase\\21 Prisma models};
-  \node[omniDarkNode] (media) at (2.8,-0.9) {\textbf{MediaMTX}\\WHIP ingest\\HLS / WebRTC out};
-  \node[omniDarkNode] (cdn) at (5.0,-0.9) {\textbf{Cloudinary}\\media assets};
-  \node[omniDarkNode] (ext) at (7.2,-0.9) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB\\YouTube/Twitch/RSS};
+  \node[omniLabel, right=0.8cm of live] (dataLabel) {\bi{\textbf{Tích hợp}}{\textbf{Integrations}}};
+  \node[omniDarkNode, right=of dataLabel, minimum width=3.2cm] (db) {\textbf{PostgreSQL / Supabase}\\21 Prisma models};
+  \node[omniDarkNode, below=0.25cm of db, minimum width=3.2cm] (cloud) {\textbf{Cloudinary}\\Media assets};
+  \node[omniDarkNode, below=0.25cm of cloud, minimum width=3.2cm] (external) {\textbf{External APIs}\\OpenAI $\cdot$ TMDB $\cdot$ YouTube\\Twitch $\cdot$ RSS};
 
-  % --- Flows ---
-  \draw[omniFlowAccent] (web) -- (api);
-  \draw[omniFlowAccent] (mob) -- (api);
-  \draw[omniFlow] (api) -- (gw);
-  \draw[omniFlow] (api) -- (grpc);
-  \draw[omniFlowTeal] (grpc) -- (audit);
-  \draw[omniFlow] (api) -- (db);
-  \draw[omniFlow] (api) -- (media);
-  \draw[omniFlow] (api) -- (cdn);
-  \draw[omniFlowAmber] (api) -- (ext);
-  \draw[omniFlow] (media) -- (mob);
-  \draw[omniFlow] (media) -- (web);
-
-  % --- Layer annotations ---
-  \node[omniLabel, anchor=west] at (-1.85,4.6) {\bi{\textbf{Tầng}}{\textbf{Presentation}}};
-  \node[omniLabel, anchor=west] at (-1.85,2.5) {\bi{\textbf{API}}{\textbf{API}}};
-  \node[omniLabel, anchor=west] at (-1.85,0.9) {\bi{\textbf{Real-time}}{\textbf{Real-time}}};
-  \node[omniLabel, anchor=west] at (-1.85,-0.9) {\bi{\textbf{Dữ liệu}}{\textbf{Data}}};
+  \draw[omniFlowAccent] (clientLabel.east) -- (web.west);
+  \draw[omniFlowAccent] (web.east) -- (api.west);
+  \draw[omniFlowAccent] (mob.east) -| (api.south west);
+  \draw[omniFlow] (api.east) -- (live.west);
+  \draw[omniFlow] (live.east) -- (db.west);
+  \draw[omniFlow] (api.east) -- (audit.west);
+  \draw[omniFlowTeal] (audit.east) -- (cloud.west);
+  \draw[omniFlow] (api.east) -- (media.west);
+  \draw[omniFlowAmber] (media.east) -- (external.west);
 \end{tikzpicture}%
 }
 

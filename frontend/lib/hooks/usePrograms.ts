@@ -62,7 +62,8 @@ export function useLiveNow(
   return useQuery<LiveEvent[]>({
     queryKey: programsKeys.liveNow(),
     queryFn: fetchLiveNow,
-    staleTime: 60 * 1000,
+    staleTime: 15 * 1000,
+    refetchInterval: 30 * 1000,
     ...options,
   });
 }
