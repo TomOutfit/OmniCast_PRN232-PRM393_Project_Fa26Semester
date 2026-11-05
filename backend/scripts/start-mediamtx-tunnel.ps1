@@ -101,23 +101,44 @@ Start-Sleep -Seconds 1
 # 7. Start Cloudflare Tunnel for Proxy Port
 Write-Host "==> Launching Cloudflare HTTPS Tunnel for port $ProxyPort..." -ForegroundColor Green
 $tunnelLog = Join-Path $MediaMtxDir 'cloudflared.log'
-if (Test-Path $tunnelLog) { Remove-Item $tunnelLog -Force }
 
-$cfProc = Start-Process -FilePath $CloudflaredExe -ArgumentList "tunnel --url http://localhost:$ProxyPort" -WorkingDirectory $MediaMtxDir -RedirectStandardError $tunnelLog -PassThru -WindowStyle Hidden
-
-# Wait for tunnel URL
 $TunnelUrl = $null
-$attempts = 0
-while ($attempts -lt 30) {
-  Start-Sleep -Seconds 1
-  $attempts++
-  if (Test-Path $tunnelLog) {
-    $content = Get-Content $tunnelLog -Raw -ErrorAction SilentlyContinue
-    if ($content -match 'https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com') {
-      $TunnelUrl = $matches[0]
+$maxRetries = 4
+for ($retry = 1; $retry -le $maxRetries; $retry++) {
+  if (Test-Path $tunnelLog) { Remove-Item $tunnelLog -Force -ErrorAction SilentlyContinue }
+  
+  Write-Host "==> Starting cloudflared tunnel (attempt $retry of $maxRetries)..." -ForegroundColor Yellow
+  $cfProc = Start-Process -FilePath $CloudflaredExe -ArgumentList "tunnel --url http://localhost:$ProxyPort" -WorkingDirectory $MediaMtxDir -RedirectStandardError $tunnelLog -PassThru -WindowStyle Hidden
+
+  $attempts = 0
+  while ($attempts -lt 30) {
+    Start-Sleep -Seconds 1
+    $attempts++
+    if (Test-Path $tunnelLog) {
+      $content = Get-Content $tunnelLog -Raw -ErrorAction SilentlyContinue
+      if ($content) {
+        $matchesFound = [regex]::Matches($content, 'https:\/\/([a-zA-Z0-9-]+)\.trycloudflare\.com')
+        foreach ($m in $matchesFound) {
+          if ($m.Groups[1].Value -ne 'api') {
+            $TunnelUrl = $m.Value
+            break
+          }
+        }
+      }
+      if ($TunnelUrl) { break }
+    }
+    if ($cfProc.HasExited) {
+      Write-Host "==> cloudflared exited early on attempt $retry, retrying..." -ForegroundColor Yellow
       break
     }
   }
+
+  if ($TunnelUrl) { break }
+
+  if (-not $cfProc.HasExited) {
+    Stop-Process -Id $cfProc.Id -Force -ErrorAction SilentlyContinue
+  }
+  Start-Sleep -Seconds 2
 }
 
 if (-not $TunnelUrl) {
@@ -224,8 +245,25 @@ main().catch(console.error).finally(() => prisma.`$disconnect());
 "@
 $tempSyncFile = Join-Path $BackendDir 'scripts\temp_sync.js'
 Set-Content -Path $tempSyncFile -Value $syncScript -Encoding UTF8
-node $tempSyncFile
-Remove-Item $tempSyncFile -Force
+try {
+  $syncSuccess = $false
+  for ($s = 1; $s -le 3; $s++) {
+    Write-Host "==> Syncing with Cloud Database (attempt $s of 3)..." -ForegroundColor Yellow
+    node $tempSyncFile
+    if ($LASTEXITCODE -eq 0) {
+      $syncSuccess = $true
+      break
+    }
+    Start-Sleep -Seconds 2
+  }
+  if (-not $syncSuccess) {
+    Write-Warning "Cloud DB sync warning. MediaMTX tunnel is running locally and ready."
+  }
+} catch {
+  Write-Warning "Cloud DB sync skipped: $_"
+} finally {
+  if (Test-Path $tempSyncFile) { Remove-Item $tempSyncFile -Force -ErrorAction SilentlyContinue }
+}
 
 Write-Host ""
 Write-Host "DIRECTIONS TO BROADCAST AND VIEW:" -ForegroundColor White
