@@ -114,17 +114,17 @@ function getHeaderMetadata(isPrn232, lang) {
       return `\\begin{center}
 {\\bfseries\\Large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[2mm]
 {\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\small\\bfseries KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[6mm]
+{\\small\\bfseries KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[8mm]
 {\\huge\\bfseries BÁO CÁO NGHIỆM THU ĐỒ ÁN TOÀN DIỆN}\\\\[3mm]
-{\\Large\\bfseries HỌC PHẦN: PRN232 --- XÂY DỰNG ỨNG DỤNG PHÍA SAU ĐA NỀN TẢNG}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[4mm]
-{\\LARGE\\bfseries HỆ THỐNG LẬP LỊCH VÀ PHÁT SÓNG NỘI DUNG SỐ ĐA NỀN TẢNG OMNICAST}\\\\[2mm]
-{\\large\\bfseries Phát sóng. Kết nối. Khám phá.}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[6mm]
+{\\Large\\bfseries HỌC PHẦN: PRN232 --- XÂY DỰNG ỨNG DỤNG PHÍA SAU ĐA NỀN TẢNG}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[5mm]
+{\\LARGE\\bfseries HỆ THỐNG LẬP LỊCH VÀ PHÁT SÓNG NỘI DUNG SỐ ĐA NỀN TẢNG OMNICAST}\\\\[3mm]
+{\\large\\bfseries Phát sóng. Kết nối. Khám phá.}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[8mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.5cm}|p{10.5cm}|}
+\\begin{tabular}{|p{4.6cm}|p{10.6cm}|}
 \\hline
 \\textbf{Giảng viên hướng dẫn (Mentor):} & \\textbf{Thầy Huỳnh Vang} (Bộ môn Kỹ thuật Phần mềm --- FPTU) \\\\ \\hline
 \\textbf{Đơn vị nghiên cứu:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -142,17 +142,17 @@ function getHeaderMetadata(isPrn232, lang) {
       return `\\begin{center}
 {\\bfseries\\Large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[2mm]
 {\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\small\\bfseries FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[6mm]
+{\\small\\bfseries FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[8mm]
 {\\huge\\bfseries COMPREHENSIVE PROJECT DELIVERABLE REPORT}\\\\[3mm]
-{\\Large\\bfseries COURSE: PRN232 --- BUILDING CROSS-PLATFORM BACK-END APPLICATION}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[4mm]
-{\\LARGE\\bfseries OMNICAST: CROSS-PLATFORM DIGITAL BROADCAST SCHEDULING \\& STREAMING SYSTEM}\\\\[2mm]
-{\\large\\bfseries Broadcast. Connect. Discover.}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[6mm]
+{\\Large\\bfseries COURSE: PRN232 --- BUILDING CROSS-PLATFORM BACK-END APPLICATION}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[5mm]
+{\\LARGE\\bfseries OMNICAST: CROSS-PLATFORM DIGITAL BROADCAST SCHEDULING \\& STREAMING SYSTEM}\\\\[3mm]
+{\\large\\bfseries Broadcast. Connect. Discover.}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[8mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.5cm}|p{10.5cm}|}
+\\begin{tabular}{|p{4.6cm}|p{10.6cm}|}
 \\hline
 \\textbf{Supervisor / Mentor:} & \\textbf{Mr. Huỳnh Vang} (Software Engineering Dept. --- FPT University) \\\\ \\hline
 \\textbf{Research Unit:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -173,17 +173,17 @@ function getHeaderMetadata(isPrn232, lang) {
       return `\\begin{center}
 {\\bfseries\\Large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[2mm]
 {\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\small\\bfseries KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[6mm]
+{\\small\\bfseries KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[8mm]
 {\\huge\\bfseries BÁO CÁO NGHIỆM THU ĐỒ ÁN TOÀN DIỆN}\\\\[3mm]
-{\\Large\\bfseries HỌC PHẦN: PRM393 --- LẬP TRÌNH ỨNG DỤNG DI ĐỘNG ĐA NỀN TẢNG}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[4mm]
-{\\LARGE\\bfseries ỨNG DỤNG DI ĐỘNG TRUYỀN HÌNH \\& PHÁT SÓNG TRỰC TIẾP OMNICAST FLUTTER}\\\\[2mm]
-{\\large\\bfseries Trải nghiệm nghe nhìn 4K HDR, EPG 24/7 và Phát sóng hiện trường}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[6mm]
+{\\Large\\bfseries HỌC PHẦN: PRM393 --- LẬP TRÌNH ỨNG DỤNG DI ĐỘNG ĐA NỀN TẢNG}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[5mm]
+{\\LARGE\\bfseries ỨNG DỤNG DI ĐỘNG TRUYỀN HÌNH \\& PHÁT SÓNG TRỰC TIẾP OMNICAST FLUTTER}\\\\[3mm]
+{\\large\\bfseries Trải nghiệm nghe nhìn 4K HDR, EPG 24/7 và Phát sóng hiện trường}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[8mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.5cm}|p{10.5cm}|}
+\\begin{tabular}{|p{4.6cm}|p{10.6cm}|}
 \\hline
 \\textbf{Giảng viên hướng dẫn (Mentor):} & \\textbf{Thầy Huỳnh Vang} (Bộ môn Kỹ thuật Phần mềm --- FPTU) \\\\ \\hline
 \\textbf{Đơn vị nghiên cứu:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -201,17 +201,17 @@ function getHeaderMetadata(isPrn232, lang) {
       return `\\begin{center}
 {\\bfseries\\Large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[2mm]
 {\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\small\\bfseries FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[6mm]
+{\\small\\bfseries FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[8mm]
 {\\huge\\bfseries COMPREHENSIVE PROJECT DELIVERABLE REPORT}\\\\[3mm]
-{\\Large\\bfseries COURSE: PRM393 --- MOBILE PROGRAMMING (FLUTTER MULTI-PLATFORM)}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[4mm]
-{\\LARGE\\bfseries OMNICAST MOBILE CLIENT: FLUTTER BROADCAST \\& INTERACTIVE LIVESTREAM}\\\\[2mm]
-{\\large\\bfseries 4K HDR Audiovisual Experience, 24/7 EPG and Mobile Field Studio}\\\\[4mm]
-{\\color{blue}\\rule{0.9\\linewidth}{2pt}}\\\\[6mm]
+{\\Large\\bfseries COURSE: PRM393 --- MOBILE PROGRAMMING (FLUTTER MULTI-PLATFORM)}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[5mm]
+{\\LARGE\\bfseries OMNICAST MOBILE CLIENT: FLUTTER BROADCAST \\& INTERACTIVE LIVESTREAM}\\\\[3mm]
+{\\large\\bfseries 4K HDR Audiovisual Experience, 24/7 EPG and Mobile Field Studio}\\\\[5mm]
+{\\color{blue}\\rule{0.92\\linewidth}{2pt}}\\\\[8mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.5cm}|p{10.5cm}|}
+\\begin{tabular}{|p{4.6cm}|p{10.6cm}|}
 \\hline
 \\textbf{Supervisor / Mentor:} & \\textbf{Mr. Huỳnh Vang} (Software Engineering Dept. --- FPT University) \\\\ \\hline
 \\textbf{Research Unit:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -233,6 +233,7 @@ function getComprehensiveAppendices(isPrn232, lang) {
   if (isPrn232) {
     if (lang === 'vi') {
       return `
+\\newpage
 \\section*{Phụ lục A: Đặc tả Chi tiết Lược đồ Cơ sở Dữ liệu Prisma (Data Dictionary)}
 
 Hệ thống OmniCast sử dụng PostgreSQL kết hợp cùng Prisma ORM với 21 Model nghiệp vụ được chuẩn hóa cao độ (3NF), đánh chỉ mục tối ưu cho các truy vấn thời gian thực và ràng buộc toàn vẹn nghiêm ngặt:
@@ -248,6 +249,7 @@ Hệ thống OmniCast sử dụng PostgreSQL kết hợp cùng Prisma ORM với 
 \\item \\textbf{WatchlistItem \\& WatchHistory:} Lưu trữ danh sách theo dõi cá nhân hóa và tiến trình phát lại video (playback resume timestamp) của người dùng.
 \\end{enumerate}
 
+\\newpage
 \\section*{Phụ lục B: Danh mục Chi tiết 140+ REST API Endpoints}
 
 Toàn bộ hệ thống giao tiếp được chia thành 19 module nghiệp vụ chính trên nền tảng NestJS, tích hợp xác thực Swagger/OpenAPI tự động tại \\texttt{/api/docs}:
@@ -262,6 +264,7 @@ Toàn bộ hệ thống giao tiếp được chia thành 19 module nghiệp vụ
 \\item \\textbf{Module Admin \\& Audit (22 endpoints):} \\texttt{GET /admin/users}, \\texttt{PATCH /admin/users/:id/role}, \\texttt{GET /admin/audit-logs}, \\texttt{GET /admin/system-health}, \\texttt{POST /admin/mediamtx/sync}.
 \\end{itemize}
 
+\\newpage
 \\section*{Phụ lục C: Quy trình Thanh toán Chuyển khoản Thực tế PayOS \\& VietQR Napas 24/7}
 
 OmniCast tích hợp đồng bộ cổng thanh toán thế hệ mới với luồng xử lý khép kín:
@@ -276,6 +279,7 @@ OmniCast tích hợp đồng bộ cổng thanh toán thế hệ mới với lu�
 \\item Cổng WebSocket \\texttt{LiveStreamGateway} phát sự kiện \\texttt{live:donation:received} tới toàn bộ khán giả trong phòng phát, kích hoạt thông báo Toast ăn mừng \\textbf{"Đã nhận [Số tiền] từ [Tên khán giả]!"}, ghim thông báo trên màn hình và cập nhật danh sách tin nhắn nổi bật trong Live Chat.
 \\end{enumerate}
 
+\\newpage
 \\section*{Phụ lục D: Ma trận Kiểm thử Toàn diện (468 Automated Tests)}
 
 Toàn bộ hệ thống trải qua quy trình kiểm thử tự động nghiêm ngặt trong GitHub Actions CI (Run ID 40630318005) đạt tỷ lệ thành công tuyệt đối 100\\%:
@@ -285,6 +289,7 @@ Toàn bộ hệ thống trải qua quy trình kiểm thử tự động nghiêm 
 \\item \\textbf{77 Mobile Tests (Flutter Test):} Kiểm thử 12 Module BLoC, bộ đệm ngoại tuyến SQLite, hàng đợi Mutation Replay Queue và kiểm thử giao diện Widget trên thiết bị di động.
 \\end{itemize}
 
+\\newpage
 \\section*{Phụ lục E: Hướng dẫn Triển khai và Cấu hình DevOps}
 
 Hệ thống được đóng gói dạng container hóa Docker và triển khai theo mô hình kiến trúc phân tán đám mây:
@@ -296,6 +301,7 @@ Hệ thống được đóng gói dạng container hóa Docker và triển khai 
 `;
     } else {
       return `
+\\newpage
 \\section*{Appendix A: Detailed Prisma Database Schema Specification (Data Dictionary)}
 
 The OmniCast system utilizes PostgreSQL with Prisma ORM comprising 21 highly normalized (3NF) relational models optimized for real-time querying and integrity:
@@ -311,6 +317,7 @@ The OmniCast system utilizes PostgreSQL with Prisma ORM comprising 21 highly nor
 \\item \\textbf{WatchlistItem \\& WatchHistory:} Personalized watchlist records and video playback resume timestamps.
 \\end{enumerate}
 
+\\newpage
 \\section*{Appendix B: Complete Catalog of 140+ REST API Endpoints}
 
 All system interactions are organized across 19 cohesive NestJS modules with comprehensive OpenAPI/Swagger documentation at \\texttt{/api/docs}:
@@ -325,6 +332,7 @@ All system interactions are organized across 19 cohesive NestJS modules with com
 \\item \\textbf{Admin \\& Audit Module (22 endpoints):} User administration, role promotion, audit log querying, MediaMTX engine status synchronization.
 \\end{itemize}
 
+\\newpage
 \\section*{Appendix C: Real-World PayOS \\& VietQR Napas 24/7 Payment Pipeline}
 
 OmniCast integrates authentic Vietnamese fintech payment channels:
@@ -339,6 +347,7 @@ OmniCast integrates authentic Vietnamese fintech payment channels:
 \\item The \\texttt{LiveStreamGateway} broadcasts \\texttt{live:donation:received} via WebSocket to all viewers in the room, triggering celebratory toast notifications, pinned chat banners, and real-time ledger updates.
 \\end{enumerate}
 
+\\newpage
 \\section*{Appendix D: Comprehensive Automated Testing Matrix (468 Tests)}
 
 Validated with 100\\% pass rate in CI run 40630318005:
@@ -348,6 +357,7 @@ Validated with 100\\% pass rate in CI run 40630318005:
 \\item \\textbf{77 Mobile Tests (Flutter Test):} 12 BLoC modules, SQLite offline caching, Mutation Replay Queue, UI widget tests.
 \\end{itemize}
 
+\\newpage
 \\section*{Appendix E: DevOps, Cloud \\& On-Premises Deployment Guide}
 
 Containerized with Docker Compose, featuring MediaMTX WHIP/WHEP low-latency video streaming, Cloudflare Tunnels, Supabase PostgreSQL with PgBouncer pooling, and Vercel Edge production hosting.
@@ -357,6 +367,7 @@ Containerized with Docker Compose, featuring MediaMTX WHIP/WHEP low-latency vide
     // PRM393
     if (lang === 'vi') {
       return `
+\\newpage
 \\section*{Phụ lục A: Danh mục 31 Màn hình Ứng dụng Di động Flutter \\& Điều hướng GoRouter}
 
 Ứng dụng di động OmniCast Flutter sở hữu cấu trúc điều hướng khai báo đa tầng với GoRouter, phân chia khoa học thành 31 màn hình chuyên biệt:
@@ -367,20 +378,24 @@ Containerized with Docker Compose, featuring MediaMTX WHIP/WHEP low-latency vide
 \\item \\textbf{Khối Cá nhân hóa, Bảo mật \\& Quản trị:} \\texttt{WatchlistScreen}, \\texttt{RecordingsScreen}, \\texttt{RecordingDetailScreen}, \\texttt{NotificationsScreen}, \\texttt{ProfileScreen}, \\texttt{SettingsScreen}, \\texttt{LoginScreen}, \\texttt{RegisterScreen}, \\texttt{AdminUsersScreen}, \\texttt{AdminAuditLogsScreen}.
 \\end{enumerate}
 
+\\newpage
 \\section*{Phụ lục B: Danh mục 12 Module BLoC Quản lý Trạng thái Di động}
 
 Toàn bộ luồng dữ liệu trên Flutter tuân thủ kiến trúc BLoC phân tách rõ rệt: \\texttt{AuthBloc}, \\texttt{ChannelsBloc}, \\texttt{ProgramsBloc}, \\texttt{EpgBloc}, \\texttt{WatchlistBloc}, \\texttt{StudioBloc}, \\texttt{LiveChatCubit}, \\texttt{ReactionsCubit}, \\texttt{BillingCubit}, \\texttt{SearchBloc}, \\texttt{NotificationBloc}, \\texttt{ConnectivityBloc}.
 
+\\newpage
 \\section*{Phụ lục C: Cơ chế Ngoại tuyến SQLite \\& Hàng đợi Đột biến (Mutation Replay Queue)}
 
 Ứng dụng đảm bảo trải nghiệm liền mạch cả khi mất kết nối mạng thông qua cơ sở dữ liệu SQLite cục bộ, tự động lưu đệm kênh, chương trình yêu thích và lưu hàng đợi các tác vụ đánh dấu để đồng bộ lại ngay khi có Internet.
 
+\\newpage
 \\section*{Phụ lục D: Kiến trúc Trình phát Video OmniPlayer Đa Nguồn}
 
 \\texttt{OmniPlayer} hỗ trợ chuyển đổi linh hoạt giữa WebRTC WHEP (độ trễ siêu thấp < 1s), HLS thích ứng đa bitrate (ABR) qua MediaMTX, và tự động dò tìm các thiết bị trình chiếu nội bộ thông qua \\texttt{LanDiscoveryService}.
 `;
     } else {
       return `
+\\newpage
 \\section*{Appendix A: Catalog of 31 Mobile Flutter Screens \\& GoRouter Architecture}
 
 The OmniCast mobile app features 31 production screens organized via declarative GoRouter:
@@ -391,14 +406,17 @@ The OmniCast mobile app features 31 production screens organized via declarative
 \\item \\textbf{User, Security \\& Admin:} \\texttt{WatchlistScreen}, \\texttt{RecordingsScreen}, \\texttt{RecordingDetailScreen}, \\texttt{NotificationsScreen}, \\texttt{ProfileScreen}, \\texttt{SettingsScreen}, \\texttt{LoginScreen}, \\texttt{RegisterScreen}, \\texttt{AdminUsersScreen}, \\texttt{AdminAuditLogsScreen}.
 \\end{enumerate}
 
+\\newpage
 \\section*{Appendix B: 12 BLoC / Cubit State Management Modules}
 
 Clean separation of concerns with BLoC: \\texttt{AuthBloc}, \\texttt{ChannelsBloc}, \\texttt{ProgramsBloc}, \\texttt{EpgBloc}, \\texttt{WatchlistBloc}, \\texttt{StudioBloc}, \\texttt{LiveChatCubit}, \\texttt{ReactionsCubit}, \\texttt{BillingCubit}, \\texttt{SearchBloc}, \\texttt{NotificationBloc}, and \\texttt{ConnectivityBloc}.
 
+\\newpage
 \\section*{Appendix C: Offline-First SQLite Caching \\& Mutation Replay Queue}
 
 Ensures smooth offline operation using local SQLite storage, cache invalidation, and replay queues that sync mutations as soon as internet connectivity resumes.
 
+\\newpage
 \\section*{Appendix D: OmniPlayer Multi-Engine Audiovisual Architecture}
 
 Supports seamless switching between WebRTC WHEP (< 1s sub-second latency), LL-HLS via MediaMTX, and local LAN receiver discovery via \\texttt{LanDiscoveryService}.
@@ -438,6 +456,9 @@ function buildDocx(reportDir, mainTex, outputDocx, lang, isPrn232) {
     return `\\includegraphics{${resolvedPath}}`;
   });
 
+  // Ensure every major Chapter (\section) starts cleanly at the top of a new page!
+  content = content.replace(/\\section\{/g, '\n\\newpage\n\\section{');
+
   // Prepend rich Title and Header Metadata Table
   const headerBlock = getHeaderMetadata(isPrn232, lang);
 
@@ -449,9 +470,9 @@ function buildDocx(reportDir, mainTex, outputDocx, lang, isPrn232) {
   const tempTex = path.join(baseDir, `_temp_${lang}.tex`);
   fs.writeFileSync(tempTex, fullReportTex, 'utf8');
 
-  console.log(`==> Running Pandoc to generate exhaustive Word report: ${path.basename(outputDocx)}...`);
+  console.log(`==> Running Pandoc with --toc to generate exhaustive Word report: ${path.basename(outputDocx)}...`);
   try {
-    execSync(`"${PANDOC}" -s "${tempTex}" -o "${outputDocx}"`, { stdio: 'inherit' });
+    execSync(`"${PANDOC}" -s --toc --toc-depth=3 "${tempTex}" -o "${outputDocx}"`, { stdio: 'inherit' });
     console.log(`==> Successfully generated comprehensive ${path.basename(outputDocx)}`);
   } catch (err) {
     console.error('Error running Pandoc:', err.message);
@@ -500,11 +521,11 @@ for (const t of targets) {
 console.log('==> All 4 Exhaustive DOCX files generated successfully!');
 
 // Immediately export all 4 DOCX to authentic Word PDFs using Word COM
-console.log('==> Automatically exporting all 4 Word reports to PDF via native Word COM...');
+console.log('==> Automatically formatting and exporting all 4 Word reports to PDF via native Word COM...');
 const exportScript = path.join(__dirname, 'export-word-pdfs.ps1');
 try {
   execSync(`powershell -ExecutionPolicy Bypass -File "${exportScript}"`, { stdio: 'inherit' });
-  console.log('==> All Word reports and their native PDF counterparts are now fully synchronized and exhaustive!');
+  console.log('==> All Word reports and their native PDF counterparts are now fully formatted, synchronized and exhaustive!');
 } catch (err) {
   console.error('Error exporting Word PDFs:', err.message);
 }
