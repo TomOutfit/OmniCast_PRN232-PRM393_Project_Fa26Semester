@@ -76,16 +76,16 @@ switch ($Target) {
         Compile-Tex $slidesDir "presentation.tex"
     }
     "prn232-vi" {
-        Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf"
+        Compile-Tex $prn232Dir "main-vi.tex" "" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf"
     }
     "prn232-en" {
-        Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf" "OmniCast_Report_Latex PRN232 Version_English.pdf"
+        Compile-Tex $prn232Dir "main-en.tex" "" "OmniCast_Report_Latex PRN232 Version_English.pdf"
     }
     "prm393-vi" {
-        Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf"
+        Compile-Tex $prm393Dir "main-vi.tex" "" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf"
     }
     "prm393-en" {
-        Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf" "OmniCast_Report_Latex PRM393 Version_English.pdf"
+        Compile-Tex $prm393Dir "main-en.tex" "" "OmniCast_Report_Latex PRM393 Version_English.pdf"
     }
     "tables" {
         Write-Host "==> Regenerating LaTeX tables from codebase..." -ForegroundColor Cyan
@@ -98,10 +98,20 @@ switch ($Target) {
         }
     }
     "docx" {
-        Write-Host "==> Generating 4 DOCX reports with Pandoc..." -ForegroundColor Cyan
+        Write-Host "==> Generating 4 Exhaustive DOCX reports and exporting Word PDFs..." -ForegroundColor Cyan
         Push-Location (Join-Path $RootDir "assets\shared")
         try {
             & node build-docx.js
+        }
+        finally {
+            Pop-Location
+        }
+    }
+    "word-pdf" {
+        Write-Host "==> Exporting all 4 Word reports to PDF via native Word COM..." -ForegroundColor Cyan
+        Push-Location (Join-Path $RootDir "assets\shared")
+        try {
+            & powershell -ExecutionPolicy Bypass -File export-word-pdfs.ps1
         }
         finally {
             Pop-Location
@@ -118,10 +128,20 @@ switch ($Target) {
         Write-Host "==> Archive created successfully: $($item.FullName) ($([math]::Round($item.Length / 1MB, 2)) MB)" -ForegroundColor Green
     }
     "all" {
-        if (Test-Path (Join-Path $prn232Dir "main-vi.tex")) { Compile-Tex $prn232Dir "main-vi.tex" "PRN232_Report_VI.pdf" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf" }
-        if (Test-Path (Join-Path $prn232Dir "main-en.tex")) { Compile-Tex $prn232Dir "main-en.tex" "PRN232_Report_EN.pdf" "OmniCast_Report_Latex PRN232 Version_English.pdf" }
-        if (Test-Path (Join-Path $prm393Dir "main-vi.tex")) { Compile-Tex $prm393Dir "main-vi.tex" "PRM393_Report_VI.pdf" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf" }
-        if (Test-Path (Join-Path $prm393Dir "main-en.tex")) { Compile-Tex $prm393Dir "main-en.tex" "PRM393_Report_EN.pdf" "OmniCast_Report_Latex PRM393 Version_English.pdf" }
+        Write-Host "==> Step 1: Building Exhaustive Word Reports & Native Word PDFs..." -ForegroundColor Cyan
+        Push-Location (Join-Path $RootDir "assets\shared")
+        try {
+            & node build-docx.js
+        }
+        finally {
+            Pop-Location
+        }
+
+        Write-Host "==> Step 2: Compiling Concise & Streamlined LaTeX Reports (IEEE Conference Format)..." -ForegroundColor Cyan
+        if (Test-Path (Join-Path $prn232Dir "main-vi.tex")) { Compile-Tex $prn232Dir "main-vi.tex" "" "OmniCast_Report_Latex PRN232 Version_Vietnamese.pdf" }
+        if (Test-Path (Join-Path $prn232Dir "main-en.tex")) { Compile-Tex $prn232Dir "main-en.tex" "" "OmniCast_Report_Latex PRN232 Version_English.pdf" }
+        if (Test-Path (Join-Path $prm393Dir "main-vi.tex")) { Compile-Tex $prm393Dir "main-vi.tex" "" "OmniCast_Report_Latex PRM393 Version_Vietnamese.pdf" }
+        if (Test-Path (Join-Path $prm393Dir "main-en.tex")) { Compile-Tex $prm393Dir "main-en.tex" "" "OmniCast_Report_Latex PRM393 Version_English.pdf" }
         if (Test-Path (Join-Path $slidesDir "presentation.tex")) { Compile-Tex $slidesDir "presentation.tex" }
     }
     default {
