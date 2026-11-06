@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 import { getSocketBaseUrl } from '@/lib/net-host';
 import { LiveComment, fetchLiveEventComments, postLiveEventComment } from '@/lib/api/live';
 
@@ -233,12 +234,22 @@ export function useLiveSession(
       }
     });
 
-        socket.on('live:donation:received', (payload: LiveDonationPayload) => {
+    socket.on('live:donation:received', (payload: LiveDonationPayload) => {
       if (!payload.eventId || payload.eventId === eventId) {
         setLatestDonation(payload);
         if (typeof payload.streamerWalletBalance === 'number') {
           setStreamerWalletBalance(payload.streamerWalletBalance);
         }
+        const formattedAmount = new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(payload.amount);
+        toast.success(`Đã nhận ${formattedAmount} từ ${payload.donorName || 'Khán giả'}!`, {
+          description: payload.message
+            ? `"${payload.message}"`
+            : 'Đã cập nhật số dư ví thực tế của Streamer.',
+          duration: 7000,
+        });
         setTimeout(() => setLatestDonation(null), 18000);
       }
     });

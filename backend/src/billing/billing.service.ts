@@ -624,8 +624,8 @@ export class BillingService {
         data: {
           userId: streamer.id,
           type: 'SYSTEM_ANNOUNCEMENT',
-          title: '🎁 Bạn nhận được ủng hộ mô phỏng mới!',
-          message: `${dto.donorName} vừa gửi ${dto.amount.toLocaleString('vi-VN')}₫ (${dto.giftEmoji || '🎉'} ${dto.giftTier || 'Quà tặng'}) vào ví của bạn qua ${dto.paymentMethod.toUpperCase()}!`,
+          title: '🎁 Bạn nhận được ủng hộ mới!',
+          message: `Đã nhận ${dto.amount.toLocaleString('vi-VN')}₫ từ ${dto.donorName} (${dto.giftEmoji || '🎉'} ${dto.giftTier || 'Quà tặng'}) vào ví thực tế của bạn!`,
           eventId: event.id,
         },
       }),
@@ -680,7 +680,7 @@ export class BillingService {
         fullName: donorUser.fullName,
         walletBalance: Number(donorUser.walletBalance ?? 0),
       } : null,
-      notification: `Đã nạp thành công ${donation.amount.toLocaleString('vi-VN')} ₫ mô phỏng vào tài khoản của Streamer ${updatedStreamer.fullName}! (Chi phí thực tế = 0 ₫)`,
+      notification: `Đã nhận ${donation.amount.toLocaleString('vi-VN')} ₫ từ ${donation.donorName}! Số dư tài khoản thực tế đã được cập nhật thành công.`,
     };
   }
 

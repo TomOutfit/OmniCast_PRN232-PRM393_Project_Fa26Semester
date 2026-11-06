@@ -85,27 +85,36 @@ export function LiveChatPanel({
 
       {/* Real-time Super Chat Donation Highlight Banner */}
       {latestDonation && (
-        <div className="mx-3 mt-2 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-950/80 via-orange-950/70 to-slate-900 p-2.5 shadow-lg shadow-amber-500/20 animate-in slide-in-from-top-2 duration-300">
+        <div className="mx-3 mt-2 rounded-xl border border-amber-400/60 bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-slate-900 p-2.5 shadow-lg shadow-amber-500/25 animate-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl animate-bounce">{latestDonation.giftEmoji || '🎉'}</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl animate-bounce">{latestDonation.giftEmoji || '🎉'}</span>
               <div>
-                <p className="text-xs font-black text-amber-300">
-                  {latestDonation.donorName}
-                  <span className="ml-1 text-[10px] text-white/80 font-normal">vừa ủng hộ</span>
+                <p className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                  <span>{latestDonation.donorName}</span>
+                  <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.2 text-[9px] font-bold text-emerald-300">
+                    ĐÃ CHUYỂN KHOẢN
+                  </span>
                 </p>
-                <p className="text-xs font-mono font-extrabold text-white">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(latestDonation.amount)}
-                  <span className="ml-1 text-[10px] font-sans font-bold text-emerald-400">({latestDonation.giftTier || 'Super Chat'})</span>
+                <p className="text-xs font-mono font-black text-white">
+                  Đã nhận {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(latestDonation.amount)}
+                  <span className="ml-1 text-[10px] font-sans font-bold text-amber-400">({latestDonation.giftTier || 'Super Chat'})</span>
                 </p>
               </div>
             </div>
-            <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-black text-slate-950 uppercase">
-              SUPER CHAT
-            </span>
+            <div className="text-right">
+              <span className="rounded bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 text-[9px] font-black text-slate-950 uppercase shadow-sm">
+                SUPER CHAT
+              </span>
+              {typeof latestDonation.streamerWalletBalance === 'number' && (
+                <p className="mt-0.5 text-[10px] font-mono text-cyan-300 font-bold">
+                  Ví: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(latestDonation.streamerWalletBalance)}
+                </p>
+              )}
+            </div>
           </div>
           {latestDonation.message && (
-            <p className="mt-1 text-xs text-slate-200 italic pl-7 border-l-2 border-amber-400/40 ml-1">
+            <p className="mt-1 text-xs text-slate-200 italic pl-8 border-l-2 border-amber-400/50 ml-1">
               &ldquo;{latestDonation.message}&rdquo;
             </p>
           )}
@@ -270,7 +279,7 @@ export function LiveChatPanel({
         onClose={() => setIsSuperChatOpen(false)}
         eventId={eventId}
         onDonationSuccess={(res) => {
-          const finalMsg = `🎉 [SUPER CHAT MÔ PHỎNG ${res.amount.toLocaleString('vi-VN')}đ] ${res.giftEmoji} ${res.donorName}: ${res.message || 'Ủng hộ luồng trực tiếp!'}`;
+          const finalMsg = `🎉 [SUPER CHAT ${res.amount.toLocaleString('vi-VN')}đ] ${res.giftEmoji} ${res.donorName}: ${res.message || 'Ủng hộ luồng trực tiếp!'}`;
           onSendMessage(finalMsg);
           onSendReaction('PARTY');
         }}
