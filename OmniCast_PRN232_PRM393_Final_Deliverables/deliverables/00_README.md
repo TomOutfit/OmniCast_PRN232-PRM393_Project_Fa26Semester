@@ -9,12 +9,12 @@ Bảng đối chiếu 100% các hạng mục yêu cầu nộp bài của Giảng
 
 | # | Hạng mục yêu cầu (Submission Items) | Trạng thái | Vị trí tài nguyên trong gói bàn giao |
 | :-: | :--- | :---: | :--- |
-| 1 | **Project report** | ✅ ĐẦY ĐỦ | • Word PRN232: `01_Reports/PRN232/PRN232_Report_VI.docx` & `EN.docx`<br>• Word PRM393: `01_Reports/PRM393/PRM393_Report_VI.docx` & `EN.docx`<br>• Báo cáo tổng thể: `05_Reference_Docs/OmniCast_Comprehensive_Project_Report.pdf` |
-| 2 | **LaTeX source files** | ✅ ĐẦY ĐỦ | • Phân hệ PRN232: `01_Reports/PRN232/latex/`<br>• Phân hệ PRM393: `01_Reports/PRM393/latex/`<br>(Bao gồm toàn bộ `.tex`, `.bib`, macro TikZ, và bảng số liệu) |
+| 1 | **Project report** | ✅ ĐẦY ĐỦ | • Word PRN232: `01_Reports/PRN232/PRN232_Report_VI.docx` & `EN.docx` (34-35 trang chi tiết toàn diện)<br>• Word PRM393: `01_Reports/PRM393/PRM393_Report_VI.docx` & `EN.docx` (24-25 trang chi tiết toàn diện)<br>• Báo cáo tổng thể: `05_Reference_Docs/OmniCast_Comprehensive_Project_Report.pdf` |
+| 2 | **LaTeX source files** | ✅ ĐẦY ĐỦ | • Phân hệ PRN232: `01_Reports/PRN232/latex/` (Bản IEEE tinh gọn 16 trang)<br>• Phân hệ PRM393: `01_Reports/PRM393/latex/` (Bản IEEE tinh gọn 11 trang)<br>(Bao gồm toàn bộ `.tex`, `.bib`, macro TikZ, và bảng số liệu) |
 | 3 | **GitHub repository link or source code** | ✅ ĐẦY ĐỦ | • **GitHub Repo:** [https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester)<br>• **Branch:** `main`<br>• **Chi tiết kiến trúc:** `04_Repository/REPOSITORY.md` |
 | 4 | **Deployed web app & backend** | ✅ ĐANG CHẠY | • **Frontend Web:** [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app)<br>• **Backend API Root:** [https://omnicast-api.vercel.app/api/v1](https://omnicast-api.vercel.app/api/v1)<br>• **API Swagger UI:** [https://omnicast-api.vercel.app/swagger](https://omnicast-api.vercel.app/swagger)<br>• **Tài khoản Demo Admin:** `admin@omnicast.tv` / `Admin123!`<br>• **Hướng dẫn chi tiết:** `03_Deployment/DEPLOYMENT.md` |
 | 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• **Hồ sơ Master Testing:** `02_Testing/OmniCast_Comprehensive_Testing_Report.pdf` (cùng `.html` & `.docx`)<br>• CI run 40630318005: 468 tests pass trong phạm vi job; JSON artifacts tại `02_Testing/ci_runs/40630318005/`<br>• Test cases PRN232: `02_Testing/TEST_CASES_PRN232.pdf`<br>• Test cases PRM393: `02_Testing/TEST_CASES_PRM393.pdf`<br>• Minh chứng E2E: `02_Testing/screenshots/` |
-| 6 | **PDF version generated from LaTeX** | ✅ ĐẦY ĐỦ | • **PRN232 PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf`<br>• **PRN232 PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf`<br>• **PRM393 PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf`<br>• **PRM393 PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` |
+| 6 | **PDF version generated from LaTeX & Word** | ✅ ĐẦY ĐỦ | • **PRN232 Word PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf` (34 trang chi tiết)<br>• **PRN232 Word PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf` (35 trang chi tiết)<br>• **PRM393 Word PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf` (25 trang chi tiết)<br>• **PRM393 Word PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` (24 trang chi tiết)<br>• **Bản LaTeX IEEE:** `01_Reports/PRN232/latex/*.pdf` & `01_Reports/PRM393/latex/*.pdf` |
 
 ---
 
@@ -44,19 +44,19 @@ Toàn bộ tài nguyên phục vụ việc đánh giá và nghiệm thu được
 deliverables/
 ├── 00_README.md                     # [BẠN ĐANG ĐỌC] Bản chỉ dẫn nộp bài tổng quan
 │
-├── 01_Reports/                      # BỘ BÁO CÁO HỌC THUẬT CHUẨN IEEE (4 PDF + 4 DOCX)
+├── 01_Reports/                      # BỘ BÁO CÁO HỌC THUẬT (4 WORD DOCX + 4 WORD PDF CHI TIẾT & 4 LATEX IEEE TINH GỌN)
 │   ├── PRN232/
-│   │   ├── PRN232_Report_VI.pdf     # Báo cáo PRN232 Tiếng Việt (13 trang: 1 Trang bìa chuẩn ĐH FPT + 12 trang IEEE, có phân trang)
-│   │   ├── PRN232_Report_EN.pdf     # Báo cáo PRN232 Tiếng Anh (13 trang: 1 Trang bìa chuẩn ĐH FPT + 12 trang IEEE, có phân trang)
-│   │   ├── PRN232_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có trang bìa & ngắt trang)
-│   │   ├── PRN232_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có trang bìa & ngắt trang)
-│   │   └── latex/                   # Mã nguồn LaTeX, TikZ sơ đồ, cover.tex, bảng biểu
+│   │   ├── PRN232_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (34 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + Test cases)
+│   │   ├── PRN232_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (35 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + Test cases)
+│   │   ├── PRN232_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có ngắt trang \newpage & TOC)
+│   │   ├── PRN232_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có ngắt trang \newpage & TOC)
+│   │   └── latex/                   # Mã nguồn LaTeX, TikZ sơ đồ, cover.tex (16 trang IEEE tinh gọn)
 │   └── PRM393/
-│       ├── PRM393_Report_VI.pdf     # Báo cáo PRM393 Tiếng Việt (7 trang: 1 Trang bìa chuẩn ĐH FPT + 6 trang IEEE, có phân trang)
-│       ├── PRM393_Report_EN.pdf     # Báo cáo PRM393 Tiếng Anh (7 trang: 1 Trang bìa chuẩn ĐH FPT + 6 trang IEEE, có phân trang)
-│       ├── PRM393_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có trang bìa & ngắt trang)
-│       ├── PRM393_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có trang bìa & ngắt trang)
-│       └── latex/                   # Mã nguồn LaTeX, cover.tex và sơ đồ BLoC/SQLite
+│       ├── PRM393_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (25 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite)
+│       ├── PRM393_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (24 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite)
+│       ├── PRM393_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có ngắt trang \newpage & TOC)
+│       ├── PRM393_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có ngắt trang \newpage & TOC)
+│       └── latex/                   # Mã nguồn LaTeX, cover.tex và sơ đồ BLoC/SQLite (11 trang IEEE tinh gọn)
 │
 ├── 02_Testing/                      # TESTING DOSSIER (468 TESTS IN ARCHIVED CI RUN)
 │   ├── TEST_CASES_PRN232.md         # 22 Test cases chi tiết phân hệ Back-End & Web
