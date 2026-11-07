@@ -9,12 +9,12 @@ Bảng đối chiếu 100% các hạng mục yêu cầu nộp bài của Giảng
 
 | # | Hạng mục yêu cầu (Submission Items) | Trạng thái | Vị trí tài nguyên trong gói bàn giao |
 | :-: | :--- | :---: | :--- |
-| 1 | **Project report** | ✅ ĐẦY ĐỦ | • Word PRN232: `01_Reports/PRN232/PRN232_Report_VI.docx` & `EN.docx` (30 trang chi tiết toàn diện)<br>• Word PRM393: `01_Reports/PRM393/PRM393_Report_VI.docx` & `EN.docx` (20-21 trang chi tiết toàn diện)<br>• Báo cáo tổng thể: `05_Reference_Docs/OmniCast_Comprehensive_Project_Report.pdf` |
+| 1 | **Project report** | ✅ ĐẦY ĐỦ | • Word PRN232: `01_Reports/PRN232/PRN232_Report_VI.docx` & `EN.docx` (44-46 trang chi tiết toàn diện chuẩn ĐATN)<br>• Word PRM393: `01_Reports/PRM393/PRM393_Report_VI.docx` & `EN.docx` (30-34 trang chi tiết toàn diện chuẩn ĐATN)<br>• Báo cáo tổng thể: `05_Reference_Docs/OmniCast_Comprehensive_Project_Report.pdf` |
 | 2 | **LaTeX source files** | ✅ ĐẦY ĐỦ | • Phân hệ PRN232: `01_Reports/PRN232/latex/` (Bản IEEE tinh gọn 16 trang)<br>• Phân hệ PRM393: `01_Reports/PRM393/latex/` (Bản IEEE tinh gọn 11 trang)<br>(Bao gồm toàn bộ `.tex`, `.bib`, macro TikZ, và bảng số liệu) |
 | 3 | **GitHub repository link or source code** | ✅ ĐẦY ĐỦ | • **GitHub Repo:** [https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester](https://github.com/TomOutfit/OmniCast_PRN232-PRM393_Project_Fa26Semester)<br>• **Branch:** `main`<br>• **Chi tiết kiến trúc:** `04_Repository/REPOSITORY.md` |
 | 4 | **Deployed web app & backend** | ✅ ĐANG CHẠY | • **Frontend Web:** [https://omnicast-fe.vercel.app](https://omnicast-fe.vercel.app)<br>• **Backend API Root:** [https://omnicast-api.vercel.app/api/v1](https://omnicast-api.vercel.app/api/v1)<br>• **API Swagger UI:** [https://omnicast-api.vercel.app/swagger](https://omnicast-api.vercel.app/swagger)<br>• **Tài khoản Demo Admin:** `admin@omnicast.tv` / `Admin123!`<br>• **Hướng dẫn chi tiết:** `03_Deployment/DEPLOYMENT.md` |
 | 5 | **Testing documentation** | ✅ ĐẦY ĐỦ | • Thư mục: `02_Testing/`<br>• **Hồ sơ Master Testing:** `02_Testing/OmniCast_Comprehensive_Testing_Report.pdf` (cùng `.html` & `.docx`)<br>• CI run 40630318005: 468 tests pass trong phạm vi job; JSON artifacts tại `02_Testing/ci_runs/40630318005/`<br>• Test cases PRN232: `02_Testing/TEST_CASES_PRN232.pdf`<br>• Test cases PRM393: `02_Testing/TEST_CASES_PRM393.pdf`<br>• Minh chứng E2E: `02_Testing/screenshots/` |
-| 6 | **PDF version generated from LaTeX & Word** | ✅ ĐẦY ĐỦ | • **PRN232 Word PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf` (30 trang chi tiết)<br>• **PRN232 Word PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf` (30 trang chi tiết)<br>• **PRM393 Word PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf` (21 trang chi tiết)<br>• **PRM393 Word PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` (20 trang chi tiết)<br>• **Bản LaTeX IEEE:** `01_Reports/PRN232/latex/*.pdf` & `01_Reports/PRM393/latex/*.pdf` |
+| 6 | **PDF version generated from LaTeX & Word** | ✅ ĐẦY ĐỦ | • **PRN232 Word PDF (VI):** `01_Reports/PRN232/PRN232_Report_VI.pdf` (46 trang chi tiết chuẩn ĐATN)<br>• **PRN232 Word PDF (EN):** `01_Reports/PRN232/PRN232_Report_EN.pdf` (44 trang chi tiết chuẩn ĐATN)<br>• **PRM393 Word PDF (VI):** `01_Reports/PRM393/PRM393_Report_VI.pdf` (34 trang chi tiết chuẩn ĐATN)<br>• **PRM393 Word PDF (EN):** `01_Reports/PRM393/PRM393_Report_EN.pdf` (30 trang chi tiết chuẩn ĐATN)<br>• **Bản LaTeX IEEE:** `01_Reports/PRN232/latex/*.pdf` (16 trang) & `01_Reports/PRM393/latex/*.pdf` (11 trang) |
 
 ---
 
@@ -46,14 +46,14 @@ deliverables/
 │
 ├── 01_Reports/                      # BỘ BÁO CÁO HỌC THUẬT (4 WORD DOCX + 4 WORD PDF CHI TIẾT & 4 LATEX IEEE TINH GỌN)
 │   ├── PRN232/
-│   │   ├── PRN232_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (30 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + Test cases)
-│   │   ├── PRN232_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (30 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + Test cases)
+│   │   ├── PRN232_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (46 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + 13 Sơ đồ TikZ + Test cases)
+│   │   ├── PRN232_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (44 trang: Bìa ĐH FPT + Mục lục 3 cấp + Schema & API + 13 Sơ đồ TikZ + Test cases)
 │   │   ├── PRN232_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có ngắt trang \newpage & TOC, typography Times New Roman 11.5pt)
 │   │   ├── PRN232_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có ngắt trang \newpage & TOC, typography Times New Roman 11.5pt)
 │   │   └── latex/                   # Mã nguồn LaTeX, TikZ sơ đồ, cover.tex (16 trang IEEE tinh gọn)
 │   └── PRM393/
-│       ├── PRM393_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (21 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite)
-│       ├── PRM393_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (20 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite)
+│       ├── PRM393_Report_VI.pdf     # Báo cáo Word PDF Tiếng Việt chi tiết (34 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite + 13 Sơ đồ TikZ)
+│       ├── PRM393_Report_EN.pdf     # Báo cáo Word PDF Tiếng Anh chi tiết (30 trang: Bìa ĐH FPT + Mục lục 3 cấp + 31 Screens + 12 BLoC + SQLite + 13 Sơ đồ TikZ)
 │       ├── PRM393_Report_VI.docx    # Bản Word tương ứng Tiếng Việt (có ngắt trang \newpage & TOC)
 │       ├── PRM393_Report_EN.docx    # Bản Word tương ứng Tiếng Anh (có ngắt trang \newpage & TOC)
 │       └── latex/                   # Mã nguồn LaTeX, cover.tex và sơ đồ BLoC/SQLite (11 trang IEEE tinh gọn)
