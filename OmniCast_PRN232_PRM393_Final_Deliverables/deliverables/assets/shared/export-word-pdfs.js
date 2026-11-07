@@ -136,11 +136,27 @@ try {
         try {
             $sc = $doc.Styles.Item("Source Code")
             $sc.Font.Name = "Consolas"
-            $sc.Font.Size = 9.5
-            $sc.ParagraphFormat.LineSpacing = 12
-            $sc.ParagraphFormat.SpaceBefore = 3
-            $sc.ParagraphFormat.SpaceAfter = 3
+            $sc.Font.Size = 9.0
+            $sc.ParagraphFormat.Alignment = 0 # wdAlignParagraphLeft (Prevents forced full justification letter-stretching)
+            $sc.ParagraphFormat.LineSpacing = 11.5
+            $sc.ParagraphFormat.SpaceBefore = 5
+            $sc.ParagraphFormat.SpaceAfter = 5
+            $sc.ParagraphFormat.LeftIndent = 10
+            $sc.ParagraphFormat.RightIndent = 10
+            $sc.ParagraphFormat.Shading.BackgroundPatternColor = 16053492 # 0xF4F4F4 elegant light gray box
         } catch {}
+
+        # Ensure all Source Code paragraphs are explicitly Left-Aligned
+        foreach ($p in $doc.Paragraphs) {
+            $sName = ""
+            try { $sName = $p.Style.NameLocal } catch {}
+            if ($sName -eq "Source Code" -or $sName -eq "SourceCode") {
+                $p.Range.ParagraphFormat.Alignment = 0
+                $p.Range.ParagraphFormat.LeftIndent = 10
+                $p.Range.ParagraphFormat.RightIndent = 10
+                $p.Range.ParagraphFormat.Shading.BackgroundPatternColor = 16053492
+            }
+        }
 
         # ---------------------------------------------------------
         # 3. Running Headers & Footers with Page Numbers
