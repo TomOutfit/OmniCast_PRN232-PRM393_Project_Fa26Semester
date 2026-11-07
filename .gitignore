@@ -78,3 +78,6 @@ uploads/
 
 
 *.exe
+
+# Word temp files
+~$*

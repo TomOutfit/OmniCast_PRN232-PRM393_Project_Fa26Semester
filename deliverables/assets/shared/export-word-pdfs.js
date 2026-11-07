@@ -133,67 +133,175 @@ try {
             $h3.ParagraphFormat.KeepWithNext = -1
         } catch {}
 
+        # Source Code / Monospace blocks
         try {
             $sc = $doc.Styles.Item("Source Code")
             $sc.Font.Name = "Consolas"
-            $sc.Font.Size = 9.0
+            $sc.Font.Size = 8.5
             $sc.ParagraphFormat.Alignment = 0 # wdAlignParagraphLeft (Prevents forced full justification letter-stretching)
             $sc.ParagraphFormat.LineSpacing = 11.5
-            $sc.ParagraphFormat.SpaceBefore = 5
-            $sc.ParagraphFormat.SpaceAfter = 5
-            $sc.ParagraphFormat.LeftIndent = 10
-            $sc.ParagraphFormat.RightIndent = 10
+            $sc.ParagraphFormat.SpaceBefore = 4
+            $sc.ParagraphFormat.SpaceAfter = 4
+            $sc.ParagraphFormat.LeftIndent = 12
+            $sc.ParagraphFormat.RightIndent = 12
             $sc.ParagraphFormat.Shading.BackgroundPatternColor = 16053492 # 0xF4F4F4 elegant light gray box
         } catch {}
 
-        # Ensure all Source Code paragraphs are explicitly Left-Aligned
+        # Ensure all Source Code and Monospace paragraphs are strictly Left-Aligned
         foreach ($p in $doc.Paragraphs) {
             $sName = ""
             try { $sName = $p.Style.NameLocal } catch {}
-            if ($sName -eq "Source Code" -or $sName -eq "SourceCode") {
-                $p.Range.ParagraphFormat.Alignment = 0
-                $p.Range.ParagraphFormat.LeftIndent = 10
-                $p.Range.ParagraphFormat.RightIndent = 10
+            $fName = ""
+            try { $fName = $p.Range.Font.Name } catch {}
+            if ($sName -match "Source|Code|Mã" -or $fName -match "Consolas|Courier") {
+                $p.Range.ParagraphFormat.Alignment = 0 # wdAlignParagraphLeft
+                $p.Range.ParagraphFormat.LeftIndent = 12
+                $p.Range.ParagraphFormat.RightIndent = 12
+                $p.Range.ParagraphFormat.LineSpacing = 11.5
+                $p.Range.ParagraphFormat.SpaceBefore = 4
+                $p.Range.ParagraphFormat.SpaceAfter = 4
+                $p.Range.Font.Name = "Consolas"
+                $p.Range.Font.Size = 8.5
+                $p.Range.Font.Spacing = 0
+                $p.Range.Font.Scaling = 100
                 $p.Range.ParagraphFormat.Shading.BackgroundPatternColor = 16053492
             }
         }
 
         # ---------------------------------------------------------
-        # 3. Running Headers & Footers with Page Numbers
+        # 3. Graduation Thesis Cover Page Formatting & Section Break
         # ---------------------------------------------------------
-        $section = $doc.Sections.Item(1)
-        
+        $findBreak = $doc.Content.Find
+        $findBreak.Text = "[OMNICAST_COVER_SECTION_BREAK]"
+        if ($findBreak.Execute()) {
+            try {
+                $rBreak = $findBreak.Parent
+                $rBreak.Text = ""
+                $rBreak.InsertBreak(2) # wdSectionBreakNextPage
+            } catch {}
+        }
+
+        # Format Section 1 (COVER PAGE ONLY):
         try {
-            $header = $section.Headers.Item(1) # wdHeaderFooterPrimary
-            $header.Range.Text = $headerText
-            $header.Range.Font.Name = "Times New Roman"
-            $header.Range.Font.Size = 9
-            $header.Range.Font.Italic = 1
-            $header.Range.ParagraphFormat.Alignment = 2 # wdAlignParagraphRight
+            $secCover = $doc.Sections.Item(1)
+            $secCover.PageSetup.DifferentFirstPageHeaderFooter = $false
+            $secCover.Headers.Item(1).Range.Text = ""
+            $secCover.Footers.Item(1).Range.Text = ""
+            
+            # Decorative Double Line Academic Border Frame on Cover Page:
+            foreach ($bId in @(-1, -2, -3, -4)) {
+                $b = $secCover.Borders.Item($bId)
+                $b.LineStyle = 7 # wdLineStyleDouble
+                $b.LineWidth = 18 # wdLineWidth225pt (2.25 pt)
+                $b.Color = 0x803300 # Deep Navy Blue in BGR
+            }
+
+            # Style Cover Page Logo
+            if ($secCover.Range.InlineShapes.Count -ge 1) {
+                $coverLogo = $secCover.Range.InlineShapes.Item(1)
+                $coverLogo.Range.ParagraphFormat.Alignment = 1 # Center
+                $coverLogo.Width = 85
+                $coverLogo.Range.ParagraphFormat.SpaceBefore = 2
+                $coverLogo.Range.ParagraphFormat.SpaceAfter = 3
+            }
+
+            # Style Cover Page Metadata Table
+            if ($secCover.Range.Tables.Count -ge 1) {
+                $coverTable = $secCover.Range.Tables.Item(1)
+                $coverTable.AutoFitBehavior(2) # wdAutoFitWindow
+                $coverTable.Rows.Alignment = 1 # Center
+                $coverTable.Borders.Enable = 1
+                foreach ($bId in @(-1, -2, -3, -4, -5, -6)) {
+                    try {
+                        $coverTable.Borders.Item($bId).Color = 0x803300
+                        $coverTable.Borders.Item($bId).LineWidth = 8
+                    } catch {}
+                }
+                $coverTable.Shading.BackgroundPatternColor = 0xFAF7F5
+                $coverTable.TopPadding = 1.5
+                $coverTable.BottomPadding = 1.5
+                $coverTable.LeftPadding = 5
+                $coverTable.RightPadding = 5
+                $coverTable.Range.Font.Name = "Times New Roman"
+                $coverTable.Range.Font.Size = 8.5
+                $coverTable.Range.ParagraphFormat.LineSpacing = 10.5
+                $coverTable.Range.ParagraphFormat.SpaceBefore = 1
+                $coverTable.Range.ParagraphFormat.SpaceAfter = 1
+            }
         } catch {}
 
-        try {
-            $footer = $section.Footers.Item(1) # wdHeaderFooterPrimary
-            $footerPrefix = if ($lang -eq "vi") { "Trang " } else { "Page " }
-            $footerSep = if ($lang -eq "vi") { " / " } else { " of " }
-            
-            $footer.Range.Text = $footerPrefix
-            $r1 = $footer.Range
-            $r1.Collapse(0) # wdCollapseEnd
-            $null = $footer.Range.Fields.Add($r1, 33) # wdFieldPage
-            
-            $r2 = $footer.Range
-            $r2.Collapse(0)
-            $r2.Text = $footerSep
-            
-            $r3 = $footer.Range
-            $r3.Collapse(0)
-            $null = $footer.Range.Fields.Add($r3, 26) # wdFieldNumPages
+        # Format Section 2+ (REPORT BODY):
+        if ($doc.Sections.Count -ge 2) {
+            $secBody = $doc.Sections.Item(2)
+            try {
+                # Ensure Section 2 has NO border frame
+                foreach ($bId in @(-1, -2, -3, -4)) {
+                    $secBody.Borders.Item($bId).LineStyle = 0 # wdLineStyleNone
+                }
+                
+                # Unlink headers/footers from Section 1
+                $secBody.Headers.Item(1).LinkToPrevious = $false
+                $secBody.Footers.Item(1).LinkToPrevious = $false
+                
+                # Running Header for Report Body
+                $secBody.Headers.Item(1).Range.Text = $headerText
+                $secBody.Headers.Item(1).Range.Font.Name = "Times New Roman"
+                $secBody.Headers.Item(1).Range.Font.Size = 9
+                $secBody.Headers.Item(1).Range.Font.Italic = 1
+                $secBody.Headers.Item(1).Range.ParagraphFormat.Alignment = 2 # wdAlignParagraphRight
+                
+                # Running Footer with Page Numbers
+                $footerPrefix = if ($lang -eq "vi") { "Trang " } else { "Page " }
+                $footerSep = if ($lang -eq "vi") { " / " } else { " of " }
+                
+                $secBody.Footers.Item(1).Range.Text = $footerPrefix
+                $r1 = $secBody.Footers.Item(1).Range
+                $r1.Collapse(0) # wdCollapseEnd
+                $null = $secBody.Footers.Item(1).Range.Fields.Add($r1, 33) # wdFieldPage
+                
+                $r2 = $secBody.Footers.Item(1).Range
+                $r2.Collapse(0)
+                $r2.Text = $footerSep
+                
+                $r3 = $secBody.Footers.Item(1).Range
+                $r3.Collapse(0)
+                $null = $secBody.Footers.Item(1).Range.Fields.Add($r3, 26) # wdFieldNumPages
 
-            $footer.Range.Font.Name = "Times New Roman"
-            $footer.Range.Font.Size = 9.5
-            $footer.Range.ParagraphFormat.Alignment = 1 # wdAlignParagraphCenter
-        } catch {}
+                $secBody.Footers.Item(1).Range.Font.Name = "Times New Roman"
+                $secBody.Footers.Item(1).Range.Font.Size = 9.5
+                $secBody.Footers.Item(1).Range.ParagraphFormat.Alignment = 1 # wdAlignParagraphCenter
+            } catch {}
+        } else {
+            # Single section fallback
+            $section = $doc.Sections.Item(1)
+            try {
+                $header = $section.Headers.Item(1)
+                $header.Range.Text = $headerText
+                $header.Range.Font.Name = "Times New Roman"
+                $header.Range.Font.Size = 9
+                $header.Range.Font.Italic = 1
+                $header.Range.ParagraphFormat.Alignment = 2
+            } catch {}
+
+            try {
+                $footer = $section.Footers.Item(1)
+                $footerPrefix = if ($lang -eq "vi") { "Trang " } else { "Page " }
+                $footerSep = if ($lang -eq "vi") { " / " } else { " of " }
+                $footer.Range.Text = $footerPrefix
+                $r1 = $footer.Range
+                $r1.Collapse(0)
+                $null = $footer.Range.Fields.Add($r1, 33)
+                $r2 = $footer.Range
+                $r2.Collapse(0)
+                $r2.Text = $footerSep
+                $r3 = $footer.Range
+                $r3.Collapse(0)
+                $null = $footer.Range.Fields.Add($r3, 26)
+                $footer.Range.Font.Name = "Times New Roman"
+                $footer.Range.Font.Size = 9.5
+                $footer.Range.ParagraphFormat.Alignment = 1
+            } catch {}
+        }
 
         # ---------------------------------------------------------
         # 4. Tables Optimization (AutoFit, Header Repeat, Padding)
@@ -240,8 +348,27 @@ try {
         }
 
         # ---------------------------------------------------------
-        # 6. Update Table of Contents & All Dynamic Fields
+        # 6. Insert Table of Contents & Update Dynamic Fields
         # ---------------------------------------------------------
+        $findToc = $doc.Content.Find
+        $findToc.Text = "[OMNICAST_TABLE_OF_CONTENTS_PLACEHOLDER]"
+        if ($findToc.Execute()) {
+            try {
+                $tocRange = $findToc.Parent
+                $tocRange.Text = ""
+                $doc.TablesOfContents.Add($tocRange, $true, 1, 3)
+            } catch {}
+        }
+
+        foreach ($tLevel in @("TOC 1", "TOC 2", "TOC 3")) {
+            try {
+                $st = $doc.Styles.Item($tLevel)
+                $st.Font.Name = "Times New Roman"
+                $st.Font.Size = 10.5
+                $st.ParagraphFormat.LineSpacing = 13.5
+            } catch {}
+        }
+
         foreach ($toc in $doc.TablesOfContents) {
             try { $toc.Update() } catch {}
         }
