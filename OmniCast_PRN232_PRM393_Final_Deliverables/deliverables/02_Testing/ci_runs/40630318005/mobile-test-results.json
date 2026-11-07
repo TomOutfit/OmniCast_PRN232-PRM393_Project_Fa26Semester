@@ -1,0 +1,467 @@
+{
+  "suite": "mobile",
+  "title": "Mobile App (Flutter + BLoC)",
+  "total": 77,
+  "passed": 77,
+  "failed": 0,
+  "durationMs": 4501,
+  "specs": [
+    {
+      "file": "test/data/watchlist_item_model_test.dart",
+      "total": 8,
+      "passed": 8,
+      "failed": 0,
+      "durationMs": 56,
+      "tests": [
+        {
+          "name": "WatchlistItemModel.fromJson parses a fully-populated row",
+          "status": "passed",
+          "durationMs": 30
+        },
+        {
+          "name": "WatchlistItemModel.fromJson treats reminderEnabled 0 as false and missing reminderTime as null",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "WatchlistItemModel.toJson round-trips through fromJson/toJson",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "WatchlistItemModel.toJson serializes reminderEnabled as integer 0/1",
+          "status": "passed",
+          "durationMs": 7
+        },
+        {
+          "name": "WatchlistItemModel.toJson omits id when null",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "WatchlistItemModel status helpers isUpcoming is true when scheduledAt is in the future",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "WatchlistItemModel status helpers isPast is true when scheduledAt is in the past",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "WatchlistItemModel.copyWith overrides only the fields provided",
+          "status": "passed",
+          "durationMs": 3
+        }
+      ]
+    },
+    {
+      "file": "test/data/repositories/ai_curator_repository_test.dart",
+      "total": 25,
+      "passed": 25,
+      "failed": 0,
+      "durationMs": 88,
+      "tests": [
+        {
+          "name": "AiCuratorReport.fromJson parses a fully-populated report",
+          "status": "passed",
+          "durationMs": 23
+        },
+        {
+          "name": "AiCuratorReport.fromJson uses defaults for missing fields",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "AiCuratorReport.fromJson parses confidence when present and coerces to int",
+          "status": "passed",
+          "durationMs": 1
+        },
+        {
+          "name": "AiCuratorReport.fromJson parses and synthesizes ContentAssessment, FormatAssessment, ScoringBreakdown",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "AiSentiment & AiCompliance.fromJson AiSentiment tolerates empty / missing input",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "AiSentiment & AiCompliance.fromJson AiCompliance converts flaggedContent list defensively",
+          "status": "passed",
+          "durationMs": 1
+        },
+        {
+          "name": "AiSentiment & AiCompliance.fromJson AiCompliance defaults missing fields",
+          "status": "passed",
+          "durationMs": 1
+        },
+        {
+          "name": "curate() POSTs to /v1/ai-curator/curate with the right body",
+          "status": "passed",
+          "durationMs": 9
+        },
+        {
+          "name": "curate() passes through forceRefresh=true",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "curate() unwraps response wrapped in { data: { ... } }",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "analyze() POSTs to /v1/ai-curator/analyze with only non-empty fields",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "analyze() drops null / empty optional fields from the body",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "analyzeExisting() POSTs to /v1/ai-curator/analyze/:programId with no body",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "apply() unwraps nested response and returns ApplyCurationResult",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "apply() accepts a flat (non-{data}) response body",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "apply() markApplied defaults to true when not overridden",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "history() handles array-direct response",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "history() handles { data: [...] } envelope",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "history() returns empty list for unknown / non-list body",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "Error mapping DioExceptionType.connectionError → AiCuratorErrorCode.network",
+          "status": "passed",
+          "durationMs": 8
+        },
+        {
+          "name": "Error mapping badResponse 429 → AiCuratorErrorCode.rateLimited",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "Error mapping badResponse 401 → AiCuratorErrorCode.unauthorized",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "Error mapping surfaces backend message field instead of generic fallback",
+          "status": "passed",
+          "durationMs": 2
+        },
+        {
+          "name": "Error mapping timeout errors map to AiCuratorErrorCode.timeout",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "Error mapping list-shape `message` field is joined into a string",
+          "status": "passed",
+          "durationMs": 3
+        }
+      ]
+    },
+    {
+      "file": "test/logic/auth_bloc_test.dart",
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "durationMs": 147,
+      "tests": [
+        {
+          "name": "AuthBloc Tests Initial state is AuthInitial",
+          "status": "passed",
+          "durationMs": 29
+        },
+        {
+          "name": "AuthBloc Tests CheckAuthStatus emits [AuthLoading, Unauthenticated] when no user",
+          "status": "passed",
+          "durationMs": 27
+        },
+        {
+          "name": "AuthBloc Tests CheckAuthStatus emits [AuthLoading, Authenticated] when user in storage",
+          "status": "passed",
+          "durationMs": 25
+        },
+        {
+          "name": "AuthBloc Tests LoginRequested emits [AuthLoading, Authenticated] on success",
+          "status": "passed",
+          "durationMs": 15
+        },
+        {
+          "name": "AuthBloc Tests LoginRequested emits [AuthLoading, AuthError] on bad credentials",
+          "status": "passed",
+          "durationMs": 5
+        },
+        {
+          "name": "AuthBloc Tests GoogleLoginRequested emits [AuthLoading, Authenticated] on success",
+          "status": "passed",
+          "durationMs": 6
+        },
+        {
+          "name": "AuthBloc Tests RefreshTokenRequested does not emit (silent) when refresh succeeds",
+          "status": "passed",
+          "durationMs": 6
+        },
+        {
+          "name": "AuthBloc Tests RefreshTokenRequested emits Unauthenticated when refresh fails",
+          "status": "passed",
+          "durationMs": 6
+        },
+        {
+          "name": "AuthBloc Tests LogoutRequested emits Unauthenticated and calls logout()",
+          "status": "passed",
+          "durationMs": 11
+        },
+        {
+          "name": "AuthBloc Tests LogoutRequested still emits Unauthenticated when repo throws (best-effort)",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "AuthBloc Tests LogoutAllDevicesRequested calls logout(revokeAllDevices: true) and emits Unauthenticated",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "AuthBloc Tests LogoutAllDevicesRequested is best-effort (still emits Unauthenticated on failure)",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "AuthBloc Tests RegisterRequested emits [AuthLoading, Authenticated] on success",
+          "status": "passed",
+          "durationMs": 5
+        }
+      ]
+    },
+    {
+      "file": "test/logic/epg_bloc_test.dart",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "durationMs": 79,
+      "tests": [
+        {
+          "name": "EpgBloc Tests Initial state is EpgInitial",
+          "status": "passed",
+          "durationMs": 28
+        },
+        {
+          "name": "EpgBloc Tests emits [EpgLoading, EpgLoaded] on LoadEpgSchedule success",
+          "status": "passed",
+          "durationMs": 37
+        },
+        {
+          "name": "EpgBloc Tests serves SQLite cached payload when network fails",
+          "status": "passed",
+          "durationMs": 6
+        },
+        {
+          "name": "EpgBloc Tests emits EpgError when network fails and no cached data exists",
+          "status": "passed",
+          "durationMs": 4
+        },
+        {
+          "name": "EpgBloc Tests re-triggers LoadEpgSchedule on ChangeEpgDate when already loaded",
+          "status": "passed",
+          "durationMs": 4
+        }
+      ]
+    },
+    {
+      "file": "test/logic/watchlist_bloc_test.dart",
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "durationMs": 271,
+      "tests": [
+        {
+          "name": "LoadWatchlist emits [WatchlistLoading, WatchlistLoaded] on success",
+          "status": "passed",
+          "durationMs": 110
+        },
+        {
+          "name": "LoadWatchlist emits WatchlistError when grouped() throws",
+          "status": "passed",
+          "durationMs": 58
+        },
+        {
+          "name": "AddToWatchlist calls repository.add and emits LoadWatchlist afterwards",
+          "status": "passed",
+          "durationMs": 21
+        },
+        {
+          "name": "AddToWatchlist schedules a notification when reminderEnabled=true",
+          "status": "passed",
+          "durationMs": 17
+        },
+        {
+          "name": "AddToWatchlist does not schedule when reminderEnabled is false",
+          "status": "passed",
+          "durationMs": 16
+        },
+        {
+          "name": "RemoveFromWatchlist cancels the reminder and removes via repository",
+          "status": "passed",
+          "durationMs": 15
+        },
+        {
+          "name": "ToggleWatchlistReminder updates DB and schedules a notification when time is non-null",
+          "status": "passed",
+          "durationMs": 15
+        },
+        {
+          "name": "ToggleWatchlistReminder cancels reminder when time is null",
+          "status": "passed",
+          "durationMs": 14
+        },
+        {
+          "name": "isInWatchlist extension returns true when the programId is in any bucket",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "isInWatchlist extension returns false when not present and on non-loaded states",
+          "status": "passed",
+          "durationMs": 2
+        }
+      ]
+    },
+    {
+      "file": "test/presentation/save_to_watchlist_button_test.dart",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "durationMs": 823,
+      "tests": [
+        {
+          "name": "shows \"Lưu\" label when the program is not saved",
+          "status": "passed",
+          "durationMs": 631
+        },
+        {
+          "name": "shows \"Đã lưu\" label when the program is in the watchlist",
+          "status": "passed",
+          "durationMs": 36
+        },
+        {
+          "name": "dispatches AddToWatchlist when tapped from the unsaved state",
+          "status": "passed",
+          "durationMs": 122
+        },
+        {
+          "name": "dispatches RemoveFromWatchlist when tapped from the saved state",
+          "status": "passed",
+          "durationMs": 34
+        }
+      ]
+    },
+    {
+      "file": "test/presentation/screens/onboarding/onboarding_screen_test.dart",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "durationMs": 968,
+      "tests": [
+        {
+          "name": "Onboarding screen renders all 3 pages + skip button",
+          "status": "passed",
+          "durationMs": 868
+        },
+        {
+          "name": "Skip button jumps to login",
+          "status": "passed",
+          "durationMs": 100
+        }
+      ]
+    },
+    {
+      "file": "test/presentation/screens/studio/ai_curator_screen_test.dart",
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "durationMs": 2069,
+      "tests": [
+        {
+          "name": "renders 3 tabs (analyze, apply, curate-existing)",
+          "status": "passed",
+          "durationMs": 919
+        },
+        {
+          "name": "tapping \"Phân tích AI\" on a row triggers curate()",
+          "status": "passed",
+          "durationMs": 321
+        },
+        {
+          "name": "curate-existing tab shows empty state when no programs",
+          "status": "passed",
+          "durationMs": 124
+        },
+        {
+          "name": "pull-to-refresh on curate-existing triggers history fetch",
+          "status": "passed",
+          "durationMs": 219
+        },
+        {
+          "name": "tab switching preserves _result state",
+          "status": "passed",
+          "durationMs": 357
+        },
+        {
+          "name": "parseSuggestedTime well-formed slot returns ISO timestamp on fallback date",
+          "status": "passed",
+          "durationMs": 5
+        },
+        {
+          "name": "parseSuggestedTime empty slot returns null",
+          "status": "passed",
+          "durationMs": 5
+        },
+        {
+          "name": "parseSuggestedTime garbage slot returns null",
+          "status": "passed",
+          "durationMs": 3
+        },
+        {
+          "name": "shows access-denied screen when role is VIEWER",
+          "status": "passed",
+          "durationMs": 25
+        },
+        {
+          "name": "empty title shows \"Title is required\" error",
+          "status": "passed",
+          "durationMs": 91
+        }
+      ]
+    }
+  ]
+}
