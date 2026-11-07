@@ -9,12 +9,12 @@ $resolvedRoot = Resolve-Path (Join-Path $scriptDir $ReportsRoot)
 
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host " OmniCast - Professional Word & PDF Document Layout Styler and Exporter" -ForegroundColor Cyan
-Write-Host " Standard: FPT University Academic & Professional Deliverable Layout Standard" -ForegroundColor Cyan
+Write-Host " Academic Standard: FPT University Graduation Thesis Layout Specification" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 
 # Terminate any lingering Word processes to avoid file lock
 Get-Process "WINWORD" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Start-Sleep -Milliseconds 300
+Start-Sleep -Milliseconds 400
 
 $word = New-Object -ComObject Word.Application
 $word.Visible = $false
@@ -27,7 +27,7 @@ $targets = @(
         Lang   = "vi"
         Course = "PRN232"
         Label  = "PRN232 Report Vietnamese"
-        Header = "OmniCast - Bao Cao Nghiem Thu Do An PRN232 | FPTU Quy Nhon AI Campus"
+        Header = "OmniCast --- Báo cáo Đồ án Tốt nghiệp Toàn diện (PRN232) | FPTU Quy Nhon AI Campus"
     },
     @{
         Docx   = (Join-Path $resolvedRoot "PRN232\PRN232_Report_EN.docx")
@@ -35,7 +35,7 @@ $targets = @(
         Lang   = "en"
         Course = "PRN232"
         Label  = "PRN232 Report English"
-        Header = "OmniCast - PRN232 Deliverable Report | FPTU Quy Nhon AI Campus"
+        Header = "OmniCast --- Comprehensive Graduation Project Report (PRN232) | FPTU Quy Nhon AI Campus"
     },
     @{
         Docx   = (Join-Path $resolvedRoot "PRM393\PRM393_Report_VI.docx")
@@ -43,7 +43,7 @@ $targets = @(
         Lang   = "vi"
         Course = "PRM393"
         Label  = "PRM393 Report Vietnamese"
-        Header = "OmniCast - Bao Cao Nghiem Thu Do An PRM393 | FPTU Quy Nhon AI Campus"
+        Header = "OmniCast --- Báo cáo Đồ án Tốt nghiệp Toàn diện (PRM393) | FPTU Quy Nhon AI Campus"
     },
     @{
         Docx   = (Join-Path $resolvedRoot "PRM393\PRM393_Report_EN.docx")
@@ -51,7 +51,7 @@ $targets = @(
         Lang   = "en"
         Course = "PRM393"
         Label  = "PRM393 Report English"
-        Header = "OmniCast - PRM393 Deliverable Report | FPTU Quy Nhon AI Campus"
+        Header = "OmniCast --- Comprehensive Graduation Project Report (PRM393) | FPTU Quy Nhon AI Campus"
     }
 )
 
@@ -72,12 +72,13 @@ try {
         $doc = $word.Documents.Open($docxPath, $false, $false)
 
         # ---------------------------------------------------------
-        # 1. Page Margins & Layout (Balanced Standard 0.75 - 0.8 in)
+        # 1. Page Margins & Layout (FPTU Graduation Project A4 Standard)
         # ---------------------------------------------------------
-        $doc.PageSetup.TopMargin = 54      # 0.75 inch
-        $doc.PageSetup.BottomMargin = 54   # 0.75 inch
-        $doc.PageSetup.LeftMargin = 58     # 0.80 inch
-        $doc.PageSetup.RightMargin = 58    # 0.80 inch
+        $doc.PageSetup.PaperSize = 7       # wdPaperA4 (210mm x 297mm)
+        $doc.PageSetup.TopMargin = 57      # 2.0 cm (approx 56.7 pt)
+        $doc.PageSetup.BottomMargin = 57   # 2.0 cm (approx 56.7 pt)
+        $doc.PageSetup.LeftMargin = 85     # 3.0 cm (book binding margin)
+        $doc.PageSetup.RightMargin = 57    # 2.0 cm (approx 56.7 pt)
         $doc.PageSetup.DifferentFirstPageHeaderFooter = $true
 
         # ---------------------------------------------------------
@@ -88,33 +89,34 @@ try {
             $normal = $doc.Styles.Item("Normal")
             $normal.Font.Name = "Times New Roman"
             $normal.Font.Size = 11.5
-            $normal.Font.Color = 0x222222
-            $normal.ParagraphFormat.LineSpacing = 14
-            $normal.ParagraphFormat.SpaceAfter = 5
+            $normal.Font.Color = 0x1E293B
+            $normal.ParagraphFormat.LineSpacing = 15 # 1.25 line spacing
+            $normal.ParagraphFormat.SpaceAfter = 4.5
             $normal.ParagraphFormat.SpaceBefore = 0
             $normal.ParagraphFormat.Alignment = 3 # wdAlignParagraphJustify
         } catch {}
 
-        # Heading 1 (Major Chapters)
+        # Heading 1 (Major Chapters - Forces Clean Page Break)
         try {
             $h1 = $doc.Styles.Item("Heading 1")
             $h1.Font.Name = "Times New Roman"
-            $h1.Font.Size = 15
+            $h1.Font.Size = 16
             $h1.Font.Bold = 1
-            $h1.Font.Color = 0x45250B # Navy Blue (BGR)
-            $h1.ParagraphFormat.SpaceBefore = 14
-            $h1.ParagraphFormat.SpaceAfter = 6
+            $h1.Font.Color = 0x2A170F # Deep Navy (BGR)
+            $h1.ParagraphFormat.SpaceBefore = 18
+            $h1.ParagraphFormat.SpaceAfter = 8
             $h1.ParagraphFormat.KeepWithNext = -1
+            $h1.ParagraphFormat.PageBreakBefore = -1 # Always start chapter at top of new page
         } catch {}
 
         # Heading 2 (Subsections)
         try {
             $h2 = $doc.Styles.Item("Heading 2")
             $h2.Font.Name = "Times New Roman"
-            $h2.Font.Size = 13
+            $h2.Font.Size = 13.5
             $h2.Font.Bold = 1
-            $h2.Font.Color = 0x894E1D # Slate Blue (BGR)
-            $h2.ParagraphFormat.SpaceBefore = 10
+            $h2.Font.Color = 0x90740E # Dark Teal / Blue (BGR)
+            $h2.ParagraphFormat.SpaceBefore = 12
             $h2.ParagraphFormat.SpaceAfter = 4
             $h2.ParagraphFormat.KeepWithNext = -1
         } catch {}
@@ -123,10 +125,11 @@ try {
         try {
             $h3 = $doc.Styles.Item("Heading 3")
             $h3.Font.Name = "Times New Roman"
-            $h3.Font.Size = 11.5
+            $h3.Font.Size = 12
             $h3.Font.Bold = 1
-            $h3.Font.Color = 0x2B3A42 # Deep Charcoal
-            $h3.ParagraphFormat.SpaceBefore = 6
+            $h3.Font.Italic = 1
+            $h3.Font.Color = 0x334155 # Deep Charcoal
+            $h3.ParagraphFormat.SpaceBefore = 8
             $h3.ParagraphFormat.SpaceAfter = 2
             $h3.ParagraphFormat.KeepWithNext = -1
         } catch {}
@@ -153,21 +156,29 @@ try {
             $header.Range.Font.Name = "Times New Roman"
             $header.Range.Font.Size = 9
             $header.Range.Font.Italic = 1
-            $header.Range.Font.Color = 0x666666
+            $header.Range.Font.Color = 0x64748B
             $header.Range.ParagraphFormat.Alignment = 2 # wdAlignParagraphRight
         } catch {}
 
-        # Primary Footer with Page Numbering (page 2+)
+        # Primary Footer with Page Numbering (Trang X / Y)
         try {
             $footer = $section.Footers.Item(1) # wdHeaderFooterPrimary
-            $pagePrefix = if ($lang -eq "vi") { "Trang " } else { "Page " }
-            $footer.Range.Text = $pagePrefix
-            $fRange = $footer.Range
-            $fRange.Collapse(0) # wdCollapseEnd
-            $null = $footer.Range.Fields.Add($fRange, 33) # wdFieldPage
+            $footer.Range.Text = if ($lang -eq "vi") { "Trang " } else { "Page " }
+            $r1 = $footer.Range
+            $r1.Collapse(0) # wdCollapseEnd
+            $null = $footer.Range.Fields.Add($r1, 33) # wdFieldPage
+            
+            $r2 = $footer.Range
+            $r2.Collapse(0)
+            $r2.Text = if ($lang -eq "vi") { " / " } else { " of " }
+            
+            $r3 = $footer.Range
+            $r3.Collapse(0)
+            $null = $footer.Range.Fields.Add($r3, 26) # wdFieldNumPages
+
             $footer.Range.Font.Name = "Times New Roman"
             $footer.Range.Font.Size = 9.5
-            $footer.Range.Font.Color = 0x555555
+            $footer.Range.Font.Color = 0x475569
             $footer.Range.ParagraphFormat.Alignment = 1 # wdAlignParagraphCenter
         } catch {}
 
@@ -184,32 +195,39 @@ try {
                 $firstRow = $table.Rows.Item(1)
                 $firstRow.HeadingFormat = -1
                 $firstRow.Range.Font.Bold = 1
-                $firstRow.Shading.BackgroundPatternColor = 0xF5F0E8 # Soft Azure/Beige Shading
+                $firstRow.Shading.BackgroundPatternColor = 0xFAF5EB # Soft Azure/Blue Shading
             } catch {}
 
             # Cell font & padding
             try {
-                $table.TopPadding = 3.5
-                $table.BottomPadding = 3.5
-                $table.LeftPadding = 5
-                $table.RightPadding = 5
+                $table.TopPadding = 4
+                $table.BottomPadding = 4
+                $table.LeftPadding = 6
+                $table.RightPadding = 6
                 $table.Range.Font.Name = "Times New Roman"
                 $table.Range.Font.Size = 9.5
                 $table.Range.ParagraphFormat.LineSpacing = 12
-                $table.Range.ParagraphFormat.SpaceAfter = 1.5
-                $table.Range.ParagraphFormat.SpaceBefore = 1.5
+                $table.Range.ParagraphFormat.SpaceAfter = 2
+                $table.Range.ParagraphFormat.SpaceBefore = 2
             } catch {}
         }
 
         # ---------------------------------------------------------
-        # 5. Inline Figures & Captions
+        # 5. Inline Figures & Captions (Auto Fit to Printable Width)
         # ---------------------------------------------------------
         foreach ($shape in $doc.InlineShapes) {
             try {
                 $shape.Range.ParagraphFormat.Alignment = 1 # Center
-                $shape.Range.ParagraphFormat.SpaceBefore = 6
+                $shape.Range.ParagraphFormat.SpaceBefore = 8
                 $shape.Range.ParagraphFormat.SpaceAfter = 3
                 $shape.Range.ParagraphFormat.KeepWithNext = -1
+
+                # Restrict figure width to max 450 pt so it never overflows margins
+                if ($shape.Width -gt 450) {
+                    $ratio = 450.0 / $shape.Width
+                    $shape.Width = 450
+                    $shape.Height = [math]::Round($shape.Height * $ratio)
+                }
             } catch {}
         }
 
@@ -227,14 +245,16 @@ try {
         Write-Host "--> Saving formatted Word document (.docx)..." -ForegroundColor Cyan
         $doc.Save()
         $docxItem = Get-Item $docxPath
-        Write-Host "    [OK] Saved DOCX: $docxPath ($([math]::Round($docxItem.Length / 1MB, 2)) MB)" -ForegroundColor Green
+        $docxSizeMB = [math]::Round($docxItem.Length / 1048576, 2)
+        Write-Host "    [OK] Saved DOCX: $docxPath ($docxSizeMB MB)" -ForegroundColor Green
 
         Write-Host "--> Exporting high-fidelity PDF (.pdf)..." -ForegroundColor Cyan
         $format = 17 # wdFormatPDF
         $doc.SaveAs([ref]$pdfPath, [ref]$format)
         $doc.Close([ref]$false)
         $pdfItem = Get-Item $pdfPath
-        Write-Host "    [OK] Exported PDF: $pdfPath ($([math]::Round($pdfItem.Length / 1MB, 2)) MB)" -ForegroundColor Green
+        $pdfSizeMB = [math]::Round($pdfItem.Length / 1048576, 2)
+        Write-Host "    [OK] Exported PDF: $pdfPath ($pdfSizeMB MB)" -ForegroundColor Green
     }
 } finally {
     $word.Quit([ref]$false)
