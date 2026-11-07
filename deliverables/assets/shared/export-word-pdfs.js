@@ -375,6 +375,32 @@ try {
         try { $doc.Fields.Update() } catch {}
 
         # ---------------------------------------------------------
+        # References / Bibliography Formatting (Hanging Indent)
+        # ---------------------------------------------------------
+        foreach ($p in $doc.Paragraphs) {
+            $pText = ""
+            try { $pText = $p.Range.Text.Trim() } catch {}
+            if ($pText -eq "REFERENCES" -or $pText -eq "TÀI LIỆU THAM KHẢO") {
+                $p.Range.ParagraphFormat.PageBreakBefore = -1
+                $p.Range.ParagraphFormat.SpaceBefore = 18
+                $p.Range.ParagraphFormat.SpaceAfter = 12
+                $p.Range.Font.Name = "Times New Roman"
+                $p.Range.Font.Size = 16
+                $p.Range.Font.Bold = 1
+                $p.Range.Font.Color = 0x2A170F
+            } elseif ($pText -match "^\[\d+\]") {
+                $p.Range.ParagraphFormat.Alignment = 3 # wdAlignParagraphJustify
+                $p.Range.ParagraphFormat.LeftIndent = 24
+                $p.Range.ParagraphFormat.FirstLineIndent = -24
+                $p.Range.ParagraphFormat.SpaceBefore = 2
+                $p.Range.ParagraphFormat.SpaceAfter = 4
+                $p.Range.ParagraphFormat.LineSpacing = 13
+                $p.Range.Font.Name = "Times New Roman"
+                $p.Range.Font.Size = 10
+            }
+        }
+
+        # ---------------------------------------------------------
         # 7. Save DOCX and Export PDF
         # ---------------------------------------------------------
         Write-Host "    [1/2] Saving formatted Word document (.docx)..." -ForegroundColor Cyan

@@ -53,6 +53,32 @@ function removeMacro(content, macroName) {
   return result;
 }
 
+function formatBibliography(content, lang) {
+  const isEn = lang === 'en';
+  const heading = isEn ? 'REFERENCES' : 'TÀI LIỆU THAM KHẢO';
+  const tocTitle = isEn ? 'References' : 'Tài liệu tham khảo';
+
+  return content.replace(/\\begin\{thebibliography\}\{[^}]*\}[\s\S]*?\\end\{thebibliography\}/g, (match) => {
+    const items = [];
+    const itemRegex = /\\bibitem\{[^}]+\}([\s\S]*?)(?=\\bibitem\{|\\end\{thebibliography\}|$)/g;
+    let m;
+    while ((m = itemRegex.exec(match)) !== null) {
+      let itemText = m[1].trim();
+      itemText = itemText.replace(/\s+/g, ' ');
+      if (itemText) items.push(itemText);
+    }
+
+    if (items.length === 0) return '';
+
+    let formatted = `\n\n\\newpage\n\\section*{${heading}}\n\\addcontentsline{toc}{section}{${tocTitle}}\n\n`;
+    items.forEach((item, index) => {
+      formatted += `\\noindent\\textbf{[${index + 1}]} ${item}\n\n`;
+    });
+
+    return formatted;
+  });
+}
+
 function extractBi(content, lang) {
   let result = '';
   let i = 0;
@@ -920,6 +946,9 @@ function buildDocx(reportDir, mainTex, outputDocx, lang, isPrn232) {
   content = removeMacro(content, 'title');
   content = removeMacro(content, 'author');
   content = removeMacro(content, 'date');
+
+  // Convert raw LaTeX thebibliography environments into clean academic bibliography sections
+  content = formatBibliography(content, lang);
 
   // Prepend rich Graduation Project Front Matter
   const frontMatter = getGraduationProjectFrontMatter(isPrn232, lang);
