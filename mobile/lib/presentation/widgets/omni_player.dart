@@ -490,15 +490,18 @@ class _OmniPlayerState extends State<OmniPlayer> {
 
     if (_isLiveStream && !_userPaused && val.isPlaying && val.duration > Duration.zero) {
       final drift = val.duration - val.position;
-      if (drift > const Duration(seconds: 4)) {
-        // Hard catch-up if fallen behind
+      if (drift > const Duration(milliseconds: 2500)) {
+        // Tier 1 - Hard catch-up: snap directly to live edge if fallen behind by > 2.5s
         c.seekTo(val.duration);
         if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
-      } else if (drift > const Duration(milliseconds: 1800)) {
-        // Adaptive catch-up (1.25x speed boost to eliminate delay seamlessly)
+      } else if (drift > const Duration(milliseconds: 1200)) {
+        // Tier 2 - Active catch-up: 1.25x speed boost to eliminate delay seamlessly
         if (c.value.playbackSpeed != 1.25) c.setPlaybackSpeed(1.25);
-      } else if (drift <= const Duration(milliseconds: 900)) {
-        // Fully in-sync: maintain exact 1.0x real-time speed
+      } else if (drift > const Duration(milliseconds: 600)) {
+        // Tier 3 - Micro catch-up: 1.1x subtle acceleration (imperceptible audio pitch)
+        if (c.value.playbackSpeed != 1.1) c.setPlaybackSpeed(1.1);
+      } else if (drift <= const Duration(milliseconds: 350)) {
+        // Tier 4 - Ultra-low latency lock: maintain exact 1.0x real-time speed within < 350ms
         if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
       }
     }

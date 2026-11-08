@@ -64,7 +64,7 @@ hls: true
 hlsAddress: :8888
 hlsAllowOrigins: ["*"]
 hlsVariant: lowLatency
-hlsSegmentCount: 8
+hlsSegmentCount: 6
 hlsSegmentDuration: 1s
 hlsPartDuration: 200ms
 # Remux as soon as a publisher is on the path, so a viewer that
