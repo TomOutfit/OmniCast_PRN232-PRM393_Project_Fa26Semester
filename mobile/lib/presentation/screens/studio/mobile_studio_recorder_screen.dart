@@ -99,9 +99,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   String? _currentEventId;
 
   // Audio VU meter simulation / reactive levels
-  double _leftVu = 0.25;
-  double _rightVu = 0.28;
-  double _peakVu = 0.35;
+  final ValueNotifier<({double left, double right, double peak})> _vuLevels =
+      ValueNotifier((left: 0.25, right: 0.28, peak: 0.35));
 
   // Viewfinder Studio HUD tools
   bool _showGrid = true;
@@ -135,15 +134,10 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   bool _isPreparingReview = false;
 
   // Animations
-  late final AnimationController _pulseCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1000),
-  )..repeat(reverse: true);
-
   late final AnimationController _tallyGlowCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 700),
-  )..repeat(reverse: true);
+  );
 
   @override
   void initState() {
@@ -166,8 +160,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     _recordTimer?.cancel();
     _vuTimer?.cancel();
     _prompterAutoScrollTimer?.cancel();
-    _pulseCtrl.dispose();
     _tallyGlowCtrl.dispose();
+    _vuLevels.dispose();
     _prompterCtrl.dispose();
     _prompterScroll.dispose();
     _cameraCtrl?.dispose();
@@ -211,7 +205,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
     final ctrl = CameraController(
       desc,
-      ResolutionPreset.veryHigh,
+      ResolutionPreset.high,
       enableAudio: true,
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
@@ -277,18 +271,18 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       if (_isRecording) {
         final base = 0.45 + (rand.nextDouble() * 0.45);
         final jitter = (rand.nextDouble() - 0.5) * 0.12;
-        setState(() {
-          _leftVu = (base + jitter).clamp(0.1, 0.96);
-          _rightVu = (base - jitter).clamp(0.1, 0.94);
-          _peakVu = math.max(_peakVu * 0.92, math.max(_leftVu, _rightVu));
-        });
+        final left = (base + jitter).clamp(0.1, 0.96);
+        final right = (base - jitter).clamp(0.1, 0.94);
+        final peak =
+            math.max(_vuLevels.value.peak * 0.92, math.max(left, right));
+        _vuLevels.value = (left: left, right: right, peak: peak);
       } else {
         final ambient = 0.15 + (rand.nextDouble() * 0.15);
-        setState(() {
-          _leftVu = ambient;
-          _rightVu = ambient * 0.9;
-          _peakVu = ambient * 1.1;
-        });
+        _vuLevels.value = (
+          left: ambient,
+          right: ambient * 0.9,
+          peak: ambient * 1.1,
+        );
       }
     });
   }
@@ -317,6 +311,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         _recordedSeconds = 0;
         _recordedFrames = 0;
       });
+      _tallyGlowCtrl.repeat(reverse: true);
 
       _recordTimer?.cancel();
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -501,6 +496,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       _recordedSeconds = 0;
       _recordedFrames = 0;
     });
+    _tallyGlowCtrl.repeat(reverse: true);
 
     _recordTimer?.cancel();
     _recordTimer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -531,6 +527,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         _isLiveStreaming = false;
       });
     }
+    _tallyGlowCtrl.stop();
+    _tallyGlowCtrl.value = 0;
   }
 
   Future<bool> _notifyBackendLiveStarted() async {
@@ -624,6 +622,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       _isPreparingReview = true;
       _stage = _StudioStage.reviewing;
     });
+    _tallyGlowCtrl.stop();
+    _tallyGlowCtrl.value = 0;
 
     if (file != null) {
       await _prepareReviewPlayer(file.path);
@@ -1125,15 +1125,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedBuilder(
-                animation: _pulseCtrl,
-                builder: (_, __) => Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _isRecording ? _danger : _green,
-                    shape: BoxShape.circle,
-                  ),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _isRecording ? _danger : _green,
+                  shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 6),
@@ -1347,15 +1344,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (_isRecording)
-                  AnimatedBuilder(
-                    animation: _pulseCtrl,
-                    builder: (_, __) => Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
                     ),
                   )
                 else
@@ -1663,40 +1657,39 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Text(
-                'L',
-                style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'JetBrainsMono',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: _buildVuBar(_leftVu)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Text(
-                'R',
-                style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'JetBrainsMono',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: _buildVuBar(_rightVu)),
-            ],
-          ),
-        ],
+      child: ValueListenableBuilder<({double left, double right, double peak})>(
+        valueListenable: _vuLevels,
+        builder: (context, levels, _) => Column(
+          children: [
+            Row(
+              children: [
+                const Text('L',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'JetBrainsMono',
+                    )),
+                const SizedBox(width: 8),
+                Expanded(child: _buildVuBar(levels.left)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Text('R',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'JetBrainsMono',
+                    )),
+                const SizedBox(width: 8),
+                Expanded(child: _buildVuBar(levels.right)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

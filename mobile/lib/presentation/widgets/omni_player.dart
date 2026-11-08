@@ -3,9 +3,14 @@
 // Includes: retry on error, fallback stream URL, clean UX error state.
 
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/lan_discovery_service.dart';
@@ -134,13 +139,20 @@ class _OmniPlayerState extends State<OmniPlayer> {
       widget.url.toLowerCase().contains('/live/') ||
       widget.url.toLowerCase().contains('.m3u8');
 
+  bool get _usesWebLivePlayer =>
+      _isLiveStream && widget.url.toLowerCase().contains('.m3u8');
+
   @override
   void initState() {
     super.initState();
     // Reactive listener for Wi-Fi LAN auto-discovery: immediately reloads player when host is found
     _discoverySub = LanDiscoveryService().onDiscovery.listen((res) {
-      if (res.success && res.host != null && mounted && (_hasError || _isLiveRetrying)) {
-        debugPrint('[OmniPlayer] ⚡ Reactive discovery event received: ${res.host}');
+      if (res.success &&
+          res.host != null &&
+          mounted &&
+          (_hasError || _isLiveRetrying)) {
+        debugPrint(
+            '[OmniPlayer] ⚡ Reactive discovery event received: ${res.host}');
         _liveRetryTimer?.cancel();
         _liveRetryTimer = null;
         _retryCount = 0;
@@ -153,7 +165,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (_isYouTubeEmbed(widget.url)) {
       return;
     }
-    if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
+    if (!_usesWebLivePlayer &&
+        widget.url.isNotEmpty &&
+        (!widget.isPremium || _isVipUnlocked)) {
       _initialize(widget.url);
     }
   }
@@ -171,7 +185,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
       if (_isYouTubeEmbed(widget.url)) {
         return;
       }
-      if (widget.url.isNotEmpty && (!widget.isPremium || _isVipUnlocked)) {
+      if (!_usesWebLivePlayer &&
+          widget.url.isNotEmpty &&
+          (!widget.isPremium || _isVipUnlocked)) {
         _initialize(widget.url);
       }
     }
@@ -214,7 +230,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (lower.contains('omnicast-api.vercel.app/uploads/')) {
       return fallbackOrUrl();
     }
-    if (lower.contains(':8888/') || (lower.contains('.m3u8') && !lower.startsWith('http'))) {
+    if (lower.contains(':8888/') ||
+        (lower.contains('.m3u8') && !lower.startsWith('http'))) {
       var target = trimmed;
 
       // Only URLs that point at a *literal IP* (or loopback) on the
@@ -245,7 +262,9 @@ class _OmniPlayerState extends State<OmniPlayer> {
       // Rewrite a stale literal-IP host to the currently known media host.
       final shouldRewrite = isLiteralHost || isLoopback;
       if (shouldRewrite && host.isNotEmpty) {
-        final isHostDomain = !RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host) && host != 'localhost';
+        final isHostDomain =
+            !RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host) &&
+                host != 'localhost';
         if (looksLikeMediaMtx) {
           if (isHostDomain) {
             // Tunnel or public domain: route via HTTPS on standard 443 port
@@ -261,8 +280,11 @@ class _OmniPlayerState extends State<OmniPlayer> {
             );
           }
         } else {
-          final cleanPath = target.startsWith('/') ? target.substring(1) : target;
-          target = isHostDomain ? 'https://$host/$cleanPath' : 'http://$host:8888/$cleanPath';
+          final cleanPath =
+              target.startsWith('/') ? target.substring(1) : target;
+          target = isHostDomain
+              ? 'https://$host/$cleanPath'
+              : 'http://$host:8888/$cleanPath';
         }
         return target;
       }
@@ -323,12 +345,6 @@ class _OmniPlayerState extends State<OmniPlayer> {
         if (totalDuration.inSeconds > widget.initialSeekSeconds) {
           await controller.seekTo(Duration(seconds: widget.initialSeekSeconds));
         }
-      } else if (_isLiveStream) {
-        // Ultra-low latency: jump immediately to live edge
-        final totalDuration = controller.value.duration;
-        if (totalDuration > Duration.zero) {
-          await controller.seekTo(totalDuration);
-        }
       }
 
       if (widget.autoPlay) {
@@ -356,7 +372,8 @@ class _OmniPlayerState extends State<OmniPlayer> {
         if (_retryCount == 0) {
           LanDiscoveryService().autoDiscoverMediaHost().then((res) {
             if (res.success && res.host != null && mounted) {
-              debugPrint('[OmniPlayer] ⚡ Wi-Fi Auto-Discovery resolved mediaHost to: ${res.host}');
+              debugPrint(
+                  '[OmniPlayer] ⚡ Wi-Fi Auto-Discovery resolved mediaHost to: ${res.host}');
               _liveRetryTimer?.cancel();
               _liveRetryTimer = null;
               _retryCount = 0;
@@ -386,10 +403,14 @@ class _OmniPlayerState extends State<OmniPlayer> {
         // Live camera retries exhausted on this network:
         // If allowFallback is true and fallbackSrc is available, seamlessly fallback to cloud stream
         // so the screen NEVER breaks on other Wi-Fi networks!
-        if (widget.allowFallback && widget.fallbackSrc != null && widget.fallbackSrc!.isNotEmpty) {
-          debugPrint('[OmniPlayer] 📡 Live stream unreachable on this network; falling back to cloud relay: ${widget.fallbackSrc}');
+        if (widget.allowFallback &&
+            widget.fallbackSrc != null &&
+            widget.fallbackSrc!.isNotEmpty) {
+          debugPrint(
+              '[OmniPlayer] 📡 Live stream unreachable on this network; falling back to cloud relay: ${widget.fallbackSrc}');
           _usedFallback = true;
-          _showFallbackToast('🔁 Đang chuyển sang luồng phát sóng dự phòng đám mây…');
+          _showFallbackToast(
+              '🔁 Đang chuyển sang luồng phát sóng dự phòng đám mây…');
           _initialize(widget.fallbackSrc!);
           return;
         }
@@ -483,28 +504,6 @@ class _OmniPlayerState extends State<OmniPlayer> {
     if (c == null) return;
     final val = c.value;
     final curSec = val.position.inSeconds;
-    final justFinishedBuffering = _lastBuffering == true && !val.isBuffering;
-    if (_isLiveStream && justFinishedBuffering && val.isPlaying && val.duration > Duration.zero) {
-      c.seekTo(val.duration);
-    }
-
-    if (_isLiveStream && !_userPaused && val.isPlaying && val.duration > Duration.zero) {
-      final drift = val.duration - val.position;
-      if (drift > const Duration(milliseconds: 2500)) {
-        // Tier 1 - Hard catch-up: snap directly to live edge if fallen behind by > 2.5s
-        c.seekTo(val.duration);
-        if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
-      } else if (drift > const Duration(milliseconds: 1200)) {
-        // Tier 2 - Active catch-up: 1.25x speed boost to eliminate delay seamlessly
-        if (c.value.playbackSpeed != 1.25) c.setPlaybackSpeed(1.25);
-      } else if (drift > const Duration(milliseconds: 600)) {
-        // Tier 3 - Micro catch-up: 1.1x subtle acceleration (imperceptible audio pitch)
-        if (c.value.playbackSpeed != 1.1) c.setPlaybackSpeed(1.1);
-      } else if (drift <= const Duration(milliseconds: 350)) {
-        // Tier 4 - Ultra-low latency lock: maintain exact 1.0x real-time speed within < 350ms
-        if (c.value.playbackSpeed != 1.0) c.setPlaybackSpeed(1.0);
-      }
-    }
     if (curSec != _lastTickSec ||
         val.isBuffering != _lastBuffering ||
         val.isPlaying != _lastPlaying) {
@@ -686,6 +685,15 @@ class _OmniPlayerState extends State<OmniPlayer> {
       return _PosterOnly(
         posterUrl: widget.posterUrl,
         message: 'Chưa có nguồn phát',
+      );
+    }
+
+    if (_usesWebLivePlayer) {
+      return _MobileLiveHlsPlayer(
+        key: ValueKey(widget.url),
+        url: _resolveAbsoluteUrl(widget.url, allowFallback: false),
+        posterUrl: widget.posterUrl,
+        showControls: widget.showControls,
       );
     }
 
@@ -1071,6 +1079,249 @@ class _PlayerOverlay extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+class _MobileLiveHlsPlayer extends StatefulWidget {
+  final String url;
+  final String? posterUrl;
+  final bool showControls;
+
+  const _MobileLiveHlsPlayer({
+    super.key,
+    required this.url,
+    this.posterUrl,
+    required this.showControls,
+  });
+
+  @override
+  State<_MobileLiveHlsPlayer> createState() => _MobileLiveHlsPlayerState();
+}
+
+class _MobileLiveHlsPlayerState extends State<_MobileLiveHlsPlayer> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _buffering = false;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final params = switch (defaultTargetPlatform) {
+      TargetPlatform.android => AndroidWebViewControllerCreationParams(),
+      TargetPlatform.iOS => WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+          mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+        ),
+      _ => const PlatformWebViewControllerCreationParams(),
+    };
+    _controller = WebViewController.fromPlatformCreationParams(params);
+    _configureController();
+  }
+
+  Future<void> _configureController() async {
+    await _controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+    await _controller.setBackgroundColor(Colors.black);
+    await _controller.addJavaScriptChannel(
+      'OmniCastPlayer',
+      onMessageReceived: (message) {
+        if (!mounted) return;
+        switch (message.message) {
+          case 'playing':
+            setState(() {
+              _loading = false;
+              _buffering = false;
+              _failed = false;
+            });
+          case 'ready':
+            setState(() {
+              _loading = false;
+              _buffering = false;
+            });
+          case 'buffering':
+            setState(() => _buffering = true);
+          case 'error':
+            setState(() {
+              _loading = false;
+              _buffering = false;
+              _failed = true;
+            });
+        }
+      },
+    );
+    if (_controller.platform is AndroidWebViewController) {
+      await (_controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
+    _loadStream();
+  }
+
+  Uri get _streamUri => Uri.parse(widget.url);
+
+  String get _baseUrl {
+    final uri = _streamUri;
+    return '${uri.scheme}://${uri.authority}/';
+  }
+
+  Future<void> _loadStream() async {
+    try {
+      final hlsJs = await rootBundle.loadString('assets/player/hls.min.js');
+      final html = _buildHtml(hlsJs);
+      await _controller.loadHtmlString(html, baseUrl: _baseUrl);
+    } catch (error) {
+      debugPrint('[OmniPlayer] Failed to load mobile HLS player: $error');
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  String _buildHtml(String hlsJs) {
+    final source = jsonEncode(widget.url);
+    final poster = jsonEncode(widget.posterUrl ?? '');
+    final controls = widget.showControls ? 'controls' : '';
+    return '''
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; background: #000; overflow: hidden; }
+    video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  </style>
+</head>
+<body>
+  <video id="video" $controls autoplay playsinline poster=$poster></video>
+  <script>$hlsJs</script>
+  <script>
+    const source = $source;
+    const video = document.getElementById('video');
+    let hls = null;
+    const report = state => OmniCastPlayer.postMessage(state);
+    video.addEventListener('playing', () => report('playing'));
+    video.addEventListener('waiting', () => report('buffering'));
+    video.addEventListener('error', () => report('error'));
+
+    window.retryStream = () => {
+      report('loading');
+      if (hls) {
+        hls.stopLoad();
+        hls.startLoad(-1);
+      } else {
+        video.src = source;
+        video.load();
+        video.play().catch(() => report('ready'));
+      }
+    };
+
+    if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        progressive: true,
+        liveSyncDuration: 3,
+        liveMaxLatencyDuration: 8,
+        maxLiveSyncPlaybackRate: 1.05,
+        liveDurationInfinity: true,
+        backBufferLength: 8,
+        maxBufferLength: 8,
+        maxMaxBufferLength: 18,
+        maxBufferSize: 30 * 1024 * 1024,
+        maxBufferHole: 0.5,
+        fragLoadingTimeOut: 10000,
+        manifestLoadingTimeOut: 10000,
+        fragLoadingRetryDelay: 1000,
+        manifestLoadingRetryDelay: 1000
+      });
+      hls.loadSource(source);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        report('ready');
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else {
+          report('error');
+        }
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = source;
+      video.addEventListener('loadedmetadata', () => {
+        report('ready');
+        video.play().catch(() => {});
+      }, { once: true });
+    } else {
+      report('error');
+    }
+  </script>
+</body>
+</html>
+''';
+  }
+
+  Future<void> _retry() async {
+    setState(() {
+      _loading = true;
+      _buffering = false;
+      _failed = false;
+    });
+    await _controller.runJavaScript('window.retryStream()');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_loading || _buffering)
+            const IgnorePointer(
+              child: Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ),
+          if (_failed)
+            Container(
+              color: Colors.black.withValues(alpha: 0.78),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wifi_off_rounded,
+                      color: Colors.white70, size: 30),
+                  const SizedBox(height: 8),
+                  const Text('Không thể tải luồng trực tiếp',
+                      style: TextStyle(color: Colors.white, fontSize: 12)),
+                  const SizedBox(height: 10),
+                  IconButton.filledTonal(
+                    tooltip: 'Kết nối lại',
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // YouTube embed widget — renders any youtube.com/embed URL in a WebView.
 // Used when the recording's `videoUrl` points at a YouTube embed (free,
 // no API key, no Bunny / Mux billing). Falls back to a poster image if
@@ -1336,13 +1587,15 @@ class _LiveConnectingState extends StatelessWidget {
                       onTap: onRetry,
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                          color:
+                              const Color(0xFF00E5FF).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                            color:
+                                const Color(0xFF00E5FF).withValues(alpha: 0.35),
                           ),
                         ),
                         child: const Row(
@@ -1365,11 +1618,12 @@ class _LiveConnectingState extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     InkWell(
-                      onTap: () => showMediaHostConfigDialog(context, onSaved: onRetry),
+                      onTap: () =>
+                          showMediaHostConfigDialog(context, onSaved: onRetry),
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(16),
@@ -1380,7 +1634,8 @@ class _LiveConnectingState extends StatelessWidget {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.tune_rounded, color: Colors.white70, size: 14),
+                            Icon(Icons.tune_rounded,
+                                color: Colors.white70, size: 14),
                             SizedBox(width: 6),
                             Text(
                               'Đổi IP',
@@ -1540,8 +1795,8 @@ class _LiveStandbyState extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: () =>
-                            showMediaHostConfigDialog(context, onSaved: onRetry),
+                        onPressed: () => showMediaHostConfigDialog(context,
+                            onSaved: onRetry),
                         icon: const Icon(Icons.tune_rounded, size: 16),
                         label: const Text(
                           'ĐỔI IP',
@@ -1610,21 +1865,25 @@ void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
                         isScanning = true;
                         scanMessage = 'Đang quét mạng Wi-Fi…';
                       });
-                      final res = await LanDiscoveryService().autoDiscoverMediaHost();
+                      final res =
+                          await LanDiscoveryService().autoDiscoverMediaHost();
                       setDialogState(() {
                         isScanning = false;
                         if (res.success && res.host != null) {
                           ctrl.text = res.host!;
-                          scanMessage = '✓ Đã tìm thấy máy chủ: ${res.host} (${res.source})';
+                          scanMessage =
+                              '✓ Đã tìm thấy máy chủ: ${res.host} (${res.source})';
                         } else {
-                          scanMessage = 'Chưa thấy máy chủ phát. Bạn có thể nhập IP thủ công:';
+                          scanMessage =
+                              'Chưa thấy máy chủ phát. Bạn có thể nhập IP thủ công:';
                         }
                       });
                     },
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
@@ -1649,7 +1908,9 @@ void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
                           color: Color(0xFF00E5FF), size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      isScanning ? 'Đang tự động quét…' : '⚡ Tự Động Quét Wi-Fi (Auto Scan)',
+                      isScanning
+                          ? 'Đang tự động quét…'
+                          : '⚡ Tự Động Quét Wi-Fi (Auto Scan)',
                       style: const TextStyle(
                         color: Color(0xFF00E5FF),
                         fontSize: 12,
@@ -1665,7 +1926,9 @@ void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
               Text(
                 scanMessage!,
                 style: TextStyle(
-                  color: scanMessage!.startsWith('✓') ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                  color: scanMessage!.startsWith('✓')
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFF59E0B),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1679,7 +1942,8 @@ void showMediaHostConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
                 filled: true,
                 fillColor: const Color(0xFF1E293B),
                 labelText: 'Địa chỉ IP MediaMTX',
-                labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                labelStyle:
+                    const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                 hintText: 'Ví dụ: 10.12.2.162',
                 hintStyle: const TextStyle(color: Colors.white38),
                 contentPadding:

@@ -52,6 +52,8 @@ dependencies:
   # WebView (used by OmniPlayer to render YouTube embeds without
   # youtube_player_flutter's native dependency footprint)
   webview_flutter: ^4.7.0
+  webview_flutter_android: ^4.14.1
+  webview_flutter_wkwebview: ^3.27.0
 
   # Supabase (Realtime for comments + reactions)
   supabase_flutter: ^2.5.6
@@ -104,3 +106,4 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/channels/
+    - assets/player/
