@@ -1198,9 +1198,20 @@ class _MobileLiveHlsPlayerState extends State<_MobileLiveHlsPlayer> {
     const source = $source;
     const video = document.getElementById('video');
     let hls = null;
+    let waitingTimer = null;
     const report = state => OmniCastPlayer.postMessage(state);
-    video.addEventListener('playing', () => report('playing'));
-    video.addEventListener('waiting', () => report('buffering'));
+    video.addEventListener('playing', () => {
+      clearTimeout(waitingTimer);
+      report('playing');
+    });
+    video.addEventListener('waiting', () => {
+      clearTimeout(waitingTimer);
+      waitingTimer = setTimeout(() => {
+        if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+          report('buffering');
+        }
+      }, 800);
+    });
     video.addEventListener('error', () => report('error'));
 
     window.retryStream = () => {
@@ -1218,16 +1229,15 @@ class _MobileLiveHlsPlayerState extends State<_MobileLiveHlsPlayer> {
     if (window.Hls && Hls.isSupported()) {
       hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        progressive: true,
-        liveSyncDuration: 3,
-        liveMaxLatencyDuration: 8,
-        maxLiveSyncPlaybackRate: 1.05,
+        lowLatencyMode: false,
+        liveSyncDuration: 4,
+        liveMaxLatencyDuration: 12,
+        maxLiveSyncPlaybackRate: 1.02,
         liveDurationInfinity: true,
         backBufferLength: 8,
-        maxBufferLength: 8,
-        maxMaxBufferLength: 18,
-        maxBufferSize: 30 * 1024 * 1024,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 24,
+        maxBufferSize: 48 * 1024 * 1024,
         maxBufferHole: 0.5,
         fragLoadingTimeOut: 10000,
         manifestLoadingTimeOut: 10000,
