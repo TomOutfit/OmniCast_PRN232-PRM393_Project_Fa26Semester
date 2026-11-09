@@ -145,7 +145,6 @@ class WebRTCPublisherService {
   WebRTCPublisherConfig? _config;
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
-  RTCSessionDescription? _localDescription;
   Completer<bool>? _iceConnectedCompleter;
   bool _isBroadcasting = false;
 
@@ -527,11 +526,6 @@ class WebRTCPublisherService {
     }
   }
 
-  /// Fallback answer creation for when WHIP is not available
-  Future<String?> _createFallbackAnswer(String offerSdp) async {
-    return null;
-  }
-
   Future<String?> _httpPost(
     String url,
     String body,
@@ -589,9 +583,6 @@ class WebRTCPublisherService {
       client?.close(force: true);
     }
   }
-      debugPrint('[WebRTCPublisher] HTTP DELETE error: $e');
-    }
-  }
 
   void _updateState(BroadcastState newState) {
     _state = newState;
@@ -620,8 +611,6 @@ class WebRTCPublisherService {
     // Dispose local stream
     await _localStream?.dispose();
     _localStream = null;
-
-    _localDescription = null;
   }
 
   /// Prioritize H264 payload types in m=video line so MediaMTX can remux to HLS
