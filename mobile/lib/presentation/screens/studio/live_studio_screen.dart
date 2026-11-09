@@ -44,6 +44,9 @@ import '../../../data/repositories/live_studio_repository.dart';
 import '../../../data/services/live_socket_service.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/social/comments_section.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import '../../../data/services/webrtc_publisher_service.dart' hide BroadcastMode;
+import '../../../data/services/live_studio_api_service.dart';
 import 'mobile_studio_recorder_screen.dart';
 
 class LiveStudioScreen extends StatefulWidget {
@@ -107,6 +110,20 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   ActiveLiveState? _activeLive;
   bool _stopping = false;
 
+  // WebRTC Push-to-Live state (mirrors Frontend WebcamLiveBroadcaster)
+  WebRTCPublisherService? _webrtcPublisher;
+  LiveStudioApiService? _liveApiService;
+  bool _isLiveBroadcasting = false;
+  bool _isConnectingLive = false;
+  String? _liveStatusDetail;
+  String? _liveError;
+  String? _liveEventId;
+  int _liveElapsedSeconds = 0;
+  Timer? _liveElapsedTimer;
+  bool _isMicMuted = false;
+  bool _isFrontCamera = false;
+  bool _isTorchOn = false;
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +132,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   @override
   void dispose() {
+    _liveElapsedTimer?.cancel();
+    _webrtcPublisher?.dispose();
+    _liveApiService?.dispose();
     _tabController.dispose();
     _searchCtrl.dispose();
     _catalogSearchCtrl.dispose();
@@ -311,23 +331,203 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   }
 
   // ============================================================
-  // Self-record actions
+  // WebRTC Push-to-Live Actions (Mirrors Frontend WebcamLiveBroadcaster)
   // ============================================================
 
-  /// Launch Mobile Studio in PUSH-TO-LIVE mode (Live Camera via WebRTC WHIP)
-  /// Exactly mirrors Frontend Studio's "BẬT LIVE WEBCAM"
-  Future<void> _startLiveWebcamBroadcast() async {
-    final title = _selfTitleCtrl.text.trim();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MobileStudioRecorderScreen(
-          channel: _selected,
-          initialTopic: title.isNotEmpty ? title : null,
-          initialBroadcastMode: BroadcastMode.pushToLive,
+  String _formatLiveTimer(int totalSeconds) {
+    final m = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final s = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  Widget _overlayCircleBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color color = Colors.white,
+  }) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.65),
+      shape: const CircleBorder(side: BorderSide(color: Colors.white24)),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Icon(icon, size: 16, color: color),
         ),
       ),
     );
-    await _loadActiveLive();
+  }
+
+  Future<void> _startWebcamLive() async {
+    if (_selected == null) {
+      _toast('Vui lòng chọn một kênh trước khi bật LIVE WEBCAM.', accent: _warn);
+      return;
+    }
+
+    setState(() {
+      _isConnectingLive = true;
+      _liveStatusDetail = 'Đang lấy cấu hình máy chủ...';
+      _liveError = null;
+    });
+
+    try {
+      _liveApiService ??= LiveStudioApiService(
+        baseUrl: AppConstants.baseUrl,
+        dio: getIt<DioClient>().dio,
+      );
+
+      final whipBaseUrl = await _liveApiService!.getWhipUrl();
+      if (whipBaseUrl == null || whipBaseUrl.isEmpty) {
+        throw Exception('Chưa kết nối được máy chủ phát MediaMTX WHIP.');
+      }
+
+      final iceServers = await _liveApiService!.getIceServers();
+      final streamKey = _selected!.slug;
+      final fullWhipUrl = '$whipBaseUrl/$streamKey/whip';
+
+      setState(() {
+        _liveStatusDetail = 'Đang mở camera & kết nối WebRTC...';
+      });
+
+      _webrtcPublisher ??= WebRTCPublisherService();
+      _webrtcPublisher!.configure(
+        WebRTCPublisherConfig(
+          serverUrl: fullWhipUrl,
+          streamKey: streamKey,
+          iceServers: iceServers,
+          videoConstraints: const VideoConstraints(
+            width: 1280,
+            height: 720,
+            frameRate: 30,
+            facingMode: 'user',
+          ),
+          audioConstraints: const AudioConstraints(),
+          debug: true,
+        ),
+      );
+
+      final started = await _webrtcPublisher!.startBroadcast();
+      if (!started) {
+        throw Exception('Không thể khởi tạo luồng camera WebRTC.');
+      }
+
+      setState(() {
+        _liveStatusDetail = 'Đang kích hoạt phòng live trên hệ thống...';
+      });
+
+      final title = _selfTitleCtrl.text.trim().isNotEmpty
+          ? _selfTitleCtrl.text.trim()
+          : 'Trực tiếp từ camera điện thoại — ${_selected!.name}';
+
+      final pushRes = await _liveApiService!.pushToLive(
+        channelSlug: _selected!.slug,
+        title: title,
+        streamKey: streamKey,
+      );
+
+      _liveEventId = pushRes?.eventId;
+      _liveElapsedSeconds = 0;
+      _liveElapsedTimer?.cancel();
+      _liveElapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() => _liveElapsedSeconds++);
+        }
+      });
+
+      setState(() {
+        _isLiveBroadcasting = true;
+        _isConnectingLive = false;
+        _liveStatusDetail = null;
+      });
+
+      await _loadActiveLive();
+
+      _toast(
+        'Đã BẬT LIVE WEBCAM trên kênh ${_selected!.name}! Khán giả xem cùng lúc tại /channels/${_selected!.slug}',
+        accent: _accent,
+      );
+    } catch (e) {
+      final msg = e.toString().replaceAll('Exception: ', '');
+      if (mounted) {
+        setState(() {
+          _isConnectingLive = false;
+          _isLiveBroadcasting = false;
+          _liveError = msg;
+        });
+      }
+      await _webrtcPublisher?.stopBroadcast();
+      _toast('Lỗi phát trực tiếp: $msg', accent: _danger);
+    }
+  }
+
+  Future<void> _stopWebcamLive() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: const Text(
+          'Dừng phát trực tiếp?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Buổi phát sóng trên kênh ${_selected?.name ?? ""} sẽ kết thúc. Khán giả sẽ dừng xem feed trực tiếp.',
+          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('HỦY', style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('DỪNG LIVE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _stopping = true;
+    });
+
+    try {
+      _liveElapsedTimer?.cancel();
+      _liveElapsedTimer = null;
+
+      await _webrtcPublisher?.stopBroadcast();
+
+      if (_selected != null) {
+        await _liveApiService?.stopLive(
+          channelSlug: _selected!.slug,
+          eventId: _liveEventId,
+        );
+      }
+
+      setState(() {
+        _isLiveBroadcasting = false;
+        _liveEventId = null;
+        _liveElapsedSeconds = 0;
+        _stopping = false;
+      });
+
+      await _loadActiveLive();
+
+      _toast('Đã dừng LIVE WEBCAM.', accent: _accent);
+    } catch (e) {
+      if (mounted) setState(() => _stopping = false);
+      _toast('Lỗi khi dừng phát: $e', accent: _danger);
+    }
   }
 
   Future<void> _captureFromCamera() async {
@@ -1530,33 +1730,32 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   // ─── Tab 2: Self-record ───────────────────────────────────────
   Widget _buildSelfRecordTab() {
+    final isLive = _isLiveBroadcasting;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── MODE 2A: WEBCAM / WEBRTC PUSH-TO-LIVE (Mirrors Frontend WebcamLiveBroadcaster)
+          // ── MODE 2A: WEBCAM LIVE BROADCASTER (WebRTC / WHIP) ───────────
+          // Exactly mirrors Frontend's WebcamLiveBroadcaster component
           Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF0F172A),
-                  _danger.withValues(alpha: 0.14),
-                  const Color(0xFF070B14),
-                ],
-              ),
+              color: const Color(0xFF0C1421).withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _danger.withValues(alpha: 0.5),
+                color: isLive
+                    ? _danger.withValues(alpha: 0.6)
+                    : const Color(0xFF1E2D44),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _danger.withValues(alpha: 0.15),
+                  color: isLive
+                      ? _danger.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.3),
                   blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
@@ -1565,12 +1764,14 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _danger.withValues(alpha: 0.2),
+                        color: _danger.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.sensors, color: _danger, size: 20),
@@ -1580,40 +1781,92 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: _danger,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'PHÁT SÓNG TRỰC TIẾP (PUSH-TO-LIVE)',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.6,
-                                  fontFamily: 'Outfit',
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'LIVE WEBCAM (WebRTC / WHIP) — Phát Trực Tiếp Thật',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Outfit',
+                              letterSpacing: 0.3,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           const Text(
-                            'Phát Camera điện thoại lên MediaMTX WHIP • Trễ <500ms',
+                            'Camera của máy này được phát thẳng lên MediaMTX. Mọi thiết bị khác trong cùng mạng xem cùng luồng tại /live/{id}.',
                             style: TextStyle(
                               color: Color(0xFF94A3B8),
                               fontSize: 10,
+                              height: 1.3,
                             ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    // Live / Offline status badge
+                    if (isLive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _danger,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _danger.withValues(alpha: 0.4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'LIVE NOW',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF101928),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF1A273C)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.videocam_off, size: 12, color: Color(0xFF64748B)),
+                            SizedBox(width: 4),
+                            Text(
+                              'OFFLINE',
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1659,270 +1912,689 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                           ],
                         ),
                       ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      if (!isLive)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: _openChannelSearchModal,
+                          icon: const Icon(Icons.swap_horiz, size: 14, color: _accent),
+                          label: const Text(
+                            'ĐỔI KÊNH',
+                            style: TextStyle(
+                              color: _accent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                        onPressed: _openChannelSearchModal,
-                        icon: const Icon(Icons.swap_horiz, size: 14, color: _accent),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Viewfinder / Preview Screen (Aspect Ratio 16:9)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: double.infinity,
+                    color: Colors.black,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (isLive && _webrtcPublisher?.localRenderer != null)
+                            RTCVideoView(
+                              _webrtcPublisher!.localRenderer!,
+                              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                              mirror: _isFrontCamera,
+                            )
+                          else if (_isConnectingLive)
+                            Container(
+                              color: const Color(0xFF070B14),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const CircularProgressIndicator(
+                                      color: _danger,
+                                      strokeWidth: 2.5,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _liveStatusDetail ?? 'Đang kết nối MediaMTX WHIP...',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Color(0xFF090F1A), Color(0xFF04070D)],
+                                ),
+                              ),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: _danger.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: _danger.withValues(alpha: 0.4),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.desktop_windows_rounded,
+                                          color: _danger,
+                                          size: 22,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Sẵn sàng phát trực tiếp bằng camera',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        _selected != null
+                                            ? 'Kênh đích: ${_selected!.name}. Bấm nút bên dưới để mở camera và phát.'
+                                            : 'Hãy chọn kênh trước khi phát.',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Color(0xFF94A3B8),
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Live Overlays
+                          if (isLive) ...[
+                            // Top Left: LIVE · 00:01:23
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _danger.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _danger.withValues(alpha: 0.4),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'LIVE · ${_formatLiveTimer(_liveElapsedSeconds)}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'Outfit',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Top Right: Controls (Flip camera, Torch)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _overlayCircleBtn(
+                                    icon: Icons.flip_camera_ios_rounded,
+                                    onTap: () async {
+                                      await _webrtcPublisher?.switchCamera();
+                                      setState(() => _isFrontCamera = !_isFrontCamera);
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _overlayCircleBtn(
+                                    icon: _isTorchOn ? Icons.flashlight_on : Icons.flashlight_off,
+                                    color: _isTorchOn ? _warn : Colors.white,
+                                    onTap: () async {
+                                      final next = !_isTorchOn;
+                                      await _webrtcPublisher?.toggleTorch(next);
+                                      setState(() => _isTorchOn = next);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Bottom Left: Signal badge
+                            Positioned(
+                              bottom: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.75),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.signal_cellular_alt, color: _accent, size: 12),
+                                    SizedBox(width: 3),
+                                    Text(
+                                      '1,850 kbps · 60fps',
+                                      style: TextStyle(
+                                        color: Color(0xFF67E8F9),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Outfit',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Bottom Right: Mic Toggle
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: _overlayCircleBtn(
+                                icon: _isMicMuted ? Icons.mic_off : Icons.mic,
+                                color: _isMicMuted ? _danger : const Color(0xFF34D399),
+                                onTap: () {
+                                  final next = !_isMicMuted;
+                                  if (_webrtcPublisher?.localStream != null) {
+                                    final audioTracks =
+                                        _webrtcPublisher!.localStream!.getAudioTracks();
+                                    for (final t in audioTracks) {
+                                      t.enabled = !next;
+                                    }
+                                  }
+                                  setState(() => _isMicMuted = next);
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Error message banner
+                if (_liveError != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _danger.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _danger.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: _danger, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _liveError!,
+                            style: const TextStyle(color: Color(0xFFFF8FA3), fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+                // Ingest Host Info
+                Row(
+                  children: [
+                    const Icon(Icons.wifi, size: 13, color: _accent),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'MediaMTX @ ${AppConstants.mediaHostDisplay}',
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Action Buttons
+                if (isLive) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _stopping ? null : _stopWebcamLive,
+                          icon: _stopping
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.stop_rounded, size: 16),
+                          label: const Text('DỪNG LIVE'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _danger,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          final slug = _selected?.slug ?? 'live';
+                          final url = 'https://omnicast-fe.vercel.app/channels/$slug';
+                          Clipboard.setData(ClipboardData(text: url));
+                          _toast('Đã sao chép link phát sóng!', accent: _accent);
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 14, color: _accent),
                         label: const Text(
-                          'ĐỔI KÊNH',
+                          'Sao chép link',
                           style: TextStyle(
                             color: _accent,
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0x6600E5FF)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          if (_selected != null) {
+                            context.push('/channels/${_selected!.slug}');
+                          }
+                        },
+                        icon: const Icon(Icons.open_in_new_rounded,
+                            size: 14, color: Color(0xFF0F172A)),
+                        label: const Text(
+                          'Xem thử',
+                          style: TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // Big action button: BẮT ĐẦU PHÁT SÓNG TRỰC TIẾP
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _startLiveWebcamBroadcast,
-                    icon: const Icon(Icons.radio_button_checked, color: Colors.white, size: 18),
-                    label: const Text(
-                      'BẮT ĐẦU PHÁT SÓNG LIVE WEBCAM (MOBILE)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        fontFamily: 'Outfit',
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _danger,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 4,
-                      shadowColor: _danger.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Studio Broadcast Banner for Recording
-          _fieldLabel('HOẶC GHI HÌNH CLIP (RECORD VOD)'),
-          const SizedBox(height: 6),
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF0F172A),
-                  _accent.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _accent.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: _accent.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.videocam, color: _accent, size: 22),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'STUDIO GHI HÌNH CHUYÊN NGHIỆP',
-                        style: TextStyle(
-                          color: Colors.white,
+                ] else ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isConnectingLive ? null : _startWebcamLive,
+                      icon: _isConnectingLive
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.videocam_rounded, size: 18),
+                      label: Text(
+                        _isConnectingLive
+                            ? 'ĐANG KẾT NỐI WHIP...'
+                            : 'BẬT LIVE WEBCAM (WebRTC)',
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.8,
                           fontFamily: 'Outfit',
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Viewfinder HUD • VU Meter âm thanh • Máy nhắc chữ • Khung an toàn',
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 10,
-                          height: 1.3,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _danger,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        elevation: 4,
+                        shadowColor: _danger.withValues(alpha: 0.4),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
 
-          // Capture buttons
-          Row(
-            children: [
-              Expanded(
-                child: _captureActionButton(
-                  icon: Icons.videocam,
-                  label: 'VÀO STUDIO QUAY',
-                  subtitle: 'Giao diện trường quay Pro',
-                  accent: _danger,
-                  onTap: _captureFromCamera,
+          // ── MODE 2B: RECORDING / VOD (Collapsed when LIVE is active) ──────
+          if (isLive) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _danger.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _danger.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: _danger,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Đang phát LIVE WEBCAM — luồng ghi hình được thu nhỏ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Camera đang được phát trực tiếp qua WebRTC. Để ghi hình thành clip (VOD), hãy bấm DỪNG LIVE ở bảng phía trên trước.',
+                          style: TextStyle(
+                            color: Color(0xFFCBD5E1),
+                            fontSize: 10,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Studio Broadcast Banner for Recording
+            _fieldLabel('HOẶC GHI HÌNH CLIP (RECORD VOD)'),
+            const SizedBox(height: 6),
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF0F172A),
+                    _accent.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: _accent.withValues(alpha: 0.3),
+                  width: 1,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _captureActionButton(
-                  icon: Icons.photo_library,
-                  label: 'TỪ THƯ VIỆN',
-                  subtitle: 'Chọn clip có sẵn',
-                  accent: _accent,
-                  onTap: _pickFromGallery,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _accent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.videocam, color: _accent, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'STUDIO GHI HÌNH CHUYÊN NGHIỆP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Viewfinder HUD • VU Meter âm thanh • Máy nhắc chữ • Khung an toàn',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 10,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Capture buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _captureActionButton(
+                    icon: Icons.videocam,
+                    label: 'VÀO STUDIO QUAY',
+                    subtitle: 'Giao diện trường quay Pro',
+                    accent: _danger,
+                    onTap: _captureFromCamera,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _captureActionButton(
+                    icon: Icons.photo_library,
+                    label: 'TỪ THƯ VIỆN',
+                    subtitle: 'Chọn clip có sẵn',
+                    accent: _accent,
+                    onTap: _pickFromGallery,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _captureActionButton(
+                    icon: Icons.add_to_drive_rounded,
+                    label: 'GOOGLE DRIVE',
+                    subtitle: 'Nhập link đám mây',
+                    accent: _warn,
+                    onTap: _showGoogleDriveImportDialog,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Picked file preview
+            if (_pickedFile != null) ...[
+              _buildPickedFilePreview(),
+              const SizedBox(height: 16),
+            ],
+
+            // Title
+            _fieldLabel('TIÊU ĐỀ *'),
+            TextField(
+              controller: _selfTitleCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: _inputDecoration(hint: 'Trực tiếp từ studio...'),
+              maxLength: 255,
+            ),
+
+            const SizedBox(height: 8),
+
+            // Description (optional)
+            _fieldLabel('MÔ TẢ'),
+            TextField(
+              controller: _selfDescCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: _inputDecoration(hint: 'Mô tả ngắn (tùy chọn)'),
+              maxLines: 3,
+              maxLength: 600,
+            ),
+
+            const SizedBox(height: 8),
+
+            // Visibility
+            _fieldLabel('CHẾ ĐỘ PHÁT *'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B1320),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+              ),
+              child: DropdownButton<SelfRecordVisibility>(
+                value: _selfVisibility,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF0B1320),
+                icon: const Icon(Icons.arrow_drop_down, color: _accent),
+                underline: const SizedBox(),
+                items: const [
+                  DropdownMenuItem(
+                    value: SelfRecordVisibility.immediate,
+                    child: _VisibilityItem(
+                      title: 'Phát trực tiếp ngay',
+                      subtitle: 'LIVE NOW trên kênh đã chọn',
+                      color: _danger,
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: SelfRecordVisibility.scheduled,
+                    child: _VisibilityItem(
+                      title: 'Lưu làm Recording',
+                      subtitle: 'Đăng thường, không phát live',
+                      color: _accent,
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: SelfRecordVisibility.private,
+                    child: _VisibilityItem(
+                      title: 'Bản nháp (chỉ Staff)',
+                      subtitle: 'Không hiển thị với người xem',
+                      color: _warn,
+                    ),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _selfVisibility = v);
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            if (_uploading)
+              _buildUploadProgress()
+            else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _pickedFile == null ? null : _uploadAndBroadcast,
+                  icon: const Icon(Icons.cloud_upload, size: 18),
+                  label: Text(
+                    _selfVisibility == SelfRecordVisibility.immediate
+                        ? 'UPLOAD & PHÁT NGAY'
+                        : 'UPLOAD VIDEO',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _captureActionButton(
-                  icon: Icons.add_to_drive_rounded,
-                  label: 'GOOGLE DRIVE',
-                  subtitle: 'Nhập link đám mây',
-                  accent: _warn,
-                  onTap: _showGoogleDriveImportDialog,
-                ),
+            if (_uploadError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _uploadError!,
+                style: const TextStyle(color: _danger, fontSize: 12),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-
-          // Picked file preview
-          if (_pickedFile != null) ...[
-            _buildPickedFilePreview(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            const _AntiPiracyNote(),
           ],
-
-          // Title
-          _fieldLabel('TIÊU ĐỀ *'),
-          TextField(
-            controller: _selfTitleCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: _inputDecoration(hint: 'Trực tiếp từ studio...'),
-            maxLength: 255,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Description (optional)
-          _fieldLabel('MÔ TẢ'),
-          TextField(
-            controller: _selfDescCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _inputDecoration(hint: 'Mô tả ngắn (tùy chọn)'),
-            maxLines: 3,
-            maxLength: 600,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Visibility
-          _fieldLabel('CHẾ ĐỘ PHÁT *'),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0B1320),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
-            ),
-            child: DropdownButton<SelfRecordVisibility>(
-              value: _selfVisibility,
-              isExpanded: true,
-              dropdownColor: const Color(0xFF0B1320),
-              icon: const Icon(Icons.arrow_drop_down, color: _accent),
-              underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(
-                  value: SelfRecordVisibility.immediate,
-                  child: _VisibilityItem(
-                    title: 'Phát trực tiếp ngay',
-                    subtitle: 'LIVE NOW trên kênh đã chọn',
-                    color: _danger,
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: SelfRecordVisibility.scheduled,
-                  child: _VisibilityItem(
-                    title: 'Lưu làm Recording',
-                    subtitle: 'Đăng thường, không phát live',
-                    color: _accent,
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: SelfRecordVisibility.private,
-                  child: _VisibilityItem(
-                    title: 'Bản nháp (chỉ Staff)',
-                    subtitle: 'Không hiển thị với người xem',
-                    color: _warn,
-                  ),
-                ),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _selfVisibility = v);
-              },
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          if (_uploading)
-            _buildUploadProgress()
-          else
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _accent,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _pickedFile == null ? null : _uploadAndBroadcast,
-                icon: const Icon(Icons.cloud_upload, size: 18),
-                label: Text(
-                  _selfVisibility == SelfRecordVisibility.immediate
-                      ? 'UPLOAD & PHÁT NGAY'
-                      : 'UPLOAD VIDEO',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                    fontFamily: 'Outfit',
-                  ),
-                ),
-              ),
-            ),
-          if (_uploadError != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _uploadError!,
-              style: const TextStyle(color: _danger, fontSize: 12),
-            ),
-          ],
-          const SizedBox(height: 20),
-          const _AntiPiracyNote(),
         ],
       ),
     );
