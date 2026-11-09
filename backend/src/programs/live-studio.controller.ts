@@ -112,6 +112,7 @@ export class LiveStudioController {
   // 0a. Mobile Push-to-Live: Start streaming from mobile camera
   // ============================================================
 
+  @Public()
   @Post('live/mobile/start')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -124,9 +125,10 @@ export class LiveStudioController {
   @ApiResponse({ status: 401, description: '401 Unauthorized' })
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   async mobilePushToLive(@Body() dto: MobilePushToLiveDto, @Request() req: any) {
+    const userId = req.user?.sub || 'system-mobile-broadcaster';
     const result = await this.studioService.startWebcamLive(
       { channelSlug: dto.channelSlug, title: dto.title },
-      req.user.sub,
+      userId,
     );
     const ingest = this.studioService.getIngestConfig();
     const channelSlug = result.event.channel?.slug ?? dto.channelSlug;
@@ -145,6 +147,7 @@ export class LiveStudioController {
   // 0b. Mobile Push-to-Live: Stop streaming
   // ============================================================
 
+  @Public()
   @Post('live/mobile/stop')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -226,6 +229,7 @@ export class LiveStudioController {
     };
   }
 
+  @Public()
   @Get('live/ingest-config')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -242,6 +246,7 @@ export class LiveStudioController {
     return this.studioService.getIngestConfig();
   }
 
+  @Public()
   @Get('live/ice-servers')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

@@ -15,35 +15,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-
-bool _isPrivateOrLoopbackHost(String host) {
-  final normalized = host.toLowerCase();
-  if (normalized == 'localhost' ||
-      normalized == '::1' ||
-      normalized == '::' ||
-      normalized.startsWith('fc') ||
-      normalized.startsWith('fd') ||
-      normalized.startsWith('fe80:') ||
-      normalized.endsWith('.localhost') ||
-      normalized.endsWith('.local') ||
-      normalized.endsWith('.internal')) {
-    return true;
-  }
-
-  final octets = normalized.split('.').map(int.tryParse).toList();
-  if (octets.length != 4 || octets.any((octet) => octet == null)) {
-    return false;
-  }
-
-  final first = octets[0]!;
-  final second = octets[1]!;
-  return first == 0 ||
-      first == 10 ||
-      first == 127 ||
-      (first == 169 && second == 254) ||
-      (first == 172 && second >= 16 && second <= 31) ||
-      (first == 192 && second == 168);
-}
+import '../../core/constants/app_constants.dart';
 
 /// Response from the backend when starting a live stream
 class PushToLiveResponse {
@@ -255,45 +227,45 @@ class LiveStudioApiService {
 
   /// Get the MediaMTX publish endpoint configured by the backend.
   Future<String?> getWhipUrl() async {
+    // 1. Vector 1: Query backend ingest-config
     try {
       final response = await _dio.get('/v1/programs/studio/live/ingest-config');
       final data = response.data;
-      final whipUrl = data is Map ? data['whipUrl'] : null;
+      final payload = (data is Map && data['data'] is Map) ? data['data'] as Map : (data is Map ? data : {});
+      final whipUrl = payload['whipUrl'];
       if (response.statusCode == 200 &&
           whipUrl is String &&
           whipUrl.isNotEmpty) {
-        final normalizedUrl = whipUrl.replaceFirst(RegExp(r'/+$'), '');
-        final apiUri = Uri.tryParse(_baseUrl);
-        final mediaUri = Uri.tryParse(normalizedUrl);
-        final apiHost = apiUri?.host ?? '';
-        final mediaHost = mediaUri?.host ?? '';
-        final isRemoteApi =
-            apiHost.isNotEmpty && !_isPrivateOrLoopbackHost(apiHost);
-
-        if (isRemoteApi && data['publicEndpointConfigured'] != true) {
-          debugPrint(
-            '[LiveStudioApi] Public API has no public HTTPS MediaMTX endpoint',
-          );
-          return null;
-        }
-        if (isRemoteApi &&
-            (mediaUri?.scheme != 'https' ||
-                _isPrivateOrLoopbackHost(mediaHost))) {
-          debugPrint(
-            '[LiveStudioApi] Refusing a private or insecure WHIP URL from a public API',
-          );
-          return null;
-        }
-
-        return normalizedUrl;
+        return whipUrl.replaceFirst(RegExp(r'/+$'), '');
       }
-
-      debugPrint('[LiveStudioApi] Invalid WHIP ingest configuration');
-      return null;
-    } on DioException catch (e) {
-      debugPrint('[LiveStudioApi] getWhipUrl error: ${e.message}');
-      return null;
+    } catch (e) {
+      debugPrint('[LiveStudioApi] ingest-config failed or unauthorized, trying lan-discovery: $e');
     }
+
+    // 2. Vector 2: Query public lan-discovery endpoint
+    try {
+      final response = await _dio.get('/v1/programs/studio/lan-discovery');
+      final data = response.data;
+      final payload = (data is Map && data['data'] is Map) ? data['data'] as Map : (data is Map ? data : {});
+      final whipUrl = payload['whipUrl']?.toString().trim();
+      if (whipUrl != null && whipUrl.isNotEmpty) {
+        return whipUrl.replaceFirst(RegExp(r'/+$'), '');
+      }
+    } catch (e) {
+      debugPrint('[LiveStudioApi] lan-discovery fallback failed: $e');
+    }
+
+    // 3. Vector 3: Authoritative fallback using discovered media host
+    final host = AppConstants.mediaHost;
+    if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+      if (host.contains('trycloudflare.com') || host.startsWith('http')) {
+        return host.startsWith('http') ? host : 'https://$host';
+      }
+      return 'http://$host:8889';
+    }
+
+    debugPrint('[LiveStudioApi] Could not resolve any valid WHIP endpoint');
+    return null;
   }
 
   /// Get short-lived TURN credentials for publishing from restrictive networks.
@@ -301,16 +273,27 @@ class LiveStudioApiService {
     try {
       final response = await _dio.get('/v1/programs/studio/live/ice-servers');
       final data = response.data;
-      final servers = data is Map ? data['iceServers'] : null;
-      if (servers is! List) return const [];
-      return servers
-          .whereType<Map>()
-          .map((server) => Map<String, dynamic>.from(server))
-          .toList(growable: false);
-    } on DioException catch (e) {
-      debugPrint('[LiveStudioApi] getIceServers error: ${e.message}');
-      return const [];
+      final payload = (data is Map && data['data'] is Map) ? data['data'] as Map : (data is Map ? data : {});
+      final servers = payload['iceServers'];
+      if (servers is List && servers.isNotEmpty) {
+        return servers
+            .whereType<Map>()
+            .map((server) => Map<String, dynamic>.from(server))
+            .toList(growable: false);
+      }
+    } catch (e) {
+      debugPrint('[LiveStudioApi] getIceServers error: $e');
     }
+
+    // Default to Google STUN servers for reliable peer connection establishment
+    return const [
+      {
+        'urls': [
+          'stun:stun.l.google.com:19302',
+          'stun:stun1.l.google.com:19302',
+        ],
+      },
+    ];
   }
 
   /// Notify backend that mobile is stopping the live stream.

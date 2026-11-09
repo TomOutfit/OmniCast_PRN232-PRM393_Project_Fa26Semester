@@ -406,7 +406,16 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         dio: getIt<DioClient>().dio,
       );
 
-      final whipBaseUrl = await _liveApiService!.getWhipUrl();
+      var whipBaseUrl = await _liveApiService!.getWhipUrl();
+      if (whipBaseUrl == null || whipBaseUrl.isEmpty) {
+        final host = AppConstants.mediaHost;
+        if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+          whipBaseUrl = host.contains('trycloudflare.com') || host.startsWith('http')
+              ? (host.startsWith('http') ? host : 'https://$host')
+              : 'http://$host:8889';
+        }
+      }
+
       if (whipBaseUrl == null || whipBaseUrl.isEmpty) {
         throw Exception('Chưa kết nối được máy chủ phát MediaMTX WHIP.');
       }
