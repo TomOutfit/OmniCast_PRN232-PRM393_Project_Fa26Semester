@@ -24,11 +24,13 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' show RTCVideoView, RTCVideoViewObjectFit;
 import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/lan_discovery_service.dart';
 import '../../../data/models/channel_model.dart';
+import '../../../data/repositories/channels_repository.dart';
 import '../../../data/services/webrtc_publisher_service.dart';
 import '../../../data/services/live_studio_api_service.dart';
 import '../../../core/di/injection.dart';
@@ -50,11 +52,13 @@ enum BroadcastMode {
 class MobileStudioRecorderScreen extends StatefulWidget {
   final ChannelModel? channel;
   final String? initialTopic;
+  final BroadcastMode initialBroadcastMode;
 
   const MobileStudioRecorderScreen({
     super.key,
     this.channel,
     this.initialTopic,
+    this.initialBroadcastMode = BroadcastMode.recordThenLive,
   });
 
   @override
@@ -93,6 +97,11 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   WebRTCPublisherService? _webrtcPublisher;
   bool _isLiveStreaming = false;
   BroadcastState _broadcastState = BroadcastState.idle;
+
+  // Target Channel selection state (mirrors Frontend ChannelTargetSelector)
+  ChannelModel? _activeChannel;
+  List<ChannelModel> _availableChannels = [];
+  bool _loadingChannels = false;
 
   // Live Studio API service
   LiveStudioApiService? _liveApiService;
@@ -142,9 +151,31 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
   @override
   void initState() {
     super.initState();
+    _broadcastMode = widget.initialBroadcastMode;
+    _activeChannel = widget.channel;
+    _loadAvailableChannels();
     _initHardwareCameras();
     _initLiveApiService();
     _startVuMeterSimulation();
+  }
+
+  /// Load all available channels so streamer can pick target broadcast channel anytime
+  Future<void> _loadAvailableChannels() async {
+    try {
+      if (mounted) setState(() => _loadingChannels = true);
+      final res = await getIt<ChannelsRepository>().getChannels(limit: 50);
+      if (!mounted) return;
+      setState(() {
+        _availableChannels = res.items;
+        _loadingChannels = false;
+        if (_activeChannel == null && _availableChannels.isNotEmpty) {
+          _activeChannel = _availableChannels.first;
+        }
+      });
+    } catch (e) {
+      if (mounted) setState(() => _loadingChannels = false);
+      debugPrint('[Studio] Could not load channels: $e');
+    }
   }
 
   /// Initialize Live Studio API service
@@ -414,23 +445,47 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       }
     }
 
+    // Validate and obtain target channel
+    final targetChannel = _activeChannel ??
+        (_availableChannels.isNotEmpty ? _availableChannels.first : null);
+    if (targetChannel == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng chọn một kênh mục tiêu trước khi phát trực tiếp.'),
+            backgroundColor: _danger,
+          ),
+        );
+      }
+      return;
+    }
+    _activeChannel = targetChannel;
+
+    // Release hardware camera so WebRTC getUserMedia can acquire camera without conflict
+    final lensDirection = _cameraCtrl?.description.lensDirection ?? CameraLensDirection.back;
+    if (_cameraCtrl != null) {
+      try {
+        await _cameraCtrl!.dispose();
+      } catch (_) {}
+      _cameraCtrl = null;
+    }
+
     // Configure WebRTC publisher
     _webrtcPublisher = WebRTCPublisherService();
     final iceServers = await _liveApiService?.getIceServers() ?? const [];
     _webrtcPublisher!.configure(
       WebRTCPublisherConfig(
         serverUrl: whipUrl,
-        streamKey: widget.channel?.slug ?? 'default',
+        streamKey: targetChannel.slug,
         authToken: publishToken,
         iceServers: iceServers,
         videoConstraints: VideoConstraints(
           width: 1280,
           height: 720,
           frameRate: 30,
-          facingMode:
-              _cameraCtrl?.description.lensDirection == CameraLensDirection.back
-                  ? 'environment'
-                  : 'user',
+          facingMode: lensDirection == CameraLensDirection.back
+              ? 'environment'
+              : 'user',
         ),
         debug: true,
       ),
@@ -508,10 +563,30 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     });
 
     if (mounted) {
+      final chSlug = _activeChannel?.slug ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đang phát trực tiếp! Khán giả có thể theo dõi ngay.'),
+        SnackBar(
+          content: Text(
+            '🔴 Đang phát LIVE trên kênh ${_activeChannel?.name ?? chSlug}! Khán giả Web/App xem ngay.',
+          ),
           backgroundColor: _green,
+          duration: const Duration(seconds: 7),
+          action: SnackBarAction(
+            label: 'SAO CHÉP LINK',
+            textColor: Colors.white,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(
+                text: 'https://omnicast-fe.vercel.app/channels/$chSlug',
+              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đã sao chép link kênh trực tiếp!'),
+                  backgroundColor: _accent,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
         ),
       );
     }
@@ -525,10 +600,16 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       setState(() {
         _isRecording = false;
         _isLiveStreaming = false;
+        _broadcastState = BroadcastState.idle;
       });
     }
     _tallyGlowCtrl.stop();
     _tallyGlowCtrl.value = 0;
+
+    // Restore hardware camera viewfinder preview
+    if (_cameras.isNotEmpty && _selectedCameraIdx < _cameras.length) {
+      await _initCameraController(_cameras[_selectedCameraIdx]);
+    }
   }
 
   Future<bool> _notifyBackendLiveStarted() async {
@@ -537,10 +618,12 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       _liveApiService?.setAuthToken(token);
     }
 
+    final slug = _activeChannel?.slug ?? 'discovery';
     final response = await _liveApiService?.pushToLive(
-      channelSlug: widget.channel?.slug ?? 'default',
-      title: widget.initialTopic ?? 'Live from Mobile Studio',
-      streamKey: widget.channel?.slug ?? 'default',
+      channelSlug: slug,
+      title: widget.initialTopic ??
+          'Trực tiếp từ Mobile Studio — ${_activeChannel?.name ?? slug}',
+      streamKey: slug,
     );
 
     if (response != null && response.success && response.eventId.isNotEmpty) {
@@ -559,8 +642,9 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
     final eventId = _currentEventId;
     if (eventId == null) return;
 
+    final slug = _activeChannel?.slug ?? 'discovery';
     final success = await _liveApiService?.stopLive(
-      channelSlug: widget.channel?.slug ?? 'default',
+      channelSlug: slug,
       eventId: eventId,
     );
 
@@ -870,6 +954,16 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
       );
     }
 
+    // Live WebRTC preview when publishing live stream
+    if (_isLiveStreaming && _webrtcPublisher?.localRenderer != null) {
+      return Center(
+        child: RTCVideoView(
+          _webrtcPublisher!.localRenderer!,
+          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+        ),
+      );
+    }
+
     if (_cameraCtrl != null && _cameraCtrl!.value.isInitialized) {
       return Center(
         child: CameraPreview(_cameraCtrl!),
@@ -997,7 +1091,7 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
 
   // ─── Lower Third & Channel Bug ────────────────────────────────
   Widget _buildLowerThirdOverlay() {
-    final chName = widget.channel?.name ?? 'OMNICAST 1 HD';
+    final chName = _activeChannel?.name ?? 'OMNICAST 1 HD';
     final topic =
         widget.initialTopic ?? 'BẢN TIN PHÁT THANH TRUYỀN HÌNH TRỰC TIẾP';
 
@@ -1069,8 +1163,8 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 ),
                 child: Row(
                   children: [
-                    if (widget.channel != null) ...[
-                      ChannelLogo(channel: widget.channel!, size: 34),
+                    if (_activeChannel != null) ...[
+                      ChannelLogo(channel: _activeChannel!, size: 34),
                       const SizedBox(width: 10),
                     ],
                     Expanded(
@@ -1324,6 +1418,49 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
                 ),
               ),
             ),
+
+          // Channel Target Selector Pill (Mirrors Frontend ChannelTargetSelector)
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _isRecording ? null : _showChannelPickerBottomSheet,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _accent.withValues(alpha: 0.7),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tv, size: 12, color: _accent),
+                  const SizedBox(width: 4),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 90),
+                    child: Text(
+                      _activeChannel?.name.toUpperCase() ?? 'CHỌN KÊNH',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'JetBrainsMono',
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  if (!_isRecording) ...[
+                    const SizedBox(width: 2),
+                    const Icon(Icons.arrow_drop_down, size: 14, color: _accent),
+                  ],
+                ],
+              ),
+            ),
+          ),
 
           // Tally Indicator Badge
           Container(
@@ -2153,6 +2290,194 @@ class _MobileStudioRecorderScreenState extends State<MobileStudioRecorderScreen>
           ],
         ),
       ),
+    );
+  }
+
+  // ============================================================
+  // Channel Target Selector Modal (Mirrors Frontend ChannelTargetSelector)
+  // ============================================================
+
+  void _showChannelPickerBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0A0F1D),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        String searchQuery = '';
+        String selectedCategory = 'ALL';
+
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final categories = <String>{'ALL'};
+            for (final ch in _availableChannels) {
+              if (ch.category.isNotEmpty) {
+                categories.add(ch.category.toUpperCase());
+              }
+            }
+
+            final filtered = _availableChannels.where((ch) {
+              final q = searchQuery.toLowerCase().trim();
+              final matchesQuery = q.isEmpty ||
+                  ch.name.toLowerCase().contains(q) ||
+                  ch.slug.toLowerCase().contains(q) ||
+                  ch.category.toLowerCase().contains(q);
+              final matchesCat = selectedCategory == 'ALL' ||
+                  ch.category.toUpperCase() == selectedCategory;
+              return matchesQuery && matchesCat;
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.72,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.tv, color: _accent, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'KÊNH PHÁT SÓNG MỤC TIÊU',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Outfit',
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60, size: 18),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Search field
+                  TextField(
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo tên kênh, slug hoặc thể loại...',
+                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                      prefixIcon: const Icon(Icons.search, color: _accent, size: 18),
+                      filled: true,
+                      fillColor: const Color(0xFF131C2E),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() => searchQuery = val);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  // Categories chips
+                  SizedBox(
+                    height: 32,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 6),
+                      itemBuilder: (ctx, idx) {
+                        final cat = categories.elementAt(idx);
+                        final isSel = selectedCategory == cat;
+                        return GestureDetector(
+                          onTap: () => setModalState(() => selectedCategory = cat),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSel ? _accent : const Color(0xFF172338),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              cat,
+                              style: TextStyle(
+                                color: isSel ? Colors.black : Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Channels list
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Không tìm thấy kênh phù hợp.',
+                              style:
+                                  TextStyle(color: Colors.white54, fontSize: 13),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(color: Colors.white10, height: 1),
+                            itemBuilder: (ctx, idx) {
+                              final ch = filtered[idx];
+                              final isCurrent = _activeChannel?.id == ch.id;
+
+                              return ListTile(
+                                dense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                leading: ChannelLogo(channel: ch, size: 32),
+                                title: Text(
+                                  ch.name,
+                                  style: TextStyle(
+                                    color: isCurrent ? _accent : Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: isCurrent
+                                        ? FontWeight.bold
+                                        : FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '/${ch.slug} • ${ch.category.toUpperCase()}',
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 10),
+                                ),
+                                trailing: isCurrent
+                                    ? const Icon(Icons.check_circle,
+                                        color: _accent, size: 20)
+                                    : null,
+                                onTap: () {
+                                  setState(() => _activeChannel = ch);
+                                  Navigator.pop(ctx);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

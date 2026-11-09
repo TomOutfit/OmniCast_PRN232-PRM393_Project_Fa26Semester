@@ -78,6 +78,8 @@ import { LiveBroadcasterConsole } from '@/components/studio/live-broadcaster-con
 import { WebcamLiveBroadcaster } from '@/components/studio/webcam-live-broadcaster';
 import { createCameraComposer } from '@/lib/camera/compose-stream';
 import { logError } from '@/lib/utils/safe-log';
+import { io } from 'socket.io-client';
+import { getSocketBaseUrl } from '@/lib/net-host';
 
 type StudioTab = 'curated' | 'self-record' | 'catalog' | 'interaction';
 type RecordSource = 'camera' | 'screen' | 'upload';
@@ -321,6 +323,33 @@ export default function WebLiveStudioPage() {
     status: 'LIVE',
     limit: 50,
   });
+
+  // Real-time synchronization: listen for live:started and live:stopped across all devices (e.g. Mobile Studio)
+  useEffect(() => {
+    const socketBase = getSocketBaseUrl();
+    const isVercelBackend = socketBase.includes('vercel.app');
+    const socket = io(`${socketBase}/live`, {
+      transports: isVercelBackend ? ['polling'] : ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: isVercelBackend ? 1 : 5,
+    });
+
+    socket.on('live:started', (payload: { title?: string; channelSlug?: string }) => {
+      refetchLiveEvents();
+      toast.info('Thiết bị di động đang phát sóng trực tiếp!', {
+        description: payload?.title || `Kênh ${payload?.channelSlug || ''} vừa lên sóng`,
+        icon: '📱',
+      });
+    });
+
+    socket.on('live:stopped', () => {
+      refetchLiveEvents();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [refetchLiveEvents]);
 
   const activeLiveForChannel = useMemo(() => {
     if (!selectedChannel || !liveEventsData?.data) return null;

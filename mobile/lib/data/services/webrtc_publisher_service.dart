@@ -165,6 +165,10 @@ class WebRTCPublisherService {
   /// Local video stream for preview
   MediaStream? get localStream => _localStream;
 
+  /// Local WebRTC video renderer for camera preview
+  RTCVideoRenderer? _localRenderer;
+  RTCVideoRenderer? get localRenderer => _localRenderer;
+
   // ============================================================
   // Public API
   // ============================================================
@@ -215,6 +219,15 @@ class WebRTCPublisherService {
         _updateState(BroadcastState.error);
         onError?.call('Failed to get camera stream');
         return false;
+      }
+
+      // Initialize local renderer for live preview
+      try {
+        _localRenderer ??= RTCVideoRenderer();
+        await _localRenderer!.initialize();
+        _localRenderer!.srcObject = _localStream;
+      } catch (renderErr) {
+        debugPrint('[WebRTCPublisher] Could not initialize local preview renderer: $renderErr');
       }
 
       // Create WebRTC peer connection
@@ -578,6 +591,13 @@ class WebRTCPublisherService {
     // Close peer connection
     await _peerConnection?.close();
     _peerConnection = null;
+
+    // Dispose local renderer
+    try {
+      _localRenderer?.srcObject = null;
+      await _localRenderer?.dispose();
+    } catch (_) {}
+    _localRenderer = null;
 
     // Dispose local stream
     await _localStream?.dispose();
