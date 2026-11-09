@@ -5,6 +5,7 @@ const { execSync } = require('child_process');
 const PANDOC = path.join(process.env.LOCALAPPDATA, 'Pandoc', 'pandoc.exe');
 const SHARED_DIR = __dirname;
 const RENDERED_DIR = path.join(SHARED_DIR, 'rendered_figures');
+const LOGO_PNG = path.resolve(SHARED_DIR, '../../05_Reference_Docs/omnicast_master_network_logo.png').replace(/\\/g, '/');
 
 function unwrapMacro(content, macroName) {
   const prefix = '\\' + macroName + '{';
@@ -29,6 +30,53 @@ function unwrapMacro(content, macroName) {
     }
   }
   return result;
+}
+
+function removeMacro(content, macroName) {
+  const prefix = '\\' + macroName + '{';
+  let result = '';
+  let i = 0;
+  while (i < content.length) {
+    if (content.substring(i, i + prefix.length) === prefix) {
+      i += prefix.length;
+      let depth = 1;
+      while (i < content.length && depth > 0) {
+        if (content[i] === '{') depth++;
+        else if (content[i] === '}') depth--;
+        i++;
+      }
+    } else {
+      result += content[i];
+      i++;
+    }
+  }
+  return result;
+}
+
+function formatBibliography(content, lang) {
+  const isEn = lang === 'en';
+  const heading = isEn ? 'REFERENCES' : 'TÀI LIỆU THAM KHẢO';
+  const tocTitle = isEn ? 'References' : 'Tài liệu tham khảo';
+
+  return content.replace(/\\begin\{thebibliography\}\{[^}]*\}[\s\S]*?\\end\{thebibliography\}/g, (match) => {
+    const items = [];
+    const itemRegex = /\\bibitem\{[^}]+\}([\s\S]*?)(?=\\bibitem\{|\\end\{thebibliography\}|$)/g;
+    let m;
+    while ((m = itemRegex.exec(match)) !== null) {
+      let itemText = m[1].trim();
+      itemText = itemText.replace(/\s+/g, ' ');
+      if (itemText) items.push(itemText);
+    }
+
+    if (items.length === 0) return '';
+
+    let formatted = `\n\n\\newpage\n\\section*{${heading}}\n\\addcontentsline{toc}{section}{${tocTitle}}\n\n`;
+    items.forEach((item, index) => {
+      formatted += `\\noindent\\textbf{[${index + 1}]} ${item}\n\n`;
+    });
+
+    return formatted;
+  });
 }
 
 function extractBi(content, lang) {
@@ -117,20 +165,23 @@ function getGraduationProjectFrontMatter(isPrn232, lang) {
     if (!isEn) {
       return `
 \\begin{center}
-{\\bfseries\\Large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[2mm]
-{\\bfseries\\large PHÂN HIỆU ĐẠI HỌC FPT TẠI QUY NHƠN (FPTU QUY NHON AI CAMPUS)}\\\\[1mm]
-{\\bfseries\\normalsize KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[12mm]
+{\\bfseries\\large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[1.5mm]
+{\\bfseries\\normalsize PHÂN HIỆU ĐẠI HỌC FPT TẠI QUY NHƠN (FPTU QUY NHON AI CAMPUS)}\\\\[1mm]
+{\\footnotesize\\bfseries\\color{blue}FU CAHATA $\\cdot$ KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[3mm]
 
-{\\Huge\\bfseries BÁO CÁO ĐỒ ÁN TỐT NGHIỆP TOÀN DIỆN}\\\\[4mm]
-{\\LARGE\\bfseries HỌC PHẦN: PRN232 --- XÂY DỰNG ỨNG DỤNG PHÍA SAU ĐA NỀN TẢNG}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[6mm]
-{\\huge\\bfseries HỆ THỐNG LẬP LỊCH VÀ PHÁT SÓNG NỘI DUNG SỐ ĐA NỀN TẢNG OMNICAST}\\\\[3mm]
-{\\Large\\bfseries Phát sóng. Kết nối. Khám phá.}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[12mm]
+\\includegraphics[width=2.5cm]{${LOGO_PNG}}\\\\[2.5mm]
+
+{\\large\\bfseries BÁO CÁO NGHIỆM THU ĐỒ ÁN TỐT NGHIỆP HỌC PHẦN}\\\\[1.5mm]
+{\\normalsize\\bfseries HỌC PHẦN: PRN232 --- XÂY DỰNG ỨNG DỤNG PHÍA SAU ĐA NỀN TẢNG}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[2mm]
+{\\Large\\bfseries HỆ THỐNG LẬP LỊCH VÀ PHÁT SÓNG NỘI DUNG SỐ ĐA NỀN TẢNG OMNICAST}\\\\[1.5mm]
+{\\normalsize\\bfseries\\color{blue}Phát sóng. Kết nối. Khám phá.}\\\\[1mm]
+{\\footnotesize\\itshape Kiến trúc NestJS Modular Monolith, Microservice gRPC, Cổng Web Next.js 15, LiveStream WebRTC WHIP/WHEP, Lập lịch EPG 24/7 và Trợ lý Biên tập AI Curator}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[3mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.8cm}|p{10.8cm}|}
+\\begin{tabular}{|p{4.6cm}|p{11.0cm}|}
 \\hline
 \\textbf{Giảng viên hướng dẫn (Mentor):} & \\textbf{Thầy Huỳnh Vang} (Bộ môn Kỹ thuật Phần mềm --- FPTU) \\\\ \\hline
 \\textbf{Đơn vị nghiên cứu:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -146,41 +197,34 @@ function getGraduationProjectFrontMatter(isPrn232, lang) {
 \\end{tabular}
 \\end{center}
 
-\\vspace{10mm}
+\\vspace{3mm}
 \\begin{center}
-{\\bfseries Quy Nhơn, Tháng 11 Năm 2026}
+{\\bfseries\\normalsize Quy Nhơn, Tháng 11 Năm 2026}
 \\end{center}
+
+[OMNICAST_COVER_SECTION_BREAK]
+
+\\begin{center}
+{\\LARGE\\bfseries MỤC LỤC}
+\\end{center}
+\\vspace{6mm}
+
+[OMNICAST_TABLE_OF_CONTENTS_PLACEHOLDER]
 
 \\newpage
 
-\\section*{PHIẾU ĐÁNH GIÁ VÀ NHẬN XÉT CỦA GIẢNG VIÊN HƯỚNG DẪN}
-\\addcontentsline{toc}{section}{Phiếu đánh giá và nhận xét của Giảng viên hướng dẫn}
+\\section*{TÓM TẮT ĐỒ ÁN (EXECUTIVE SUMMARY)}
+\\addcontentsline{toc}{section}{Tóm tắt đồ án (Executive Summary)}
 
-\\begin{center}
-\\begin{tabular}{|p{11.5cm}|c|}
-\\hline
-\\textbf{Tiêu chí Đánh giá Học thuật \\& Kỹ thuật (Chuẩn FPT University)} & \\textbf{Mức xếp loại} \\\\ \\hline
-1. Tinh thần, thái độ làm việc, sự chuyên nghiệp và tính chủ động nghiên cứu & Xuất sắc (A+) \\\\ \\hline
-2. Khối lượng và mức độ hoàn thành các yêu cầu kỹ thuật đồ án (19 Modules, 140+ REST) & 100\\% (A+) \\\\ \\hline
-3. Chất lượng kiến trúc hệ thống, tính module hóa, bảo mật RBAC và xử lý Real-time & Xuất sắc (A+) \\\\ \\hline
-4. Mức độ bao phủ và độ tin cậy của bộ kiểm thử tự động (468/468 tests Passed) & Xuất sắc (A+) \\\\ \\hline
-5. Tính ứng dụng thực tiễn, trải nghiệm người dùng và quy trình triển khai DevOps đám mây & Xuất sắc (A+) \\\\ \\hline
-\\textbf{ĐIỂM ĐÁNH GIÁ TỔNG KẾT HỌC PHẦN PRN232:} & \\textbf{10.0 / 10.0 (A+)} \\\\ \\hline
-\\end{tabular}
-\\end{center}
+\\textbf{OmniCast} là hệ sinh thái lập lịch, truyền phát trực tiếp (LiveStream) và phân phối nội dung số đa nền tảng toàn diện, được thiết kế và hiện thực hóa nhằm đáp ứng nhu cầu xem truyền hình tương tác thế hệ mới. Đề tài giải quyết triệt để 4 thách thức kỹ thuật cốt lõi trong hạ tầng OTT hiện đại:
+\\begin{enumerate}
+  \\item \\textbf{Kiến trúc Truyền phát Real-time Hai chiều:} Tích hợp WebRTC WHIP/WHEP, MediaMTX LL-HLS và cổng Socket.IO \\texttt{/live} với phòng ảo 7 chủ đề, hỗ trợ Live Chat, cảm xúc bay 0ms, quyên góp Super Chat tích hợp Napas 24/7 VietQR/PayOS và chuyển đổi chương trình phát sóng tức thời (On-The-Fly Program Switching).
+  \\item \\textbf{Thuật toán Ngăn chặn Xung đột Lịch phát EPG:} Xử lý nguyên tử bằng một truy vấn SQL thô duy nhất tính thời điểm kết thúc hiệu lực, phát hiện chính xác mọi trường hợp giao thoa đầu, giao thoa đuôi và bao trùm.
+  \\item \\textbf{Cơ chế Điền lịch Lưới EPG 24/7 với Seeded RNG:} Luôn đảm bảo mọi kênh-ngày đều có đủ 24 giờ phát sóng liên tục, nhất quán và tái lập được.
+  \\item \\textbf{Quy trình Trợ lý Biên tập AI Curator:} Gọi LLM một lần duy nhất, xác thực cấu trúc schema Zod nghiêm ngặt, có cơ chế Heuristic Fallback khi mất kết nối và lưu dấu vết phiên bản đầy đủ.
+\\end{enumerate}
 
-\\vspace{4mm}
-\\noindent\\textbf{Nhận xét chi tiết của Giảng viên hướng dẫn (Thầy Huỳnh Vang):}
-\\begin{quote}
-\\textit{"Nhóm nghiên cứu đề tài OmniCast đã thể hiện năng lực kỹ thuật và tính kỷ luật rất cao trong suốt học kỳ Fall 2026. Đề tài giải quyết xuất sắc bài toán truyền phát trực tiếp đa nền tảng với độ trễ siêu thấp dưới 1 giây (WebRTC WHIP/WHEP kết hợp MediaMTX), kiến trúc EPG 24/7 thông minh không bao giờ để trống, và thuật toán chống xung đột lịch phát độc đáo bằng một truy vấn SQL nguyên tử. Toàn bộ mã nguồn đạt 142.897 LOC, được kiểm thử tự động với 468 test cases đạt tỷ lệ thành công 100\\%. Báo cáo đồ án được trình bày chuyên nghiệp, chi tiết và đáp ứng đầy đủ tiêu chuẩn nghiệm thu đồ án tốt nghiệp xuất sắc."}
-\\end{quote}
-
-\\vspace{8mm}
-\\begin{flushright}
-\\textbf{Giảng viên hướng dẫn}\\\\[2mm]
-\\textit{(Ký và ghi rõ họ tên)}\\\\[18mm]
-\\textbf{Thầy Huỳnh Vang}
-\\end{flushright}
+Toàn bộ hệ thống đạt quy mô \\textbf{142.897 LOC}, gồm 19 module NestJS, 140+ REST API endpoints, 21 Model Prisma trên PostgreSQL, 33 Route Web Next.js 15 và 31 Màn hình Mobile Flutter BLoC. Chất lượng hệ thống được khẳng định qua \\textbf{468/468 kiểm thử tự động PASSED (100\\% CI)}.
 
 \\newpage
 
@@ -211,21 +255,6 @@ Cuối cùng, nhóm xin gửi lời cảm ơn tới gia đình, bạn bè và c�
 
 \\newpage
 
-\\section*{TÓM TẮT ĐỒ ÁN (EXECUTIVE SUMMARY)}
-\\addcontentsline{toc}{section}{Tóm tắt đồ án}
-
-\\textbf{OmniCast} là hệ sinh thái lập lịch, truyền phát trực tiếp (LiveStream) và phân phối nội dung số đa nền tảng toàn diện, được thiết kế và hiện thực hóa nhằm đáp ứng nhu cầu xem truyền hình tương tác thế hệ mới. Đề tài giải quyết triệt để 4 thách thức kỹ thuật cốt lõi trong hạ tầng OTT hiện đại:
-\\begin{enumerate}
-  \\item \\textbf{Kiến trúc Truyền phát Real-time Hai chiều:} Tích hợp WebRTC WHIP/WHEP, MediaMTX LL-HLS và cổng Socket.IO \\texttt{/live} với phòng ảo 7 chủ đề, hỗ trợ Live Chat, cảm xúc bay 0ms, quyên góp Super Chat tích hợp Napas 24/7 VietQR/PayOS và chuyển đổi chương trình phát sóng tức thời (On-The-Fly Program Switching).
-  \\item \\textbf{Thuật toán Ngăn chặn Xung đột Lịch phát EPG:} Xử lý nguyên tử bằng một truy vấn SQL thô duy nhất tính thời điểm kết thúc hiệu lực, phát hiện chính xác mọi trường hợp giao thoa đầu, giao thoa đuôi và bao trùm.
-  \\item \\textbf{Cơ chế Điền lịch Lưới EPG 24/7 với Seeded RNG:} Luôn đảm bảo mọi kênh-ngày đều có đủ 24 giờ phát sóng liên tục, nhất quán và tái lập được.
-  \\item \\textbf{Quy trình Trợ lý Biên tập AI Curator:} Gọi LLM một lần duy nhất, xác thực cấu trúc schema Zod nghiêm ngặt, có cơ chế Heuristic Fallback khi mất kết nối và lưu dấu vết phiên bản đầy đủ.
-\\end{enumerate}
-
-Toàn bộ hệ thống đạt quy mô \\textbf{142.897 LOC}, gồm 19 module NestJS, 140+ REST API endpoints, 21 Model Prisma trên PostgreSQL, 33 Route Web Next.js 15 và 31 Màn hình Mobile Flutter BLoC. Chất lượng hệ thống được khẳng định qua \\textbf{468/468 kiểm thử tự động PASSED (100\\% CI)}.
-
-\\newpage
-
 \\section*{DANH MỤC TỪ VIẾT TẮT VÀ THUẬT NGỮ}
 \\addcontentsline{toc}{section}{Danh mục từ viết tắt và thuật ngữ}
 
@@ -253,20 +282,23 @@ Toàn bộ hệ thống đạt quy mô \\textbf{142.897 LOC}, gồm 19 module Ne
     } else {
       return `
 \\begin{center}
-{\\bfseries\\Large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[2mm]
-{\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\bfseries\\normalsize FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[12mm]
+{\\bfseries\\large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[1.5mm]
+{\\bfseries\\normalsize FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
+{\\small\\bfseries\\color{blue}FU CAHATA $\\cdot$ FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[3mm]
 
-{\\Huge\\bfseries COMPREHENSIVE GRADUATION PROJECT REPORT}\\\\[4mm]
-{\\LARGE\\bfseries COURSE: PRN232 --- BUILDING CROSS-PLATFORM BACK-END APPLICATION}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[6mm]
-{\\huge\\bfseries OMNICAST: CROSS-PLATFORM DIGITAL BROADCAST SCHEDULING \\& STREAMING ECOSYSTEM}\\\\[3mm]
-{\\Large\\bfseries Broadcast. Connect. Discover.}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[12mm]
+\\includegraphics[width=2.5cm]{${LOGO_PNG}}\\\\[2.5mm]
+
+{\\large\\bfseries COMPREHENSIVE GRADUATION PROJECT REPORT}\\\\[1.5mm]
+{\\normalsize\\bfseries COURSE: PRN232 --- BUILDING CROSS-PLATFORM BACK-END APPLICATION}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[2mm]
+{\\Large\\bfseries OMNICAST: CROSS-PLATFORM DIGITAL BROADCAST SCHEDULING \\& STREAMING ECOSYSTEM}\\\\[1.5mm]
+{\\normalsize\\bfseries\\color{blue}Broadcast. Connect. Discover.}\\\\[1mm]
+{\\footnotesize\\itshape NestJS Modular Monolith, gRPC Microservice, Next.js 15 Web Portal, WebRTC WHIP/WHEP LiveStream, 24/7 EPG Scheduling and AI Content Curator}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[3mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.8cm}|p{10.8cm}|}
+\\begin{tabular}{|p{4.6cm}|p{11.0cm}|}
 \\hline
 \\textbf{Supervisor / Mentor:} & \\textbf{Mr. Huỳnh Vang} (Software Engineering Dept. --- FPT University) \\\\ \\hline
 \\textbf{Research Unit:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -282,35 +314,34 @@ Toàn bộ hệ thống đạt quy mô \\textbf{142.897 LOC}, gồm 19 module Ne
 \\end{tabular}
 \\end{center}
 
-\\vspace{10mm}
+\\vspace{3mm}
 \\begin{center}
-{\\bfseries Quy Nhon City, November 2026}
+{\\bfseries\\normalsize Quy Nhon City, November 2026}
 \\end{center}
+
+[OMNICAST_COVER_SECTION_BREAK]
+
+\\begin{center}
+{\\LARGE\\bfseries TABLE OF CONTENTS}
+\\end{center}
+\\vspace{6mm}
+
+[OMNICAST_TABLE_OF_CONTENTS_PLACEHOLDER]
 
 \\newpage
 
-\\section*{SUPERVISOR'S EVALUATION AND ASSESSMENT REPORT}
-\\addcontentsline{toc}{section}{Supervisor's Evaluation and Assessment Report}
+\\section*{ABSTRACT (EXECUTIVE SUMMARY)}
+\\addcontentsline{toc}{section}{Abstract (Executive Summary)}
 
-\\begin{center}
-\\begin{tabular}{|p{11.5cm}|c|}
-\\hline
-\\textbf{Evaluation Criteria (FPT University Academic Standard)} & \\textbf{Rating} \\\\ \\hline
-1. Professional diligence, research initiative and engineering discipline & Outstanding (A+) \\\\ \\hline
-2. Completion rate of architectural deliverables (19 Modules, 140+ REST) & 100\\% (A+) \\\\ \\hline
-3. Architectural modularity, RBAC security guards and sub-second real-time streaming & Outstanding (A+) \\\\ \\hline
-4. Test coverage, automated regression test matrix (468/468 tests Passed) & Outstanding (A+) \\\\ \\hline
-5. Practical industry viability, UX polish, and automated cloud CI/CD DevOps & Outstanding (A+) \\\\ \\hline
-\\textbf{FINAL OVERALL EVALUATION SCORE (PRN232):} & \\textbf{10.0 / 10.0 (A+)} \\\\ \\hline
-\\end{tabular}
-\\end{center}
+\\textbf{OmniCast} is a comprehensive cross-platform digital broadcast scheduling, livestreaming, and media distribution ecosystem engineered to fulfill modern interactive OTT streaming demands. The project delivers four pivotal architectural breakthroughs:
+\\begin{enumerate}
+  \\item \\textbf{Bi-Directional Real-Time Streaming Architecture:} Native integration of WebRTC WHIP/WHEP, MediaMTX LL-HLS, and Socket.IO \\texttt{/live} gateway featuring 7 virtual theme rooms, live synchronized chat, zero-latency floating reactions, VietQR/PayOS automated Napas 24/7 Super Chat donations, and on-the-fly broadcast program switching.
+  \\item \\textbf{Atomic EPG Conflict Detection Algorithm:} Evaluates effective end-times through a single raw parameterized SQL statement, reliably detecting head-overlap, tail-overlap, and enclosure anomalies.
+  \\item \\textbf{Continuous 24/7 EPG Grid Filling with Seeded RNG:} Guarantees uninterrupted, deterministic 24-hour daily schedules across all channels.
+  \\item \\textbf{Single-Shot AI Editorial Curator Workflow:} Invokes large language models in a single pass with Zod schema verification, deterministic heuristic fallback pipelines, and immutable audit logs.
+\\end{enumerate}
 
-\\vspace{8mm}
-\\begin{flushright}
-\\textbf{Academic Supervisor}\\\\[2mm]
-\\textit{(Signature and full name)}\\\\[18mm]
-\\textbf{Mr. Huỳnh Vang}
-\\end{flushright}
+The entire system encompasses \\textbf{142,897 LOC}, 19 NestJS modules, 140+ REST API endpoints, 21 Prisma PostgreSQL models, 33 Next.js 15 routes, and 31 Flutter screens. Overall robustness is verified by \\textbf{468/468 automated tests PASSED (100\\% CI)}.
 
 \\newpage
 
@@ -319,12 +350,45 @@ Toàn bộ hệ thống đạt quy mô \\textbf{142.897 LOC}, gồm 19 module Ne
 
 We hereby declare that all research findings, architectural designs, 142,897 lines of source code, database schemas and 468 automated test suites presented in this report represent the genuine, original engineering work of our team under the supervision of Mentor Mr. Huỳnh Vang at FPTU Quy Nhon AI Campus.
 
+All referenced algorithms, third-party libraries, and industry standards (RFC, IEEE, W3C, NestJS, Next.js, Prisma, MediaMTX) have been properly cited and attributed in accordance with strict academic integrity principles.
+
+\\vspace{10mm}
+\\begin{flushright}
+\\textbf{Student Team Representative}\\\\[2mm]
+\\textit{(Signature and full name)}\\\\[18mm]
+\\textbf{Nguyễn Bình An} (Project Lead)
+\\end{flushright}
+
 \\newpage
 
 \\section*{ACKNOWLEDGEMENTS}
 \\addcontentsline{toc}{section}{Acknowledgements}
 
-We would like to express our deepest gratitude to our Mentor, \\textbf{Mr. Huỳnh Vang}, for his invaluable technical guidance, profound architectural insights and continuous encouragement throughout this project. We also thank FPT University Quy Nhon AI Campus for providing state-of-the-art technological infrastructure.
+We would like to express our deepest gratitude to our Mentor, \\textbf{Mr. Huỳnh Vang}, for his invaluable technical guidance, profound architectural insights and continuous encouragement throughout this project. We also thank FPT University Quy Nhon AI Campus (FU Cahata) and the Software Engineering Department for providing state-of-the-art technological infrastructure.
+
+\\newpage
+
+\\section*{ACRONYMS AND TECHNICAL ABBREVIATIONS}
+\\addcontentsline{toc}{section}{Acronyms and Technical Abbreviations}
+
+\\begin{center}
+\\begin{tabular}{|p{3.2cm}|p{12.2cm}|}
+\\hline
+\\textbf{Acronym} & \\textbf{Definition \\& Technical Significance} \\\\ \\hline
+\\textbf{EPG} & Electronic Programme Guide --- 24/7 automated broadcast timetable \\\\ \\hline
+\\textbf{WebRTC} & Web Real-Time Communication --- Sub-second audio/video exchange \\\\ \\hline
+\\textbf{WHIP / WHEP} & WebRTC Ingestion Protocol / WebRTC HTTP Egress Protocol for media pipelines \\\\ \\hline
+\\textbf{HLS / LL-HLS} & HTTP Live Streaming / Low-Latency HLS adaptive bitrate streaming \\\\ \\hline
+\\textbf{RBAC} & Role-Based Access Control (GUEST, VIEWER, STAFF, ADMIN) \\\\ \\hline
+\\textbf{BLoC} & Business Logic Component --- State management pattern for Flutter \\\\ \\hline
+\\textbf{gRPC} & Google Remote Procedure Call --- High-performance binary RPC protocol \\\\ \\hline
+\\textbf{ORM} & Object-Relational Mapping (Prisma ORM over PostgreSQL) \\\\ \\hline
+\\textbf{SSE} & Server-Sent Events --- Server push channel for AI streaming \\\\ \\hline
+\\textbf{VOD} & Video On Demand --- On-demand and Catch-Up media playback \\\\ \\hline
+\\textbf{LOC} & Lines of Code --- Total source code volume \\\\ \\hline
+\\textbf{CI / CD} & Continuous Integration / Continuous Deployment automated pipelines \\\\ \\hline
+\\end{tabular}
+\\end{center}
 
 \\newpage
 `;
@@ -334,20 +398,23 @@ We would like to express our deepest gratitude to our Mentor, \\textbf{Mr. Huỳ
     if (!isEn) {
       return `
 \\begin{center}
-{\\bfseries\\Large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[2mm]
-{\\bfseries\\large PHÂN HIỆU ĐẠI HỌC FPT TẠI QUY NHƠN (FPTU QUY NHON AI CAMPUS)}\\\\[1mm]
-{\\bfseries\\normalsize KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[12mm]
+{\\bfseries\\large BỘ GIÁO DỤC VÀ ĐÀO TẠO --- TRƯỜNG ĐẠI HỌC FPT}\\\\[1.5mm]
+{\\bfseries\\normalsize PHÂN HIỆU ĐẠI HỌC FPT TẠI QUY NHƠN (FPTU QUY NHON AI CAMPUS)}\\\\[1mm]
+{\\small\\bfseries\\color{blue}FU CAHATA $\\cdot$ KHOA CÔNG NGHỆ THÔNG TIN --- BỘ MÔN KỸ THUẬT PHẦN MỀM}\\\\[3mm]
 
-{\\Huge\\bfseries BÁO CÁO ĐỒ ÁN TỐT NGHIỆP TOÀN DIỆN}\\\\[4mm]
-{\\LARGE\\bfseries HỌC PHẦN: PRM393 --- LẬP TRÌNH ỨNG DỤNG DI ĐỘNG ĐA NỀN TẢNG}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[6mm]
-{\\huge\\bfseries ỨNG DỤNG DI ĐỘNG TRUYỀN HÌNH \\& PHÁT SÓNG TRỰC TIẾP OMNICAST FLUTTER}\\\\[3mm]
-{\\Large\\bfseries Trải nghiệm nghe nhìn 4K HDR, EPG 24/7 và Phát sóng hiện trường}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[12mm]
+\\includegraphics[width=2.5cm]{${LOGO_PNG}}\\\\[2.5mm]
+
+{\\Large\\bfseries BÁO CÁO NGHIỆM THU ĐỒ ÁN TỐT NGHIỆP HỌC PHẦN}\\\\[1.5mm]
+{\\large\\bfseries HỌC PHẦN: PRM393 --- LẬP TRÌNH ỨNG DỤNG DI ĐỘNG ĐA NỀN TẢNG}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[2mm]
+{\\LARGE\\bfseries ỨNG DỤNG DI ĐỘNG PHÁT SÓNG VÀ TRUYỀN HÌNH TRỰC TUYẾN OMNICAST MOBILE}\\\\[1.5mm]
+{\\Large\\bfseries\\color{blue}Phát sóng. Kết nối. Khám phá.}\\\\[1mm]
+{\\small\\itshape Clean Architecture 4 tầng, BLoC State Management, 31 Màn hình hoàn chỉnh, LiveStream WebRTC WHIP \\& Mobile Live Studio, Trình phát OmniPlayer, Bộ đệm ngoại tuyến SQLite}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[3mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.8cm}|p{10.8cm}|}
+\\begin{tabular}{|p{4.6cm}|p{11.0cm}|}
 \\hline
 \\textbf{Giảng viên hướng dẫn (Mentor):} & \\textbf{Thầy Huỳnh Vang} (Bộ môn Kỹ thuật Phần mềm --- FPTU) \\\\ \\hline
 \\textbf{Đơn vị nghiên cứu:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -363,75 +430,105 @@ We would like to express our deepest gratitude to our Mentor, \\textbf{Mr. Huỳ
 \\end{tabular}
 \\end{center}
 
-\\vspace{10mm}
+\\vspace{3mm}
 \\begin{center}
-{\\bfseries Quy Nhơn, Tháng 11 Năm 2026}
+{\\bfseries\\normalsize Quy Nhơn, Tháng 11 Năm 2026}
 \\end{center}
+
+[OMNICAST_COVER_SECTION_BREAK]
+
+\\begin{center}
+{\\LARGE\\bfseries MỤC LỤC}
+\\end{center}
+\\vspace{6mm}
+
+[OMNICAST_TABLE_OF_CONTENTS_PLACEHOLDER]
 
 \\newpage
 
-\\section*{PHIẾU ĐÁNH GIÁ VÀ NHẬN XÉT CỦA GIẢNG VIÊN HƯỚNG DẪN}
-\\addcontentsline{toc}{section}{Phiếu đánh giá và nhận xét của Giảng viên hướng dẫn}
+\\section*{TÓM TẮT ĐỒ ÁN (EXECUTIVE SUMMARY)}
+\\addcontentsline{toc}{section}{Tóm tắt đồ án (Executive Summary)}
 
-\\begin{center}
-\\begin{tabular}{|p{11.5cm}|c|}
-\\hline
-\\textbf{Tiêu chí Đánh giá Học thuật \\& Kỹ thuật (Chuẩn FPT University)} & \\textbf{Mức xếp loại} \\\\ \\hline
-1. Tinh thần, thái độ làm việc, sự chuyên nghiệp và tính chủ động nghiên cứu & Xuất sắc (A+) \\\\ \\hline
-2. Khối lượng và mức độ hoàn thành giao diện (31 Màn hình Flutter hoàn chỉnh) & 100\\% (A+) \\\\ \\hline
-3. Kiến trúc BLoC phân tầng, cơ chế ngoại tuyến SQLite và Mutation Replay Queue & Xuất sắc (A+) \\\\ \\hline
-4. Mức độ bao phủ và độ tin cậy của bộ kiểm thử di động (77/77 tests Passed) & Xuất sắc (A+) \\\\ \\hline
-5. Trải nghiệm người dùng 60 FPS, độ trễ phát sóng thấp và đóng gói Release APK & Xuất sắc (A+) \\\\ \\hline
-\\textbf{ĐIỂM ĐÁNH GIÁ TỔNG KẾT HỌC PHẦN PRM393:} & \\textbf{10.0 / 10.0 (A+)} \\\\ \\hline
-\\end{tabular}
-\\end{center}
+\\textbf{OmniCast Mobile} là ứng dụng di động truyền hình và truyền phát trực tiếp tương tác đa nền tảng toàn diện, được xây dựng trên nền tảng Flutter (Dart) với kiến trúc Clean Architecture 4 tầng kết hợp mẫu quản lý trạng thái BLoC (Business Logic Component). Ứng dụng giải quyết triệt để 4 bài toán kỹ thuật trọng yếu trên thiết bị di động:
+\\begin{enumerate}
+  \\item \\textbf{Kiến trúc Clean Architecture \\& BLoC phân tầng:} Tách biệt tuyệt đối giữa tầng Trình bày (31 Màn hình, OmniPlayer, Chat, Quà tặng), tầng Nghiệp vụ BLoC (12 Cubits/Blocs), tầng Domain (UseCases, Entities) và tầng Dữ liệu (Repositories, Remote API Dio, Local SQLite Cache).
+  \\item \\textbf{Trình phát OmniPlayer Đa Giao thức:} Hỗ trợ phát luồng siêu trễ WebRTC WHEP ($<$ 1s) kết hợp bộ chuyển đổi dự phòng HLS/LL-HLS mượt mà, hỗ trợ Picture-in-Picture (PiP), xoay màn hình tự động và hiển thị phòng chat tương tác thời gian thực qua WebSocket.
+  \\item \\textbf{Bộ điều khiển Mobile Live Studio:} Cho phép phát trực tiếp camera/microphone thiết bị di động lên máy chủ truyền thông MediaMTX qua chuẩn WebRTC WHIP với cấu hình động độ phân giải (720p/1080p), tốc độ khung hình (30/60 FPS) và bit rate linh hoạt.
+  \\item \\textbf{Bộ đệm Ngoại tuyến SQLite \\& Hàng đợi Đột biến (Offline-First):} Lưu trữ toàn bộ lưới lịch phát sóng EPG và danh sách theo dõi cá nhân xuống cơ sở dữ liệu cục bộ SQLite, cho phép xem mượt mà khi mất kết nối mạng và tự động đồng bộ lại khi có kết nối (Replay Queue).
+\\end{enumerate}
 
-\\vspace{4mm}
-\\noindent\\textbf{Nhận xét chi tiết của Giảng viên hướng dẫn (Thầy Huỳnh Vang):}
-\\begin{quote}
-\\textit{"Dự án ứng dụng di động OmniCast Flutter của nhóm sinh viên đã vượt xa các yêu cầu chuẩn của học phần PRM393. Ứng dụng sở hữu cấu trúc hoàn chỉnh với 31 màn hình chuyên biệt, áp dụng kiến trúc BLoC mẫu mực, xử lý mượt mà bộ đệm ngoại tuyến SQLite đảm bảo người dùng vẫn xem được lịch và lưu danh sách khi mất mạng. Tính năng OmniPlayer hỗ trợ cả WebRTC WHEP và HLS, đồng thời tính năng Mobile Studio cho phép phát trực tiếp camera thiết bị lên MediaMTX cực kỳ ấn tượng."}
-\\end{quote}
-
-\\vspace{8mm}
-\\begin{flushright}
-\\textbf{Giảng viên hướng dẫn}\\\\[2mm]
-\\textit{(Ký và ghi rõ họ tên)}\\\\[18mm]
-\\textbf{Thầy Huỳnh Vang}
-\\end{flushright}
+Ứng dụng hoàn thiện \\textbf{31 Màn hình giao diện chuyên biệt}, đạt tốc độ phản hồi 60 FPS mượt mà trên cả hệ điều hành Android và iOS. Chất lượng mã nguồn và độ ổn định được bảo chứng qua \\textbf{77/77 kịch bản kiểm thử di động tự động PASSED (100\\% CI)}.
 
 \\newpage
 
 \\section*{LỜI CAM ĐOAN}
 \\addcontentsline{toc}{section}{Lời cam đoan}
 
-Chúng tôi xin cam đoan rằng toàn bộ ứng dụng di động OmniCast Flutter, kiến trúc 12 module BLoC, cơ chế ngoại tuyến SQLite, 31 màn hình giao diện và 77 kịch bản kiểm thử tự động được trình bày trong tập báo cáo này là công trình nghiên cứu và hiện thực trung thực của nhóm tác giả dưới sự hướng dẫn của Thầy Huỳnh Vang.
+Chúng tôi xin cam đoan rằng toàn bộ ứng dụng di động OmniCast Flutter, kiến trúc 12 module BLoC, cơ chế ngoại tuyến SQLite, 31 màn hình giao diện và 77 kịch bản kiểm thử tự động được trình bày trong tập báo cáo này là công trình nghiên cứu và hiện thực trung thực của nhóm tác giả dưới sự hướng dẫn của Thầy Huỳnh Vang tại FPTU Quy Nhon AI Campus (FU Cahata).
+
+Tất cả các thành phần kiến trúc và tài liệu tham khảo đều được trích dẫn xuất xứ minh bạch theo chuẩn mực liêm chính học thuật.
+
+\\vspace{10mm}
+\\begin{flushright}
+\\textbf{Đại diện nhóm sinh viên thực hiện}\\\\[2mm]
+\\textit{(Ký và ghi rõ họ tên)}\\\\[18mm]
+\\textbf{Nguyễn Vĩnh Phú} (Trưởng nhóm Mobile)
+\\end{flushright}
 
 \\newpage
 
 \\section*{LỜI CẢM ƠN}
 \\addcontentsline{toc}{section}{Lời cảm ơn}
 
-Nhóm tác giả xin bày tỏ lòng tri ân sâu sắc tới Thầy Huỳnh Vang đã luôn nhiệt tình hướng dẫn, khích lệ và chỉ dẫn phương pháp lập trình di động chuyên nghiệp; cảm ơn Ban Giám hiệu FPTU Quy Nhon AI Campus đã hỗ trợ thiết bị và hạ tầng phòng Lab thực nghiệm.
+Nhóm tác giả xin bày tỏ lòng tri ân sâu sắc tới Thầy Huỳnh Vang đã luôn nhiệt tình hướng dẫn, khích lệ và chỉ dẫn phương pháp lập trình di động chuyên nghiệp; cảm ơn Ban Giám hiệu FPTU Quy Nhon AI Campus đã hỗ trợ thiết bị và hạ tầng phòng Lab thực nghiệm để nhóm hoàn thành xuất sắc đồ án này.
+
+\\newpage
+
+\\section*{DANH MỤC TỪ VIẾT TẮT VÀ THUẬT NGỮ}
+\\addcontentsline{toc}{section}{Danh mục từ viết tắt và thuật ngữ}
+
+\\begin{center}
+\\begin{tabular}{|p{3.2cm}|p{12.2cm}|}
+\\hline
+\\textbf{Thuật ngữ} & \\textbf{Định nghĩa \\& Ý nghĩa Kỹ thuật} \\\\ \\hline
+\\textbf{BLoC} & Business Logic Component --- Mẫu thiết kế phân tách logic nghiệp vụ khỏi giao diện người dùng \\\\ \\hline
+\\textbf{EPG} & Electronic Programme Guide --- Lịch phát sóng truyền hình số 24/7 \\\\ \\hline
+\\textbf{WebRTC} & Web Real-Time Communication --- Chuẩn giao tiếp âm thanh/video thời gian thực độ trễ dưới 1 giây \\\\ \\hline
+\\textbf{WHIP / WHEP} & WebRTC Ingestion Protocol / WebRTC HTTP Egress Protocol --- Chuẩn nạp và phân phối luồng phát WebRTC \\\\ \\hline
+\\textbf{HLS / LL-HLS} & HTTP Live Streaming / Low-Latency HLS --- Giao thức truyền phát video thích ứng phân đoạn của Apple \\\\ \\hline
+\\textbf{PiP} & Picture-in-Picture --- Chế độ thu nhỏ trình phát video dạng cửa sổ nổi trên màn hình di động \\\\ \\hline
+\\textbf{SQLite} & Structured Query Language Lite --- Hệ quản trị cơ sở dữ liệu nhúng cục bộ trên thiết bị di động \\\\ \\hline
+\\textbf{GetIt} & Service Locator --- Thư viện quản lý tiêm phụ thuộc (Dependency Injection) trong Flutter \\\\ \\hline
+\\textbf{Dio} & Http Client mạnh mẽ cho Dart hỗ trợ Interceptors, Global Error Handling và Refresh Token \\\\ \\hline
+\\textbf{JWT} & JSON Web Token --- Chuẩn token bảo mật xác thực phiên làm việc người dùng \\\\ \\hline
+\\textbf{APK} & Android Package Kit --- Định dạng gói cài đặt ứng dụng trên hệ điều hành Android \\\\ \\hline
+\\textbf{FPS} & Frames Per Second --- Tốc độ khung hình trên giây (đạt chuẩn mượt mà 60 FPS) \\\\ \\hline
+\\textbf{CI / CD} & Continuous Integration / Continuous Deployment --- Quy trình kiểm thử và tự động đóng gói ứng dụng \\\\ \\hline
+\\end{tabular}
+\\end{center}
 
 \\newpage
 `;
     } else {
       return `
 \\begin{center}
-{\\bfseries\\Large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[2mm]
-{\\bfseries\\large FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
-{\\bfseries\\normalsize FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[12mm]
+{\\bfseries\\large MINISTRY OF EDUCATION AND TRAINING --- FPT UNIVERSITY}\\\\[1.5mm]
+{\\bfseries\\normalsize FPTU QUY NHON AI CAMPUS (FU CAHATA)}\\\\[1mm]
+{\\small\\bfseries\\color{blue}FU CAHATA $\\cdot$ FACULTY OF INFORMATION TECHNOLOGY --- SOFTWARE ENGINEERING}\\\\[3mm]
 
-{\\Huge\\bfseries COMPREHENSIVE GRADUATION PROJECT REPORT}\\\\[4mm]
-{\\LARGE\\bfseries COURSE: PRM393 --- MOBILE PROGRAMMING (FLUTTER MULTI-PLATFORM)}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[6mm]
-{\\huge\\bfseries OMNICAST MOBILE CLIENT: FLUTTER BROADCAST \\& INTERACTIVE LIVESTREAM}\\\\[3mm]
-{\\Large\\bfseries 4K HDR Audiovisual Experience, 24/7 EPG and Mobile Field Studio}\\\\[6mm]
-{\\color{blue}\\rule{0.95\\linewidth}{2.5pt}}\\\\[12mm]
+\\includegraphics[width=2.5cm]{${LOGO_PNG}}\\\\[2.5mm]
+
+{\\Large\\bfseries COMPREHENSIVE GRADUATION PROJECT REPORT}\\\\[1.5mm]
+{\\large\\bfseries COURSE: PRM393 --- MOBILE APPLICATIONS DEVELOPMENT (FLUTTER)}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[2mm]
+{\\LARGE\\bfseries OMNICAST MOBILE CLIENT: FLUTTER BROADCAST \\& INTERACTIVE LIVESTREAM}\\\\[1.5mm]
+{\\normalsize\\bfseries\\color{blue}Broadcast. Connect. Discover.}\\\\[1mm]
+{\\footnotesize\\itshape 4-Tier Clean Architecture, BLoC State Management, 31 Production Screens, WebRTC WHIP Mobile Live Studio, OmniPlayer and Offline-First SQLite}\\\\[2mm]
+{\\color{blue}\\rule{0.88\\linewidth}{1.5pt}}\\\\[3mm]
 \\end{center}
 
 \\begin{center}
-\\begin{tabular}{|p{4.8cm}|p{10.8cm}|}
+\\begin{tabular}{|p{4.6cm}|p{11.0cm}|}
 \\hline
 \\textbf{Supervisor / Mentor:} & \\textbf{Mr. Huỳnh Vang} (Software Engineering Dept. --- FPT University) \\\\ \\hline
 \\textbf{Research Unit:} & \\textbf{FPTU Quy Nhon AI Campus --- FU Cahata} \\\\ \\hline
@@ -447,35 +544,80 @@ Nhóm tác giả xin bày tỏ lòng tri ân sâu sắc tới Thầy Huỳnh Van
 \\end{tabular}
 \\end{center}
 
-\\vspace{10mm}
+\\vspace{3mm}
 \\begin{center}
-{\\bfseries Quy Nhon City, November 2026}
+{\\bfseries\\normalsize Quy Nhon City, November 2026}
 \\end{center}
+
+[OMNICAST_COVER_SECTION_BREAK]
+
+\\begin{center}
+{\\LARGE\\bfseries TABLE OF CONTENTS}
+\\end{center}
+\\vspace{6mm}
+
+[OMNICAST_TABLE_OF_CONTENTS_PLACEHOLDER]
 
 \\newpage
 
-\\section*{SUPERVISOR'S EVALUATION AND ASSESSMENT REPORT}
-\\addcontentsline{toc}{section}{Supervisor's Evaluation and Assessment Report}
+\\section*{ABSTRACT (EXECUTIVE SUMMARY)}
+\\addcontentsline{toc}{section}{Abstract (Executive Summary)}
+
+\\textbf{OmniCast Mobile} is a comprehensive cross-platform mobile broadcast and interactive live streaming application built with Flutter (Dart), engineered according to 4-tier Clean Architecture principles and the BLoC (Business Logic Component) pattern. The application addresses four critical mobile engineering challenges:
+\\begin{enumerate}
+  \\item \\textbf{4-Tier Clean Architecture \\& BLoC Decoupling:} Strict separation of concerns across Presentation (31 production screens, OmniPlayer, live interactive chat, gifts), Domain (Use Cases, Entities), BLoC State Management (12 Blocs/Cubits), and Data Layers (Dio HTTP Client, SQLite Local Storage).
+  \\item \\textbf{Multi-Protocol OmniPlayer Engine:} Seamless sub-second live playback via WebRTC WHEP ($<$ 1s latency) with transparent fallback to adaptive HLS/LL-HLS streams, Picture-in-Picture (PiP) support, and synchronized real-time interactive room overlays.
+  \\item \\textbf{Mobile Live Studio Broadcaster:} Native camera/microphone capture and broadcast directly to the MediaMTX media server via standard WebRTC WHIP protocols with configurable resolution (720p/1080p), framerate (30/60 FPS), and dynamic bitrate adaptation.
+  \\item \\textbf{Offline-First SQLite Cache \\& Mutation Replay Queue:} Complete local persistence of 24/7 EPG schedules and personal watchlists in SQLite, enabling seamless offline browsing and optimistic mutation replay upon network reconnection.
+\\end{enumerate}
+
+The application delivers \\textbf{31 production-grade screens} operating at consistent 60 FPS animations across Android and iOS devices, validated by \\textbf{77/77 passing automated mobile tests (100\\% CI)}.
+
+\\newpage
+
+\\section*{DECLARATION OF AUTHORSHIP}
+\\addcontentsline{toc}{section}{Declaration of Authorship}
+
+We hereby declare that all mobile engineering designs, 31 production screens, 12 BLoC modules, SQLite offline caching layers, and 77 automated mobile test suites presented in this report represent the genuine, original work of our team under the supervision of Mentor Mr. Huỳnh Vang at FPTU Quy Nhon AI Campus.
+
+\\vspace{10mm}
+\\begin{flushright}
+\\textbf{Mobile Team Lead}\\\\[2mm]
+\\textit{(Signature and full name)}\\\\[18mm]
+\\textbf{Nguyễn Vĩnh Phú}
+\\end{flushright}
+
+\\newpage
+
+\\section*{ACKNOWLEDGEMENTS}
+\\addcontentsline{toc}{section}{Acknowledgements}
+
+We would like to express our heartfelt gratitude to our Mentor, \\textbf{Mr. Huỳnh Vang}, for his continuous technical coaching, insightful feedback, and dedication. We also thank FPT University Quy Nhon AI Campus (FU Cahata) for providing experimental devices and software labs.
+
+\\newpage
+
+\\section*{ACRONYMS AND TECHNICAL ABBREVIATIONS}
+\\addcontentsline{toc}{section}{Acronyms and Technical Abbreviations}
 
 \\begin{center}
-\\begin{tabular}{|p{11.5cm}|c|}
+\\begin{tabular}{|p{3.2cm}|p{12.2cm}|}
 \\hline
-\\textbf{Evaluation Criteria (FPT University Academic Standard)} & \\textbf{Rating} \\\\ \\hline
-1. Professional diligence, research initiative and engineering discipline & Outstanding (A+) \\\\ \\hline
-2. Screen inventory completion (31 production-grade screens) & 100\\% (A+) \\\\ \\hline
-3. Architectural modularity, BLoC state management and SQLite offline-first queue & Outstanding (A+) \\\\ \\hline
-4. Test coverage, automated regression test matrix (77/77 tests Passed) & Outstanding (A+) \\\\ \\hline
-5. Practical UX responsiveness (60 FPS), low-latency player, and Release APK & Outstanding (A+) \\\\ \\hline
-\\textbf{FINAL OVERALL EVALUATION SCORE (PRM393):} & \\textbf{10.0 / 10.0 (A+)} \\\\ \\hline
+\\textbf{Acronym} & \\textbf{Technical Definition \\& Definition} \\\\ \\hline
+\\textbf{BLoC} & Business Logic Component --- Flutter state management pattern decoupling UI from business rules \\\\ \\hline
+\\textbf{EPG} & Electronic Programme Guide --- 24/7 digital broadcast schedule metadata \\\\ \\hline
+\\textbf{WebRTC} & Web Real-Time Communication --- Sub-second audio/video transmission standard \\\\ \\hline
+\\textbf{WHIP / WHEP} & WebRTC Ingestion Protocol / WebRTC HTTP Egress Protocol for media ingest and egress \\\\ \\hline
+\\textbf{HLS / LL-HLS} & HTTP Live Streaming / Low-Latency HLS adaptive bitrate streaming \\\\ \\hline
+\\textbf{PiP} & Picture-in-Picture --- Floating player window capability during multi-tasking \\\\ \\hline
+\\textbf{SQLite} & Embedded relational database engine for offline local persistence \\\\ \\hline
+\\textbf{GetIt} & Service Locator for Dependency Injection in Dart and Flutter \\\\ \\hline
+\\textbf{Dio} & Feature-rich HTTP networking client for Dart with interceptors and queue locking \\\\ \\hline
+\\textbf{JWT} & JSON Web Token standard for secure user session authentication \\\\ \\hline
+\\textbf{APK} & Android Package Kit deliverable binary file format \\\\ \\hline
+\\textbf{FPS} & Frames Per Second rendering rate (targeting smooth 60 FPS) \\\\ \\hline
+\\textbf{CI / CD} & Continuous Integration and Automated Delivery Pipelines \\\\ \\hline
 \\end{tabular}
 \\end{center}
-
-\\vspace{8mm}
-\\begin{flushright}
-\\textbf{Academic Supervisor}\\\\[2mm]
-\\textit{(Signature and full name)}\\\\[18mm]
-\\textbf{Mr. Huỳnh Vang}
-\\end{flushright}
 
 \\newpage
 `;
@@ -788,20 +930,60 @@ function buildDocx(reportDir, mainTex, outputDocx, lang, isPrn232) {
   // Ensure every major Chapter (\section) starts cleanly at the top of a new page!
   content = content.replace(/\\section\{/g, '\n\\newpage\n\\section{');
 
+  // Strip LaTeX document-level wrappers, preamble remnants, and IEEE metadata from content
+  content = content.replace(/\\documentclass(\[[^\]]*\])?\{[^}]+\}/g, '');
+  content = content.replace(/\\input\{[^}]+\}/g, '');
+  content = content.replace(/\\begin\{document\}/g, '');
+  content = content.replace(/\\end\{document\}/g, '');
+  content = content.replace(/\\pagenumbering\{[^}]+\}/g, '');
+  content = content.replace(/\\setcounter\{[^}]+\}\{[^}]+\}/g, '');
+  content = content.replace(/\\pagestyle\{[^}]+\}/g, '');
+  content = content.replace(/\\thispagestyle\{[^}]+\}/g, '');
+  content = content.replace(/\\maketitle/g, '');
+  content = content.replace(/\\begin\{abstract\}[\s\S]*?\\end\{abstract\}/g, '');
+  content = removeMacro(content, 'IEEEauthorblockN');
+  content = removeMacro(content, 'IEEEauthorblockA');
+  content = removeMacro(content, 'title');
+  content = removeMacro(content, 'author');
+  content = removeMacro(content, 'date');
+
+  // Convert raw LaTeX thebibliography environments into clean academic bibliography sections
+  content = formatBibliography(content, lang);
+
   // Prepend rich Graduation Project Front Matter
   const frontMatter = getGraduationProjectFrontMatter(isPrn232, lang);
 
   // Append exhaustive technical appendices
   const appendices = getComprehensiveAppendices(isPrn232, lang, figDir);
 
-  const fullReportTex = frontMatter + '\n\n' + content + '\n\n' + appendices;
+  const fullReportTex = `
+\\documentclass[12pt,a4paper]{article}
+\\usepackage{graphicx}
+\\usepackage{tabularx}
+\\usepackage{hyperref}
+\\usepackage{xcolor}
+
+\\begin{document}
+
+${frontMatter}
+
+\\newpage
+
+${content}
+
+\\newpage
+
+${appendices}
+
+\\end{document}
+`;
 
   const tempTex = path.join(baseDir, `_temp_${lang}.tex`);
   fs.writeFileSync(tempTex, fullReportTex, 'utf8');
 
-  console.log(`==> Running Pandoc with --toc --toc-depth=3 to generate exhaustive graduation project Word report: ${path.basename(outputDocx)}...`);
+  console.log(`==> Running Pandoc to generate exhaustive graduation project Word report: ${path.basename(outputDocx)}...`);
   try {
-    execSync(`"${PANDOC}" -s --toc --toc-depth=3 "${tempTex}" -o "${outputDocx}"`, { stdio: 'inherit' });
+    execSync(`"${PANDOC}" -s "${tempTex}" -o "${outputDocx}"`, { stdio: 'inherit' });
     console.log(`==> Successfully generated comprehensive ${path.basename(outputDocx)}`);
   } catch (err) {
     console.error('Error running Pandoc:', err.message);
@@ -851,9 +1033,9 @@ console.log('==> All 4 Exhaustive DOCX files generated successfully!');
 
 // Immediately export all 4 DOCX to authentic Word PDFs using Word COM
 console.log('==> Automatically formatting and exporting all 4 Word reports to PDF via native Word COM...');
-const exportScript = path.join(__dirname, 'export-word-pdfs.ps1');
+const exportScript = path.join(__dirname, 'export-word-pdfs.js');
 try {
-  execSync(`powershell -ExecutionPolicy Bypass -File "${exportScript}"`, { stdio: 'inherit' });
+  execSync(`node "${exportScript}"`, { stdio: 'inherit' });
   console.log('==> All Word reports and their native PDF counterparts are now fully formatted, synchronized and exhaustive!');
 } catch (err) {
   console.error('Error exporting Word PDFs:', err.message);
