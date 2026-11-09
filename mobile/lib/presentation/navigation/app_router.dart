@@ -108,6 +108,13 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/channels/:id',
+        builder: (context, state) {
+          final channelId = state.pathParameters['id']!;
+          return ChannelDetailScreen(channelId: channelId);
+        },
+      ),
+      GoRoute(
         path: '/program/:id',
         builder: (context, state) {
           final programId = state.pathParameters['id']!;

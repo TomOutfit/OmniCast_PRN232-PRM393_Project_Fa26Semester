@@ -202,6 +202,7 @@ class LiveStudioApiService {
     required String streamKey,
     String? thumbnailUrl,
   }) async {
+    // 1. Vector 1: Try mobile/start endpoint
     try {
       final response = await _dio.post(
         '/v1/programs/studio/live/mobile/start',
@@ -216,13 +217,38 @@ class LiveStudioApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return PushToLiveResponse.fromJson(response.data);
       }
-
-      debugPrint('[LiveStudioApi] pushToLive failed: ${response.statusCode}');
-      return null;
-    } on DioException catch (e) {
-      debugPrint('[LiveStudioApi] pushToLive error: ${e.message}');
-      return null;
+    } catch (e) {
+      debugPrint('[LiveStudioApi] live/mobile/start failed: $e, trying webcam/start');
     }
+
+    // 2. Vector 2: Fallback to live/webcam/start (identical to frontend broadcaster)
+    try {
+      final response = await _dio.post(
+        '/v1/programs/studio/live/webcam/start',
+        data: {
+          'channelSlug': channelSlug,
+          'title': title,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        final payload = (data is Map && data['data'] is Map) ? data['data'] as Map : (data is Map ? data : {});
+        final eventId = payload['eventId']?.toString() ?? payload['event']?['id']?.toString() ?? '';
+        return PushToLiveResponse(
+          success: true,
+          eventId: eventId,
+          channelSlug: channelSlug,
+          hlsUrl: payload['hlsUrl']?.toString() ?? '',
+          webrtcUrl: payload['webrtcUrl']?.toString() ?? '',
+          message: 'Live broadcast started',
+        );
+      }
+    } catch (e) {
+      debugPrint('[LiveStudioApi] live/webcam/start fallback failed: $e');
+    }
+
+    return null;
   }
 
   /// Get the MediaMTX publish endpoint configured by the backend.
@@ -307,15 +333,28 @@ class LiveStudioApiService {
         '/v1/programs/studio/live/mobile/stop',
         data: {
           'channelSlug': channelSlug,
-          'eventId': eventId,
+          if (eventId != null && eventId.isNotEmpty) 'eventId': eventId,
         },
       );
 
-      return response.statusCode == 200;
-    } on DioException catch (e) {
-      debugPrint('[LiveStudioApi] stopLive error: ${e.message}');
-      return false;
+      if (response.statusCode == 200) return true;
+    } catch (e) {
+      debugPrint('[LiveStudioApi] live/mobile/stop failed: $e, trying webcam/stop');
     }
+
+    try {
+      if (eventId != null && eventId.isNotEmpty) {
+        final response = await _dio.post(
+          '/v1/programs/studio/live/webcam/stop',
+          data: {'eventId': eventId},
+        );
+        return response.statusCode == 200;
+      }
+    } catch (e) {
+      debugPrint('[LiveStudioApi] live/webcam/stop fallback failed: $e');
+    }
+
+    return false;
   }
 
   /// Get all currently active live streams.

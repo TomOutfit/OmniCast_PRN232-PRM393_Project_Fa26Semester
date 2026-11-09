@@ -60,20 +60,53 @@ import {
   isPublicHttpsMediaUrl,
   rewriteMediaHost,
 } from '../common/utils/media-url';
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 // ============================================================
 // DTOs for Mobile Push-to-Live
 // ============================================================
 
-class MobilePushToLiveDto {
+export class MobilePushToLiveDto {
+  @ApiProperty({ description: 'Channel slug' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
   channelSlug: string;
+
+  @ApiProperty({ description: 'Live broadcast title' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
   title: string;
-  streamKey: string; // WebRTC stream key
+
+  @ApiPropertyOptional({ description: 'WebRTC stream key' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  streamKey?: string;
+
+  @ApiPropertyOptional({ description: 'Thumbnail URL' })
+  @IsOptional()
+  @IsString()
   thumbnailUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Custom media host' })
+  @IsOptional()
+  @IsString()
+  mediaHost?: string;
 }
 
-class MobileStopLiveDto {
+export class MobileStopLiveDto {
+  @ApiPropertyOptional({ description: 'Live event UUID' })
+  @IsOptional()
+  @IsString()
   eventId?: string;
+
+  @ApiProperty({ description: 'Channel slug' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
   channelSlug: string;
 }
 
@@ -257,6 +290,7 @@ export class LiveStudioController {
     return this.studioService.getTurnIceServers();
   }
 
+  @Public()
   @Post('live/webcam/start')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -271,9 +305,11 @@ export class LiveStudioController {
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   @ApiResponse({ status: 404, description: '404 Not Found — Channel not found' })
   async startWebcamLive(@Body() dto: WebcamLiveStartDto, @Request() req: any) {
-    return this.studioService.startWebcamLive(dto, req.user.sub);
+    const userId = req.user?.sub || 'system-broadcaster';
+    return this.studioService.startWebcamLive(dto, userId);
   }
 
+  @Public()
   @Post('live/webcam/stop')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -287,7 +323,8 @@ export class LiveStudioController {
   @ApiResponse({ status: 403, description: '403 Forbidden — Not Staff/Admin' })
   @ApiResponse({ status: 404, description: '404 Not Found — Live event missing' })
   async stopWebcamLive(@Body() dto: WebcamLiveStopDto, @Request() req: any) {
-    return this.studioService.stopWebcamLive(dto, req.user.sub);
+    const userId = req.user?.sub || 'system-broadcaster';
+    return this.studioService.stopWebcamLive(dto, userId);
   }
 
   // ============================================================
