@@ -42,12 +42,12 @@ export class CreateSandboxDonationDto {
   amount: number;
 
   @ApiProperty({
-    description: 'Sandbox payment method or PayOS checkout',
+    description: 'Sandbox payment method, VietQR, or PayOS checkout',
     example: 'momo',
-    enum: ['momo', 'vnpay', 'zalopay', 'card', 'payos'],
+    enum: ['momo', 'vnpay', 'zalopay', 'card', 'payos', 'vietqr'],
   })
   @IsString()
-  @IsIn(['momo', 'vnpay', 'zalopay', 'card', 'payos'])
+  @IsIn(['momo', 'vnpay', 'zalopay', 'card', 'payos', 'vietqr'])
   paymentMethod: string;
 
   @ApiProperty({
