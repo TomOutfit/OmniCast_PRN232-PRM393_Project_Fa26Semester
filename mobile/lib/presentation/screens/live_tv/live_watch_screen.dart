@@ -129,6 +129,47 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
     );
 
     _socketSubscriptions.add(
+      LiveSocketService.instance.onDonationReceived.listen((data) {
+        if (!mounted) return;
+        final amount = (data['amount'] as num?)?.toInt() ?? 0;
+        final donorName = data['donorName']?.toString() ?? 'Khán giả';
+        final message = data['message']?.toString() ?? '';
+        final giftEmoji = data['giftEmoji']?.toString() ?? '🎉';
+        final giftTier = data['giftTier']?.toString() ?? 'Super Chat';
+        final paymentMethod = data['paymentMethod']?.toString() ?? 'PayOS';
+        final streamerBalance = (data['streamerWalletBalance'] as num?)?.toInt();
+
+        setState(() {
+          _latestSuperChat = LiveDonationResult(
+            amount: amount,
+            donorName: donorName,
+            message: message,
+            tier: giftTier,
+            giftEmoji: giftEmoji,
+            paymentMethod: paymentMethod,
+            streamerBalance: streamerBalance,
+          );
+          if (streamerBalance != null) _streamerBalance = streamerBalance;
+        });
+
+        // Spawn reaction celebration particles
+        _spawnReactionParticles('FIRE');
+
+        // Formatted amount VND
+        final formatted = amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
+        _toast('🎉 $donorName vừa ủng hộ $formattedđ ($giftEmoji $giftTier)!', accent: _gold);
+
+        _superChatTimer?.cancel();
+        _superChatTimer = Timer(const Duration(seconds: 25), () {
+          if (mounted) setState(() => _latestSuperChat = null);
+        });
+      }),
+    );
+
+    _socketSubscriptions.add(
       LiveSocketService.instance.onBroadcasterMessage.listen((data) {
         final msg = data['message']?.toString();
         if (msg != null && mounted) {

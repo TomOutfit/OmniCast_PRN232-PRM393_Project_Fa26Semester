@@ -65,7 +65,7 @@ Trải nghiệm xem trực tiếp của khán giả trên di động được th
     \item \emph{Trò chuyện Trực tiếp có Nhánh trả lời \& Kiểm duyệt (\texttt{live:chat}):} Khán giả gửi bình luận trực tiếp, nhấn trả lời từng bình luận (\texttt{parentId}), thả tim bình luận; người dùng \texttt{STAFF}/\texttt{ADMIN} có thể xóa tin nhắn vi phạm ngay lập tức (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}).
     \item \emph{Biểu cảm Hạt nổi Phản hồi Xúc giác 0ms (\texttt{live:reaction}):} Thanh công cụ cung cấp các nút thả biểu cảm (\texttt{HEART} $\heartsuit$, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}). Ngay khi chạm, ứng dụng kích hoạt rung xúc giác (\texttt{HapticFeedback.lightImpact()}), tăng bộ đếm cục bộ tức thì (optimistic delta) và vẽ hoạt họa hạt bay lên mượt mà qua \texttt{FloatingReactionOverlay}.
     \item \emph{Thông báo Ghim từ Đạo diễn (\texttt{broadcaster:message}):} Hiển thị thông điệp quan trọng từ phòng thu dưới dạng dải băng thông báo nổi bật trên đầu khung chat.
-    \item \emph{Quyên góp Super Chat 6 Mệnh giá tích hợp Cổng PayOS (\texttt{LiveDonationModal}):} Mở bảng tặng quà trực tiếp gồm 6 mức quà tặng (Thẻ Đồng 10.000đ, Bạc 20.000đ, Vàng 50.000đ, Kim Cương 100.000đ, Vương Miện 200.000đ, Tinh Hoa 500.000đ) tích hợp cổng thanh toán \textbf{PayOS} và tạo mã VietQR chuẩn ngân hàng \textbf{MB Bank} (Chủ tài khoản: \texttt{NGUYEN BINH AN}, Số tài khoản: \texttt{0935649095}), hỗ trợ chuyển khoản ngân hàng hoặc quét QR trực tiếp kèm hiệu ứng vinh danh toàn phòng (\texttt{live:donation:received}).
+    \item \emph{Quyên góp Super Chat 6 mệnh giá qua PayOS (\texttt{LiveDonationModal}):} Người xem chọn một trong 6 mức quà và thanh toán qua checkout PayOS (QR do PayOS phát hành). Backend xác minh chữ ký webhook, mã đơn và số tiền trước khi cập nhật nguyên tử ví, Notification và audit log; webhook lặp không cộng trùng. Socket.IO phát \texttt{live:donation:received}; biên nhận của người gửi có polling dự phòng mỗi 1 giây (giới hạn chờ cấu hình giảm từ 4 giây xuống 1 giây, trung bình lý thuyết 2 giây xuống 0,5 giây; chưa đo end-to-end). QR chuyển khoản ngân hàng trực tiếp chưa được tự động đối soát nên không ghi nhận là thanh toán đã xác minh.
     \item \emph{Chuyển Chương trình Tự động Không Gián đoạn (\texttt{live:program:changed}):} Lắng nghe sự kiện đổi luồng từ đạo diễn và tự động chuyển \texttt{OmniPlayer} sang URL video mới mà không làm thoát màn hình hay mất lịch sử chat.
   \end{itemize}
 \end{enumerate}
@@ -79,11 +79,18 @@ The mobile viewer LiveStream journey spans two dedicated screens:
     \item \emph{Threaded Live Chat \& Moderation (\texttt{live:chat}):} Supports real-time chat messages, nested replies (\texttt{parentId}), comment likes, and instant \texttt{STAFF}/\texttt{ADMIN} message deletion (\texttt{chat:delete} $\rightarrow$ \texttt{chat:deleted}).
     \item \emph{0ms Haptic Floating Emoji Reactions (\texttt{live:reaction}):} Tapping reaction buttons (\texttt{HEART}, \texttt{FIRE}, \texttt{CLAP}, \texttt{WOW}/\texttt{PARTY}) triggers immediate \texttt{HapticFeedback.lightImpact()}, increments optimistic local counters, and spawns rising particle animations via \texttt{FloatingReactionOverlay}.
     \item \emph{Pinned Host Announcements (\texttt{broadcaster:message}):} Renders live announcements from studio producers as a highlighted banner.
-    \item \emph{6-Tier Super Chat \& Live Donations with PayOS (\texttt{LiveDonationModal}):} Enables viewers to send virtual gifts across 6 preset tiers (Bronze 10k, Silver 20k, Gold 50k, Diamond 100k, Crown 200k, Elite 500k) powered by the \textbf{PayOS} gateway with authentic \textbf{MB Bank} VietQR generation (Beneficiary: \texttt{NGUYEN BINH AN}, Account Number: \texttt{0935649095}), updating creator wallets and triggering celebratory room overlays (\texttt{live:donation:received}).
+    \item \emph{6-Tier Super Chat \& PayOS donation notifications (\texttt{LiveDonationModal}):} The web PayOS path validates the signed webhook, amount and order before the backend commits the wallet credit and inbox notification atomically; duplicate callbacks cannot credit twice. A manual confirmation is unavailable while PayOS is active, and direct bank-transfer QR is not automatically reconciled. The stream room receives \texttt{live:donation:received} over Socket.IO, while the payer receipt uses a 1-second status poll as fallback (configured wait bound 1s, theoretical mean 0.5s versus 4s/2s previously; end-to-end latency is not benchmarked).
     \item \emph{Zero-Downtime Program Switching (\texttt{live:program:changed}):} Automatically reloads \texttt{OmniPlayer} with the newly switched stream URL whenever the studio changes the active programme.
   \end{itemize}
 \end{enumerate}
 }
+
+\begin{figure}[t]
+\centering
+\fitcol{\figDonationNotificationFlow}
+\caption{\bi{Xác nhận PayOS và phân phối thông báo quyên góp tới ứng dụng di động.}{PayOS confirmation and donation notification delivery to the mobile client.}}
+\label{fig:mobile_donation_notification}
+\end{figure}
 
 \subsection{\bi{Màn hình Bàn điều khiển \texttt{LiveStudioScreen} (4 Tab) và Máy quay Hiện trường \texttt{MobileStudioRecorderScreen}}{4-Tab \texttt{LiveStudioScreen} Console and \texttt{MobileStudioRecorderScreen} Field Viewfinder}}
 

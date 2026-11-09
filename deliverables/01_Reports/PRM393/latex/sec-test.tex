@@ -78,16 +78,28 @@ results of the 77 mobile tests in CI run 40630318005.}}
 \end{tabular}
 \end{table}
 
+\begin{figure*}[t]
+\centering
+\fitfull{\figTestingMatrix}
+\caption{\bi{Ma trận phân cấp kiểm thử tự động toàn diện và cổng chất lượng GitHub Actions.}{Comprehensive multi-tier automated testing and CI quality gate execution matrix.}}\label{fig:mobile_testing_matrix}
+\end{figure*}
+
 \subsection{\bi{Tích hợp trong quy trình CI/CD}{Continuous Integration Pipeline}}
 
 \bi{
 Trong tệp cấu hình GitHub Actions \texttt{ci.yml}, công việc \texttt{mobile}
-được thực thi độc lập song song với các công việc của backend và web. Công việc
+được thực thi độc lập song song với các công việc của backend và web (Hình~\ref{fig:mobile_cicd}). Công việc
 này thực hiện:
 }{
 Within the project's GitHub Actions workflow (\texttt{ci.yml}), the
-\texttt{mobile} job executes concurrently alongside backend and web runners:
+\texttt{mobile} job executes concurrently alongside backend and web runners (Fig.~\ref{fig:mobile_cicd}):
 }
+
+\begin{figure*}[t]
+\centering
+\fitfull{\figCicd}
+\caption{\bi{Quy trình tự động hóa CI/CD GitHub Actions đa nền tảng và phân phối phát hành.}{Multi-platform GitHub Actions automated CI/CD pipeline and release distribution.}}\label{fig:mobile_cicd}
+\end{figure*}
 
 \begin{lstlisting}[language=bash, caption={\bi{Quy trình kiểm thử mobile trong GitHub Actions.}{Mobile CI step sequence in GitHub Actions.}}]
 - name: Setup Flutter

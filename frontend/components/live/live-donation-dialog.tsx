@@ -256,6 +256,11 @@ export function LiveDonationDialog({
   };
 
   const handleProceedToQr = async () => {
+    if (streamerInfo?.paymentMode === 'payos' && selectedMethod !== 'payos') {
+      setPaymentStatusError('Chuyển khoản QR trực tiếp chưa được đối soát tự động. Hãy chọn PayOS để thanh toán được xác minh.');
+      return;
+    }
+
     if (selectedMethod === 'payos' && streamerInfo?.paymentMode === 'payos') {
       setIsSubmitting(true);
       setPaymentStatusError(null);
@@ -272,11 +277,11 @@ export function LiveDonationDialog({
         setPayosCheckout(checkout);
         setStep('qr_confirm');
       } catch (err: any) {
-        toast.error('Không thể tạo liên kết PayOS, chuyển sang thanh toán VietQR trực tiếp', {
-          description: err?.message || 'Chuyển hướng sang quét mã MBBank VietQR',
+        const message = 'Không thể tạo liên kết PayOS. Giao dịch chưa được xác minh; vui lòng thử lại sau.';
+        setPaymentStatusError(message);
+        toast.error(message, {
+          description: err?.message || 'Không chuyển sang QR thủ công vì hệ thống chưa thể xác minh giao dịch.',
         });
-        setSelectedMethod('vietqr');
-        setStep('qr_confirm');
       } finally {
         setIsSubmitting(false);
       }
@@ -291,13 +296,17 @@ export function LiveDonationDialog({
 
     let active = true;
     let interval: ReturnType<typeof setInterval> | undefined;
+    let requestInFlight = false;
     const checkStatus = async () => {
+      if (requestInFlight) return;
+      requestInFlight = true;
       try {
         const result = await fetchPayosDonationStatus(
           payosCheckout.orderCode,
           payosCheckout.statusToken,
         );
         if (!active || payosNotifiedRef.current) return;
+        setPaymentStatusError(null);
         if (result.status === 'FAILED' || result.status === 'CANCELLED') {
           setPaymentStatusError('Giao dịch đã bị hủy hoặc thất bại.');
           if (interval) clearInterval(interval);
@@ -331,11 +340,13 @@ export function LiveDonationDialog({
         if (active) {
           setPaymentStatusError('Đang kiểm tra đối soát tự động từ cổng ngân hàng...');
         }
+      } finally {
+        requestInFlight = false;
       }
     };
 
     void checkStatus();
-    interval = setInterval(() => void checkStatus(), 4000);
+    interval = setInterval(() => void checkStatus(), 1000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -344,6 +355,11 @@ export function LiveDonationDialog({
 
   // Real transaction confirmation: Updates DB real balance, triggers room WebSocket & shows toast
   const handleConfirmPayment = async () => {
+    if (payosCheckout || streamerInfo?.paymentMode === 'payos') {
+      toast.error('Chỉ PayOS mới có thể xác nhận giao dịch thật.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await sendSandboxDonation({
@@ -549,6 +565,11 @@ export function LiveDonationDialog({
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 block">
                 2. Chọn phương thức thanh toán
               </label>
+              {paymentStatusError && (
+                <p role="alert" className="mb-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+                  {paymentStatusError}
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.map((method) => {
                   const isSel = selectedMethod === method.id;
@@ -557,7 +578,10 @@ export function LiveDonationDialog({
                     <button
                       key={method.id}
                       type="button"
-                      onClick={() => setSelectedMethod(method.id)}
+                      onClick={() => {
+                        setSelectedMethod(method.id);
+                        setPaymentStatusError(null);
+                      }}
                       className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
                         isSel
                           ? 'border-cyan-400 bg-cyan-950/30 shadow-sm shadow-cyan-500/20'
@@ -824,6 +848,11 @@ export function LiveDonationDialog({
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-1">
+              {paymentStatusError && (
+                <p role="alert" className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+                  {paymentStatusError}
+                </p>
+              )}
               {payosCheckout && (
                 <a
                   href={payosCheckout.checkoutUrl}
@@ -836,24 +865,30 @@ export function LiveDonationDialog({
                 </a>
               )}
 
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleConfirmPayment}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:brightness-110 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
-                    <span>ĐANG ĐỐI SOÁT & CẬP NHẬT SỐ DƯ TÀI KHOẢN...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN THÀNH CÔNG</span>
-                  </>
-                )}
-              </button>
+              {payosCheckout ? (
+                <p role="status" className="rounded-lg border border-sky-400/40 bg-sky-500/10 px-3 py-3 text-center text-xs font-semibold text-sky-200">
+                  Đang chờ PayOS xác minh thanh toán. Không xác nhận thủ công.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleConfirmPayment}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:brightness-110 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                      <span>ĐANG ĐỐI SOÁT & CẬP NHẬT SỐ DƯ TÀI KHOẢN...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN THÀNH CÔNG</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <button
                 type="button"

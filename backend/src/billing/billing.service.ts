@@ -458,8 +458,9 @@ export class BillingService {
         data: {
           userId: donation.streamerId,
           type: 'SYSTEM_ANNOUNCEMENT',
+          actorId: donation.donorId || undefined,
           title: '🎁 Bạn nhận được ủng hộ mới qua PayOS!',
-          message: `Bạn vừa nhận ${donation.amount.toLocaleString('vi-VN')}₫ qua PayOS.`,
+          message: `Bạn vừa nhận ${donation.amount.toLocaleString('vi-VN')}₫ qua PayOS từ ${donation.donorName || 'Khán giả'}.`,
           eventId: donation.eventId,
         },
       });
@@ -624,6 +625,7 @@ export class BillingService {
         data: {
           userId: streamer.id,
           type: 'SYSTEM_ANNOUNCEMENT',
+          actorId: donorUserId || undefined,
           title: '🎁 Bạn nhận được ủng hộ mới!',
           message: `Đã nhận ${dto.amount.toLocaleString('vi-VN')}₫ từ ${dto.donorName} (${dto.giftEmoji || '🎉'} ${dto.giftTier || 'Quà tặng'}) vào ví thực tế của bạn!`,
           eventId: event.id,

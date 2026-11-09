@@ -305,3 +305,23 @@
   \draw[omniFlowTeal] (studio.south) -- (account.north);
 \end{tikzpicture}%
 }
+
+% ------------------------------------------------------------
+% Figure: PayOS donation confirmation and notification flow
+% ------------------------------------------------------------
+\newcommand{\figDonationNotificationFlow}{%
+\begin{tikzpicture}[node distance=0.55cm and 0.7cm]
+  \node[omniAccent, minimum width=3.2cm, minimum height=1.25cm] (viewer) {\bi{\textbf{Khán giả}}{\textbf{Viewer}}\\PayOS Checkout QR};
+  \node[omniTealNode, right=of viewer, minimum width=3.2cm, minimum height=1.25cm] (payos) {\textbf{PayOS}\\Payment + signed webhook};
+  \node[omniDarkNode, right=of payos, minimum width=3.5cm, minimum height=1.25cm] (billing) {\textbf{BillingService}\\Verify + idempotent credit};
+  \node[omniAmberNode, below=of billing, minimum width=3.5cm, minimum height=1.25cm] (store) {\textbf{PostgreSQL}\\Donation + wallet + inbox};
+  \node[omniRoseNode, left=of store, minimum width=3.2cm, minimum height=1.25cm] (socket) {\textbf{Socket.IO}\\\texttt{live:donation:received}};
+  \node[omniPurpleNode, left=of socket, minimum width=3.2cm, minimum height=1.25cm] (room) {\bi{Khán giả / Streamer}{Viewer / Streamer}\\Room banner + status poll};
+
+  \draw[omniFlowAccent] (viewer) -- (payos);
+  \draw[omniFlowTeal] (payos) -- (billing);
+  \draw[omniFlowAmber] (billing) -- (store);
+  \draw[omniFlowRose] (store) -- (socket);
+  \draw[omniFlow] (socket) -- (room);
+\end{tikzpicture}%
+}
