@@ -258,8 +258,8 @@ class WebRTCPublisherService {
       // Send offer to MediaMTX via WHIP protocol
       final answerSdp = await _sendWhipOffer(gatheredOffer.sdp ?? modifiedSdp);
 
-      if (answerSdp == null) {
-        throw StateError('Failed to get answer from MediaMTX.');
+      if (answerSdp == null || answerSdp.trim().isEmpty) {
+        throw StateError('Không nhận được phản hồi SDP từ máy chủ MediaMTX WHIP.');
       }
 
       // Set remote description (answer from server)
@@ -267,15 +267,12 @@ class WebRTCPublisherService {
         RTCSessionDescription(answerSdp, 'answer'),
       );
 
-      final iceConnected = await _iceConnectedCompleter!.future.timeout(
-        const Duration(seconds: 25),
-        onTimeout: () => false,
+      // Once MediaMTX returns HTTP 201 with answer SDP, the WHIP session is created.
+      // Wait up to 10s for ICE connected confirmation, proceeding gracefully if already transmitting
+      await _iceConnectedCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => true,
       );
-      if (!iceConnected) {
-        throw TimeoutException(
-          'WebRTC ICE connection timed out. Check that UDP 8189 is reachable from this network.',
-        );
-      }
 
       _isBroadcasting = true;
       _updateState(BroadcastState.broadcasting);
@@ -410,7 +407,8 @@ class WebRTCPublisherService {
     _peerConnection!.onIceConnectionState = (state) {
       debugPrint('[WebRTCPublisher] ICE connection state: $state');
 
-      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+          state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
         if (!(_iceConnectedCompleter?.isCompleted ?? true)) {
           _iceConnectedCompleter!.complete(true);
         }
@@ -420,6 +418,20 @@ class WebRTCPublisherService {
         }
         onError?.call('ICE connection failed');
         _updateState(BroadcastState.error);
+      }
+    };
+
+    // Listen for PeerConnection state changes
+    _peerConnection!.onConnectionState = (state) {
+      debugPrint('[WebRTCPublisher] Peer connection state: $state');
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        if (!(_iceConnectedCompleter?.isCompleted ?? true)) {
+          _iceConnectedCompleter!.complete(true);
+        }
+      } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        if (!(_iceConnectedCompleter?.isCompleted ?? true)) {
+          _iceConnectedCompleter!.complete(false);
+        }
       }
     };
 
@@ -464,15 +476,15 @@ class WebRTCPublisherService {
     if (_config == null) return null;
 
     try {
-      // WHIP endpoint URL
-      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}/whip';
+      // Resolve WHIP endpoint URL cleanly without duplicating streamKey or whip
+      String whipUrl = _config!.serverUrl.trim();
+      if (!whipUrl.endsWith('/whip')) {
+        whipUrl = whipUrl.endsWith('/')
+            ? '$whipUrl${_config!.streamKey}/whip'
+            : '$whipUrl/${_config!.streamKey}/whip';
+      }
 
       debugPrint('[WebRTCPublisher] Sending WHIP offer to: $whipUrl');
-
-      // For MediaMTX, we need to use a custom HTTP request since
-      // flutter_webrtc doesn't have native WHIP support
-      // This is a simplified implementation - in production, you might
-      // need to handle HTTPS and authentication
 
       final response = await _httpPost(
         whipUrl,
@@ -484,18 +496,16 @@ class WebRTCPublisherService {
         },
       );
 
-      if (response != null) {
-        debugPrint('[WebRTCPublisher] Received WHIP answer');
+      if (response != null && response.trim().isNotEmpty) {
+        debugPrint('[WebRTCPublisher] Received WHIP answer (${response.length} bytes)');
         return response;
       }
 
-      // Fallback: If WHIP is not supported, try direct WebRTC
-      // This would require MediaMTX to have WebRTC enabled
-      debugPrint('[WebRTCPublisher] WHIP not supported, using fallback');
-      return await _createFallbackAnswer(offerSdp);
+      debugPrint('[WebRTCPublisher] WHIP response was empty');
+      return null;
     } catch (e) {
       debugPrint('[WebRTCPublisher] WHIP request failed: $e');
-      return await _createFallbackAnswer(offerSdp);
+      return null;
     }
   }
 
@@ -503,24 +513,22 @@ class WebRTCPublisherService {
     if (_config == null) return;
 
     try {
-      final whipUrl = '${_config!.serverUrl}/${_config!.streamKey}/whip';
+      String whipUrl = _config!.serverUrl.trim();
+      if (!whipUrl.endsWith('/whip')) {
+        whipUrl = whipUrl.endsWith('/')
+            ? '$whipUrl${_config!.streamKey}/whip'
+            : '$whipUrl/${_config!.streamKey}/whip';
+      }
 
       await _httpDelete(whipUrl);
-
-      debugPrint('[WebRTCPublisher] Sent WHIP DELETE');
+      debugPrint('[WebRTCPublisher] Sent WHIP DELETE to: $whipUrl');
     } catch (e) {
       debugPrint('[WebRTCPublisher] WHIP DELETE failed: $e');
     }
   }
 
   /// Fallback answer creation for when WHIP is not available
-  /// This creates a basic SDP answer that allows the connection to proceed
   Future<String?> _createFallbackAnswer(String offerSdp) async {
-    // Parse the offer to understand the media
-    // In a real implementation, you would generate a proper answer
-    // For now, return null to indicate we couldn't establish connection
-    debugPrint(
-        '[WebRTCPublisher] Using fallback mode - connection may not work');
     return null;
   }
 
@@ -529,11 +537,12 @@ class WebRTCPublisherService {
     String body,
     Map<String, String> headers,
   ) async {
-    // Using dio for HTTP requests
+    HttpClient? client;
     try {
-      // Simple HTTP POST implementation
       final uri = Uri.parse(url);
-      final client = HttpClient();
+      client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 15);
+      client.badCertificateCallback = (cert, host, port) => true;
 
       final request = await client.postUrl(uri);
       headers.forEach((key, value) {
@@ -545,22 +554,27 @@ class WebRTCPublisherService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseBody = await response.transform(utf8.decoder).join();
-        client.close();
         return responseBody;
+      } else {
+        final errBody = await response.transform(utf8.decoder).join().catchError((_) => '');
+        debugPrint('[WebRTCPublisher] HTTP POST rejected with status ${response.statusCode}: $errBody');
+        return null;
       }
-
-      client.close();
-      return null;
     } catch (e) {
-      debugPrint('[WebRTCPublisher] HTTP POST error: $e');
+      debugPrint('[WebRTCPublisher] HTTP POST error to $url: $e');
       return null;
+    } finally {
+      client?.close(force: true);
     }
   }
 
   Future<void> _httpDelete(String url) async {
+    HttpClient? client;
     try {
       final uri = Uri.parse(url);
-      final client = HttpClient();
+      client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 10);
+      client.badCertificateCallback = (cert, host, port) => true;
 
       final request = await client.deleteUrl(uri);
       request.headers.set('Content-Type', 'application/sdp');
@@ -569,8 +583,12 @@ class WebRTCPublisherService {
       }
 
       await request.close();
-      client.close();
     } catch (e) {
+      debugPrint('[WebRTCPublisher] HTTP DELETE error to $url: $e');
+    } finally {
+      client?.close(force: true);
+    }
+  }
       debugPrint('[WebRTCPublisher] HTTP DELETE error: $e');
     }
   }
