@@ -36,6 +36,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/lan_discovery_service.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/recording_model.dart';
 import '../../../data/models/studio_catalog_model.dart';
@@ -128,6 +129,34 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   void initState() {
     super.initState();
     _loadChannels();
+    _resolveMediaHost();
+  }
+
+  Future<void> _resolveMediaHost() async {
+    try {
+      _liveApiService ??= LiveStudioApiService(
+        baseUrl: AppConstants.baseUrl,
+        dio: getIt<DioClient>().dio,
+      );
+      final whip = await _liveApiService!.getWhipUrl();
+      if (whip != null && whip.isNotEmpty) {
+        final uri = Uri.tryParse(whip);
+        if (uri != null && uri.host.isNotEmpty) {
+          AppConstants.setDiscoveredMediaHost(uri.host);
+          if (mounted) setState(() {});
+          return;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      final res = await getIt<LanDiscoveryService>().autoDiscoverMediaHost(
+        timeout: const Duration(seconds: 4),
+      );
+      if (res.success && res.host != null && mounted) {
+        setState(() {});
+      }
+    } catch (_) {}
   }
 
   @override
@@ -380,6 +409,11 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       final whipBaseUrl = await _liveApiService!.getWhipUrl();
       if (whipBaseUrl == null || whipBaseUrl.isEmpty) {
         throw Exception('Chưa kết nối được máy chủ phát MediaMTX WHIP.');
+      }
+
+      final parsedWhip = Uri.tryParse(whipBaseUrl);
+      if (parsedWhip != null && parsedWhip.host.isNotEmpty) {
+        AppConstants.setDiscoveredMediaHost(parsedWhip.host);
       }
 
       final iceServers = await _liveApiService!.getIceServers();

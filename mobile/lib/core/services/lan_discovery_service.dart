@@ -111,28 +111,14 @@ class LanDiscoveryService {
     final stopwatch = Stopwatch()..start();
 
     try {
-      // 0. Quick check: Is current mediaHost already reachable on Wi-Fi?
-      final currentHost = AppConstants.mediaHost;
-      if (currentHost.isNotEmpty && currentHost != 'localhost' && currentHost != '127.0.0.1') {
-        final ok = await _probeMediaMtx(currentHost, 8888, timeout: const Duration(milliseconds: 350));
-        if (ok) {
-          _lastDiscoveredHost = currentHost;
-          stopwatch.stop();
-          final res = LanDiscoveryResult(
-            success: true,
-            host: currentHost,
-            source: 'verified_current',
-            elapsed: stopwatch.elapsed,
-          );
-          _discoveryController.add(res);
-          return res;
-        }
-      }
-
       // 1. Vector 1: Check backend LAN discovery endpoint (fastest, authoritative)
-      final backendResult = await _probeBackendLanDiscovery(timeout: const Duration(milliseconds: 800));
-      if (backendResult != null) {
-        final verified = await _probeMediaMtx(backendResult, 8888, timeout: const Duration(milliseconds: 400));
+      // The backend DB knows the exact active MediaMTX host (e.g. Cloudflare tunnel or LAN IP).
+      final backendResult = await _probeBackendLanDiscovery(timeout: const Duration(milliseconds: 2500));
+      if (backendResult != null && backendResult.isNotEmpty) {
+        final isTunnel = backendResult.contains('trycloudflare.com') ||
+            !RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(backendResult);
+        final verified = isTunnel ||
+            await _probeMediaMtx(backendResult, 8888, timeout: const Duration(milliseconds: 1500));
         if (verified) {
           _applyDiscoveredHost(backendResult);
           stopwatch.stop();
@@ -140,6 +126,24 @@ class LanDiscoveryService {
             success: true,
             host: backendResult,
             source: 'backend_api',
+            elapsed: stopwatch.elapsed,
+          );
+          _discoveryController.add(res);
+          return res;
+        }
+      }
+
+      // 2. Vector 2: Check if current mediaHost is reachable
+      final currentHost = AppConstants.mediaHost;
+      if (currentHost.isNotEmpty && currentHost != 'localhost' && currentHost != '127.0.0.1') {
+        final ok = await _probeMediaMtx(currentHost, 8888, timeout: const Duration(milliseconds: 600));
+        if (ok) {
+          _lastDiscoveredHost = currentHost;
+          stopwatch.stop();
+          final res = LanDiscoveryResult(
+            success: true,
+            host: currentHost,
+            source: 'verified_current',
             elapsed: stopwatch.elapsed,
           );
           _discoveryController.add(res);
@@ -301,7 +305,10 @@ class LanDiscoveryService {
       client = HttpClient()..connectionTimeout = timeout;
       client.badCertificateCallback = (cert, host, port) => true;
       final base = AppConstants.baseUrl;
-      final uri = Uri.parse('$base/programs/studio/lan-discovery');
+      final url = base.contains('/api/v1')
+          ? '$base/programs/studio/lan-discovery'
+          : '$base/v1/programs/studio/lan-discovery';
+      final uri = Uri.parse(url);
       final request = await client.getUrl(uri).timeout(timeout);
       final response = await request.close().timeout(timeout);
 
@@ -310,22 +317,25 @@ class LanDiscoveryService {
         final map = jsonDecode(text);
         if (map is Map) {
           final payload = (map['data'] is Map) ? map['data'] as Map : map;
-          final publicBaseUrl = payload['publicBaseUrl']?.toString().trim();
           final publicHost = payload['publicHost']?.toString().trim();
+          final whipUrl = payload['whipUrl']?.toString().trim();
+          final hlsUrl = payload['hlsUrl']?.toString().trim();
+          final publicBaseUrl = payload['publicBaseUrl']?.toString().trim();
           final lanIp = payload['lanIp']?.toString().trim();
 
-          // 1. If backend advertises a public base URL (Cloudflare tunnel, production domain),
-          // prioritize it because it works from ALL networks (any Wi-Fi, 4G/5G).
-          if (publicBaseUrl != null && publicBaseUrl.isNotEmpty) {
-            final parsed = Uri.tryParse(publicBaseUrl);
-            if (parsed != null && parsed.host.isNotEmpty) {
-              return parsed.host;
-            }
-          }
-
-          // 2. Check publicHost (can be tunnel host or public domain)
+          // 1. Authoritative public host (e.g. Cloudflare tunnel domain)
           if (publicHost != null && publicHost.isNotEmpty && _isValidHost(publicHost)) {
             return publicHost;
+          }
+
+          // 2. WHIP / HLS URL host
+          for (final raw in [whipUrl, hlsUrl, publicBaseUrl]) {
+            if (raw != null && raw.isNotEmpty) {
+              final parsed = Uri.tryParse(raw);
+              if (parsed != null && parsed.host.isNotEmpty && _isValidHost(parsed.host)) {
+                return parsed.host;
+              }
+            }
           }
 
           // 3. Fall back to lanIp
