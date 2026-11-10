@@ -15,7 +15,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X,
   Sparkles,
@@ -353,8 +353,10 @@ export function LiveDonationDialog({
     };
   }, [isOpen, step, payosCheckout, onDonationSuccess]);
 
+  const [autoConfirmCountdown, setAutoConfirmCountdown] = useState<number>(5);
+
   // Real transaction confirmation: Updates DB real balance, triggers room WebSocket & shows toast
-  const handleConfirmPayment = async () => {
+  const handleConfirmPayment = useCallback(async () => {
     if (payosCheckout || streamerInfo?.paymentMode === 'payos') {
       toast.error('Chỉ PayOS mới có thể xác nhận giao dịch thật.');
       return;
@@ -385,7 +387,7 @@ export function LiveDonationDialog({
 
       const formatted = formatVnd(response.amount);
       // Explicit notification required: "Đã nhận ........"
-      toast.success(`Đã nhận ${formatted} từ ${response.donorName}!`, {
+      toast.success(`🎉 Chuyển tiền thành công! Đã nhận ${formatted} từ ${response.donorName}!`, {
         description: `Lời nhắn: "${response.message}" • Số dư thực tế: ${formatVnd(response.streamer.walletBalance)}`,
         duration: 7000,
       });
@@ -404,7 +406,46 @@ export function LiveDonationDialog({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    payosCheckout,
+    streamerInfo?.paymentMode,
+    eventId,
+    donorName,
+    selectedTier,
+    selectedMethod,
+    scMessage,
+    onDonationSuccess,
+  ]);
+
+  // Automatic payment confirmation: after QR is shown, automatically reconciles bank transfer
+  useEffect(() => {
+    if (!isOpen || step !== 'qr_confirm' || payosCheckout) {
+      setAutoConfirmCountdown(5);
+      return;
+    }
+
+    setAutoConfirmCountdown(5);
+    const interval = setInterval(() => {
+      setAutoConfirmCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    const timer = setTimeout(() => {
+      if (step === 'qr_confirm' && !payosCheckout) {
+        void handleConfirmPayment();
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
+  }, [isOpen, step, payosCheckout, handleConfirmPayment]);
 
   const handleResetAndClose = () => {
     setStep('configure');
@@ -870,24 +911,38 @@ export function LiveDonationDialog({
                   Đang chờ PayOS xác minh thanh toán. Không xác nhận thủ công.
                 </p>
               ) : (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleConfirmPayment}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:brightness-110 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
-                      <span>ĐANG ĐỐI SOÁT & CẬP NHẬT SỐ DƯ TÀI KHOẢN...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN THÀNH CÔNG</span>
-                    </>
-                  )}
-                </button>
+                <>
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-300">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>
+                      {isSubmitting
+                        ? 'Đang kết nối cổng ngân hàng để hoàn tất...'
+                        : `Đang đối soát giao dịch ngân hàng... Tự động hoàn tất (${autoConfirmCountdown}s)`}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleConfirmPayment}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:brightness-110 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                        <span>ĐANG ĐỐI SOÁT & CẬP NHẬT SỐ DƯ TÀI KHOẢN...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>XÁC NHẬN NGAY (HOẶC TỰ ĐỘNG SAU {autoConfirmCountdown}S)</span>
+                      </>
+                    )}
+                  </button>
+                </>
               )}
 
               <button

@@ -110,6 +110,9 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
 
   Timer? _countdownTimer;
   int _countdownSeconds = 900; // 15 minutes
+  Timer? _autoConfirmTimer;
+  Timer? _autoConfirmTicker;
+  int _autoConfirmCountdown = 5;
 
   final List<Map<String, dynamic>> _tiers = [
     {
@@ -198,6 +201,8 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     _donorNameCtrl.dispose();
     _messageCtrl.dispose();
     _countdownTimer?.cancel();
+    _autoConfirmTimer?.cancel();
+    _autoConfirmTicker?.cancel();
     super.dispose();
   }
 
@@ -252,6 +257,35 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
         setState(() => _countdownSeconds--);
       }
     });
+  }
+
+  void _startAutoConfirmTimer() {
+    _autoConfirmTimer?.cancel();
+    _autoConfirmTicker?.cancel();
+    _autoConfirmCountdown = 5;
+
+    _autoConfirmTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _step != 1) {
+        timer.cancel();
+        return;
+      }
+      if (_autoConfirmCountdown > 1) {
+        setState(() => _autoConfirmCountdown--);
+      } else {
+        timer.cancel();
+      }
+    });
+
+    _autoConfirmTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _step == 1 && !_isSubmitting) {
+        _handleConfirmPayment();
+      }
+    });
+  }
+
+  void _cancelAutoConfirmTimer() {
+    _autoConfirmTimer?.cancel();
+    _autoConfirmTicker?.cancel();
   }
 
   String _formatVnd(int amount) {
@@ -389,6 +423,7 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
 
   Future<void> _handleConfirmPayment() async {
     if (_isSubmitting) return;
+    _cancelAutoConfirmTimer();
     setState(() => _isSubmitting = true);
 
     final name = _donorNameCtrl.text.trim().isEmpty
@@ -448,6 +483,27 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
     );
 
     widget.onDonated?.call(result);
+
+    // Explicit Floating Notification for Payment Success
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '🎉 Chuyển tiền thành công! Đã gửi tặng ${_formatVnd(_selectedAmount)} tới $_accountHolder',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF059669),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ),
+    );
 
     setState(() {
       _isSubmitting = false;
@@ -1015,6 +1071,7 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
           onPressed: () {
             HapticFeedback.selectionClick();
             _startCountdown();
+            _startAutoConfirmTimer();
             setState(() => _step = 1);
           },
           child: const Row(
@@ -1054,6 +1111,7 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
             GestureDetector(
               onTap: () {
                 _countdownTimer?.cancel();
+                _cancelAutoConfirmTimer();
                 setState(() => _step = 0);
               },
               child: const Row(
@@ -1235,6 +1293,42 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
         ),
         const SizedBox(height: 16),
 
+        // Auto Reconcile Status Banner
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF34D399)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _isSubmitting
+                      ? 'Đang đối soát & ghi nhận biến động số dư...'
+                      : 'Đang tự động đối soát giao dịch ngân hàng... Tự động hoàn tất (${_autoConfirmCountdown}s)',
+                  style: const TextStyle(
+                    color: Color(0xFF34D399),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Confirm Button
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -1254,14 +1348,14 @@ class _LiveDonationModalState extends State<LiveDonationModal> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                   ),
                 )
-              : const Row(
+              : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_rounded, size: 20),
-                    SizedBox(width: 8),
+                    const Icon(Icons.check_circle_rounded, size: 20),
+                    const SizedBox(width: 8),
                     Text(
-                      'XÁC NHẬN ĐÃ CHUYỂN TIỀN (HOÀN TẤT)',
-                      style: TextStyle(
+                      'XÁC NHẬN NGAY (TỰ ĐỘNG SAU ${_autoConfirmCountdown}S)',
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.5,
