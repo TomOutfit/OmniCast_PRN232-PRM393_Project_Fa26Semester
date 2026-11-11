@@ -26,7 +26,9 @@ import '../../../core/i18n/app_locale.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/ai_curator_repository.dart';
 import '../../../data/repositories/programs_repository.dart';
+import '../../../data/services/free_ai_service.dart';
 import '../../../logic/auth/auth_bloc.dart';
+import 'ai_curator_chatbot_sheet.dart';
 
 /// Parse a slot string like "21:00 - 23:00" → ISO 8601 timestamp on
 /// the same day as [fallback]. Returns `null` when the slot string is
@@ -87,6 +89,11 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   // Pipeline Stats
   AiCuratorStatsModel? _stats;
 
+  // Free AI & Chatbot
+  final _freeAiService = FreeAiService();
+  bool _useFreeAi = false;
+  FreeAiModel _selectedFreeModel = FreeAiModel.llama;
+
   late final TabController _tabController;
 
   @override
@@ -97,6 +104,28 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     _tabController = TabController(length: 3, vsync: this);
     _loadPrograms();
     _loadStats();
+  }
+
+  void _openChatbot() {
+    AICuratorChatbotSheet.show(
+      context,
+      currentTitle: _titleController.text.trim().isNotEmpty
+          ? _titleController.text.trim()
+          : _selectedProgram?.title,
+      currentDescription: _descController.text.trim().isNotEmpty
+          ? _descController.text.trim()
+          : _selectedProgram?.description,
+      currentChannel: _channelController.text.trim().isNotEmpty
+          ? _channelController.text.trim()
+          : _selectedProgram?.channelName,
+      onApplyToCurator: (title, description) {
+        setState(() {
+          if (title.isNotEmpty) _titleController.text = title;
+          if (description.isNotEmpty) _descController.text = description;
+          if (_error != null) _error = null;
+        });
+      },
+    );
   }
 
   Future<void> _loadStats() async {
@@ -182,18 +211,35 @@ class _AICuratorScreenState extends State<AICuratorScreen>
       // seconds. An unparseable / empty value is simply omitted so the
       // backend treats the duration as unknown.
       final durationMinutes = int.tryParse(_durationController.text.trim());
-      final report = await _curatorRepo.analyze(
-        title: title,
-        description: _descController.text.trim().isEmpty
-            ? null
-            : _descController.text.trim(),
-        channelName: _channelController.text.trim().isEmpty
-            ? null
-            : _channelController.text.trim(),
-        duration: (durationMinutes != null && durationMinutes > 0)
-            ? durationMinutes * 60
-            : null,
-      );
+      final AiCuratorReport report;
+      if (_useFreeAi) {
+        report = await _freeAiService.analyzeCuratorWithFreeAi(
+          title: title,
+          description: _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+          channelName: _channelController.text.trim().isEmpty
+              ? null
+              : _channelController.text.trim(),
+          durationMinutes: (durationMinutes != null && durationMinutes > 0)
+              ? durationMinutes
+              : null,
+          model: _selectedFreeModel,
+        );
+      } else {
+        report = await _curatorRepo.analyze(
+          title: title,
+          description: _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+          channelName: _channelController.text.trim().isEmpty
+              ? null
+              : _channelController.text.trim(),
+          duration: (durationMinutes != null && durationMinutes > 0)
+              ? durationMinutes * 60
+              : null,
+        );
+      }
 
       if (!mounted) return;
       setState(() {
@@ -337,6 +383,11 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           ],
         ),
         actions: [
+      IconButton(
+            tooltip: 'Trợ lý AI Chatbot',
+            icon: const Icon(Icons.smart_toy_outlined, color: Color(0xFF00E5FF)),
+            onPressed: _openChatbot,
+          ),
           IconButton(
             tooltip: 'Live Studio',
             icon: const Icon(Icons.podcasts_rounded, color: Color(0xFFFF2A55)),
@@ -373,6 +424,20 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openChatbot,
+        backgroundColor: const Color(0xFF00E5FF),
+        foregroundColor: const Color(0xFF080B11),
+        icon: const Icon(Icons.smart_toy_rounded, size: 20),
+        label: const Text(
+          'AI CHATBOT',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -391,6 +456,8 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
+          const SizedBox(height: 16),
+          _buildAiEngineSelector(),
           const SizedBox(height: 16),
           _buildProgramSelectorDropdown(),
           const SizedBox(height: 16),
@@ -1005,6 +1072,174 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   }
 
   // ── UI Builders ─────────────────────────────────────────────
+
+  Widget _buildAiEngineSelector() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1523),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _useFreeAi
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
+              : const Color(0x14FFFFFF),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: (_useFreeAi
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF00E5FF))
+                      .withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _useFreeAi ? Icons.cloud_done_rounded : Icons.memory_rounded,
+                  size: 16,
+                  color: _useFreeAi
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFF00E5FF),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _useFreeAi
+                          ? 'MÔ HÌNH AI MIỄN PHÍ (ZERO-COST)'
+                          : 'MÁY CHỦ OMNICAST AI (MẶC ĐỊNH)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'JetBrainsMono',
+                        color: _useFreeAi
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF00E5FF),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _useFreeAi
+                          ? 'Chạy trực tiếp qua Pollinations AI • Không tốn credit OmniCast'
+                          : 'Được vận hành bởi OmniCast NestJS AI Pipeline',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _useFreeAi,
+                activeThumbColor: const Color(0xFF10B981),
+                inactiveThumbColor: const Color(0xFF94A3B8),
+                inactiveTrackColor: const Color(0xFF1E293B),
+                onChanged: (val) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _useFreeAi = val);
+                },
+              ),
+            ],
+          ),
+          if (_useFreeAi) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: Color(0x14FFFFFF)),
+            const SizedBox(height: 10),
+            const Text(
+              'CHỌN MÔ HÌNH AI SỬ DỤNG:',
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'JetBrainsMono',
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: FreeAiModel.values.map((m) {
+                  final isSelected = _selectedFreeModel == m;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedFreeModel = m);
+                        }
+                      },
+                      label: Text(
+                        m.displayName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? Colors.black : Colors.white70,
+                        ),
+                      ),
+                      selectedColor: const Color(0xFF00E5FF),
+                      backgroundColor: const Color(0xFF131B2E),
+                      side: BorderSide(
+                        color: isSelected
+                            ? const Color(0xFF00E5FF)
+                            : const Color(0x14FFFFFF),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _openChatbot,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131B2E),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x1F00E5FF)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.smart_toy_rounded,
+                      size: 16, color: Color(0xFF00E5FF)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Mở Trợ lý AI Chatbot để thảo luận & tối ưu kịch bản',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFF8FAFC),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      size: 12, color: Color(0xFF00E5FF)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildProgramSelectorDropdown() {
     // Reconcile selected program with current _programs list for dropdown safety
