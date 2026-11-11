@@ -32,6 +32,8 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiProperty,
+  ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -61,7 +63,6 @@ import {
   rewriteMediaHost,
 } from '../common/utils/media-url';
 import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 
 // ============================================================
 // DTOs for Mobile Push-to-Live
