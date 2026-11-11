@@ -89,6 +89,21 @@ class AppConstants {
   static const String customBaseUrlKey = 'custom_base_url';
   static const String customMediaHostKey = 'custom_media_host';
   static const String discoveredMediaHostKey = 'discovered_media_host';
+  static const String geminiApiKeyStorageKey = 'gemini_api_key';
+
+  static const String _envGeminiApiKey =
+      String.fromEnvironment('GEMINI_API_KEY');
+  static String _customGeminiApiKey = '';
+
+  static String get geminiApiKey {
+    if (_customGeminiApiKey.isNotEmpty) return _customGeminiApiKey;
+    if (_envGeminiApiKey.isNotEmpty) return _envGeminiApiKey;
+    return '';
+  }
+
+  static void setGeminiApiKey(String key) {
+    _customGeminiApiKey = key.trim();
+  }
 
   /// Derive WebSocket base URL from baseUrl (e.g. https://... -> wss://...)
   static String get socketUrl {

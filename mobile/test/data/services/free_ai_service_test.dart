@@ -13,7 +13,12 @@ void main() {
     });
 
     test('FreeAiModel definitions and displayNames', () {
-      expect(FreeAiModel.values.length, 4);
+      expect(FreeAiModel.values.length, 6);
+      expect(FreeAiModel.geminiPro.id, 'gemini-1.5-pro');
+      expect(FreeAiModel.geminiPro.displayName, contains('Gemini 1.5 Pro'));
+      expect(FreeAiModel.geminiPro.isGemini, isTrue);
+      expect(FreeAiModel.geminiFlash.id, 'gemini-1.5-flash');
+      expect(FreeAiModel.geminiFlash.isGemini, isTrue);
       expect(FreeAiModel.llama.id, 'llama');
       expect(FreeAiModel.llama.displayName, contains('Llama 3.3'));
       expect(FreeAiModel.mistral.displayName, contains('Mistral'));

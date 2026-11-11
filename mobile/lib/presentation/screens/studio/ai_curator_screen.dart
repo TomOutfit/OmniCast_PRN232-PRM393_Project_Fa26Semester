@@ -19,8 +19,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/i18n/app_locale.dart';
 import '../../../core/theme/app_theme.dart';
@@ -28,6 +30,7 @@ import '../../../data/repositories/ai_curator_repository.dart';
 import '../../../data/repositories/programs_repository.dart';
 import '../../../data/services/free_ai_service.dart';
 import '../../../logic/auth/auth_bloc.dart';
+import '../../widgets/gemini_key_dialog.dart';
 import 'ai_curator_chatbot_sheet.dart';
 
 /// Parse a slot string like "21:00 - 23:00" → ISO 8601 timestamp on
@@ -92,7 +95,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   // Free AI & Chatbot
   final _freeAiService = FreeAiService();
   bool _useFreeAi = false;
-  FreeAiModel _selectedFreeModel = FreeAiModel.llama;
+  FreeAiModel _selectedFreeModel = FreeAiModel.geminiPro;
 
   late final TabController _tabController;
 
@@ -104,6 +107,19 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     _tabController = TabController(length: 3, vsync: this);
     _loadPrograms();
     _loadStats();
+    _loadGeminiKey();
+  }
+
+  Future<void> _loadGeminiKey() async {
+    try {
+      final storage = getIt<FlutterSecureStorage>();
+      final saved =
+          await storage.read(key: AppConstants.geminiApiKeyStorageKey);
+      if (saved != null && saved.isNotEmpty) {
+        AppConstants.setGeminiApiKey(saved);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
   }
 
   void _openChatbot() {
@@ -383,7 +399,20 @@ class _AICuratorScreenState extends State<AICuratorScreen>
           ],
         ),
         actions: [
-      IconButton(
+          IconButton(
+            tooltip: 'Cài đặt Gemini API Key',
+            icon: Icon(
+              Icons.key_rounded,
+              color: AppConstants.geminiApiKey.isNotEmpty
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFF00E5FF),
+            ),
+            onPressed: () async {
+              await GeminiKeyDialog.show(context);
+              if (mounted) setState(() {});
+            },
+          ),
+          IconButton(
             tooltip: 'Trợ lý AI Chatbot',
             icon: const Icon(Icons.smart_toy_outlined, color: Color(0xFF00E5FF)),
             onPressed: _openChatbot,
@@ -1202,6 +1231,54 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                     ),
                   );
                 }).toList(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                await GeminiKeyDialog.show(context);
+                if (mounted) setState(() {});
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131B2E),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppConstants.geminiApiKey.isNotEmpty
+                        ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                        : const Color(0x3300E5FF),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.key_rounded,
+                      size: 16,
+                      color: AppConstants.geminiApiKey.isNotEmpty
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF00E5FF),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        AppConstants.geminiApiKey.isNotEmpty
+                            ? 'Gemini Key: Đã kết nối • Sẵn sàng suy luận Google Pro'
+                            : 'Cài đặt Gemini Key (Miễn phí từ Google AI Studio)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppConstants.geminiApiKey.isNotEmpty
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFF8FAFC),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        size: 12, color: Color(0xFF00E5FF)),
+                  ],
+                ),
               ),
             ),
           ],

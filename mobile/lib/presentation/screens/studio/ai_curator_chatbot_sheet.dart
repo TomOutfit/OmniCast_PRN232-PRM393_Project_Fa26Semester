@@ -7,7 +7,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/constants/app_constants.dart';
+import '../../../core/di/injection.dart';
+import '../../widgets/gemini_key_dialog.dart';
 import '../../../data/services/free_ai_service.dart';
 
 class AICuratorChatbotSheet extends StatefulWidget {
@@ -53,7 +57,7 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
   final _aiService = FreeAiService();
   final _textCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  FreeAiModel _selectedModel = FreeAiModel.llama;
+  FreeAiModel _selectedModel = FreeAiModel.geminiPro;
 
   bool _isTyping = false;
   final List<CuratorChatMessage> _messages = [];
@@ -61,15 +65,29 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
   @override
   void initState() {
     super.initState();
+    _loadGeminiKey();
     // Welcome message from AI Curator Assistant
     _messages.add(
       CuratorChatMessage(
         id: 'welcome',
-        text: 'Xin chào! Tôi là **Trợ lý AI Biên tập Truyền hình OmniCast** chạy trên mô hình **Llama 3.3** hoàn toàn miễn phí.\n\nTôi có thể giúp bạn:\n• 🎬 Gợi ý tiêu đề & kịch bản mở đầu hấp dẫn\n• ⏰ Đề xuất khung giờ vàng (Prime-Time) tối ưu người xem\n• ⚡ Tối ưu hóa nhịp điệu (pacing) giữ chân khán giả\n• 🛡️ Kiểm duyệt từ ngữ & an toàn phát sóng\n\nBạn muốn tôi hỗ trợ điều gì cho chương trình hôm nay?',
+        text:
+            'Xin chào! Tôi là **Trợ lý AI Biên tập Truyền hình OmniCast** vận hành bởi mô hình **Google Gemini 1.5 Pro** thế hệ mới.\n\nTôi có thể giúp bạn:\n• 🎬 Gợi ý tiêu đề & kịch bản mở đầu 3 phút vàng thu hút\n• ⏰ Đề xuất khung giờ vàng (Prime-Time) tối ưu người xem\n• ⚡ Tối ưu hóa nhịp điệu (pacing) giữ chân khán giả\n• 🛡️ Kiểm duyệt từ ngữ & an toàn phát sóng\n\nBạn muốn tôi hỗ trợ điều gì cho chương trình hôm nay?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
     );
+  }
+
+  Future<void> _loadGeminiKey() async {
+    try {
+      final storage = getIt<FlutterSecureStorage>();
+      final saved =
+          await storage.read(key: AppConstants.geminiApiKeyStorageKey);
+      if (saved != null && saved.isNotEmpty) {
+        AppConstants.setGeminiApiKey(saved);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
   }
 
   @override
@@ -292,7 +310,7 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
                   ),
                 ),
                 Text(
-                  'Mô hình miễn phí 100% · Llama 3.3 / Mistral / Qwen',
+                  'Động cơ Google Gemini 1.5 Pro & Open Models',
                   style: TextStyle(
                     color: Color(0xFF94A3B8),
                     fontSize: 11,
@@ -300,6 +318,20 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: 'Cấu hình Gemini API Key',
+            icon: Icon(
+              Icons.key_rounded,
+              color: AppConstants.geminiApiKey.isNotEmpty
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFF00E5FF),
+              size: 20,
+            ),
+            onPressed: () async {
+              await GeminiKeyDialog.show(context);
+              if (mounted) setState(() {});
+            },
           ),
           IconButton(
             icon: const Icon(Icons.close_rounded, color: Colors.white70),

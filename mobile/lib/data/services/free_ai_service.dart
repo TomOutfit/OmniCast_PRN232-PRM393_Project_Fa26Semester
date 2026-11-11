@@ -9,10 +9,13 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../repositories/ai_curator_repository.dart';
 
 enum FreeAiModel {
-  llama('llama', 'Llama 3.3 70B (Khuyên dùng)'),
+  geminiPro('gemini-1.5-pro', 'Google Gemini 1.5 Pro (Khuyên dùng)'),
+  geminiFlash('gemini-1.5-flash', 'Google Gemini 1.5 Flash (Siêu tốc)'),
+  llama('llama', 'Llama 3.3 70B (Open Engine)'),
   mistral('mistral', 'Mistral Nemo (Tốc độ cao)'),
   qwen('qwen', 'Qwen 2.5 (Phân tích sâu)'),
   openai('openai', 'GPT-4o-mini (Free Tier)');
@@ -22,6 +25,7 @@ enum FreeAiModel {
   const FreeAiModel(this.id, this.label);
 
   String get displayName => label;
+  bool get isGemini => id.startsWith('gemini');
 }
 
 class CuratorChatMessage {
@@ -119,6 +123,25 @@ MÔ TẢ KỊCH BẢN:
 $desc
 ''';
 
+    // 1. Direct Google Gemini Pro API if selected & Key is configured
+    if (model.isGemini && AppConstants.geminiApiKey.isNotEmpty) {
+      final geminiText = await _callGeminiApi(
+        modelId: model.id,
+        prompt: userPrompt,
+        systemPrompt: systemPrompt,
+        jsonMode: true,
+      );
+      if (geminiText != null && geminiText.isNotEmpty) {
+        return _parseOrSynthesizeReport(
+          geminiText,
+          title: title,
+          description: desc,
+          channelName: ch,
+          modelName: 'Google ${model.label}',
+        );
+      }
+    }
+
     try {
       final response = await _dio.post(
         _endpoint,
@@ -198,6 +221,19 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
 
     messages.add({'role': 'user', 'content': userQuery});
 
+    // 1. Direct Google Gemini Pro API if selected & Key is configured
+    if (model.isGemini && AppConstants.geminiApiKey.isNotEmpty) {
+      final geminiReply = await _chatWithGemini(
+        modelId: model.id,
+        history: history,
+        userQuery: userQuery,
+        systemPrompt: systemPrompt,
+      );
+      if (geminiReply != null && _isValidAiReply(geminiReply)) {
+        return geminiReply;
+      }
+    }
+
     try {
       final response = await _dio.post(
         _endpoint,
@@ -225,7 +261,126 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
     return _generateExpertCuratorAdvice(
       userQuery: userQuery,
       currentProgramTitle: currentProgramTitle,
+      isGeminiWithoutKey: model.isGemini && AppConstants.geminiApiKey.isEmpty,
     );
+  }
+
+  Future<String?> _callGeminiApi({
+    required String modelId,
+    required String prompt,
+    String? systemPrompt,
+    bool jsonMode = false,
+  }) async {
+    final apiKey = AppConstants.geminiApiKey;
+    if (apiKey.isEmpty) return null;
+
+    final url =
+        'https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey';
+
+    final body = <String, dynamic>{
+      if (systemPrompt != null && systemPrompt.isNotEmpty)
+        'systemInstruction': {
+          'parts': [
+            {'text': systemPrompt}
+          ]
+        },
+      'contents': [
+        {
+          'role': 'user',
+          'parts': [
+            {'text': prompt}
+          ]
+        }
+      ],
+      'generationConfig': {
+        'temperature': jsonMode ? 0.3 : 0.7,
+        if (jsonMode) 'responseMimeType': 'application/json',
+      },
+    };
+
+    try {
+      final res = await _dio.post(
+        url,
+        data: body,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      final candidates = res.data['candidates'] as List?;
+      if (candidates != null && candidates.isNotEmpty) {
+        final content = candidates[0]['content'] as Map?;
+        final parts = content?['parts'] as List?;
+        if (parts != null && parts.isNotEmpty) {
+          final text = parts[0]['text'] as String?;
+          if (text != null && text.trim().isNotEmpty) {
+            return text.trim();
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<String?> _chatWithGemini({
+    required String modelId,
+    required List<CuratorChatMessage> history,
+    required String userQuery,
+    required String systemPrompt,
+  }) async {
+    final apiKey = AppConstants.geminiApiKey;
+    if (apiKey.isEmpty) return null;
+
+    final contents = <Map<String, dynamic>>[];
+    final recent =
+        history.length > 8 ? history.sublist(history.length - 8) : history;
+    for (final m in recent) {
+      contents.add({
+        'role': m.isUser ? 'user' : 'model',
+        'parts': [
+          {'text': m.text}
+        ],
+      });
+    }
+    contents.add({
+      'role': 'user',
+      'parts': [
+        {'text': userQuery}
+      ],
+    });
+
+    final url =
+        'https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey';
+
+    try {
+      final res = await _dio.post(
+        url,
+        data: {
+          'systemInstruction': {
+            'parts': [
+              {'text': systemPrompt}
+            ]
+          },
+          'contents': contents,
+          'generationConfig': {
+            'temperature': 0.7,
+            'maxOutputTokens': 2048,
+          }
+        },
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      final candidates = res.data['candidates'] as List?;
+      if (candidates != null && candidates.isNotEmpty) {
+        final content = candidates[0]['content'] as Map?;
+        final parts = content?['parts'] as List?;
+        if (parts != null && parts.isNotEmpty) {
+          final text = parts[0]['text'] as String?;
+          if (text != null && text.trim().isNotEmpty) {
+            return text.trim();
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   bool _isValidAiReply(String reply) {
@@ -245,7 +400,11 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
   String _generateExpertCuratorAdvice({
     required String userQuery,
     String? currentProgramTitle,
+    bool isGeminiWithoutKey = false,
   }) {
+    final geminiNote = isGeminiWithoutKey
+        ? '\n\n🔑 *Ghi chú:* Bạn đang chọn Google Gemini Pro. Hãy bấm biểu tượng 🔑 phía trên để nhập API Key từ Google AI Studio (aistudio.google.com/app/apikey) nhằm kích hoạt kết nối trực tiếp đến Google Cloud!'
+        : '';
     final lower = userQuery.toLowerCase();
     final ctx =
         (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
@@ -269,7 +428,7 @@ Dành cho: **$ctx**
 2. **00:30 - 01:30 (Value Proposition):** Nêu rõ: *"Xem hết chương trình hôm nay, bạn sẽ biết được 3 giải pháp đột phá..."*.
 3. **01:30 - 03:00 (Interactive Teaser):** Tung minigame dự đoán hoặc thăm dò ý kiến qua bình luận để kích hoạt thuật toán đề xuất livestream.
 
-💡 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới để đưa gợi ý này trực tiếp vào AI Curator.*''';
+💡 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới để đưa gợi ý này trực tiếp vào AI Curator.*$geminiNote''';
     }
 
     // 2. Prime-Time / Khung giờ / Lịch phát sóng
@@ -293,7 +452,7 @@ Dành cho: **$ctx**
 • **Khung Đêm Muộn (Late-Night Chill): 22:30 - 00:00**
   - Phù hợp: Podcast tự sự, tâm sự đêm khuya, âm nhạc Lofi, trò chuyện chuyên sâu.
 
-💡 **Khuyến nghị kỹ thuật:** Lên sóng trước giờ phát chính thức 10 phút với màn hình chờ Countdown để gom luồng người xem!''';
+💡 **Khuyến nghị kỹ thuật:** Lên sóng trước giờ phát chính thức 10 phút với màn hình chờ Countdown để gom luồng người xem!$geminiNote''';
     }
 
     // 3. Giữ chân khán giả / Giới trẻ / Tương tác
@@ -314,7 +473,7 @@ Dành cho: **$ctx**
    - Ghim câu hỏi bình chọn nổi bật trên thanh Chat trực tiếp.
    - Vinh danh người ủng hộ (Donate PayOS VietQR) với âm thanh chuông đặc biệt và pop-up banner rực rỡ.
 4. **Hạ tầng siêu trễ thấp (Ultra-Low Latency):**
-   - Sử dụng chuẩn WebRTC WHEP (< 350ms) trong cài đặt Studio để MC phản hồi bình luận tức thì mà không bị trễ 10-15s như RTMP truyền thống.''';
+   - Sử dụng chuẩn WebRTC WHEP (< 350ms) trong cài đặt Studio để MC phản hồi bình luận tức thì mà không bị trễ 10-15s như RTMP truyền thống.$geminiNote''';
     }
 
     // 4. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
@@ -334,7 +493,7 @@ Dành cho: **$ctx**
   3. Tin đồn giật gân chưa được kiểm chứng từ cơ quan chức năng.
 • **Kiểm định Bản quyền Âm thanh (Audio Copyright):**
   - Chỉ dùng nhạc nền trong kho bản quyền OmniCast BGM Library hoặc giấy phép Creative Commons CC-BY.
-  - Tách riêng kênh Micro MC và kênh nhạc nền (Audio Ducking -16dB khi MC nói).''';
+  - Tách riêng kênh Micro MC và kênh nhạc nền (Audio Ducking -16dB khi MC nói).$geminiNote''';
     }
 
     // 5. Ý tưởng tổng quát / Brainstorming chung
@@ -350,7 +509,7 @@ Dành cho: **$ctx**
 2. **Hồi 2 (10:00 - 35:00):** Tọa đàm chuyên sâu với khách mời, thị phạm thực tế, phân tích nguyên nhân và mổ xẻ góc nhìn đa chiều.
 3. **Hồi 3 (35:00 - 45:00):** Rút ra thông điệp truyền cảm hứng, giải đáp câu hỏi trực tiếp từ luồng Live Chat và công bố minigame kỳ tới.
 
-👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** để áp dụng ngay nội dung này vào khung biên tập chính!*''';
+👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** để áp dụng ngay nội dung này vào khung biên tập chính!*$geminiNote''';
   }
 
   // ── Helper Parsers ──────────────────────────────────────────
