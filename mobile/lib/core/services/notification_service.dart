@@ -239,8 +239,9 @@ class NotificationService {
 
   // Cancel a specific reminder
   Future<void> cancelReminder(String programId) async {
-    final notificationId = programId.hashCode;
+    final notificationId = programId.hashCode.abs() % 2147483647;
     await _notifications.cancel(notificationId);
+    _activeReminderProgramIds.remove(programId);
   }
 
   // Cancel all reminders
@@ -374,6 +375,109 @@ class NotificationService {
       payload: 'program:${item.programId}',
     );
     safePrint('[omnicast:notification]', 'Snoozed reminder for ${item.programTitle} -> $next');
+  }
+
+  // In-memory set of program IDs with active reminders
+  final Set<String> _activeReminderProgramIds = <String>{};
+
+  bool isEpgReminderSet(String programId) {
+    return _activeReminderProgramIds.contains(programId);
+  }
+
+  Set<String> get activeReminderProgramIds => Set.unmodifiable(_activeReminderProgramIds);
+
+  /// Schedule reminder for any EPG program or Live Event
+  Future<void> scheduleEpgProgramReminder({
+    required String programId,
+    required String programTitle,
+    String? channelName,
+    required DateTime scheduledAt,
+    int minutesBefore = 15,
+    int? testDelaySeconds, // If set, fires after X seconds for instant testing & defense demo!
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final scheduledTime = testDelaySeconds != null
+        ? DateTime.now().add(Duration(seconds: testDelaySeconds))
+        : scheduledAt.subtract(Duration(minutes: minutesBefore));
+
+    // Don't schedule if time has passed
+    if (scheduledTime.isBefore(DateTime.now())) {
+      safePrint('[omnicast:notification]', 'Cannot schedule reminder: time has passed');
+      return;
+    }
+
+    final notificationId = programId.hashCode.abs() % 2147483647;
+    await cancelReminder(programId);
+
+    final androidActions = <AndroidNotificationAction>[
+      const AndroidNotificationAction(
+        NotificationActionIds.watchNow,
+        'Xem ngay',
+        showsUserInterface: true,
+        cancelNotification: true,
+      ),
+      const AndroidNotificationAction(
+        NotificationActionIds.dismiss,
+        'Bỏ nhắc',
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+    ];
+
+    final subtitle = testDelaySeconds != null
+        ? '⚡ Thông báo thử nghiệm (Demo) • Sắp phát sóng trên ${channelName ?? "OmniCast"}'
+        : 'Sắp bắt đầu lúc ${_formatTime(scheduledAt)} trên ${channelName ?? "OmniCast"}';
+
+    final androidDetails = AndroidNotificationDetails(
+      'omnicast_reminders',
+      'Program Reminders',
+      channelDescription: 'Notifications for upcoming programs',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      actions: androidActions,
+      styleInformation: BigTextStyleInformation(
+        subtitle,
+        contentTitle: '📺 $programTitle',
+        summaryText: 'Nhắc nhở phát sóng EPG',
+      ),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      categoryIdentifier: 'program_reminder',
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.zonedSchedule(
+      notificationId,
+      '📺 $programTitle',
+      testDelaySeconds != null
+          ? 'Chương trình chuẩn bị lên sóng! Chạm để xem ngay.'
+          : 'Bắt đầu trong $minutesBefore phút nữa!',
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: 'program:$programId',
+    );
+
+    _activeReminderProgramIds.add(programId);
+    safePrint('[omnicast:notification]', 'Scheduled EPG reminder for $programTitle at $scheduledTime (id: $notificationId)');
+  }
+
+  Future<void> cancelEpgProgramReminder(String programId) async {
+    await cancelReminder(programId);
+    _activeReminderProgramIds.remove(programId);
   }
 
   // Show immediate notification (for testing)

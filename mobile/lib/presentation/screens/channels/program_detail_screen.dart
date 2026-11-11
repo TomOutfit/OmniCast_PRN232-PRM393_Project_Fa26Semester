@@ -3,6 +3,7 @@
 // rich metadata, action rail, and inline social.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/share_helper.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../data/models/program_model.dart';
 import '../../../data/models/channel_model.dart';
 import '../../../data/models/watchlist_item_model.dart';
@@ -184,6 +186,8 @@ class _ProgramDetailScreenState extends State<ProgramDetailScreen> {
                             channelId: program.channelId,
                             program: program,
                           ),
+                          const SizedBox(width: 8),
+                          _EpgReminderDetailButton(program: program),
                           const SizedBox(width: 12),
                         ],
                         flexibleSpace: FlexibleSpaceBar(
@@ -1212,5 +1216,271 @@ class _ComingUpEntry {
     final h = startTime.hour.toString().padLeft(2, '0');
     final m = startTime.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+}
+
+class _EpgReminderDetailButton extends StatefulWidget {
+  final LiveEventModel program;
+  const _EpgReminderDetailButton({required this.program});
+
+  @override
+  State<_EpgReminderDetailButton> createState() => _EpgReminderDetailButtonState();
+}
+
+class _EpgReminderDetailButtonState extends State<_EpgReminderDetailButton> {
+  late bool _isReminderSet;
+
+  @override
+  void initState() {
+    super.initState();
+    _isReminderSet = NotificationService().isEpgReminderSet(widget.program.id);
+  }
+
+  void _showOptions() {
+    HapticFeedback.lightImpact();
+    final program = widget.program;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF090F1D),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF334155),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                    ),
+                    child: const Icon(Icons.alarm_on_rounded, color: Color(0xFF00E5FF), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Cài Đặt Nhắc Nhở Phát Sóng',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          program.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _buildOption(
+                sheetContext,
+                icon: Icons.bolt_rounded,
+                iconColor: const Color(0xFFFBBF24),
+                title: '⚡ Thử nghiệm thông báo ngay (sau 10 giây)',
+                subtitle: 'Phù hợp để demo kiểm tra tính năng trong buổi chấm thi',
+                onTap: () => _schedule(sheetContext, testDelaySeconds: 10),
+              ),
+              const SizedBox(height: 10),
+              _buildOption(
+                sheetContext,
+                icon: Icons.timer_outlined,
+                iconColor: const Color(0xFF38BDF8),
+                title: 'Nhắc trước 5 phút',
+                subtitle: 'Thông báo trước khi chương trình lên sóng 5 phút',
+                onTap: () => _schedule(sheetContext, minutesBefore: 5),
+              ),
+              const SizedBox(height: 10),
+              _buildOption(
+                sheetContext,
+                icon: Icons.access_time_rounded,
+                iconColor: const Color(0xFF34D399),
+                title: 'Nhắc trước 15 phút (Khuyến nghị)',
+                subtitle: 'Đủ thời gian chuẩn bị mở kênh đón xem',
+                onTap: () => _schedule(sheetContext, minutesBefore: 15),
+              ),
+              if (_isReminderSet) ...[
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => _cancel(sheetContext),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF87171),
+                    side: const BorderSide(color: Color(0xFFEF4444)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.notifications_off_outlined, size: 18),
+                  label: const Text('HỦY NHẮC NHỞ CHO CHƯƠNG TRÌNH NÀY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOption(BuildContext ctx, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF475569), size: 13),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _schedule(BuildContext ctx, {int minutesBefore = 15, int? testDelaySeconds}) async {
+    Navigator.pop(ctx);
+    HapticFeedback.heavyImpact();
+
+    await NotificationService().scheduleEpgProgramReminder(
+      programId: widget.program.id,
+      programTitle: widget.program.title,
+      channelName: widget.program.channel?.name,
+      scheduledAt: widget.program.scheduledAt,
+      minutesBefore: minutesBefore,
+      testDelaySeconds: testDelaySeconds,
+    );
+
+    if (mounted) {
+      setState(() => _isReminderSet = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  testDelaySeconds != null
+                      ? '⚡ Đã hẹn giờ! Thông báo hệ thống sẽ reo sau $testDelaySeconds giây.'
+                      : '🔔 Đã đặt nhắc nhở! Sẽ thông báo trước ${minutesBefore > 0 ? "$minutesBefore phút" : "giờ phát"}.',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _cancel(BuildContext ctx) async {
+    Navigator.pop(ctx);
+    HapticFeedback.mediumImpact();
+
+    await NotificationService().cancelEpgProgramReminder(widget.program.id);
+
+    if (mounted) {
+      setState(() => _isReminderSet = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.notifications_off_outlined, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(child: Text('Đã hủy nhắc nhở cho chương trình này.')),
+            ],
+          ),
+          backgroundColor: Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: _isReminderSet
+            ? const Color(0xFF10B981).withValues(alpha: 0.25)
+            : Colors.black.withValues(alpha: 0.45),
+        shape: CircleBorder(
+          side: _isReminderSet
+              ? const BorderSide(color: Color(0xFF10B981), width: 1.2)
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: _showOptions,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(
+              _isReminderSet
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_none_rounded,
+              size: 20,
+              color: _isReminderSet ? const Color(0xFF34D399) : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

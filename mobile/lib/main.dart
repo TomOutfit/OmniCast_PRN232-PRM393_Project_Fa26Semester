@@ -53,6 +53,15 @@ void main() async {
   // Initialize notification service
   await getIt<NotificationService>().initialize();
   await getIt<NotificationService>().requestPermissions();
+  NotificationService.onNotificationTap = (payload) {
+    if (payload != null && payload.startsWith('program:')) {
+      final programId = payload.substring(8);
+      AppRouter.router.push('/program/$programId');
+    }
+  };
+  NotificationService.onWatchNow = (programId) {
+    AppRouter.router.push('/program/$programId');
+  };
 
   // Initialize optional services (best-effort — they fall back to
   // no-ops when the platform isn't configured).

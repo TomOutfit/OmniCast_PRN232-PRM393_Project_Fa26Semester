@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:math' show max;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +20,7 @@ import '../../../logic/channels/channels_bloc.dart';
 import '../../../data/models/program_model.dart';
 import '../../../core/utils/channel_logo_helper.dart';
 import '../../../core/utils/category_utils.dart';
+import '../../../core/services/notification_service.dart';
 import '../../widgets/channel_logo.dart' hide ChannelInfo;
 
 // ─── Layout constants (matches frontend MINUTE_WIDTH = 4) ───
@@ -1110,6 +1112,10 @@ class _ProgramCard extends StatelessWidget {
                       fontFamily: 'monospace',
                     ),
                   ),
+                  if (NotificationService().isEpgReminderSet(event.id)) ...[
+                    const SizedBox(width: 3),
+                    const Icon(Icons.notifications_active_rounded, color: Color(0xFF00E5FF), size: 9),
+                  ],
                   const Spacer(),
                   if (isLive)
                     Row(
@@ -1230,169 +1236,609 @@ class _ProgramCard extends StatelessWidget {
   void _showProgramSheet(BuildContext context, LiveEventModel e, bool isLive, bool isPast) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B1320),
+      backgroundColor: const Color(0xFF070C18),
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _ProgramDetailSheet(event: e, isLive: isLive, isPast: isPast),
     );
   }
 }
 
-// ─── Program detail bottom sheet ─────────────────────────
-class _ProgramDetailSheet extends StatelessWidget {
+// ─── Program detail bottom sheet (Impaktfull / Shadcn Re-Design) ─────────
+class _ProgramDetailSheet extends StatefulWidget {
   final LiveEventModel event;
   final bool isLive;
   final bool isPast;
 
-  const _ProgramDetailSheet({required this.event, required this.isLive, required this.isPast});
+  const _ProgramDetailSheet({
+    required this.event,
+    required this.isLive,
+    required this.isPast,
+  });
+
+  @override
+  State<_ProgramDetailSheet> createState() => _ProgramDetailSheetState();
+}
+
+class _ProgramDetailSheetState extends State<_ProgramDetailSheet> {
+  late bool _isReminderSet;
+
+  @override
+  void initState() {
+    super.initState();
+    _isReminderSet = NotificationService().isEpgReminderSet(widget.event.id);
+  }
+
+  void _showReminderOptionsDialog() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF090F1D),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF334155),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                    ),
+                    child: const Icon(Icons.alarm_on_rounded, color: Color(0xFF00E5FF), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cài Đặt Nhắc Nhở Phát Sóng',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Hệ thống thông báo đẩy Android khi sắp chiếu',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // Option 1: Demo Instant Test (10s)
+              _buildOptionTile(
+                icon: Icons.bolt_rounded,
+                iconColor: const Color(0xFFFBBF24),
+                title: '⚡ Thử nghiệm thông báo ngay (sau 10 giây)',
+                subtitle: 'Phù hợp để demo kiểm tra tính năng trong buổi chấm thi',
+                onTap: () => _scheduleReminder(sheetContext, testDelaySeconds: 10),
+              ),
+              const SizedBox(height: 10),
+
+              // Option 2: 5 minutes before
+              _buildOptionTile(
+                icon: Icons.timer_outlined,
+                iconColor: const Color(0xFF38BDF8),
+                title: 'Nhắc trước 5 phút',
+                subtitle: 'Thông báo trước khi chương trình lên sóng 5 phút',
+                onTap: () => _scheduleReminder(sheetContext, minutesBefore: 5),
+              ),
+              const SizedBox(height: 10),
+
+              // Option 3: 15 minutes before
+              _buildOptionTile(
+                icon: Icons.access_time_rounded,
+                iconColor: const Color(0xFF34D399),
+                title: 'Nhắc trước 15 phút (Khuyến nghị)',
+                subtitle: 'Đủ thời gian chuẩn bị mở kênh đón xem',
+                onTap: () => _scheduleReminder(sheetContext, minutesBefore: 15),
+              ),
+              const SizedBox(height: 10),
+
+              // Option 4: On air
+              _buildOptionTile(
+                icon: Icons.play_circle_outline_rounded,
+                iconColor: const Color(0xFFA78BFA),
+                title: 'Đúng giờ phát sóng',
+                subtitle: 'Thông báo đúng khoảnh khắc bắt đầu phát sóng',
+                onTap: () => _scheduleReminder(sheetContext, minutesBefore: 0),
+              ),
+
+              if (_isReminderSet) ...[
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => _cancelReminder(sheetContext),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF87171),
+                    side: const BorderSide(color: Color(0xFFEF4444)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.notifications_off_outlined, size: 18),
+                  label: const Text('HỦY NHẮC NHỞ CHO CHƯƠNG TRÌNH NÀY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF475569), size: 13),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scheduleReminder(BuildContext sheetContext, {int minutesBefore = 15, int? testDelaySeconds}) async {
+    Navigator.pop(sheetContext);
+    HapticFeedback.heavyImpact();
+
+    await NotificationService().scheduleEpgProgramReminder(
+      programId: widget.event.id,
+      programTitle: widget.event.title,
+      channelName: widget.event.channel?.name,
+      scheduledAt: widget.event.scheduledAt,
+      minutesBefore: minutesBefore,
+      testDelaySeconds: testDelaySeconds,
+    );
+
+    if (mounted) {
+      setState(() => _isReminderSet = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  testDelaySeconds != null
+                      ? '⚡ Đã hẹn giờ! Thông báo hệ thống sẽ reo sau $testDelaySeconds giây.'
+                      : '🔔 Đã đặt nhắc nhở! Sẽ thông báo trước ${minutesBefore > 0 ? "$minutesBefore phút" : "giờ phát"}.',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _cancelReminder(BuildContext sheetContext) async {
+    Navigator.pop(sheetContext);
+    HapticFeedback.mediumImpact();
+
+    await NotificationService().cancelEpgProgramReminder(widget.event.id);
+
+    if (mounted) {
+      setState(() => _isReminderSet = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.notifications_off_outlined, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Đã hủy nhắc nhở cho chương trình này.'),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final event = widget.event;
+    final isLive = widget.isLive;
+    final isPast = widget.isPast;
     final endTime = event.endTime;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFF334155),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF070C18),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.2),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black87,
+            blurRadius: 30,
+            spreadRadius: 8,
           ),
-          const SizedBox(height: 16),
-          Row(
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isLive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  margin: const EdgeInsets.only(right: 8),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF450A0A),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF991B1B)),
+                    color: const Color(0xFF334155),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Impaktfull-style Badge Row
+              Row(
+                children: [
+                  if (isLive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF450A0A),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFEF4444)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 6, color: Color(0xFFEF4444)),
+                          SizedBox(width: 5),
+                          Text('LIVE NOW', style: TextStyle(color: Color(0xFFF87171), fontSize: 10, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    )
+                  else if (isPast)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF334155)),
+                      ),
+                      child: const Text('ĐÃ PHÁT', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w900)),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.schedule, size: 11, color: Color(0xFF00E5FF)),
+                          SizedBox(width: 4),
+                          Text('SẮP PHÁT', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 10, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+
+                  if (event.channel?.name != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.tv_rounded, size: 11, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text(
+                            event.channel!.name,
+                            style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 10, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text('4K UHD', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 9, fontWeight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Title
+              Text(
+                event.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Time & Duration Card (Shadcn-style)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF38BDF8)),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${_hhmm(event.scheduledAt)} → ${_hhmm(endTime)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        _fmtDuration(event.durationMinutes),
+                        style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (event.description != null && event.description!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  event.description!,
+                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13, height: 1.5),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              // ─── EPG REMINDER INTERACTIVE CARD (Đề xuất 1) ───
+              if (!isPast) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _isReminderSet
+                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                        : const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _isReminderSet
+                          ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      Icon(Icons.circle, size: 6, color: Color(0xFFEF4444)),
-                      SizedBox(width: 4),
-                      Text('LIVE', style: TextStyle(color: Color(0xFFF87171), fontSize: 10, fontWeight: FontWeight.w900)),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _isReminderSet
+                              ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                              : const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isReminderSet
+                              ? Icons.notifications_active_rounded
+                              : Icons.notifications_none_rounded,
+                          color: _isReminderSet ? const Color(0xFF34D399) : const Color(0xFF00E5FF),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isReminderSet ? 'ĐÃ ĐẶT NHẮC PHÁT SÓNG' : 'NHẮC TÔI KHI PHÁT SÓNG',
+                              style: TextStyle(
+                                color: _isReminderSet ? const Color(0xFF34D399) : Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _isReminderSet
+                                  ? 'Đã lên lịch báo thức • Chạm để đổi hoặc hủy'
+                                  : 'Nhận thông báo hệ thống trước giờ lên sóng',
+                              style: const TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _showReminderOptionsDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isReminderSet
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF00E5FF),
+                          foregroundColor: const Color(0xFF070B12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 4,
+                        ),
+                        child: Text(
+                          _isReminderSet ? 'Đã bật' : 'Bật nhắc',
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              if (event.isFiller)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1B4B),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    event.fillerKind == 'recording-replay' ? 'REPLAY' : 'ON-AIR',
-                    style: const TextStyle(color: Color(0xFFA5B4FC), fontSize: 10, fontWeight: FontWeight.w900),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            event.title,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFF64748B)),
-              const SizedBox(width: 4),
-              Text(
-                '${_hhmm(event.scheduledAt)} → ${_hhmm(endTime)}',
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontFamily: 'monospace'),
+              ],
+
+              const SizedBox(height: 18),
+
+              // Action Buttons Row
+              Row(
+                children: [
+                  if (isLive)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/program/${event.id}');
+                        },
+                        icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                        label: const Text('XEM TRỰC TIẾP NGAY', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 6,
+                        ),
+                      ),
+                    )
+                  else if (isPast && event.sourceRecordingId != null)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/recording/${event.sourceRecordingId}');
+                        },
+                        icon: const Icon(Icons.replay_rounded, size: 18),
+                        label: const Text('XEM LẠI BẢN GHI', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00E5FF),
+                          foregroundColor: const Color(0xFF070B12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 6,
+                        ),
+                      ),
+                    )
+                  else if (!event.isFiller)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/program/${event.id}');
+                        },
+                        icon: const Icon(Icons.info_outline_rounded, size: 16),
+                        label: const Text('CHI TIẾT CHƯƠNG TRÌNH', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF00E5FF),
+                          side: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0E1A2B),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  _fmtDuration(event.durationMinutes),
-                  style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-              ),
             ],
           ),
-          if (event.description != null && event.description!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              event.description!,
-              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13, height: 1.5),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              if (isLive)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.push('/program/${event.id}');
-                    },
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Xem Trực Tiếp'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEF4444),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                )
-              else if (isPast && event.sourceRecordingId != null)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.push('/recording/${event.sourceRecordingId}');
-                    },
-                    icon: const Icon(Icons.replay_rounded),
-                    label: const Text('Xem Lại'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E5FF),
-                      foregroundColor: const Color(0xFF070B12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                )
-              else if (!event.isFiller)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.push('/program/${event.id}');
-                    },
-                    icon: const Icon(Icons.info_outline_rounded, size: 16),
-                    label: const Text('Chi Tiết'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF00E5FF),
-                      side: const BorderSide(color: Color(0xFF00E5FF)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
