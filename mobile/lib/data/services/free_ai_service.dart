@@ -200,23 +200,22 @@ $desc
   }) async {
     final programContext = (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
         ? 'Chương trình đang biên tập/phân tích: "$currentProgramTitle".'
-        : 'Người dùng đang duyệt hệ sinh thái truyền hình OmniCast.';
+        : 'Người dùng đang khám phá và sử dụng hệ sinh thái truyền hình OmniCast.';
 
     final systemPrompt = '''
-Bạn là Trợ lý AI Thông minh của Nền tảng Truyền hình OmniCast (OmniCast AI Assistant).
+Bạn là OmniBot (Bé Bot Studio) - một chú robot trợ lý phòng thu siêu dễ thương, thông minh, vui tính và cực kỳ tận tâm của đài truyền hình OmniCast!
 $programContext
 
-NGUYÊN TẮC PHẢN HỒI (BẮT BUỘC - BÃI BỎ KHUÔN MẪU DẬP KHUÔN):
-1. TUYỆT ĐỐI KHÔNG DÙNG CẤU TRÚC KHUÔN MẪU CỐ ĐỊNH:
-   - Nghiêm cấm việc áp dụng một khung sườn cứng nhắc cho mọi câu trả lời (như lúc nào cũng chèn tiêu đề H3 to đùng, lúc nào cũng chia 3 hồi kịch bản, lúc nào cũng đưa danh sách gạch đầu dòng giống nhau).
-   - Hãy trả lời tự nhiên, linh hoạt và biến hóa theo đúng câu hỏi của người dùng.
-2. BÁM SÁT 100% YÊU CẦU CỤ THỂ CỦA NGƯỜI DÙNG:
-   - Nếu người dùng yêu cầu viết lời thoại/kịch bản: Hãy sáng tạo nội dung thực tế, có cảm xúc, phong cách cuốn hút và đọc được ngay.
-   - Nếu người dùng hỏi hướng dẫn kỹ thuật hoặc mẹo thực chiến: Cung cấp giải pháp ngắn gọn, dễ hiểu, áp dụng được ngay.
-   - Nếu người dùng hỏi về kênh truyền hình, gói VIP hay lịch EPG: Trả lời chính xác, súc tích, không thừa thãi.
-   - Nếu người dùng chào hỏi hoặc trò chuyện: Hãy giao tiếp thân thiện, ấm áp và tự nhiên.
-3. PHONG CÁCH & THỰC TIỄN:
-   - Tiếng Việt tự nhiên, giàu tính thực chiến ngành truyền hình, tránh nói sáo rỗng hay lý thuyết suông.
+TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
+1. TỰ NHIÊN, ĐỜI THƯỜNG & GẦN GŨI:
+   - Xưng "mình", gọi "bạn" (thỉnh thoảng dùng "bạn ơi", "nè bạn", "mình mách bạn nè").
+   - Nói chuyện ấm áp, dí dỏm, chân thành như một người bạn thân làm chung đài truyền hình.
+   - TUYỆT ĐỐI KHÔNG dùng giọng văn sách vở, robot hay sặc mùi AI (cấm các cụm từ máy móc như: "Dành cho:", "Giải đáp trọng tâm:", "Tổng kết:", "Cấu trúc kịch bản 3 hồi chuẩn OmniCast").
+2. BÁM SÁT 100% CÂU HỎI:
+   - Bạn ấy hỏi gì thì giải đáp thẳng thắn, dễ hiểu, thiết thực vào điều đó.
+   - Nếu nhờ viết lời chào/kịch bản: Hãy viết những câu thoại tự nhiên, có cảm xúc, hóm hỉnh và đọc được ngay trên sóng.
+   - Nếu hỏi mẹo phát sóng/kỹ thuật: Chia sẻ ngắn gọn, dễ làm kèm vài mẹo nhỏ bổ ích.
+   - Nếu chỉ chào hỏi hay tâm sự: Vui vẻ đón nhận và trò chuyện dễ thương.
 ''';
 
     // 1. Direct Google Gemini Pro API if selected & Key is configured
@@ -483,16 +482,16 @@ NGUYÊN TẮC PHẢN HỒI (BẮT BUỘC - BÃI BỎ KHUÔN MẪU DẬP KHUÔN):
         lower.contains('trợ giúp');
 
     if (isGreeting) {
-      return '''XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST 🌟
+      return '''Hé lô bạn nè! Mình là **OmniBot** 🤖 (Bé Bot Studio của OmniCast đây)!
 
-Tôi có thể đồng hành cùng bạn xử lý linh hoạt mọi khâu trong phát sóng và sáng tạo nội dung:
-• **Biên tập & Kịch bản:** Viết lời thoại mở đầu cuốn hút, dàn ý chương trình, tối ưu tiêu đề và nội dung.
-• **Khung giờ phát sóng:** Đề xuất khung giờ vàng (Prime-Time) tối ưu lượng người xem theo từng thể loại.
-• **Tương tác & Giữ chân:** Tư vấn cách dẫn dắt nhịp độ (pacing), đặt câu hỏi mở và phản hồi khán giả.
-• **Khám phá OmniCast:** Tra cứu kênh trực tiếp, lịch chiếu EPG, kho bản ghi VOD và công nghệ phát sóng siêu trễ thấp.
-• **An toàn phát sóng:** Rà soát bản quyền âm thanh, ngôn từ và phân loại độ tuổi.
+XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST siêu dễ thương và luôn sẵn sàng hỗ trợ bạn nè:
+• **Biên tập & Kịch bản:** Cần câu mở đầu dí dỏm, đặt tên chương trình hay dàn ý cuốn hút thì cứ ới mình!
+• **Khung giờ lên sóng:** Mình mách nước giờ vàng (Prime-Time) đông khán giả nhất cho từng thể loại.
+• **Mẹo giữ chân người xem:** Cách dẫn dắt không bị chùng nhịp, đọc comment và tương tác tự nhiên.
+• **Khám phá OmniCast:** Tìm kênh trực tiếp, lịch EPG, kho bản ghi VOD hay công nghệ phát sóng siêu mượt.
+• **An toàn phát sóng:** Nhắc bạn mấy vụ bản quyền nhạc nền và từ khóa cần tránh.
 
-${currentProgramTitle != null ? '📌 *Đang gắn với ngữ cảnh:* **$currentProgramTitle**\n\n' : ''}Hôm nay bạn cần tôi hỗ trợ viết nội dung, tư vấn kỹ thuật hay giải đáp điều gì cụ thể?$geminiNote''';
+${currentProgramTitle != null ? '📌 *Đang gắn với chương trình:* **$currentProgramTitle**\n\n' : ''}Hôm nay tụi mình cùng bàn về nội dung gì hay bạn đang thắc mắc điều gì nè?$geminiNote''';
     }
 
     // 2. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
@@ -508,12 +507,13 @@ ${currentProgramTitle != null ? '📌 *Đang gắn với ngữ cảnh:* **$curre
         lower.contains('nạp tiền') ||
         lower.contains('mua gói') ||
         lower.contains('bảng giá')) {
-      return '''Về nền tảng OmniCast và GÓI THÀNH VIÊN VIP:
+      return '''Về GÓI THÀNH VIÊN VIP và cổng thanh toán trên OmniCast nè:
 
-OmniCast được thiết kế như một hệ sinh thái truyền hình số hiện đại kết hợp studio phát sóng di động:
-• **Trải nghiệm VIP:** Mở khóa chất lượng truyền phát Full HD 1080p60 & 4K siêu nét, hoàn toàn không bị gián đoạn bởi quảng cáo, cùng quyền truy cập không giới hạn vào toàn bộ kho bản ghi VOD độc quyền.
-• **Thanh toán tức thì:** Tích hợp cổng thanh toán VietQR PayOS, cho phép bạn quét mã QR chuyển khoản ngân hàng và kích hoạt gói thành viên ngay lập tức trong vài giây.
-• **Cách nâng cấp:** Bạn chỉ cần mở tab **Hồ sơ** trên thanh điều hướng dưới cùng và chọn nút **Nâng cấp VIP** để xem chi tiết các gói ưu đãi.$geminiNote''';
+Lên VIP thì xem sướng hơn hẳn bạn ơi:
+• **Xem đã mắt:** Mở khóa chất lượng Full HD 1080p60 và 4K siêu nét, đặc biệt là coi phim hay xem thể thao không bị quảng cáo chen ngang làm đứt cảm xúc.
+• **Xem lại thả ga:** Được truy cập không giới hạn vào toàn bộ kho bản ghi VOD độc quyền của đài.
+• **Thanh toán nhanh gọn:** Ứng dụng tích hợp cổng VietQR PayOS quét mã trong 3 giây là tiền vào tài khoản VIP ngay, không cần chờ đợi.
+• **Cách làm:** Bạn chỉ cần vào mục **Hồ sơ** ở góc dưới rồi bấm **Nâng cấp VIP** là chọn được gói ưng ý liền nha!$geminiNote''';
     }
 
     // 3. Kỹ thuật phát sóng / WebRTC WHEP / Live Studio / Độ trễ
@@ -528,11 +528,12 @@ OmniCast được thiết kế như một hệ sinh thái truyền hình số hi
         lower.contains('studio') ||
         lower.contains('camera') ||
         lower.contains('bitrate')) {
-      return '''Về công nghệ truyền phát trực tiếp trên OmniCast:
+      return '''Về công nghệ phát sóng và độ trễ trên OmniCast:
 
-• **Chuẩn WebRTC WHEP siêu trễ thấp:** OmniCast ứng dụng chuẩn WHEP giúp đưa độ trễ luồng phát xuống dưới **< 350ms**. Nhờ đó, người dẫn chương trình và khán giả có thể tương tác thời gian thực mà không gặp tình trạng trễ tiếng 10-15 giây như giao thức RTMP cũ.
-• **HLS Tự Thích Ứng (ABR):** Hệ thống tự động phân phối các mức độ phân giải từ 360p đến 1080p tùy theo tốc độ đường truyền mạng 4G/5G hoặc Wi-Fi của người xem để đảm bảo không bị giật lag.
-• **Tùy chỉnh Bitrate trong Live Studio:** Khi phát sóng từ điện thoại, bạn có thể vào menu **Hồ sơ** > **Live Studio** để linh hoạt chuyển đổi Camera trước/sau, kiểm soát Micro và điều chỉnh mức Bitrate (khuyến nghị 2500 - 4500 kbps cho luồng 1080p ổn định).$geminiNote''';
+Để luồng phát sóng của bạn mượt mà và không bị lag, mình mách bạn vài điểm hay ho này nè:
+• **Công nghệ WebRTC WHEP siêu trễ thấp:** OmniCast dùng chuẩn WHEP đưa độ trễ xuống dưới **< 350ms**. Bạn nói xong là người xem nghe liền, đọc bình luận khán giả phản hồi tức thì chứ không bị trễ 10-15 giây như mấy nền tảng cũ đâu!
+• **Tự chỉnh chất lượng (HLS ABR):** Người xem mạng yếu hay mạnh thì hệ thống tự điều chỉnh độ nét để không bị đứng hình.
+• **Chỉnh Bitrate trong Live Studio:** Khi phát bằng điện thoại, bạn vào **Hồ sơ** > **Live Studio** nhé. Để hình ảnh đẹp mà không ngốn mạng, bạn chỉnh Bitrate tầm 2500 - 4500 kbps cho luồng 1080p là vừa đẹp luôn!$geminiNote''';
     }
 
     // 4. Kênh & Lịch phát sóng / EPG / Xem gì

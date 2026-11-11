@@ -12,6 +12,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
 import '../../widgets/gemini_key_dialog.dart';
+import '../../widgets/studio_bot_avatar.dart';
 import '../../../data/services/free_ai_service.dart';
 
 class AICuratorChatbotSheet extends StatefulWidget {
@@ -66,12 +67,12 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
   void initState() {
     super.initState();
     _loadGeminiKey();
-    // Welcome message from AI Curator Assistant
+    // Welcome message from OmniBot Studio Assistant
     _messages.add(
       CuratorChatMessage(
         id: 'welcome',
         text:
-            'Xin chào! Tôi là **Trợ lý AI Biên tập Truyền hình OmniCast** vận hành bởi mô hình **Google Gemini 1.5 Pro** thế hệ mới.\n\nTôi có thể giúp bạn:\n• 🎬 Gợi ý tiêu đề & kịch bản mở đầu 3 phút vàng thu hút\n• ⏰ Đề xuất khung giờ vàng (Prime-Time) tối ưu người xem\n• ⚡ Tối ưu hóa nhịp điệu (pacing) giữ chân khán giả\n• 🛡️ Kiểm duyệt từ ngữ & an toàn phát sóng\n\nBạn muốn tôi hỗ trợ điều gì cho chương trình hôm nay?',
+            'Hé lô bạn! Mình là **OmniBot** 🤖 - bé robot phòng thu của OmniCast đây!\n\nHôm nay bạn muốn tụi mình cùng lên sóng, tìm ý tưởng kịch bản hay chỉ đơn giản là muốn tìm kênh xem giải trí nè? Cứ trò chuyện tự nhiên với mình như một người bạn thân nha, đừng ngại!',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -285,34 +286,37 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0x3300E5FF)),
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              color: Color(0xFF00E5FF),
-              size: 20,
-            ),
-          ),
+          const StudioBotAvatar(size: 38, showOnlineDot: true),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Trợ Lý AI Biên Tập (Curator Chatbot)',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'OmniBot Studio',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      '✨ Bạn đồng hành',
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
+                SizedBox(height: 2),
                 Text(
-                  'Động cơ Google Gemini 1.5 Pro & Open Models',
+                  'Đang trực tuyến • Sẵn sàng hỗ trợ bạn nè!',
                   style: TextStyle(
                     color: Color(0xFF94A3B8),
                     fontSize: 11,
@@ -453,17 +457,33 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.auto_awesome, size: 14, color: Color(0xFF00E5FF)),
-                    SizedBox(width: 4),
-                    Text(
-                      'AI CURATOR',
+                    const StudioBotAvatar(size: 20),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'OmniBot',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
                         color: Color(0xFF00E5FF),
-                        letterSpacing: 0.6,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Studio Buddy 🤖',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -518,10 +538,11 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
 
   Widget _buildQuickPrompts() {
     final prompts = [
-      '💡 Gợi ý kịch bản mở đầu 3 phút thu hút',
-      '⏰ Đề xuất khung giờ phát sóng tối ưu',
-      '⚡ Cách giữ chân khán giả thế hệ trẻ',
-      '🛡️ Kiểm duyệt từ ngữ nhạy cảm',
+      '🎬 Gợi ý 3 câu mở đầu vui vẻ cho mình',
+      '⏰ Tối nay mấy giờ lên sóng đông người xem nhất?',
+      '⚡ Mẹo giữ chân người xem livestream không lướt qua',
+      '🛡️ Kiểm duyệt từ ngữ và bản quyền an toàn',
+      '📺 Hôm nay OmniCast có kênh gì hay ho để xem?',
     ];
 
     return Container(
@@ -577,7 +598,7 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
                   minLines: 1,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: const InputDecoration(
-                    hintText: 'Hỏi AI về kịch bản, khung giờ, ý tưởng phát sóng...',
+                    hintText: 'Tâm sự hoặc hỏi OmniBot điều gì nè...',
                     hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 12),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),

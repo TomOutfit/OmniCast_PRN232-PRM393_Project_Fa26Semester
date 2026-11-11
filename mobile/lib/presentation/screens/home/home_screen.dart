@@ -20,6 +20,7 @@ import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/notification_bell.dart';
+import '../../widgets/studio_bot_avatar.dart';
 import '../studio/ai_curator_chatbot_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -129,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           AICuratorChatbotSheet.show(context);
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(20),
@@ -144,10 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.smart_toy_rounded, color: Color(0xFF00E5FF), size: 16),
+                              StudioBotAvatar(size: 16),
                               SizedBox(width: 4),
                               Text(
-                                'AI CHAT',
+                                'BOT',
                                 style: TextStyle(
                                   color: Color(0xFF00E5FF),
                                   fontSize: 10,
@@ -424,49 +425,42 @@ class _HomeScreenState extends State<HomeScreen> {
             HapticFeedback.selectionClick();
             AICuratorChatbotSheet.show(context);
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.smart_toy_rounded,
-                    color: Color(0xFF00E5FF),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Hỏi AI Gemini',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'PRO',
-                    style: TextStyle(
-                      color: Color(0xFF080B11),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.3,
+                StudioBotAvatar(size: 28, showOnlineDot: true),
+                SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'OmniBot Studio',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text('🤖', style: TextStyle(fontSize: 11)),
+                      ],
                     ),
-                  ),
+                    Text(
+                      'Bé bot hỗ trợ 24/7 nè',
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1291,35 +1285,34 @@ class _AiQuickPromptBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF00E5FF), size: 16),
-                ),
+                const StudioBotAvatar(size: 32, showOnlineDot: true),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Trợ lý AI OmniCast (Gemini 1.5 Pro)',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Bé Bot Studio • OmniBot',
+                            style: TextStyle(
+                              color: Color(0xFF00E5FF),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Text('🤖', style: TextStyle(fontSize: 10)),
+                        ],
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Hỏi lịch chiếu, phân tích EPG & kịch bản phát sóng...',
+                        'Hỏi mình về lịch chiếu, kịch bản hoặc buôn chuyện nhé! 💬',
                         style: TextStyle(
                           color: Color(0xFF94A3B8),
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -1330,7 +1323,7 @@ class _AiQuickPromptBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00E5FF),
                     borderRadius: BorderRadius.circular(8),
@@ -1338,10 +1331,10 @@ class _AiQuickPromptBar extends StatelessWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.forum_rounded, size: 12, color: Color(0xFF080B11)),
+                      Icon(Icons.chat_bubble_rounded, size: 11, color: Color(0xFF080B11)),
                       SizedBox(width: 4),
                       Text(
-                        'HỎI AI',
+                        'CHAT NÈ',
                         style: TextStyle(
                           color: Color(0xFF080B11),
                           fontSize: 10,

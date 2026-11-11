@@ -179,12 +179,12 @@ class ProfileScreen extends StatelessWidget {
                           const Divider(color: Color(0x14FFFFFF), height: 1),
                         ],
 
-                        // Trợ lý AI Chatbot (Gemini Pro) - Cho mọi người dùng
+                        // Trợ lý Bé Bot Studio OmniBot - Cho mọi người dùng
                         _buildModernMenuItem(
                           icon: Icons.smart_toy_rounded,
                           iconColor: const Color(0xFF00E5FF),
-                          title: 'Trợ lý AI Chatbot (Gemini Pro)',
-                          subtitle: 'Hỏi đáp phát sóng, gợi ý lịch chiếu & phân tích EPG',
+                          title: 'Bé Bot Studio • OmniBot 🤖',
+                          subtitle: 'Trò chuyện, hỏi đáp phát sóng & gợi ý lịch chiếu',
                           highlight: true,
                           onTap: () => AICuratorChatbotSheet.show(context),
                         ),
