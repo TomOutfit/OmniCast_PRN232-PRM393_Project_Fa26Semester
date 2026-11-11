@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
@@ -16,7 +17,6 @@ import '../../../core/i18n/strings.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/lan_discovery_service.dart';
 import '../../../core/utils/token_storage_helper.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/datasources/local/database_helper.dart';
 import '../../../data/repositories/newsletter_repository.dart';
 import '../../../logic/auth/auth_bloc.dart';
@@ -200,33 +200,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final mode = appThemeModeOf(context);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: const Color(0xFF080B11),
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppStrings.t('settings.title', locale),
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
-                fontFamily: 'Outfit',
-                color: Colors.white,
+                color: Color(0xFFF8FAFC),
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 2),
             const Text(
-              'HỆ THỐNG & TÙY CHỌN PHÁT SÓNG',
+              'HỆ THỐNG & TÙY CHỌN',
               style: TextStyle(
                 fontSize: 10,
-                fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF00E5FF),
-                letterSpacing: 1.2,
+                letterSpacing: 1.1,
               ),
             ),
           ],
@@ -767,10 +774,10 @@ class _CyberCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0x1F00E5FF),
+          color: const Color(0x14FFFFFF),
           width: 0.8,
         ),
       ),

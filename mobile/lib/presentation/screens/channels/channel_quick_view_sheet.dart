@@ -80,18 +80,18 @@ class _ChannelQuickViewSheetState extends State<ChannelQuickViewSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF090F1A),
+        color: Color(0xFF0F1523),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: Color(0xFF162338), width: 1.5),
-          left: BorderSide(color: Color(0xFF162338), width: 1),
-          right: BorderSide(color: Color(0xFF162338), width: 1),
+          top: BorderSide(color: Color(0x14FFFFFF), width: 1.0),
+          left: BorderSide(color: Color(0x14FFFFFF), width: 0.5),
+          right: BorderSide(color: Color(0x14FFFFFF), width: 0.5),
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(0x99000000),
-            blurRadius: 30,
-            offset: Offset(0, -10),
+            color: Color(0x66000000),
+            blurRadius: 24,
+            offset: Offset(0, -6),
           ),
         ],
       ),
@@ -105,10 +105,10 @@ class _ChannelQuickViewSheetState extends State<ChannelQuickViewSheet> {
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
+                width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF223552),
+                  color: const Color(0x33FFFFFF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

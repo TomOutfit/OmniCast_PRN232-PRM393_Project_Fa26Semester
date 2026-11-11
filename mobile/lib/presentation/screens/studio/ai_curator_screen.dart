@@ -293,20 +293,23 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: const Color(0xFF080B11),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               appT(context, 'curator.pageTitle'),
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFFF8FAFC),
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                fontFamily: 'Outfit',
               ),
             ),
             Text(
@@ -314,7 +317,6 @@ class _AICuratorScreenState extends State<AICuratorScreen>
               style: const TextStyle(
                 color: Color(0xFF00E5FF),
                 fontSize: 9,
-                fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
               ),
@@ -332,22 +334,30 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             onPressed: () => _showInfoDialog(context),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFF00E5FF),
-          labelColor: const Color(0xFF00E5FF),
-          unselectedLabelColor: AppColors.textFaint,
-          tabs: [
-            Tab(text: appT(context, 'curator.analyzeTab')),
-            Tab(text: appT(context, 'curator.applyTab')),
-            Tab(
-              text: appT(
-                context,
-                'curator.curateExistingTab',
-                'Phân tích có sẵn',
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(49),
+          child: Column(
+            children: [
+              TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFF00E5FF),
+                labelColor: const Color(0xFF00E5FF),
+                unselectedLabelColor: const Color(0xFF94A3B8),
+                tabs: [
+                  Tab(text: appT(context, 'curator.analyzeTab')),
+                  Tab(text: appT(context, 'curator.applyTab')),
+                  Tab(
+                    text: appT(
+                      context,
+                      'curator.curateExistingTab',
+                      'Phân tích có sẵn',
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
@@ -486,7 +496,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1320),
+                  color: const Color(0xFF0F1523),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0x1F00E5FF)),
                 ),
@@ -529,7 +539,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF0B1320),
+                color: const Color(0xFF0F1523),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
               ),
@@ -541,7 +551,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
                 ),
                 isExpanded: true,
                 underline: const SizedBox(),
-                dropdownColor: const Color(0xFF0B1320),
+                dropdownColor: const Color(0xFF0F1523),
                 icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5FF)),
                 items: _programs.map((p) {
                   return DropdownMenuItem(
@@ -742,7 +752,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -882,7 +892,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x3300E5FF), width: 0.8),
       ),
@@ -971,7 +981,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
             filled: true,
-            fillColor: const Color(0xFF0B1320),
+            fillColor: const Color(0xFF0F1523),
             counterStyle: const TextStyle(color: AppColors.textMuted, fontSize: 10),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -1416,7 +1426,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -1583,7 +1593,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -1769,7 +1779,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -1939,7 +1949,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -2095,7 +2105,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -2162,7 +2172,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -2285,7 +2295,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -2343,7 +2353,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
       ),
@@ -2850,7 +2860,7 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0B1320),
+        backgroundColor: const Color(0xFF0F1523),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0x3300E5FF), width: 0.8),

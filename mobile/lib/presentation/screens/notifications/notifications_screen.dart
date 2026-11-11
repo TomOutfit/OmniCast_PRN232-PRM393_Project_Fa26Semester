@@ -37,17 +37,25 @@ class _NotificationsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
+          onPressed: () => context.pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
+        ),
         title: const Text(
           'Thông báo',
           style: TextStyle(
-            color: Colors.white,
+            color: Color(0xFFF8FAFC),
             fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
         ),
@@ -231,11 +239,11 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: const BoxDecoration(
-        color: Color(0xFF090F1A),
+        color: Color(0xFF080B11),
         border: Border(
-          bottom: BorderSide(color: Color(0x1F00E5FF), width: 0.6),
+          bottom: BorderSide(color: Color(0x14FFFFFF), width: 0.8),
         ),
       ),
       child: Row(
@@ -243,13 +251,19 @@ class _FilterBar extends StatelessWidget {
           _Chip(
             label: 'Tất cả',
             isSelected: current == NotificationFilter.all,
-            onTap: () => onChanged(NotificationFilter.all),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(NotificationFilter.all);
+            },
           ),
           const SizedBox(width: 8),
           _Chip(
             label: 'Chưa đọc${unreadCount > 0 ? ' ($unreadCount)' : ''}',
             isSelected: current == NotificationFilter.unread,
-            onTap: () => onChanged(NotificationFilter.unread),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(NotificationFilter.unread);
+            },
           ),
         ],
       ),
@@ -274,23 +288,23 @@ class _Chip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0x2600E5FF)
-              : const Color(0xFF0F172A),
+              ? const Color(0x1A00E5FF)
+              : const Color(0xFF0F1523),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF00E5FF)
-                : const Color(0x1F00E5FF),
-            width: isSelected ? 1.2 : 0.8,
+                : const Color(0x14FFFFFF),
+            width: isSelected ? 1.0 : 0.8,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? const Color(0xFF00E5FF) : Colors.white,
+            color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
           ),
@@ -348,13 +362,13 @@ class _NotificationTile extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: item.isRead
-                  ? const Color(0xFF0B1320)
-                  : const Color(0x1A00E5FF),
+                  ? const Color(0xFF0F1523)
+                  : const Color(0xFF131B2E),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: item.isRead
-                    ? const Color(0x1F162338)
-                    : const Color(0x6600E5FF),
+                    ? const Color(0x14FFFFFF)
+                    : const Color(0x3300E5FF),
                 width: 0.8,
               ),
             ),

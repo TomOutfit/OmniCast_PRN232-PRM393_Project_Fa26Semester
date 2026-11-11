@@ -3,6 +3,7 @@
 // Categories loaded dynamically from backend API.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,17 +27,25 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
+          onPressed: () => context.pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
+        ),
         title: const Text(
-          '19 Chuyên Mục Nội Dung',
+          'Chuyên mục nội dung',
           style: TextStyle(
-            color: Colors.white,
+            color: Color(0xFFF8FAFC),
             fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
         ),
@@ -44,26 +53,26 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             sliver: SliverToBoxAdapter(
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF090F1A),
+                  color: const Color(0xFF0F1523),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF162338)),
+                  border: Border.all(color: const Color(0x14FFFFFF)),
                 ),
                 child: const Row(
                   children: [
                     Icon(
-                      Icons.hub_rounded,
+                      Icons.category_rounded,
                       color: Color(0xFF00E5FF),
                       size: 20,
                     ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Kho chương trình độc quyền phát sóng 24/7 từ 12 nguồn tin cậy — Thể thao, Thời sự, Điện ảnh, Esports, AI Tech…',
+                        'Kho chương trình độc quyền phát sóng 24/7 — Thể thao, Thời sự, Điện ảnh, Esports, Công nghệ & Giải trí.',
                         style: TextStyle(
                           color: Color(0xFF94A3B8),
                           fontSize: 12,
@@ -148,33 +157,20 @@ class _CategoryTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () =>
-            context.push('/category/${Uri.encodeComponent(value)}'),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/category/${Uri.encodeComponent(value)}');
+        },
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: 0.25),
-                const Color(0xFF0B1320),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: color.withValues(alpha: 0.35),
-              width: 1,
+              color: const Color(0x14FFFFFF),
+              width: 0.8,
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,10 +180,10 @@ class _CategoryTile extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF070B12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.3),
+                    color: color.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Icon(
@@ -202,9 +198,9 @@ class _CategoryTile extends StatelessWidget {
                   Text(
                     label,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFF8FAFC),
                       fontSize: 14,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 2),

@@ -86,11 +86,11 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Cyber Ambient Radial Glow
+          // Ambient soft radial gradient
           Positioned(
             top: MediaQuery.of(context).size.height * 0.28,
             left: MediaQuery.of(context).size.width * 0.15,
@@ -101,8 +101,8 @@ class _SplashScreenState extends State<SplashScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF00E5FF).withValues(alpha: 0.18),
-                    const Color(0xFF2563EB).withValues(alpha: 0.08),
+                    const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    const Color(0xFF0F1523).withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -123,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const OmniCastBrandLogo(
-                          size: 110,
+                          size: 104,
                           showGlow: true,
                         ),
                         const SizedBox(height: 24),
@@ -132,36 +132,35 @@ class _SplashScreenState extends State<SplashScreen>
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: Color(0xFFF8FAFC),
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                            horizontal: 12,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0B1320),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF16253C)),
+                            color: const Color(0xFF0F1523),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0x14FFFFFF)),
                           ),
                           child: const Text(
-                            'NEXTGEN BROADCAST // 4K HEVC',
+                            'TRUYỀN HÌNH & PHÁT SÓNG TRỰC TUYẾN',
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF00E5FF),
-                              letterSpacing: 1.2,
+                              letterSpacing: 1.1,
                             ),
                           ),
                         ),
                         const SizedBox(height: 48),
                         const SizedBox(
-                          width: 24,
-                          height: 24,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
                             valueColor: AlwaysStoppedAnimation<Color>(

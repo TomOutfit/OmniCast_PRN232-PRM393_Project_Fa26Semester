@@ -325,38 +325,41 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
     final totalChannels = _categories.fold<int>(0, (sum, c) => sum + c.count);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C1421),
+        backgroundColor: const Color(0xFF080B11),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
           onPressed: () => context.pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF78350F).withValues(alpha: 0.5),
+                color: const Color(0x1AF59E0B),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.6)),
+                border: Border.all(color: const Color(0x4DF59E0B)),
               ),
               child: const Text(
-                'ROLE 3',
+                'ADMIN',
                 style: TextStyle(
                   color: Color(0xFFFBBF24),
                   fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
             const SizedBox(width: 8),
             const Text(
-              'Admin Control Hub',
+              'Trung tâm điều hành',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFFF8FAFC),
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -365,8 +368,9 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00F2FE)),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00E5FF)),
             onPressed: () {
+              HapticFeedback.selectionClick();
               setState(() => _isLoading = true);
               _fetchRealData();
             },
@@ -887,13 +891,16 @@ class _AdminHubScreenState extends State<AdminHubScreen> {
   }) {
     return Expanded(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF0C1421),
+            color: const Color(0xFF0F1523),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1E2D44)),
+            border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
           ),
           child: Row(
             children: [

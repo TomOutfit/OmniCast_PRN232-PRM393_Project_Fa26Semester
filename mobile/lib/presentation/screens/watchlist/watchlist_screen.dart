@@ -36,17 +36,21 @@ class _WatchlistScreenState extends State<WatchlistScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
+          onPressed: () => context.pop(),
+        ),
         title: const Text(
-          'Danh Sách Theo Dõi',
+          'Danh sách theo dõi',
           style: TextStyle(
-            color: Colors.white,
+            color: Color(0xFFF8FAFC),
             fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
         ),
@@ -92,7 +96,7 @@ class _WatchlistScreenState extends State<WatchlistScreen>
           child: Container(
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Color(0xFF162338), width: 1),
+                bottom: BorderSide(color: Color(0x14FFFFFF), width: 1),
               ),
             ),
             child: BlocBuilder<WatchlistBloc, WatchlistState>(
@@ -107,12 +111,12 @@ class _WatchlistScreenState extends State<WatchlistScreen>
                 return TabBar(
                   controller: _tabs,
                   indicatorColor: const Color(0xFF00E5FF),
-                  indicatorWeight: 3,
+                  indicatorWeight: 2.5,
                   labelColor: const Color(0xFF00E5FF),
-                  unselectedLabelColor: const Color(0xFF64748B),
+                  unselectedLabelColor: const Color(0xFF94A3B8),
                   labelStyle: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                   unselectedLabelStyle: const TextStyle(
                     fontSize: 12,
@@ -260,20 +264,13 @@ class _WatchlistItemCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isLiveNow
-              ? const Color(0xFF991B1B)
-              : const Color(0xFF16253C),
+              ? const Color(0x33EF4444)
+              : const Color(0x14FFFFFF),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -286,9 +283,9 @@ class _WatchlistItemCard extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121E30),
+                  color: const Color(0xFF131B2E),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF1F304A)),
+                  border: Border.all(color: const Color(0x14FFFFFF)),
                 ),
                 child: Center(
                   child: Icon(

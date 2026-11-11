@@ -332,31 +332,25 @@ class _Header extends StatelessWidget {
       },
       child: Column(
         children: [
-          ShaderMask(
-            shaderCallback: (rect) => const LinearGradient(
-              colors: [AppColors.stitchPrimaryContainer, AppColors.stitchSecondary],
-            ).createShader(rect),
-            blendMode: BlendMode.srcIn,
-            child: const Text(
-              'Tạo tài khoản',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontFamily: AppFonts.display,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
+          const Text(
+            'Tạo tài khoản',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 28,
+              fontFamily: AppFonts.display,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFF8FAFC),
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.12),
+              color: const Color(0xFF0F1523),
               borderRadius: BorderRadius.circular(AppColors.rPill),
               border: Border.all(
-                color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.30),
+                color: const Color(0x14FFFFFF),
               ),
             ),
             child: const Row(
@@ -365,12 +359,11 @@ class _Header extends StatelessWidget {
                 _LivePulseDot(color: AppColors.stitchPrimaryContainer),
                 SizedBox(width: 6),
                 Text(
-                  'TIER 01 // WELCOME',
+                  'ĐĂNG KÝ THÀNH VIÊN MỚI',
                   style: TextStyle(
                     fontSize: 10,
-                    fontFamily: AppFonts.mono,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.18 * 10 / 10,
+                    letterSpacing: 1.0,
                     color: AppColors.stitchPrimaryContainer,
                   ),
                 ),
@@ -379,12 +372,12 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            'Mở khoá 524 kênh trực tiếp, kho VOD 4K HDR và AI Curator cá nhân hoá.',
+            'Trải nghiệm trọn vẹn các kênh truyền hình trực tiếp chất lượng cao và kho nội dung VOD đặc sắc.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
               fontFamily: AppFonts.body,
-              color: AppColors.stitchOnSurfaceVariant,
+              color: Color(0xFF94A3B8),
               height: 1.5,
             ),
           ),

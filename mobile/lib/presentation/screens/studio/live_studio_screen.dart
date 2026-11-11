@@ -34,7 +34,6 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/network/dio_client.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/lan_discovery_service.dart';
 import '../../../data/models/channel_model.dart';
@@ -1131,25 +1130,25 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
   Widget build(BuildContext context) {
     if (_loadingChannels) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
+        backgroundColor: const Color(0xFF080B11),
         appBar: _buildAppBar(),
         body: const Center(child: CircularProgressIndicator(color: _accent)),
       );
     }
     if (_channels.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
+        backgroundColor: const Color(0xFF080B11),
         appBar: _buildAppBar(),
         body: const Center(
           child: Text(
             'Không tìm thấy kênh nào.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: Color(0xFF94A3B8)),
           ),
         ),
       );
     }
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF080B11),
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -1174,11 +1173,15 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF080B11),
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
         onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+      ),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
       ),
       title: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1186,18 +1189,16 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
           Text(
             'Live Studio',
             style: TextStyle(
-              color: Colors.white,
+              color: Color(0xFFF8FAFC),
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              fontFamily: 'Outfit',
             ),
           ),
           Text(
-            'CURATED & SELF-RECORD BROADCAST',
+            'PHÒNG THU PHÁT SÓNG TRỰC TIẾP',
             style: TextStyle(
               color: _accent,
               fontSize: 9,
-              fontFamily: 'JetBrainsMono',
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
             ),
@@ -1208,7 +1209,10 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         IconButton(
           tooltip: 'Làm mới',
           icon: const Icon(Icons.refresh, color: _accent),
-          onPressed: _onChannelChanged,
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            _onChannelChanged();
+          },
         ),
       ],
     );
@@ -1233,9 +1237,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x3300E5FF), width: 1),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
       ),
       child: Row(
         children: [
@@ -1249,13 +1253,12 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                   Row(
                     children: [
                       const Text(
-                        'KÊNH PHÁT SÓNG TARGET',
+                        'KÊNH PHÁT SÓNG MỤC TIÊU',
                         style: TextStyle(
                           color: Color(0xFF00E5FF),
                           fontSize: 9,
-                          fontFamily: 'JetBrainsMono',
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
+                          letterSpacing: 1.0,
                         ),
                       ),
                       if (c.isVerified) ...[
@@ -1268,9 +1271,8 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
                   Text(
                     c.name,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFF8FAFC),
                       fontWeight: FontWeight.w800,
-                      fontFamily: 'Outfit',
                       fontSize: 14,
                     ),
                     maxLines: 1,
@@ -1295,21 +1297,23 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
               backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
               foregroundColor: const Color(0xFF00E5FF),
               elevation: 0,
-              side: const BorderSide(color: Color(0x4400E5FF)),
+              side: const BorderSide(color: Color(0x3300E5FF)),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: _openChannelSearchModal,
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              _openChannelSearchModal();
+            },
             icon: const Icon(Icons.swap_horiz_rounded, size: 16),
             label: const Text(
               'ĐỔI KÊNH',
               style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontWeight: FontWeight.w700,
-                fontSize: 10,
-                letterSpacing: 0.6,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -1479,9 +1483,9 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1320),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
       ),
       child: TabBar(
         controller: _tabController,
@@ -1496,7 +1500,6 @@ class _LiveStudioScreenState extends State<LiveStudioScreen>
         unselectedLabelColor: const Color(0xFF94A3B8),
         labelStyle: const TextStyle(
           fontWeight: FontWeight.w800,
-          fontFamily: 'Outfit',
           letterSpacing: 0.5,
           fontSize: 12,
         ),

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
@@ -343,28 +344,35 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C1421),
+        backgroundColor: const Color(0xFF080B11),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
           onPressed: () => context.pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
         ),
         title: const Row(
           children: [
-            Icon(Icons.manage_accounts_rounded, color: Color(0xFF00F2FE), size: 20),
+            Icon(Icons.manage_accounts_rounded, color: Color(0xFF00E5FF), size: 20),
             SizedBox(width: 8),
             Text(
-              'Quản Lý Tài Khoản',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+              'Quản lý tài khoản',
+              style: TextStyle(color: Color(0xFFF8FAFC), fontSize: 16, fontWeight: FontWeight.w800),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00F2FE)),
-            onPressed: _fetchUsers,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00E5FF)),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              _fetchUsers();
+            },
           ),
         ],
       ),
@@ -373,7 +381,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           // ── SEARCH BAR ──────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            color: const Color(0xFF0C1421),
+            color: const Color(0xFF080B11),
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
@@ -381,7 +389,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               decoration: InputDecoration(
                 hintText: 'Tìm theo họ tên hoặc email...',
                 hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00F2FE), size: 18),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00E5FF), size: 18),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 16),
@@ -392,19 +400,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFF090E17),
+                fillColor: const Color(0xFF0F1523),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1E2D44)),
+                  borderSide: const BorderSide(color: Color(0x14FFFFFF)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1E2D44)),
+                  borderSide: const BorderSide(color: Color(0x14FFFFFF)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF00F2FE)),
+                  borderSide: const BorderSide(color: Color(0xFF00E5FF)),
                 ),
               ),
             ),
@@ -413,7 +421,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           // ── ROLE FILTER CHIPS ───────────────────────────────────
           Container(
             height: 44,
-            color: const Color(0xFF0C1421),
+            color: const Color(0xFF080B11),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
@@ -426,19 +434,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   label: Text(
                     f['label']!,
                     style: TextStyle(
-                      color: isSelected ? const Color(0xFF070B12) : const Color(0xFF94A3B8),
+                      color: isSelected ? const Color(0xFF080B11) : const Color(0xFF94A3B8),
                       fontSize: 11,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: const Color(0xFF00F2FE),
-                  backgroundColor: const Color(0xFF090E17),
+                  selectedColor: const Color(0xFF00E5FF),
+                  backgroundColor: const Color(0xFF0F1523),
                   side: BorderSide(
-                    color: isSelected ? const Color(0xFF00F2FE) : const Color(0xFF1E2D44),
+                    color: isSelected ? const Color(0xFF00E5FF) : const Color(0x14FFFFFF),
                   ),
                   onSelected: (val) {
                     if (val) {
+                      HapticFeedback.selectionClick();
                       setState(() => _selectedRole = f['value']!);
                       _fetchUsers();
                     }
@@ -531,10 +540,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1421),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: user.isActive ? const Color(0xFF1E2D44) : const Color(0xFFEF4444).withValues(alpha: 0.3),
+          color: user.isActive ? const Color(0x14FFFFFF) : const Color(0x33EF4444),
+          width: 0.8,
         ),
       ),
       child: Column(

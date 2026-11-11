@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
@@ -218,28 +219,35 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C1421),
+        backgroundColor: const Color(0xFF080B11),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF8FAFC)),
           onPressed: () => context.pop(),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0x14FFFFFF)),
         ),
         title: const Row(
           children: [
-            Icon(Icons.receipt_long_rounded, color: Color(0xFF00F2FE), size: 20),
+            Icon(Icons.receipt_long_rounded, color: Color(0xFF00E5FF), size: 20),
             SizedBox(width: 8),
             Text(
-              'Nhật Ký Kiểm Toán (Audit)',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+              'Nhật ký kiểm toán',
+              style: TextStyle(color: Color(0xFFF8FAFC), fontSize: 16, fontWeight: FontWeight.w800),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00F2FE)),
-            onPressed: _fetchLogs,
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00E5FF)),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              _fetchLogs();
+            },
           ),
         ],
       ),
@@ -248,7 +256,7 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
           // ── FILTER CHIPS ────────────────────────────────────────
           Container(
             height: 48,
-            color: const Color(0xFF0C1421),
+            color: const Color(0xFF080B11),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
@@ -261,19 +269,20 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
                   label: Text(
                     f['label']!,
                     style: TextStyle(
-                      color: isSelected ? const Color(0xFF070B12) : const Color(0xFF94A3B8),
+                      color: isSelected ? const Color(0xFF080B11) : const Color(0xFF94A3B8),
                       fontSize: 11,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: const Color(0xFF00F2FE),
-                  backgroundColor: const Color(0xFF090E17),
+                  selectedColor: const Color(0xFF00E5FF),
+                  backgroundColor: const Color(0xFF0F1523),
                   side: BorderSide(
-                    color: isSelected ? const Color(0xFF00F2FE) : const Color(0xFF1E2D44),
+                    color: isSelected ? const Color(0xFF00E5FF) : const Color(0x14FFFFFF),
                   ),
                   onSelected: (val) {
                     if (val) {
+                      HapticFeedback.selectionClick();
                       setState(() => _selectedAction = f['value']!);
                       _fetchLogs();
                     }
@@ -364,13 +373,16 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () => _showLogDetail(log),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        _showLogDetail(log);
+      },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF0C1421),
+          color: const Color(0xFF0F1523),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF1E2D44)),
+          border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -15,6 +15,7 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -62,9 +63,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _onNext() async {
+    HapticFeedback.selectionClick();
     if (_currentIndex < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
       );
     } else {
@@ -73,14 +75,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    HapticFeedback.lightImpact();
     try {
       await TokenStorageHelper().setOnboardingComplete();
     } catch (_) {
       // ignore — non-critical flag
     }
     if (!mounted) return;
-    // After onboarding: send to login if not authed, otherwise home.
-    // The router handles redirects; this is a fresh sign-up UX.
     context.go('/login');
   }
 
@@ -89,19 +90,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF050810),
+      backgroundColor: const Color(0xFF080B11),
       body: Stack(
         children: [
-          // Ambient radial glow
+          // Ambient soft glow
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    _pages[_currentIndex].accent.withValues(alpha: 0.18),
-                    const Color(0xFF050810),
+                    _pages[_currentIndex].accent.withValues(alpha: 0.12),
+                    const Color(0xFF080B11),
                   ],
-                  radius: 1.2,
+                  radius: 1.1,
                   center: Alignment.center,
                 ),
               ),
@@ -162,34 +163,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 120,
-                              height: 120,
+                              width: 110,
+                              height: 110,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    p.accent.withValues(alpha: 0.30),
-                                    p.accent.withValues(alpha: 0.05),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                color: const Color(0xFF0F1523),
                                 border: Border.all(
-                                  color: p.accent.withValues(alpha: 0.40),
-                                  width: 1.5,
+                                  color: const Color(0x14FFFFFF),
+                                  width: 1.0,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: p.accent.withValues(alpha: 0.30),
-                                    blurRadius: 30,
-                                    spreadRadius: 4,
-                                  ),
-                                ],
                               ),
                               child: Icon(
                                 p.icon,
                                 color: p.accent,
-                                size: 56,
+                                size: 52,
                               ),
                             ),
                             const SizedBox(height: 36),
@@ -197,7 +184,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               p.title,
                               textAlign: TextAlign.center,
                               style: theme.textTheme.headlineSmall?.copyWith(
-                                color: Colors.white,
+                                color: const Color(0xFFF8FAFC),
                                 fontWeight: FontWeight.w800,
                                 height: 1.2,
                               ),
@@ -207,7 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               p.description,
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.white60,
+                                color: const Color(0xFF94A3B8),
                                 height: 1.5,
                               ),
                             ),
@@ -231,7 +218,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       decoration: BoxDecoration(
                         color: isActive
                             ? _pages[_currentIndex].accent
-                            : Colors.white24,
+                            : const Color(0x3394A3B8),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     );
@@ -243,7 +230,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                   child: SizedBox(
-                    height: 54,
+                    height: 52,
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _onNext,
@@ -251,7 +238,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         backgroundColor: _pages[_currentIndex].accent,
                         foregroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
@@ -261,7 +248,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             : 'Tiếp theo',
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontSize: 15,
                           letterSpacing: 0.5,
                         ),
                       ),

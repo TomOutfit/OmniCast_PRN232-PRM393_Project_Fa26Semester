@@ -2,6 +2,7 @@
 // Shows channel information, live stream, and program schedule
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -313,16 +314,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF090D16),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -331,7 +325,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
           // Live Header Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            color: const Color(0xFF0F1523),
+            color: const Color(0xFF131B2E),
             child: Row(
               children: [
                 const LiveBadge(),
@@ -340,7 +334,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                   child: Text(
                     _channel?.currentProgram ?? 'PHÁT SÓNG TRỰC TIẾP 24/7',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFF8FAFC),
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       overflow: TextOverflow.ellipsis,
@@ -348,20 +342,25 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.2),
+                    color: const Color(0x1AEF4444),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                    border: Border.all(color: const Color(0x33EF4444)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.remove_red_eye_outlined, size: 12, color: Colors.redAccent),
+                      Icon(Icons.sensors_rounded, size: 12, color: Color(0xFFEF4444)),
                       SizedBox(width: 4),
                       Text(
-                        '12.4K',
-                        style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                        'TRỰC TIẾP',
+                        style: TextStyle(
+                          color: Color(0xFFEF4444),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),
@@ -486,30 +485,22 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF2563EB)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x6600E5FF),
-                  blurRadius: 16,
-                  offset: Offset(0, 4),
-                ),
-              ],
+              color: const Color(0xFF00E5FF),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {
+                  HapticFeedback.selectionClick();
                   if (_channel?.isLive == true) {
                     context.push('/live');
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Kênh đang phát luồng mặc định HEVC 2160p60'),
-                        backgroundColor: Color(0xFF090F1A),
+                        content: Text('Đang phát luồng phát sóng tiêu chuẩn'),
+                        backgroundColor: Color(0xFF0F1523),
                         duration: Duration(seconds: 1),
                       ),
                     );
@@ -522,22 +513,20 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen>
                     children: [
                       Icon(
                         _channel?.isLive == true
-                            ? Icons.radio_button_checked
+                            ? Icons.sensors_rounded
                             : Icons.play_arrow_rounded,
-                        color: _channel?.isLive == true
-                            ? const Color(0xFFFF2A55)
-                            : const Color(0xFF070B12),
-                        size: 24,
+                        color: Colors.black,
+                        size: 22,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _channel?.isLive == true
-                            ? 'XEM LUỒNG TRỰC TIẾP (LIVE NOW)'
-                            : 'Xem Trực Tiếp (HEVC 2160p60)',
+                            ? 'XEM PHÁT SÓNG TRỰC TIẾP'
+                            : 'Xem luồng phát sóng',
                         style: const TextStyle(
-                          color: Color(0xFF070B12),
+                          color: Colors.black,
                           fontSize: 14,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.3,
                         ),
                       ),
