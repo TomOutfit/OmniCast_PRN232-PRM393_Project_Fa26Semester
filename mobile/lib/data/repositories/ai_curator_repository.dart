@@ -467,6 +467,39 @@ class ApplyCurationResult {
   }
 }
 
+class AiCuratorStatsModel {
+  final int totalReports;
+  final int programsMarkedApplied;
+  final double avgEngagement;
+  final int avgProcessingTimeMs;
+  final int primeTimeCount;
+  final int standardCount;
+
+  const AiCuratorStatsModel({
+    required this.totalReports,
+    required this.programsMarkedApplied,
+    required this.avgEngagement,
+    required this.avgProcessingTimeMs,
+    required this.primeTimeCount,
+    required this.standardCount,
+  });
+
+  factory AiCuratorStatsModel.fromJson(Map<String, dynamic> json) {
+    final bs = json['broadcastSuitability'] as Map<String, dynamic>? ?? {};
+    final pt = (bs['PRIME_TIME'] as Map<String, dynamic>?)?['count'] as num? ?? 0;
+    final st = (bs['STANDARD'] as Map<String, dynamic>?)?['count'] as num? ?? 0;
+
+    return AiCuratorStatsModel(
+      totalReports: (json['totalReports'] as num?)?.toInt() ?? 0,
+      programsMarkedApplied: (json['programsMarkedApplied'] as num?)?.toInt() ?? 0,
+      avgEngagement: (json['avgEngagement'] as num?)?.toDouble() ?? 0.0,
+      avgProcessingTimeMs: (json['avgProcessingTimeMs'] as num?)?.toInt() ?? 0,
+      primeTimeCount: pt.toInt(),
+      standardCount: st.toInt(),
+    );
+  }
+}
+
 // ============================================================
 // Repository
 // ============================================================
@@ -584,6 +617,23 @@ class AiCuratorRepository {
           .whereType<Map>()
           .map((m) => AiCuratorReport.fromJson(m.cast<String, dynamic>()))
           .toList(growable: false);
+    } on DioException catch (e) {
+      throw _toAiCuratorException(e);
+    }
+  }
+
+  // ── Stats ──────────────────────────────────────────────────
+  Future<AiCuratorStatsModel> stats([String period = 'week']) async {
+    try {
+      final res = await _dioClient.get(
+        AppEndpoints.aiCuratorStats,
+        queryParameters: {'period': period},
+      );
+      final raw = res.data;
+      final map = (raw is Map && raw['data'] is Map)
+          ? raw['data'] as Map<String, dynamic>
+          : (raw as Map<String, dynamic>);
+      return AiCuratorStatsModel.fromJson(map);
     } on DioException catch (e) {
       throw _toAiCuratorException(e);
     }

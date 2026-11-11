@@ -164,6 +164,7 @@ class AppEndpoints {
       '/v1/ai-curator/apply/$programId';
   static String aiCuratorHistory(String programId) =>
       '/v1/ai-curator/history/$programId';
+  static const String aiCuratorStats = '/v1/ai-curator/stats';
 
   // Audit Logs
   static const String auditLogs = '/v1/audit-logs';

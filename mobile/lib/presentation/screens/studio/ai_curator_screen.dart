@@ -84,6 +84,9 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   bool _applying = false;
   String? _applySuccess;
 
+  // Pipeline Stats
+  AiCuratorStatsModel? _stats;
+
   late final TabController _tabController;
 
   @override
@@ -93,6 +96,16 @@ class _AICuratorScreenState extends State<AICuratorScreen>
     _programsRepo = getIt<ProgramsRepository>();
     _tabController = TabController(length: 3, vsync: this);
     _loadPrograms();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final s = await _curatorRepo.stats();
+      if (mounted) setState(() => _stats = s);
+    } catch (_) {
+      // Gracefully ignore (especially in tests where stats is unmocked)
+    }
   }
 
   @override
@@ -378,7 +391,9 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          _buildQuickPresets(),
+          const SizedBox(height: 16),
 
           // Title field
           _buildTextField(
@@ -748,139 +763,240 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   }
 
   Widget _buildCurateExistingRow(_ScheduledProgram p) {
+    final isSelectedWithResult = _selectedProgram?.id == p.id && _result != null;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+        border: Border.all(
+          color: isSelectedWithResult
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
+              : const Color(0x14FFFFFF),
+          width: 0.8,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.live_tv_rounded,
-              color: Color(0xFF00E5FF),
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                if (p.channelName.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    p.channelName,
-                    style: const TextStyle(
-                      color: AppColors.textFaint,
-                      fontSize: 11,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _isLoading
-                ? null
-                : () async {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _isLoading = true;
-                      _error = null;
-                    });
-                    try {
-                      final report = await _curatorRepo.curate(
-                        programId: p.id,
-                        forceRefresh: true,
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _result = report;
-                        _selectedProgram = p;
-                        _isLoading = false;
-                      });
-                      // Auto-load history for the freshly-curated program.
-                      await _loadHistory(p.id);
-                    } on AiCuratorException catch (e) {
-                      if (!mounted) return;
-                      setState(() {
-                        _error = e.message;
-                        _isLoading = false;
-                      });
-                    } catch (e) {
-                      if (!mounted) return;
-                      setState(() {
-                        _error = _tr(
-                          context,
-                          'curator.errorUnknown',
-                          {'error': e.toString()},
-                        );
-                        _isLoading = false;
-                      });
-                    }
-                  },
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+                child: const Icon(
+                  Icons.live_tv_rounded,
+                  color: Color(0xFF00E5FF),
+                  size: 18,
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isLoading)
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
-                    )
-                  else
-                    const Icon(
-                      Icons.auto_awesome,
-                      color: Colors.black,
-                      size: 14,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(width: 6),
-                  Text(
-                    appT(context, 'curator.runAnalysisBtn', 'Phân tích AI'),
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Outfit',
-                      letterSpacing: 0.4,
+                    if (p.channelName.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        p.channelName,
+                        style: const TextStyle(
+                          color: AppColors.textFaint,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _isLoading
+                    ? null
+                    : () async {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _isLoading = true;
+                          _error = null;
+                        });
+                        try {
+                          final report = await _curatorRepo.curate(
+                            programId: p.id,
+                            forceRefresh: true,
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            _result = report;
+                            _selectedProgram = p;
+                            _isLoading = false;
+                          });
+                          // Auto-load history for the freshly-curated program.
+                          await _loadHistory(p.id);
+                        } on AiCuratorException catch (e) {
+                          if (!mounted) return;
+                          setState(() {
+                            _error = e.message;
+                            _isLoading = false;
+                          });
+                        } catch (e) {
+                          if (!mounted) return;
+                          setState(() {
+                            _error = _tr(
+                              context,
+                              'curator.errorUnknown',
+                              {'error': e.toString()},
+                            );
+                            _isLoading = false;
+                          });
+                        }
+                      },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isLoading && _selectedProgram?.id == p.id)
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      else
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.black,
+                          size: 14,
+                        ),
+                      const SizedBox(width: 6),
+                      Text(
+                        appT(context, 'curator.runAnalysisBtn', 'Phân tích AI'),
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Outfit',
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isSelectedWithResult) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131B2E),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x14FFFFFF)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Khung giờ vàng AI: ${_result!.suggestedTimeSlot}',
+                          style: const TextStyle(
+                            color: Color(0xFF00E5FF),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (_result!.scoringBreakdown != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _gradeBgColor(_result!.scoringBreakdown!.grade),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${_result!.scoringBreakdown!.overallScore}đ · Hạng ${_result!.scoringBreakdown!.grade}',
+                            style: TextStyle(
+                              color: _gradeTextColor(_result!.scoringBreakdown!.grade),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (_result!.targetAudienceVibe.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _result!.targetAudienceVibe,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      onPressed: _applying ? null : _applyToProgram,
+                      icon: _applying
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
+                              ),
+                            )
+                          : const Icon(Icons.bolt_rounded, size: 16),
+                      label: Text(
+                        _applying
+                            ? 'Đang áp dụng...'
+                            : 'ÁP DỤNG VÀO LỊCH CHIẾU NGAY',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00E5FF),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -888,64 +1004,201 @@ class _AICuratorScreenState extends State<AICuratorScreen>
 
   // ── UI Builders ─────────────────────────────────────────────
 
+  Widget _buildQuickPresets() {
+    final presets = [
+      {
+        'chip': '🎬 Phim tài liệu 4K',
+        'title': 'Hùng Vĩ Đại Ngàn: Khám Phá Rừng Quốc Gia Cát Tiên',
+        'desc': 'Chuyến thám hiểm chuyên sâu về thảm thực vật nhiệt đới, đa dạng sinh học và các loài động vật hoang dã quý hiếm.',
+        'channel': 'VTV Special HD',
+        'duration': '50',
+      },
+      {
+        'chip': '⚽ Bình luận trực tiếp',
+        'title': 'Đại Chiến Ngoại Hạng Anh: Nhận Định Trước Trận Đấu',
+        'desc': 'Phân tích chiến thuật, đội hình xuất phát, điểm nóng đối đầu và ý kiến chuyên gia trước giờ bóng lăn.',
+        'channel': 'K+ Sport 1',
+        'duration': '45',
+      },
+      {
+        'chip': '📰 Thời sự tiêu điểm',
+        'title': 'Nhịp Sống Công Nghệ: Bùng Nổ Trí Tuệ Nhân Tạo 2026',
+        'desc': 'Điểm tin đổi mới sáng tạo, xu hướng ứng dụng Generative AI trong chuyển đổi số truyền hình và giáo dục.',
+        'channel': 'OmniCast News',
+        'duration': '30',
+      },
+      {
+        'chip': '🎮 Chung kết Esports',
+        'title': 'VCS Mùa Xuân: Trận Chung Kết Tổng Đỉnh Cao',
+        'desc': 'Đại chiến phân định ngôi vương quốc gia với dàn tuyển thủ huyền thoại và không khí cuồng nhiệt tại nhà thi đấu.',
+        'channel': 'Omni Gaming',
+        'duration': '90',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF00E5FF)),
+            SizedBox(width: 4),
+            Text(
+              'MẪU KỊCH BẢN THỬ NGHIỆM NHANH',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF00E5FF),
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: presets.map((p) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  label: Text(
+                    p['chip']!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: const Color(0xFF0F1523),
+                  side: const BorderSide(color: Color(0x14FFFFFF)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _titleController.text = p['title']!;
+                    _descController.text = p['desc']!;
+                    _channelController.text = p['channel']!;
+                    _durationController.text = p['duration']!;
+                    if (_error != null) setState(() => _error = null);
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x3300E5FF), width: 0.8),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0x2900E5FF)),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Color(0xFF00E5FF),
+                  size: 24,
+                ),
               ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
-                  blurRadius: 10,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appT(context, 'curator.newAnalysisHeader'),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Outfit',
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      appT(context, 'curator.threeAgentHint'),
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: Colors.black,
-              size: 26,
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appT(context, 'curator.newAnalysisHeader'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Outfit',
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  appT(context, 'curator.threeAgentHint'),
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          if (_stats != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131B2E),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x14FFFFFF)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatCol('ĐÃ KIỂM ĐỊNH', '${_stats!.totalReports}', const Color(0xFF00E5FF)),
+                  Container(width: 1, height: 20, color: const Color(0x14FFFFFF)),
+                  _buildStatCol('GIỜ VÀNG', '${_stats!.primeTimeCount}', const Color(0xFFF59E0B)),
+                  Container(width: 1, height: 20, color: const Color(0x14FFFFFF)),
+                  _buildStatCol('ĐÃ ÁP DỤNG', '${_stats!.programsMarkedApplied}', const Color(0xFF10B981)),
+                  Container(width: 1, height: 20, color: const Color(0x14FFFFFF)),
+                  _buildStatCol('TỐC ĐỘ AI', '${_stats!.avgProcessingTimeMs}ms', const Color(0xFF94A3B8)),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildStatCol(String label, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'JetBrainsMono',
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 
