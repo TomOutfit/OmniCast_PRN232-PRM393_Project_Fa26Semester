@@ -172,6 +172,45 @@ void main() {
       expect(reply, contains('đạo cụ âm thanh'));
     });
 
+    test('chatWithAssistant handles real-time clock and donation prompts without hijacking', () async {
+      final clockReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Mấy giờ rồi bạn nhỉ',
+      );
+      expect(clockReply, isNotEmpty);
+      expect(clockReply, contains('(giờ Việt Nam) rồi nè'));
+      expect(clockReply.contains('GÓI THÀNH VIÊN VIP'), isFalse);
+      expect(clockReply.contains('PRIME-TIME'), isFalse);
+
+      final donationReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Gợi ý kích thích tặng quà Super Chat & VietQR PayOS',
+      );
+      expect(donationReply, isNotEmpty);
+      expect(donationReply, contains('SUPER CHAT / VIETQR PAYOS'));
+      expect(donationReply, contains('Live Studio'));
+      expect(donationReply.contains('GÓI THÀNH VIÊN VIP'), isFalse);
+
+      // Verify loose words do not get hijacked
+      final noteReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Có điều gì cần lưu ý không bạn?',
+      );
+      expect(noteReply.contains('Kho bản ghi VOD'), isFalse);
+
+      final actorReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Bạn có thích các diễn viên trẻ không?',
+      );
+      expect(actorReply.contains('RETENTION'), isFalse);
+
+      final forbidReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Cấm bạn nói xấu người khác nha!',
+      );
+      expect(forbidReply.contains('COMPLIANCE'), isFalse);
+    });
+
     test('chatWithAssistant grounds recommendations in real availablePrograms list', () async {
       final realPrograms = [
         ProgramRecommendationContext(

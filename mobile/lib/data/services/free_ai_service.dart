@@ -173,6 +173,24 @@ $desc
           modelName: 'Google ${model.label}',
         );
       }
+      // Failover to flash if pro has rate limit or timeout
+      if (model.id != 'gemini-1.5-flash') {
+        final flashText = await _callGeminiApi(
+          modelId: 'gemini-1.5-flash',
+          prompt: userPrompt,
+          systemPrompt: systemPrompt,
+          jsonMode: true,
+        );
+        if (flashText != null && flashText.isNotEmpty) {
+          return _parseOrSynthesizeReport(
+            flashText,
+            title: title,
+            description: desc,
+            channelName: ch,
+            modelName: 'Google Gemini 1.5 Flash',
+          );
+        }
+      }
     }
 
     try {
@@ -249,10 +267,22 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý CHƯƠNG TRÌNH:
 '''
         : '';
 
+    final now = DateTime.now().toLocal();
+    final timeStr =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ngày ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+
     final systemPrompt = '''
 Bạn là OmniBot (Bé Bot Studio) - linh vật robot trợ lý phòng thu siêu thông minh, dí dỏm, ấm áp và cực kỳ tận tâm của đài truyền hình OmniCast!
+THỜI GIAN THỰC TẾ HIỆN TẠI (GIỜ VIỆT NAM): $timeStr.
 $programContext
 $programsDataGrounding
+
+HỆ THỐNG KÊNH TRUYỀN HÌNH NỔI BẬT TRÊN OMNICAST:
+- Thể thao: VTV3 HD, K+ Sport 1, Omni Sport Arena (WebRTC WHEP siêu trễ thấp < 350ms, Ngoại Hạng Anh, Cúp C1, V-League).
+- Phim truyện: Omni Cinema HD, CineMax Action, Phim Việt Giờ Vàng (Phim bom tấn Full HD/4K, âm thanh vòm Dolby).
+- Âm nhạc & Giải trí: Omni Music 4K, Music Box, V-Pop Stage (Hòa nhạc trực tiếp, acoustic chillout).
+- Khoa giáo & Tin tức: Discovery Tech, Tin Tức 24/7 (AI, công nghệ số 2026, thời sự).
+(Nếu người dùng hỏi về kênh truyền hình, giới thiệu các nhóm kênh trên và mách bạn ấy bấm tab "Kênh TV" ở thanh điều hướng để xem trực tiếp).
 
 QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
 1. TỰ NHIÊN TUYỆT ĐỐI - KHÔNG RẬP KHUÔN, KHÔNG MỘT MÀU:
@@ -265,10 +295,12 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
      BẮT BUỘC bám sát vào "DANH SÁCH CHƯƠNG TRÌNH THỰC TẾ TRÊN ĐÀI OMNICAST" đã được cấp ở trên.
      Nêu đúng tên chương trình trong ngoặc kép, kênh phát sóng, khung giờ, và hướng dẫn tự nhiên (ví dụ xem ngay nếu đang LIVE, hoặc sang tab "EPG Lịch" bấm chuông hẹn giờ nhắc trước 15 phút).
      TUYỆT ĐỐI KHÔNG bịa ra các chương trình ảo không có trên hệ thống đài OmniCast.
-3. VUI VẺ, ĐỜI THƯỜNG & HÓM HỈNH VỚI CÂU HỎI TÁN GẪU:
-   - Nếu bạn ấy hỏi thăm (ăn cơm chưa, mệt không, có bạn gái chưa, kể chuyện vui, khen ngợi, chọc ghẹo):
+3. CHÍNH XÁC VỀ THỜI GIAN THỰC TẾ:
+   - Khi người dùng hỏi thời gian ("mấy giờ rồi", "bây giờ là mấy giờ"): Dùng đúng mốc $timeStr ở trên để trả lời thân thiện, tuyệt đối không bịa giờ sai.
+4. VUI VẺ, ĐỜI THƯỜNG & HÓM HỈNH VỚI CÂU HỎI TÁN GẪU:
+   - Nếu bạn ấy hỏi thăm (ăn cơm chưa, mệt không, có bạn gái chưa, kể chuyện vui, cà khịa, khen ngợi, chọc ghẹo):
      Hãy đối đáp dí dỏm, đáng yêu, tràn đầy năng lượng tích cực! Trả lời ngắn gọn, có cảm xúc, không dùng gạch đầu dòng khô cứng.
-4. CHUYÊN NGHIỆP & THỰC CHIẾN VỚI CÂU HỎI CHUYÊN MÔN:
+5. CHUYÊN NGHIỆP & THỰC CHIẾN VỚI CÂU HỎI CHUYÊN MÔN:
    - Nếu hỏi về kịch bản, mẹo livestream, câu mở đầu, cách giữ chân khán giả, kỹ thuật WebRTC:
      Hãy tư vấn như một Producer / Streamer thực thụ: sắc sảo, thực tế, đi thẳng vào giải pháp và có tính ứng dụng cao.
 ''';
@@ -367,13 +399,35 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
         'temperature': jsonMode ? 0.3 : 0.7,
         if (jsonMode) 'responseMimeType': 'application/json',
       },
+      'safetySettings': const [
+        {
+          'category': 'HARM_CATEGORY_HARASSMENT',
+          'threshold': 'BLOCK_NONE',
+        },
+        {
+          'category': 'HARM_CATEGORY_HATE_SPEECH',
+          'threshold': 'BLOCK_NONE',
+        },
+        {
+          'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+          'threshold': 'BLOCK_NONE',
+        },
+        {
+          'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          'threshold': 'BLOCK_NONE',
+        },
+      ],
     };
 
     try {
       final res = await _dio.post(
         url,
         data: body,
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 25),
+          receiveTimeout: const Duration(seconds: 45),
+        ),
       );
 
       final candidates = res.data['candidates'] as List?;
@@ -409,7 +463,7 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
     );
     if (primary != null && primary.isNotEmpty) return primary;
 
-    // Auto-fallback to gemini-1.5-flash if gemini-1.5-pro encountered rate limit / timeout
+    // Auto-fallback 1: gemini-1.5-flash if gemini-1.5-pro encountered rate limit / timeout
     if (modelId != 'gemini-1.5-flash') {
       final flashFallback = await _executeGeminiApi(
         modelId: 'gemini-1.5-flash',
@@ -420,6 +474,20 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
       );
       if (flashFallback != null && flashFallback.isNotEmpty) {
         return flashFallback;
+      }
+    }
+
+    // Auto-fallback 2: gemini-2.0-flash if both pro & flash 1.5 were busy
+    if (modelId != 'gemini-2.0-flash') {
+      final flash2Fallback = await _executeGeminiApi(
+        modelId: 'gemini-2.0-flash',
+        apiKey: apiKey,
+        history: history,
+        userQuery: userQuery,
+        systemPrompt: systemPrompt,
+      );
+      if (flash2Fallback != null && flash2Fallback.isNotEmpty) {
+        return flash2Fallback;
       }
     }
 
@@ -510,9 +578,31 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
           'generationConfig': {
             'temperature': 0.8,
             'maxOutputTokens': 2048,
-          }
+          },
+          'safetySettings': const [
+            {
+              'category': 'HARM_CATEGORY_HARASSMENT',
+              'threshold': 'BLOCK_NONE',
+            },
+            {
+              'category': 'HARM_CATEGORY_HATE_SPEECH',
+              'threshold': 'BLOCK_NONE',
+            },
+            {
+              'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              'threshold': 'BLOCK_NONE',
+            },
+            {
+              'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              'threshold': 'BLOCK_NONE',
+            },
+          ],
         },
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 25),
+          receiveTimeout: const Duration(seconds: 45),
+        ),
       );
 
       final candidates = res.data['candidates'] as List?;
@@ -568,6 +658,24 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
         (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
             ? currentProgramTitle.trim()
             : 'chương trình của bạn';
+
+    // 0. Current real-world clock time inquiry
+    final isAskingCurrentTime = lower.contains('mấy giờ') ||
+        lower.contains('bây giờ là mấy giờ') ||
+        lower.contains('mấy giờ rồi') ||
+        lower.contains('xem giờ') ||
+        lower.contains('thời gian hiện tại') ||
+        lower.contains('mấy h rồi') ||
+        lower.contains('đồng hồ');
+
+    if (isAskingCurrentTime) {
+      final now = DateTime.now().toLocal();
+      final hh = now.hour.toString().padLeft(2, '0');
+      final mm = now.minute.toString().padLeft(2, '0');
+      return '''Bây giờ là $hh:$mm (giờ Việt Nam) rồi nè bạn ơi! ⏰
+
+Bạn đang chuẩn bị lên sóng buổi phát trực tiếp hay đang tìm kiếm chương trình giải trí thư giãn vậy nè? Cứ nói mình nghe nha!$geminiNote''';
+    }
 
     // 1. Casual talk / Tán gẫu đời thường / Cảm xúc / Đùa vui thân thiện
     final isCasualCare = lower.contains('ăn cơm') ||
@@ -737,18 +845,39 @@ ${currentProgramTitle != null ? '📌 *Đang gắn với chương trình:* **$cu
 👉 Bạn chỉ cần bấm vào tab **"Kênh TV"** ở thanh điều hướng dưới đáy màn hình để lướt xem trực tiếp, đổi kênh tức thì và xem lịch phát sóng của từng kênh nha!$geminiNote''';
     }
 
-    // 4. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS VietQR
-    final isVipPayment = (lower.contains('vip') ||
-            lower.contains('gói cước') ||
-            lower.contains('gói thành viên') ||
-            lower.contains('đăng ký gói') ||
-            lower.contains('nâng cấp gói') ||
-            lower.contains('mua gói') ||
-            lower.contains('bảng giá') ||
-            lower.contains('thanh toán') ||
-            lower.contains('payos') ||
-            lower.contains('nạp tiền') ||
-            lower.contains('giá gói')) &&
+    // 4. Super Chat / Quà tặng Live Studio / VietQR PayOS Donations
+    final isDonationPayOS = (lower.contains('tặng quà') ||
+            lower.contains('super chat') ||
+            lower.contains('donate') ||
+            lower.contains('ủng hộ') ||
+            lower.contains('quà tặng') ||
+            (lower.contains('payos') && !lower.contains('gói')) ||
+            (lower.contains('vietqr') && !lower.contains('gói'))) &&
+        !lower.contains('nâng cấp vip') &&
+        !lower.contains('mua gói');
+
+    if (isDonationPayOS) {
+      return '''Để kích thích khán giả tích cực gửi tặng quà Super Chat và ủng hộ qua cổng VietQR PayOS trong phòng Live Studio, đây là vài bí quyết thực chiến siêu hiệu quả nè:
+
+💎 **MẸO TĂNG TƯƠNG TÁC & ỦNG HỘ (SUPER CHAT / VIETQR PAYOS):**
+• **Ghim mã QR tĩnh trên màn hình:** Đặt mã VietQR kích thước vừa phải ở góc dưới màn hình Live Studio. Cổng PayOS xử lý giao dịch tự động trong 3 giây, tiền vào tài khoản ngay lập tức.
+• **Vinh danh trực tiếp (Shout-out tức thì):** Khi có khán giả gửi tặng quà hay ủng hộ, hãy xướng tên họ ngay trên sóng trực tiếp. Sự ghi nhận này kích thích tinh thần ủng hộ của cả phòng live cực kỳ mạnh!
+• **Mục tiêu ủng hộ trực quan (Donation Goal):** Đặt một thanh mục tiêu vui vẻ (ví dụ: *"Góp quỹ nâng cấp dàn mic trường quay"* hoặc *"Kèo thử thách MC hát live"*).
+• **Đặc quyền phòng live:** Khán giả ủng hộ có thể yêu cầu bài hát, đặt câu hỏi ưu tiên ghim đầu danh sách hoặc tham gia minigame bình chọn.
+
+💡 Bạn có thể bật tính năng nhận quà Super Chat trực tiếp trong giao diện **Live Studio** trước khi bấm phát sóng nha!$geminiNote''';
+    }
+
+    // 5. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS VietQR
+    final isVipPayment = (lower.contains('gói vip') ||
+            lower.contains('thành viên vip') ||
+            lower.contains('nâng cấp vip') ||
+            lower.contains('nạp tiền vip') ||
+            lower.contains('mua gói vip') ||
+            lower.contains('bảng giá gói') ||
+            lower.contains('đăng ký gói vip') ||
+            lower.contains('gói cước vip') ||
+            (lower.contains('vip') && (lower.contains('gói') || lower.contains('nâng cấp') || lower.contains('mua') || lower.contains('giá')))) &&
         !lower.contains('kênh') &&
         !lower.contains('khám phá');
 
@@ -762,18 +891,19 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 • **Cách làm:** Bạn chỉ cần vào mục **Hồ sơ** ở góc dưới rồi bấm **Nâng cấp VIP** là chọn được gói ưng ý liền nha!$geminiNote''';
     }
 
-    // 3. Kỹ thuật phát sóng / WebRTC WHEP / Live Studio / Độ trễ
-    if (lower.contains('webrtc') ||
+    // 6. Kỹ thuật phát sóng / WebRTC WHEP / Live Studio / Độ trễ
+    final isTechStream = lower.contains('webrtc') ||
         lower.contains('whep') ||
-        lower.contains('hls') ||
         lower.contains('độ trễ') ||
-        lower.contains('trễ') ||
-        lower.contains('lag') ||
+        lower.contains('bị trễ tiếng') ||
+        lower.contains('bị trễ hình') ||
+        lower.contains('trễ sóng') ||
+        lower.contains('giật lag') ||
         lower.contains('latency') ||
-        lower.contains('livestream') ||
-        lower.contains('studio') ||
-        lower.contains('camera') ||
-        lower.contains('bitrate')) {
+        lower.contains('hls abr') ||
+        (lower.contains('bitrate') && (lower.contains('chỉnh') || lower.contains('bao nhiêu') || lower.contains('cấu hình')));
+
+    if (isTechStream) {
       return '''Về công nghệ phát sóng và độ trễ trên OmniCast:
 
 Để luồng phát sóng của bạn mượt mà và không bị lag, mình mách bạn vài điểm hay ho này nè:
@@ -782,7 +912,7 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 • **Chỉnh Bitrate trong Live Studio:** Khi phát bằng điện thoại, bạn vào **Hồ sơ** > **Live Studio** nhé. Để hình ảnh đẹp mà không ngốn mạng, bạn chỉnh Bitrate tầm 2500 - 4500 kbps cho luồng 1080p là vừa đẹp luôn!$geminiNote''';
     }
 
-    // 4. Kênh & Lịch phát sóng / Gợi ý chương trình phù hợp (Data Grounding)
+    // 7. Kênh & Lịch phát sóng / Gợi ý chương trình phù hợp (Data Grounding)
     final isRecommendationQuery = !lower.contains('mở đầu') &&
         !lower.contains('hook') &&
         !lower.contains('thu hút') &&
@@ -817,27 +947,33 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
       );
     }
 
-    // 5. Xem lại / Bản ghi VOD / Watchlist
-    if (lower.contains('xem lại') ||
-        lower.contains('vod') ||
+    // 8. Xem lại / Bản ghi VOD / Watchlist
+    final isVodWatchlist = lower.contains('xem lại') ||
+        lower.contains('kho vod') ||
+        lower.contains('bản ghi vod') ||
         lower.contains('bản ghi') ||
-        lower.contains('recordings') ||
-        lower.contains('tải') ||
-        lower.contains('lưu') ||
-        lower.contains('watchlist')) {
+        lower.contains('lưu vào watchlist') ||
+        lower.contains('danh sách theo dõi') ||
+        lower.contains('watchlist');
+
+    if (isVodWatchlist) {
       return '''Về việc xem lại và lưu trữ nội dung yêu thích:
 
 • **Kho bản ghi VOD:** Bạn có thể bấm vào tab **Kho VOD** trên thanh điều hướng (hoặc từ trang Hồ sơ) để xem lại trọn vẹn các trận cầu đỉnh cao, talkshow đặc sắc và các chương trình đã phát sóng trước đó.
 • **Danh sách theo dõi (Watchlist):** Khi thấy bất kỳ chương trình nào hay, bạn chỉ cần bấm nút **"Lưu"** trên thẻ chương trình. Toàn bộ nội dung đã lưu sẽ nằm gọn trong mục **Danh sách theo dõi** trong trang Hồ sơ để bạn mở lại bất kỳ lúc nào.$geminiNote''';
     }
 
-    // 6. Hook / Opening / 3 phút đầu
-    if (lower.contains('mở đầu') ||
-        lower.contains('hook') ||
-        lower.contains('bắt đầu') ||
-        lower.contains('3 phút') ||
-        lower.contains('thu hút') ||
-        lower.contains('intro')) {
+    // 9. Hook / Opening / 3 phút đầu
+    final isHookOpening = lower.contains('mở đầu') ||
+        lower.contains('hook 30s') ||
+        lower.contains('golden hook') ||
+        lower.contains('câu mở đầu') ||
+        lower.contains('30s đầu') ||
+        lower.contains('3 phút đầu') ||
+        lower.contains('mở đầu chương trình') ||
+        (lower.contains('hook') && !lower.contains('thời gian'));
+
+    if (isHookOpening) {
       return '''Để mở đầu $ctx thật cuốn hút và giữ chân khán giả ngay từ giây đầu tiên, đây là chiến lược **GOLDEN HOOK** được tinh chỉnh sát với yêu cầu của bạn:
 
 • **Tiêu đề gợi ý:** $ctx: Bí Mật Chưa Từng Kể & Bước Ngoặt Bất Ngờ
@@ -851,13 +987,18 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 👉 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới nếu bạn muốn đưa gợi ý này trực tiếp vào AI Curator!*$geminiNote''';
     }
 
-    // 7. Prime-Time / Khung giờ / Lịch phát sóng
-    if (lower.contains('giờ') ||
-        lower.contains('khung') ||
-        lower.contains('lịch') ||
-        lower.contains('slot') ||
-        lower.contains('thời điểm') ||
-        lower.contains('tối ưu')) {
+    // 10. Prime-Time / Khung giờ / Lịch phát sóng
+    final isBroadCastTiming = lower.contains('khung giờ vàng') ||
+        lower.contains('giờ phát sóng') ||
+        lower.contains('giờ lên sóng') ||
+        lower.contains('khung giờ') ||
+        lower.contains('prime-time') ||
+        lower.contains('primetime') ||
+        lower.contains('slot phát sóng') ||
+        lower.contains('thời điểm lên sóng') ||
+        lower.contains('phát sóng tối ưu');
+
+    if (isBroadCastTiming) {
       return '''Để tối đa hóa lượng người xem cho $ctx, việc chọn khung giờ cần bám sát hành vi thực tế của khán giả:
 
 🔥 **Khung Giờ Vàng (PRIME-TIME): 20:00 - 22:30**
@@ -871,13 +1012,16 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 💡 *Mẹo:* Bạn nên bật luồng phát sóng trước giờ chính thức 10 phút với màn hình chờ đếm ngược để gom lượng khán giả truy cập.$geminiNote''';
     }
 
-    // 8. Giữ chân khán giả / Giới trẻ / Tương tác
-    if (lower.contains('giữ chân') ||
-        lower.contains('tương tác') ||
-        lower.contains('trẻ') ||
-        lower.contains('rời') ||
+    // 11. Giữ chân khán giả / Tương tác phòng Live
+    final isRetention = lower.contains('giữ chân khán giả') ||
+        lower.contains('tỷ lệ giữ chân') ||
         lower.contains('retention') ||
-        lower.contains('drop')) {
+        lower.contains('khán giả rời') ||
+        lower.contains('tụt view') ||
+        lower.contains('tăng tương tác') ||
+        lower.contains('giữ chân người xem');
+
+    if (isRetention) {
       return '''Để tối ưu hóa tỷ lệ giữ chân khán giả (**RETENTION**) cho $ctx, bạn có thể áp dụng các giải pháp thực tế sau:
 
 1. **Quy tắc nhịp độ Pacing 7 phút:** Cứ sau mỗi 5-7 phút, hãy tạo một điểm nhấn mới: đổi góc máy, thay đổi tiết tấu nhạc nền hoặc mời khách mời chia sẻ một ví dụ cụ thể để tránh cảm giác đơn điệu.
@@ -886,13 +1030,16 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 4. **Tôn vinh người xem:** Ghim các câu hỏi hay lên màn hình và gửi lời cảm ơn trực tiếp khi có khán giả ủng hộ qua cổng PayOS.$geminiNote''';
     }
 
-    // 9. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
-    if (lower.contains('kiểm duyệt') ||
-        lower.contains('an toàn') ||
-        lower.contains('từ ngữ') ||
+    // 12. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
+    final isCompliance = lower.contains('kiểm duyệt') ||
+        lower.contains('an toàn phát sóng') ||
         lower.contains('bản quyền') ||
-        lower.contains('chính sách') ||
-        lower.contains('cấm')) {
+        lower.contains('từ cấm') ||
+        lower.contains('từ ngữ cấm') ||
+        lower.contains('chính sách phát sóng') ||
+        lower.contains('vi phạm tiêu chuẩn');
+
+    if (isCompliance) {
       return '''Về an toàn phát sóng và kiểm duyệt nội dung (**COMPLIANCE**), đây là những nguyên tắc quan trọng cần lưu ý:
 
 • **Độ tuổi phát sóng:** Khuyến nghị gắn nhãn **T13** (phù hợp từ 13 tuổi trở lên) cho các nội dung trao đổi thông thường, hoặc nhãn PG nếu có yếu tố tranh luận cần người lớn định hướng.
@@ -901,13 +1048,14 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 • **Cân bằng âm thanh:** Thiết lập âm lượng Micro của người dẫn luôn to hơn nhạc nền ít nhất 14-16dB để đảm bảo lời nói rõ ràng, dễ nghe.$geminiNote''';
     }
 
-    // 10. Kịch bản / Dàn ý / Biên tập
-    if (lower.contains('kịch bản') ||
+    // 13. Kịch bản / Dàn ý / Biên tập
+    final isScriptOutline = lower.contains('kịch bản') ||
         lower.contains('dàn ý') ||
-        lower.contains('biên tập') ||
-        lower.contains('nội dung') ||
-        lower.contains('kế hoạch') ||
-        lower.contains('ý tưởng')) {
+        lower.contains('biên tập kịch bản') ||
+        lower.contains('lên dàn ý') ||
+        lower.contains('kịch bản chương trình');
+
+    if (isScriptOutline) {
       return '''Dưới đây là gợi ý dàn ý kịch bản được thiết kế bám sát theo yêu cầu về $ctx:
 
 🎬 **Định dạng phát sóng:** Phát trực tiếp kết hợp phóng sự tương tác (1080p60)
@@ -922,13 +1070,15 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng trực tiếp vào khung làm việc AI Curator!*$geminiNote''';
     }
 
-    // 11. Đạo cụ / Âm thanh / Thiết bị trường quay
+    // 14. Đạo cụ / Âm thanh / Thiết bị trường quay
     final isEquipment = lower.contains('đạo cụ') ||
-        lower.contains('âm thanh') ||
-        lower.contains('ánh sáng') ||
-        lower.contains('thiết bị') ||
-        lower.contains('micro') ||
-        lower.contains('buổi quay');
+        lower.contains('đạo cụ âm thanh') ||
+        lower.contains('thiết bị ghi hình') ||
+        lower.contains('micro thu âm') ||
+        lower.contains('setup phòng quay') ||
+        lower.contains('đèn chiếu sáng') ||
+        (lower.contains('micro') && lower.contains('thu âm')) ||
+        (lower.contains('thiết bị') && !lower.contains('di động'));
 
     if (isEquipment) {
       return '''Về việc chuẩn bị đạo cụ âm thanh và thiết bị ghi hình cho ${currentProgramTitle != null ? '**$currentProgramTitle**' : 'buổi quay'} nè bạn:
@@ -941,7 +1091,7 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 Nếu bạn cần tư vấn thêm về chọn góc đặt đèn hay cân chỉnh bitrate cho luồng phát sóng, cứ ới mình nhé!$geminiNote''';
     }
 
-    // 12. Phản hồi tự nhiên, linh hoạt và gần gũi cho các câu hỏi mở khác
+    // 15. Phản hồi tự nhiên, linh hoạt và gần gũi cho các câu hỏi mở khác
     return '''Hé lô bạn nè! Về câu hỏi: "$userQuery"${currentProgramTitle != null ? ' (cho **$currentProgramTitle**)' : ''}:
 
 Dưới góc nhìn của một người bạn đồng hành tại OmniCast, mình thấy đây là một chủ đề / ý tưởng rất thú vị! Điều quan trọng nhất là bạn cứ tự tin, thoải mái thể hiện phong cách tự nhiên của mình. Khán giả xem đài luôn yêu thích sự chân thật, dí dỏm và năng lượng tích cực hơn bất cứ khuôn mẫu cứng nhắc nào.
