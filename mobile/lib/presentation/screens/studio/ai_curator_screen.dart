@@ -392,6 +392,8 @@ class _AICuratorScreenState extends State<AICuratorScreen>
         children: [
           _buildHeader(),
           const SizedBox(height: 16),
+          _buildProgramSelectorDropdown(),
+          const SizedBox(height: 16),
           _buildQuickPresets(),
           const SizedBox(height: 16),
 
@@ -1003,6 +1005,172 @@ class _AICuratorScreenState extends State<AICuratorScreen>
   }
 
   // ── UI Builders ─────────────────────────────────────────────
+
+  Widget _buildProgramSelectorDropdown() {
+    // Reconcile selected program with current _programs list for dropdown safety
+    _ScheduledProgram? effectiveSelected;
+    if (_selectedProgram != null && _programs.isNotEmpty) {
+      final idx = _programs.indexWhere((p) => p.id == _selectedProgram!.id);
+      if (idx >= 0) {
+        effectiveSelected = _programs[idx];
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.video_library_rounded, size: 14, color: Color(0xFF00E5FF)),
+                SizedBox(width: 6),
+                Text(
+                  'CHỌN CHƯƠNG TRÌNH TỪ KHO (EPG)',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF00E5FF),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+            if (effectiveSelected != null)
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _selectedProgram = null;
+                    _titleController.clear();
+                    _descController.clear();
+                    _channelController.clear();
+                    _durationController.clear();
+                    if (_error != null) _error = null;
+                  });
+                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.close_rounded, size: 14, color: Color(0xFF94A3B8)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Xóa chọn',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Chọn chương trình có sẵn trong kho để tự động nạp kịch bản vào AI Curator, hoặc tự nhập kịch bản bên dưới.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: effectiveSelected != null
+                  ? const Color(0xFF00E5FF).withValues(alpha: 0.6)
+                  : const Color(0x14FFFFFF),
+              width: 0.8,
+            ),
+          ),
+          child: DropdownButton<_ScheduledProgram?>(
+            value: effectiveSelected,
+            isExpanded: true,
+            underline: const SizedBox(),
+            dropdownColor: const Color(0xFF0F1523),
+            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00E5FF)),
+            hint: const Row(
+              children: [
+                Icon(Icons.video_library_outlined, size: 16, color: Color(0xFF94A3B8)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '-- Chọn chương trình có sẵn trong kho --',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            items: [
+              const DropdownMenuItem<_ScheduledProgram?>(
+                value: null,
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF94A3B8)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '✏️ Soạn thảo kịch bản mới (Tự do)',
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ..._programs.map((p) {
+                return DropdownMenuItem<_ScheduledProgram?>(
+                  value: p,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.live_tv_rounded, size: 16, color: Color(0xFF00E5FF)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${p.title}${p.channelName.isNotEmpty ? ' · [${p.channelName}]' : ''}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+            onChanged: (val) {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _selectedProgram = val;
+                if (val != null) {
+                  _titleController.text = val.title;
+                  _descController.text = val.description;
+                  _channelController.text = val.channelName;
+                  _durationController.text = '45';
+                }
+                if (_error != null) _error = null;
+              });
+              if (val != null) {
+                _loadHistory(val.id);
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildQuickPresets() {
     final presets = [
