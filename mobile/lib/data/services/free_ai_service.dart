@@ -88,8 +88,8 @@ class FreeAiService {
   FreeAiService({Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 6),
-              receiveTimeout: const Duration(seconds: 10),
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 35),
             ));
 
   /// Run free AI analysis on a program draft or existing program
@@ -397,9 +397,42 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
     required String userQuery,
     required String systemPrompt,
   }) async {
-    final apiKey = AppConstants.geminiApiKey;
+    final apiKey = AppConstants.geminiApiKey.trim();
     if (apiKey.isEmpty) return null;
 
+    final primary = await _executeGeminiApi(
+      modelId: modelId,
+      apiKey: apiKey,
+      history: history,
+      userQuery: userQuery,
+      systemPrompt: systemPrompt,
+    );
+    if (primary != null && primary.isNotEmpty) return primary;
+
+    // Auto-fallback to gemini-1.5-flash if gemini-1.5-pro encountered rate limit / timeout
+    if (modelId != 'gemini-1.5-flash') {
+      final flashFallback = await _executeGeminiApi(
+        modelId: 'gemini-1.5-flash',
+        apiKey: apiKey,
+        history: history,
+        userQuery: userQuery,
+        systemPrompt: systemPrompt,
+      );
+      if (flashFallback != null && flashFallback.isNotEmpty) {
+        return flashFallback;
+      }
+    }
+
+    return null;
+  }
+
+  Future<String?> _executeGeminiApi({
+    required String modelId,
+    required String apiKey,
+    required List<CuratorChatMessage> history,
+    required String userQuery,
+    required String systemPrompt,
+  }) async {
     final contents = <Map<String, dynamic>>[];
 
     // Gemini API requires alternating roles starting with 'user'.
@@ -411,8 +444,8 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
       meaningful.add(m);
     }
 
-    final recent = meaningful.length > 10
-        ? meaningful.sublist(meaningful.length - 10)
+    final recent = meaningful.length > 8
+        ? meaningful.sublist(meaningful.length - 8)
         : meaningful;
 
     for (final m in recent) {
@@ -475,7 +508,7 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
           },
           'contents': contents,
           'generationConfig': {
-            'temperature': 0.7,
+            'temperature': 0.8,
             'maxOutputTokens': 2048,
           }
         },
@@ -493,7 +526,17 @@ QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseBody = e.response?.data?.toString() ?? '';
+        if (statusCode == 400 &&
+            (responseBody.contains('API_KEY_INVALID') ||
+                responseBody.contains('API key not valid'))) {
+          return 'Ôi bạn ơi, hình như Google Gemini API Key bạn nhập chưa chính xác hoặc đã hết hạn rồi nè! 🔑 Bạn hãy bấm vào biểu tượng chìa khóa ở góc trên để kiểm tra lại key từ Google AI Studio (aistudio.google.com) nha!';
+        }
+      }
+    }
     return null;
   }
 
@@ -579,12 +622,45 @@ Còn "người yêu" của mình á? Chính là chiếc tai nghe kiểm âm và 
 Có bạn trò chuyện và đồng hành là niềm vui to bự nhất của mình mỗi ngày á. Bất cứ khi nào bạn cần gợi ý chương trình hay mẹo phát sóng, mình luôn ở đây sẵn sàng hỗ trợ bạn hết mình nhé! ✨$geminiNote''';
     }
 
-    final isCasualHumor = lower.contains('kể chuyện cười') ||
+    final isHumorStory = lower.contains('cà khịa') ||
+        lower.contains('câu chuyện') ||
+        lower.contains('kể chuyện') ||
+        lower.contains('chuyện cười') ||
         lower.contains('hài hước') ||
-        lower.contains('hát đi') ||
-        lower.contains('chuyện vui');
+        lower.contains('hài') ||
+        lower.contains('giải trí') ||
+        lower.contains('châm biếm') ||
+        lower.contains('troll') ||
+        lower.contains('thật vui') ||
+        lower.contains('tiếu lâm') ||
+        lower.contains('tiểu phẩm') ||
+        lower.contains('đố vui') ||
+        lower.contains('đùa') ||
+        lower.contains('truyện') ||
+        lower.contains('chuyện vui') ||
+        lower.contains('hát đi');
 
-    if (isCasualHumor) {
+    if (isHumorStory) {
+      if (lower.contains('cà khịa') ||
+          lower.contains('châm biếm') ||
+          lower.contains('cao cấp') ||
+          lower.contains('câu chuyện') ||
+          lower.contains('giải trí')) {
+        return '''Haha nghe bạn đặt đề bài "cà khịa cao cấp" là thấy ngay phong cách của một bậc thầy thâm thúy rồi nha! 😂✨
+
+Để mình kể bạn nghe mẩu chuyện "cà khịa đỉnh chóp" chốn công sở & trường quay nè:
+
+> Một vị sếp nọ rất thích triệu tập họp gấp vào đúng 17h30 chiều. Hôm ấy, sếp đứng thao thao bất tuyệt suốt 2 tiếng đồng hồ về "văn hóa cống hiến quên mình" rồi đúc kết đầy tự hào:
+> — *"Ở công ty này, chúng ta không chỉ làm việc vì tiền, chúng ta là một gia đình!"*
+> Cả phòng im thin thít, bụng đói cồn cào. Bỗng một bạn trẻ thực tập sinh giơ tay thưa thật nhỏ nhẹ:
+> — *"Dạ anh ơi, đúng là gia đình thật ạ... Vì ở nhà ba mẹ em la mắng em suốt ngày nhưng lúc nào cũng lo cho em ăn no mặc ấm, còn ở đây anh bảo yêu thương tụi em như ruột thịt mà cuối tháng trừ lương tăng ca không sót một đồng!"* 💀
+> Cả phòng nín thở, còn sếp thì vội vàng bấm "End Meeting" trong vòng 2 giây!
+
+Cà khịa đỉnh cao chính là vậy đó bạn: Không hề thô lỗ, không nặng lời, chỉ dùng sự thật trần trụi được bọc trong một lớp nhung lịch thiệp khiến đối phương "đứng hình mất 5 giây" mà chẳng cãi vào đâu được!
+
+Bạn thấy mẩu chuyện này thế nào? Muốn mình "pha chế" thêm ý tưởng nào cho tiểu phẩm hay kịch bản livestream nữa không nè? 😉🎭$geminiNote''';
+      }
+
       return '''Dạ có ngay mẩu chuyện nhỏ tặng bạn nè! 😄
 
 Đố bạn biết: Vì sao các Streamer của đài OmniCast không bao giờ sợ bị lạc đường?
@@ -810,16 +886,31 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng trực tiếp vào khung làm việc AI Curator!*$geminiNote''';
     }
 
-    // 12. Tư vấn trực diện, tự nhiên và chuyên nghiệp theo câu hỏi cụ thể của người dùng
-    return '''Về vấn đề bạn đang quan tâm: "$userQuery"${currentProgramTitle != null ? ' đối với **$currentProgramTitle**' : ''} nè bạn!
+    // 11. Đạo cụ / Âm thanh / Thiết bị trường quay
+    final isEquipment = lower.contains('đạo cụ') ||
+        lower.contains('âm thanh') ||
+        lower.contains('ánh sáng') ||
+        lower.contains('thiết bị') ||
+        lower.contains('micro') ||
+        lower.contains('buổi quay');
 
-Để khâu này đạt hiệu quả cao nhất và mang lại trải nghiệm chuyên nghiệp cho người xem, mình chia sẻ với bạn vài góc nhìn thực chiến từ phòng thu OmniCast nha:
+    if (isEquipment) {
+      return '''Về việc chuẩn bị đạo cụ âm thanh và thiết bị ghi hình cho ${currentProgramTitle != null ? '**$currentProgramTitle**' : 'buổi quay'} nè bạn:
 
-• **Chuẩn bị chu đáo:** Với "$userQuery", chìa khóa quan trọng nhất là khâu chuẩn bị kỹ lưỡng trước giờ phát sóng. Hãy dành 15-20 phút kiểm tra kỹ các hạng mục liên quan, tránh tình trạng phát sinh sự cố bất ngờ lúc đang On-Air.
-• **Thử nghiệm thực tế:** Bạn nên vào phòng Live Studio để chạy thử nghiệm trước. Điều này giúp bạn làm quen với nhịp điệu và hình ảnh thực tế, giúp buổi lên sóng tự tin và mượt mà hơn rất nhiều.
-• **Tương tác linh hoạt:** Khi phát sóng, hãy luôn lắng nghe cảm nhận của khán giả trên khung Live Chat để điều chỉnh nhịp độ cho phù hợp và cuốn hút nhất.
+Để âm thanh lên sóng trong trẻo, không bị tạp âm hay giật cục, mình mách bạn vài bí quyết từ phòng thu OmniCast nha:
+• **Micro thu âm:** Ưu tiên micro cài áo (lavalier) không dây để người nói thoải mái di chuyển, hoặc micro định hướng shotgun nếu quay không gian mở.
+• **Kiểm âm trực tiếp (Monitoring):** Luôn đeo tai nghe kiểm âm để phát hiện ngay nếu bị rè, gió rít hoặc mức âm lượng (gain) bị vỡ tiếng (clipping).
+• **Pin và phụ kiện dự phòng:** Chuẩn bị ít nhất 2 bộ pin sạc đầy và dây kết nối dự phòng trước giờ bấm máy 20 phút.
 
-Nếu bạn muốn tụi mình cùng viết cụ thể hơn một đoạn lời thoại, gợi ý thêm ý tưởng hay bất kỳ điều gì, cứ nhắn mình bất cứ lúc nào nhé!$geminiNote''';
+Nếu bạn cần tư vấn thêm về chọn góc đặt đèn hay cân chỉnh bitrate cho luồng phát sóng, cứ ới mình nhé!$geminiNote''';
+    }
+
+    // 12. Phản hồi tự nhiên, linh hoạt và gần gũi cho các câu hỏi mở khác
+    return '''Hé lô bạn nè! Về câu hỏi: "$userQuery"${currentProgramTitle != null ? ' (cho **$currentProgramTitle**)' : ''}:
+
+Dưới góc nhìn của một người bạn đồng hành tại OmniCast, mình thấy đây là một chủ đề / ý tưởng rất thú vị! Điều quan trọng nhất là bạn cứ tự tin, thoải mái thể hiện phong cách tự nhiên của mình. Khán giả xem đài luôn yêu thích sự chân thật, dí dỏm và năng lượng tích cực hơn bất cứ khuôn mẫu cứng nhắc nào.
+
+Bạn có muốn tụi mình cùng thảo luận sâu hơn, viết thêm vài câu thoại mẫu hay phát triển tiếp ý tưởng này không nè? Mình luôn ở đây sẵn sàng tiếp chiêu cùng bạn á! ✨$geminiNote''';
   }
 
   String _generateProgramRecommendations({

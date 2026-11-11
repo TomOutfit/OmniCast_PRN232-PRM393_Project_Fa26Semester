@@ -138,6 +138,15 @@ void main() {
       );
       expect(humorReply, isNotEmpty);
       expect(humorReply, contains('WebRTC'));
+
+      final sarcasmReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Một câu chuyện giải trí thật vui, mang tính cà khịa cao cấp thì thế nào',
+      );
+      expect(sarcasmReply, isNotEmpty);
+      expect(sarcasmReply, contains('cà khịa cao cấp'));
+      expect(sarcasmReply, contains('End Meeting'));
+      expect(sarcasmReply.contains('Chuẩn bị kỹ lưỡng trước giờ phát sóng'), isFalse);
     });
 
     test('chatWithAssistant returns context-matching answer for arbitrary questions', () async {
