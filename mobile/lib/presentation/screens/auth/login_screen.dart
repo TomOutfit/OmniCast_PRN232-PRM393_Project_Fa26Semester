@@ -180,12 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 16),
-                            // Brand header (collapses to mobile compact header)
+                            // Brand header
                             _BrandHeader(hydrated: _hydrated),
-                            const SizedBox(height: 24),
-                            // Live telemetry card (hidden on very small screens)
-                            const _TelemetryCard(),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
                             // Form card
                             _FormCard(
                               formKey: _formKey,
@@ -401,105 +398,32 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 480),
-      curve: Curves.easeOutCubic,
-      builder: (context, t, child) {
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 12),
-            child: child,
+    return const Column(
+      children: [
+        Center(
+          child: OmniCastBrandLogo(size: 64, showGlow: false),
+        ),
+        SizedBox(height: 16),
+        Text(
+          'Đăng nhập OmniCast',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -0.4,
           ),
-        );
-      },
-      child: Column(
-        children: [
-          const Center(
-            child: OmniCastBrandLogo(size: 76, showGlow: true),
+        ),
+        SizedBox(height: 6),
+        Text(
+          'Nền tảng truyền hình trực tuyến & tương tác',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: Color(0xFF94A3B8),
           ),
-          const SizedBox(height: 14),
-          // Broadcast Studio Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppColors.rPill),
-              border: Border.all(
-                color: AppColors.stitchPrimaryContainer.withValues(alpha: 0.28),
-                width: 0.8,
-              ),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _LivePulseDot(color: AppColors.stitchPrimaryContainer),
-                SizedBox(width: 6),
-                Text(
-                  'BROADCAST PORTAL // PHIÊN BẢO MẬT',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontFamily: AppFonts.mono,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.18 * 10 / 10,
-                    color: AppColors.stitchPrimaryContainer,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          ShaderMask(
-            shaderCallback: (rect) => const LinearGradient(
-              colors: [AppColors.stitchPrimary, AppColors.stitchSecondary],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ).createShader(rect),
-            blendMode: BlendMode.srcIn,
-            child: const Text(
-              'Đăng nhập OmniCast',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 28,
-                fontFamily: AppFonts.display,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          ShaderMask(
-            shaderCallback: (rect) => const LinearGradient(
-              colors: [AppColors.stitchPrimaryContainer, AppColors.stitchSecondary],
-            ).createShader(rect),
-            blendMode: BlendMode.srcIn,
-            child: const Text(
-              'Hạ tầng truyền hình 4K',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontFamily: AppFonts.display,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Hệ thống truyền hình tương tác độ trễ thấp & đồng bộ đa thiết bị.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontFamily: AppFonts.body,
-              color: AppColors.stitchOnSurfaceVariant,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -575,171 +499,6 @@ class _LivePulseDotState extends State<_LivePulseDot>
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Live telemetry card (Stitch pattern: LIVE FEED + Sessions/Latency/Channels)
-// ─────────────────────────────────────────────────────────────────────────
-
-class _TelemetryCard extends StatelessWidget {
-  const _TelemetryCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (context, t, child) {
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 12),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.stitchSurfaceContainerLowest.withValues(alpha: 0.70),
-          borderRadius: BorderRadius.circular(AppColors.rLg),
-          border: Border.all(
-            color: AppColors.stitchOutlineVariant.withValues(alpha: 0.60),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x4D000000),
-              blurRadius: 24,
-              spreadRadius: -8,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _LivePulseDot(color: AppColors.stitchError),
-                SizedBox(width: 8),
-                Text(
-                  'LIVE FEED // SECURE AUTH',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: AppFonts.mono,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.18 * 11 / 11,
-                    color: AppColors.stitchError,
-                  ),
-                ),
-                Spacer(),
-                Text(
-                  'TLS 1.3 · OWASP',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontFamily: AppFonts.mono,
-                    color: AppColors.stitchOnSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _Metric(
-                    label: 'Sessions',
-                    value: '12.4K',
-                    sub: 'đang trực tuyến',
-                    color: AppColors.stitchPrimaryContainer,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: _Metric(
-                    label: 'Latency',
-                    value: '0.42s',
-                    sub: 'sign-in p95',
-                    color: AppColors.stitchSecondary,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: _Metric(
-                    label: 'Channels',
-                    value: '524',
-                    sub: 'toàn quốc',
-                    color: AppColors.stitchTertiaryContainer,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  final String label;
-  final String value;
-  final String sub;
-  final Color color;
-  const _Metric({
-    required this.label,
-    required this.value,
-    required this.sub,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.stitchSurfaceContainer,
-        borderRadius: BorderRadius.circular(AppColors.rMd),
-        border: Border.all(
-          color: AppColors.stitchOutlineVariant.withValues(alpha: 0.40),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              fontFamily: AppFonts.mono,
-              color: AppColors.stitchOutline,
-              letterSpacing: 0.18 * 9 / 9,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: AppFonts.display,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.4,
-            ),
-          ),
-          Text(
-            sub,
-            style: const TextStyle(
-              fontSize: 9,
-              fontFamily: AppFonts.mono,
-              color: AppColors.stitchOnSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }

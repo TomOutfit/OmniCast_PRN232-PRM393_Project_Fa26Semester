@@ -96,36 +96,23 @@ class _EpgScreenState extends State<EpgScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFEF4444),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const Text(
-              'Lịch Phát Sóng',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Lịch phát sóng EPG',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.3,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF00E5FF)),
+            icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF00E5FF), size: 20),
             tooltip: 'Chọn ngày',
             onPressed: () => _showDatePicker(context),
           ),
@@ -207,10 +194,10 @@ class _DateCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: const BoxDecoration(
-        color: Color(0xFF090F1A),
-        border: Border(bottom: BorderSide(color: Color(0xFF162338))),
+        color: Color(0xFF080B11),
+        border: Border(bottom: BorderSide(color: Color(0x14FFFFFF), width: 0.8)),
       ),
       child: BlocBuilder<EpgBloc, EpgState>(
         builder: (ctx, state) {
@@ -230,24 +217,21 @@ class _DateCarousel extends StatelessWidget {
                     final isSel = _isSameDay(date, selected);
                     final isTod = _isSameDay(date, today);
                     return GestureDetector(
-                      onTap: () => ctx.read<EpgBloc>().add(ChangeEpgDate(date)),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ctx.read<EpgBloc>().add(ChangeEpgDate(date));
+                      },
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
+                        duration: const Duration(milliseconds: 160),
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isSel ? const Color(0xFF00E5FF) : const Color(0xFF0B1320),
-                          borderRadius: BorderRadius.circular(12),
+                          color: isSel ? const Color(0xFF00E5FF) : const Color(0xFF0F1523),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSel
-                                ? const Color(0xFF00E5FF)
-                                : isTod
-                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
-                                    : const Color(0xFF16253C),
+                            color: isSel ? const Color(0xFF00E5FF) : const Color(0x14FFFFFF),
+                            width: 0.8,
                           ),
-                          boxShadow: isSel
-                              ? [const BoxShadow(color: Color(0x5500E5FF), blurRadius: 10, offset: Offset(0, 2))]
-                              : null,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -256,34 +240,23 @@ class _DateCarousel extends StatelessWidget {
                               _getDayLabel(date),
                               style: TextStyle(
                                 color: isSel
-                                    ? const Color(0xFF070B12)
+                                    ? const Color(0xFF080B11)
                                     : isTod
                                         ? const Color(0xFF00E5FF)
                                         : const Color(0xFF94A3B8),
                                 fontSize: 10,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
                               style: TextStyle(
-                                color: isSel ? const Color(0xFF070B12) : Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'monospace',
+                                color: isSel ? const Color(0xFF080B11) : Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            if (isTod)
-                              Container(
-                                margin: const EdgeInsets.only(top: 3),
-                                width: 4,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: isSel ? const Color(0xFF070B12) : const Color(0xFF00E5FF),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
                           ],
                         ),
                       ),
@@ -293,22 +266,25 @@ class _DateCarousel extends StatelessWidget {
                 if (isNotToday) ...[
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => ctx.read<EpgBloc>().add(ChangeEpgDate(today)),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ctx.read<EpgBloc>().add(ChangeEpgDate(today));
+                    },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF083344),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                        color: const Color(0xFF0F1523),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4), width: 0.8),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.replay_rounded, size: 14, color: Color(0xFF00E5FF)),
+                          Icon(Icons.today_rounded, size: 13, color: Color(0xFF00E5FF)),
                           SizedBox(width: 4),
                           Text(
-                            'Hôm Nay',
-                            style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w900),
+                            'Hôm nay',
+                            style: TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),

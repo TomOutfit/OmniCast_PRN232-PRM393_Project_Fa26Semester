@@ -3,6 +3,7 @@
 // trending topics, 19 category filter pills, and styled result cards.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -67,18 +68,18 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 16,
         title: Container(
           height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFF0E1726),
+            color: const Color(0xFF0F1523),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1D2F4A)),
+            border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
           ),
           child: TextField(
             controller: _searchController,
@@ -93,15 +94,15 @@ class _SearchScreenState extends State<SearchScreen> {
               border: InputBorder.none,
               prefixIcon: const Icon(
                 Icons.search_rounded,
-                color: Color(0xFF00E5FF),
-                size: 20,
+                color: Color(0xFF94A3B8),
+                size: 19,
               ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(
                         Icons.clear_rounded,
                         color: Color(0xFF94A3B8),
-                        size: 18,
+                        size: 17,
                       ),
                       onPressed: () {
                         _searchController.clear();
@@ -111,8 +112,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     )
                   : null,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
+                horizontal: 12,
+                vertical: 12,
               ),
             ),
             onChanged: (value) {
@@ -138,7 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 activeCategory: _activeCategory,
                 onSelect: _setCategory,
               ),
-              const Divider(color: Color(0xFF162338), height: 1),
+              const Divider(color: Color(0x14FFFFFF), height: 1),
               Expanded(
                 child: _buildBody(state),
               ),
@@ -419,9 +420,9 @@ class _SearchScreenState extends State<SearchScreen> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF0B1320),
+              color: const Color(0xFF0F1523),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF16253C)),
+              border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
             ),
             child: Row(
               children: [
@@ -454,7 +455,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   onPressed: () => context.push('/channel/${ch.id}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00E5FF),
-                    foregroundColor: const Color(0xFF070B12),
+                    foregroundColor: const Color(0xFF080B11),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
@@ -479,9 +480,9 @@ class _SearchScreenState extends State<SearchScreen> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF0B1320),
+              color: const Color(0xFF0F1523),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF16253C)),
+              border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
             ),
             child: Row(
               children: [
@@ -692,36 +693,32 @@ class _PillItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0E1625),
-          borderRadius: BorderRadius.circular(10),
+          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0F1523),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
                 ? const Color(0xFF00E5FF)
-                : const Color(0xFF1B2B42),
+                : const Color(0x14FFFFFF),
+            width: 0.8,
           ),
-          boxShadow: selected
-              ? const [
-                  BoxShadow(
-                    color: Color(0x6600E5FF),
-                    blurRadius: 8,
-                  ),
-                ]
-              : null,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
             color: selected
-                ? const Color(0xFF070B12)
-                : const Color(0xFF94A3B8),
+                ? const Color(0xFF080B11)
+                : const Color(0xFFCBD5E1),
             fontSize: 11,
-            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
       ),

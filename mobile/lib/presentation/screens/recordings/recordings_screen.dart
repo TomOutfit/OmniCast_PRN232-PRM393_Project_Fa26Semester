@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -102,13 +103,13 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Thư Viện VOD & Bản Ghi',
+          'Kho VOD & Bản ghi',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -133,7 +134,7 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
       ),
       body: Column(
         children: [
-          // Featured strip (stabilized without jumpy buildWhen)
+          // Featured strip
           BlocBuilder<RecordingsBloc, RecordingsState>(
             builder: (context, state) {
               if (state is RecordingsLoaded && state.featured.isNotEmpty) {
@@ -152,10 +153,11 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Container(
+              height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF0E1726),
+                color: const Color(0xFF0F1523),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1D2F4A)),
+                border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
               ),
               child: TextField(
                 controller: _searchController,
@@ -168,15 +170,15 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                   ),
                   prefixIcon: const Icon(
                     Icons.search_rounded,
-                    color: Color(0xFF00E5FF),
-                    size: 20,
+                    color: Color(0xFF94A3B8),
+                    size: 19,
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(
                             Icons.clear_rounded,
                             color: Color(0xFF94A3B8),
-                            size: 18,
+                            size: 17,
                           ),
                           onPressed: () {
                             _searchController.clear();
@@ -186,8 +188,8 @@ class _RecordingsScreenState extends State<RecordingsScreen> {
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+                    horizontal: 12,
+                    vertical: 12,
                   ),
                 ),
                 onChanged: _onSearch,
@@ -445,36 +447,32 @@ class _VodFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0B1320),
-          borderRadius: BorderRadius.circular(10),
+          color: selected ? const Color(0xFF00E5FF) : const Color(0xFF0F1523),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
                 ? const Color(0xFF00E5FF)
-                : const Color(0xFF16253C),
+                : const Color(0x14FFFFFF),
+            width: 0.8,
           ),
-          boxShadow: selected
-              ? const [
-                  BoxShadow(
-                    color: Color(0x6600E5FF),
-                    blurRadius: 8,
-                  ),
-                ]
-              : null,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
             color: selected
-                ? const Color(0xFF070B12)
+                ? const Color(0xFF080B11)
                 : const Color(0xFFCBD5E1),
             fontSize: 11,
-            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
       ),

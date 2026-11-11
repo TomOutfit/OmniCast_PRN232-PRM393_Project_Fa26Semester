@@ -19,13 +19,13 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090F1A),
+        backgroundColor: const Color(0xFF080B11),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Tài Khoản & Hồ Sơ',
+          'Tài khoản & Hồ sơ',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -37,7 +37,8 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(
               Icons.settings_outlined,
-              color: Color(0xFF00E5FF),
+              color: Color(0xFFCBD5E1),
+              size: 21,
             ),
             tooltip: 'Cài đặt',
             onPressed: () => context.push('/settings'),
@@ -50,77 +51,56 @@ class ProfileScreen extends StatelessWidget {
           if (state is Authenticated) {
             final user = state.user;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
                 children: [
                   // ── USER PROFILE HERO CARD ──────────────────────────
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF090F1A),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF162338)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x66000000),
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
+                      color: const Color(0xFF0F1523),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
                     ),
                     child: Column(
                       children: [
-                        // Avatar with glowing gradient ring
+                        // Clean Avatar
                         Container(
-                          width: 86,
-                          height: 86,
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF8B5CF6)],
-                            ),
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF131B2E),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0x4D00E5FF),
-                                blurRadius: 14,
-                              ),
-                            ],
+                            border: Border.all(color: const Color(0x24FFFFFF), width: 1.2),
                           ),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF070B12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.fullName.isNotEmpty
-                                    ? user.fullName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF00E5FF),
-                                ),
+                          child: Center(
+                            child: Text(
+                              user.fullName.isNotEmpty
+                                  ? user.fullName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF00E5FF),
                               ),
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
                         Text(
                           user.fullName,
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                             color: Colors.white,
-                            letterSpacing: -0.4,
+                            letterSpacing: -0.3,
                           ),
                         ),
 
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
 
                         Text(
                           user.email,
@@ -130,68 +110,31 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
 
-                        // Role & Subscription Pills
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getRoleBgColor(user.role),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _getRoleColor(user.role),
-                                ),
-                              ),
-                              child: Text(
-                                _getRoleDisplayName(user.role).toUpperCase(),
-                                style: TextStyle(
-                                  color: _getRoleColor(user.role),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                        // Role Pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getRoleBgColor(user.role),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: _getRoleColor(user.role),
+                              width: 0.8,
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF070E1A),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFF142236),
-                                ),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.verified_rounded,
-                                    size: 13,
-                                    color: Color(0xFF00E5FF),
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'VIP 4K HEVC PASS',
-                                    style: TextStyle(
-                                      color: Color(0xFF00E5FF),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          ),
+                          child: Text(
+                            _getRoleDisplayName(user.role).toUpperCase(),
+                            style: TextStyle(
+                              color: _getRoleColor(user.role),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -199,37 +142,17 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // ── STREAMING METRICS GRID ──────────────────────────
-                  Row(
-                    children: [
-                      _buildMetricCard('25 KÊNH', 'Full Access', Icons.tv_rounded),
-                      const SizedBox(width: 8),
-                      _buildMetricCard(
-                        'DOLBY 5.1',
-                        'Spatial Audio',
-                        Icons.surround_sound_rounded,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildMetricCard(
-                        'CATCH-UP',
-                        'Tua lại 7 ngày',
-                        Icons.history_rounded,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
                   // ── VIP & WALLET PAYMENT CARD ───────────────────────
                   _buildVipSubscriptionCard(context),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
                   // ── MENU SECTIONS ───────────────────────────────────
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0B1320),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF16253C)),
+                      color: const Color(0xFF0F1523),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
                     ),
                     child: Column(
                       children: [
@@ -243,7 +166,7 @@ class ProfileScreen extends StatelessWidget {
                             highlight: true,
                             onTap: () => context.push('/admin'),
                           ),
-                          const Divider(color: Color(0xFF162338), height: 1),
+                          const Divider(color: Color(0x14FFFFFF), height: 1),
                         ],
 
                         // Staff/Admin AI Curator Studio (Role 1 & 3)
@@ -256,7 +179,7 @@ class ProfileScreen extends StatelessWidget {
                             highlight: !user.isAdmin,
                             onTap: () => context.push('/ai-curator'),
                           ),
-                          const Divider(color: Color(0xFF162338), height: 1),
+                          const Divider(color: Color(0x14FFFFFF), height: 1),
                         ],
 
                         // Staff/Admin Live Studio (Role 1 & 3) — go
@@ -272,7 +195,7 @@ class ProfileScreen extends StatelessWidget {
                             highlight: true,
                             onTap: () => context.push('/studio/live'),
                           ),
-                          const Divider(color: Color(0xFF162338), height: 1),
+                          const Divider(color: Color(0x14FFFFFF), height: 1),
                         ],
 
                         _buildModernMenuItem(
@@ -282,7 +205,7 @@ class ProfileScreen extends StatelessWidget {
                           subtitle: 'Tin nhắn, theo dõi và nhắc nhở phát sóng',
                           onTap: () => context.push('/notifications'),
                         ),
-                        const Divider(color: Color(0xFF162338), height: 1),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
 
                         _buildModernMenuItem(
                           icon: Icons.bookmark_outline_rounded,
@@ -291,7 +214,7 @@ class ProfileScreen extends StatelessWidget {
                           subtitle: 'Các chương trình & sự kiện đã lưu',
                           onTap: () => context.go('/watchlist'),
                         ),
-                        const Divider(color: Color(0xFF162338), height: 1),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
 
                         _buildModernMenuItem(
                           icon: Icons.video_library_outlined,
@@ -300,7 +223,7 @@ class ProfileScreen extends StatelessWidget {
                           subtitle: 'Xem lại các chương trình độc quyền',
                           onTap: () => context.go('/recordings'),
                         ),
-                        const Divider(color: Color(0xFF162338), height: 1),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
 
                         _buildModernMenuItem(
                           icon: Icons.settings_outlined,
@@ -309,7 +232,7 @@ class ProfileScreen extends StatelessWidget {
                           subtitle: 'Chất lượng truyền phát & thông báo',
                           onTap: () => context.push('/settings'),
                         ),
-                        const Divider(color: Color(0xFF162338), height: 1),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
 
                         _buildModernMenuItem(
                           icon: Icons.help_outline_rounded,
@@ -328,33 +251,33 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C0A0A),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF7F1D1D)),
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3), width: 0.8),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => _showLogoutDialog(context),
                         child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
+                          padding: EdgeInsets.symmetric(vertical: 13),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.logout_rounded,
                                 color: Color(0xFFF87171),
-                                size: 20,
+                                size: 18,
                               ),
                               SizedBox(width: 8),
                               Text(
-                                'Đăng Xuất Tài Khoản',
+                                'Đăng xuất tài khoản',
                                 style: TextStyle(
                                   color: Color(0xFFF87171),
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.3,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
@@ -364,26 +287,26 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Footer Logo
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      OmniCastBrandLogo(size: 20),
+                      OmniCastBrandLogo(size: 18),
                       SizedBox(width: 8),
                       Text(
-                        'OmniCast v1.0.0 — NextGen Broadcast',
+                        'OmniCast v1.2.0 • Streaming Platform',
                         style: TextStyle(
                           color: Color(0xFF475569),
                           fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
                 ],
               ),
             );
@@ -393,45 +316,6 @@ class ProfileScreen extends StatelessWidget {
             child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String subtitle, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF090F1A),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF162338)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: const Color(0xFF00E5FF)),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'monospace',
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -506,7 +390,7 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF090F1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF162338)),
+          side: const BorderSide(color: Color(0x14FFFFFF)),
         ),
         title: const Row(
           children: [

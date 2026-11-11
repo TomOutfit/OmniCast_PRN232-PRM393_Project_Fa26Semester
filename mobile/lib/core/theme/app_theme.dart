@@ -19,16 +19,16 @@ class AppColors {
   static const Color accentCyan = Color(0xFF22D3EE);    // cool teal accent
   static const Color accentGold = Color(0xFFFCD34D);    // highlight / featured
 
-  /* ── Surfaces (deep-navy & obsidian streaming palette) ──────────────── */
-  static const Color bg = Color(0xFF070B12);             // page background (Obsidian)
-  static const Color surface = Color(0xFF0B1320);        // card base
-  static const Color surfaceRaised = Color(0xFF0F172A);  // raised card / input
-  static const Color surfaceContainer = Color(0xFF131D31);
+  /* ── Surfaces (deep-obsidian & refined slate streaming palette) ─────── */
+  static const Color bg = Color(0xFF080B11);             // page background (Obsidian)
+  static const Color surface = Color(0xFF0F1523);        // card base
+  static const Color surfaceRaised = Color(0xFF131B2E);  // raised card / input
+  static const Color surfaceContainer = Color(0xFF192338);
 
-  /* ── Borders (white-on-dark, alpha-encoded) ─────────────────────────── */
-  static const Color border = Color(0x1FFFFFFF);         // rgba(255,255,255,.12)
-  static const Color borderStrong = Color(0x2EFFFFFF);   // rgba(255,255,255,.18)
-  static const Color borderGlow = Color(0x4D00E5FF);     // rgba(0,229,255,.30)
+  /* ── Borders (subtle 8% white hairline) ─────────────────────────────── */
+  static const Color border = Color(0x14FFFFFF);         // rgba(255,255,255,.08)
+  static const Color borderStrong = Color(0x24FFFFFF);   // rgba(255,255,255,.14)
+  static const Color borderGlow = Color(0x2E00E5FF);     // rgba(0,229,255,.18)
 
   /* ── Text scale (cool neutral on navy) ──────────────────────────────── */
   static const Color text = Color(0xFFF1F5F9);           // primary
@@ -252,23 +252,23 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF0F172A),
+        color: const Color(0xFF0F1523),
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x1FFFFFFF), width: 1.0),
+          side: const BorderSide(color: Color(0x14FFFFFF), width: 0.8),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00E5FF),
-          foregroundColor: const Color(0xFF070B12),
-          elevation: 6,
-          shadowColor: const Color(0x6600E5FF),
+          foregroundColor: const Color(0xFF080B11),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontSize: 14,
@@ -282,9 +282,9 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF00E5FF),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          side: const BorderSide(color: Color(0x4D00E5FF), width: 1.2),
+          side: const BorderSide(color: Color(0x2E00E5FF), width: 1.0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
@@ -297,29 +297,29 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF0F172A),
+        fillColor: const Color(0xFF0F1523),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0x1FFFFFFF)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF), width: 0.8),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0x1FFFFFFF)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF), width: 0.8),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.4),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.stitchError),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.stitchError, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.stitchError, width: 1.2),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(color: AppColors.textMuted),
         labelStyle: const TextStyle(color: AppColors.stitchOnSurfaceVariant),
       ),

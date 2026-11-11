@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// OmniCast Impaktfull Design System Tokens & Components
-/// Inspired by Impaktfull UI & Shadcn Dark Glassmorphic Design System.
-/// Provides unified high-contrast neon badges, frosted glass cards, inputs, and buttons.
+/// OmniCast Modern Minimalist Design System Tokens & Components
+/// Clean, high-end streaming UI inspired by Apple TV+ and modern minimalist design systems.
+/// Removes visual clutter, neon shadows, and busy borders in favor of optical clarity.
 class ImpaktfullTokens {
-  // Surface colors (Deep Obsidian & Slate Glass)
-  static const Color background = Color(0xFF070B12);
-  static const Color surface = Color(0xFF0B1320);
-  static const Color surfaceCard = Color(0xFF0F172A);
-  static const Color surfaceElevated = Color(0xFF1E293B);
-  static const Color surfaceInput = Color(0xFF131D31);
+  // Surface colors (Deep Obsidian & Refined Slate)
+  static const Color background = Color(0xFF080B11);
+  static const Color surface = Color(0xFF0F1523);
+  static const Color surfaceCard = Color(0xFF131B2E);
+  static const Color surfaceElevated = Color(0xFF192338);
+  static const Color surfaceInput = Color(0xFF0D1424);
 
-  // Borders & Dividers
-  static const Color borderSubtle = Color(0x1FFFFFFF); // 12% white
-  static const Color borderMedium = Color(0x2EFFFFFF); // 18% white
-  static const Color borderGlow = Color(0x4D00E5FF);   // 30% cyan
+  // Clean Borders & Dividers (subtle, non-distracting)
+  static const Color borderSubtle = Color(0x14FFFFFF); // 8% white
+  static const Color borderMedium = Color(0x24FFFFFF); // 14% white
+  static const Color borderGlow = Color(0x2E00E5FF);   // 18% cyan subtle
 
-  // Neon & Brand Accents
+  // Accents (used with purpose)
   static const Color cyan = Color(0xFF00E5FF);
   static const Color redLive = Color(0xFFEF4444);
   static const Color gold = Color(0xFFF59E0B);
@@ -25,14 +25,14 @@ class ImpaktfullTokens {
   static const Color purple = Color(0xFFA855F7);
   static const Color blue = Color(0xFF3B82F6);
 
-  // Text
+  // Typography
   static const Color textPrimary = Color(0xFFF8FAFC);
   static const Color textSecondary = Color(0xFFCBD5E1);
   static const Color textMuted = Color(0xFF94A3B8);
   static const Color textFaint = Color(0xFF64748B);
 }
 
-/// Impaktfull-style Card with optional glowing border and touch ripple
+/// Modern Minimalist Card with subtle border and crisp tap feedback
 class ImpaktfullCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -50,7 +50,7 @@ class ImpaktfullCard extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.borderColor,
-    this.borderWidth = 1.0,
+    this.borderWidth = 0.8,
     this.borderRadius = 16.0,
     this.shadow,
   });
@@ -68,9 +68,9 @@ class ImpaktfullCard extends StatelessWidget {
         boxShadow: shadow ??
             const [
               BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 16,
-                offset: Offset(0, 4),
+                color: Color(0x26000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
             ],
       ),
@@ -94,7 +94,7 @@ class ImpaktfullCard extends StatelessWidget {
   }
 }
 
-/// Impaktfull / Shadcn Pill Badge
+/// Minimalist Pill Badge (Clean, sharp, no distracting glow)
 enum ImpaktBadgeVariant { live, upcoming, replay, pro, neutral, success, warning, error }
 
 class ImpaktfullBadge extends StatelessWidget {
@@ -119,53 +119,53 @@ class ImpaktfullBadge extends StatelessWidget {
 
     switch (variant) {
       case ImpaktBadgeVariant.live:
-        bg = const Color(0xFF450A0A);
-        border = const Color(0xFFEF4444);
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.16);
+        border = const Color(0xFFEF4444).withValues(alpha: 0.4);
         text = const Color(0xFFF87171);
         break;
       case ImpaktBadgeVariant.upcoming:
-        bg = const Color(0x1F00E5FF);
-        border = const Color(0x6600E5FF);
-        text = const Color(0xFF00E5FF);
+        bg = const Color(0xFF00E5FF).withValues(alpha: 0.12);
+        border = const Color(0xFF00E5FF).withValues(alpha: 0.35);
+        text = const Color(0xFF38BDF8);
         break;
       case ImpaktBadgeVariant.replay:
-        bg = const Color(0xFF1E1B4B);
-        border = const Color(0xFF6366F1);
+        bg = const Color(0xFF6366F1).withValues(alpha: 0.14);
+        border = const Color(0xFF6366F1).withValues(alpha: 0.35);
         text = const Color(0xFFA5B4FC);
         break;
       case ImpaktBadgeVariant.pro:
-        bg = const Color(0x26F59E0B);
-        border = const Color(0x80F59E0B);
+        bg = const Color(0xFFF59E0B).withValues(alpha: 0.14);
+        border = const Color(0xFFF59E0B).withValues(alpha: 0.4);
         text = const Color(0xFFFBBF24);
         break;
       case ImpaktBadgeVariant.success:
-        bg = const Color(0x1A10B981);
-        border = const Color(0x6610B981);
+        bg = const Color(0xFF10B981).withValues(alpha: 0.14);
+        border = const Color(0xFF10B981).withValues(alpha: 0.35);
         text = const Color(0xFF34D399);
         break;
       case ImpaktBadgeVariant.warning:
-        bg = const Color(0x26F59E0B);
-        border = const Color(0x66F59E0B);
+        bg = const Color(0xFFF59E0B).withValues(alpha: 0.14);
+        border = const Color(0xFFF59E0B).withValues(alpha: 0.35);
         text = const Color(0xFFFBBF24);
         break;
       case ImpaktBadgeVariant.error:
-        bg = const Color(0x26EF4444);
-        border = const Color(0x66EF4444);
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.14);
+        border = const Color(0xFFEF4444).withValues(alpha: 0.35);
         text = const Color(0xFFF87171);
         break;
       case ImpaktBadgeVariant.neutral:
         bg = const Color(0xFF1E293B);
-        border = const Color(0x26FFFFFF);
+        border = const Color(0x1FFFFFFF);
         text = const Color(0xFFCBD5E1);
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: border, width: 0.8),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: border, width: 0.7),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -189,8 +189,8 @@ class ImpaktfullBadge extends StatelessWidget {
             style: TextStyle(
               color: text,
               fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.4,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -199,7 +199,7 @@ class ImpaktfullBadge extends StatelessWidget {
   }
 }
 
-/// Impaktfull-styled Neon Action Button
+/// Modern Clean Action Button
 class ImpaktfullButton extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -220,8 +220,8 @@ class ImpaktfullButton extends StatelessWidget {
     this.isFullWidth = true,
     this.backgroundColor = ImpaktfullTokens.cyan,
     this.foregroundColor = const Color(0xFF070B12),
-    this.borderRadius = 14,
-    this.padding = const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+    this.borderRadius = 12,
+    this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
   });
 
   @override
@@ -238,8 +238,7 @@ class ImpaktfullButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        elevation: 6,
-        shadowColor: backgroundColor.withValues(alpha: 0.4),
+        elevation: 0,
         padding: padding,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -247,10 +246,10 @@ class ImpaktfullButton extends StatelessWidget {
       ),
       child: isLoading
           ? SizedBox(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               child: CircularProgressIndicator(
-                strokeWidth: 2.2,
+                strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
               ),
             )
@@ -259,15 +258,15 @@ class ImpaktfullButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18),
-                  const SizedBox(width: 8),
+                  Icon(icon, size: 16),
+                  const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
                     color: foregroundColor,
                   ),
                 ),
@@ -282,7 +281,7 @@ class ImpaktfullButton extends StatelessWidget {
   }
 }
 
-/// Impaktfull Standard Section Header
+/// Minimalist Section Header
 class ImpaktfullSectionHeader extends StatelessWidget {
   final String title;
   final String? actionLabel;
@@ -300,31 +299,25 @@ class ImpaktfullSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           Container(
-            width: 3.5,
-            height: 16,
+            width: 3,
+            height: 14,
             decoration: BoxDecoration(
               color: accentColor,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withValues(alpha: 0.5),
-                  blurRadius: 6,
-                ),
-              ],
+              borderRadius: BorderRadius.circular(1.5),
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            title.toUpperCase(),
+            title,
             style: const TextStyle(
               color: ImpaktfullTokens.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.8,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
             ),
           ),
           const Spacer(),
@@ -345,12 +338,12 @@ class ImpaktfullSectionHeader extends StatelessWidget {
                     actionLabel!,
                     style: TextStyle(
                       color: accentColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(width: 2),
-                  Icon(Icons.chevron_right, size: 14, color: accentColor),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: accentColor),
                 ],
               ),
             ),

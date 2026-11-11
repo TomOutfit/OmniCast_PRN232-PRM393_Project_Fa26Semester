@@ -3,6 +3,7 @@
 // seamless routing across all primary tabs.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/live/live_join_prompt_banner.dart';
 
@@ -69,89 +70,60 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return LiveJoinPromptBanner(
       child: Scaffold(
-        backgroundColor: const Color(0xFF070B12),
+        backgroundColor: const Color(0xFF080B11),
         body: widget.child,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF090F1A),
-          border: Border(
-            top: BorderSide(color: Color(0xFF162338), width: 1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 20,
-              offset: Offset(0, -4),
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0A0E17),
+            border: Border(
+              top: BorderSide(color: Color(0x1FFFFFFF), width: 0.5),
             ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_navItems.length, (index) {
-                final item = _navItems[index];
-                final isSelected = _currentIndex == index;
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 58,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(_navItems.length, (index) {
+                  final item = _navItems[index];
+                  final isSelected = _currentIndex == index;
 
-                return Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        setState(() => _currentIndex = index);
-                        context.go(item.path);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                  return Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        onTap: () {
+                          if (_currentIndex != index) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _currentIndex = index);
+                            context.go(item.path);
+                          }
+                        },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Icon with glowing effect if active
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                if (isSelected)
-                                  Container(
-                                    width: 38,
-                                    height: 26,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF00E5FF)
-                                          .withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(13),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Color(0x3300E5FF),
-                                          blurRadius: 10,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                Icon(
-                                  isSelected ? item.activeIcon : item.icon,
-                                  color: isSelected
-                                      ? const Color(0xFF00E5FF)
-                                      : const Color(0xFF64748B),
-                                  size: 22,
-                                ),
-                              ],
+                            Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              color: isSelected
+                                  ? const Color(0xFF00E5FF)
+                                  : const Color(0xFF64748B),
+                              size: 21,
                             ),
                             const SizedBox(height: 3),
                             Text(
                               item.label,
                               style: TextStyle(
                                 color: isSelected
-                                    ? const Color(0xFF00E5FF)
+                                    ? const Color(0xFFF1F5F9)
                                     : const Color(0xFF64748B),
                                 fontSize: 10,
                                 fontWeight: isSelected
-                                    ? FontWeight.w800
+                                    ? FontWeight.w700
                                     : FontWeight.w500,
-                                letterSpacing: 0.2,
+                                letterSpacing: 0.1,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -160,15 +132,14 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
 }
 }
 

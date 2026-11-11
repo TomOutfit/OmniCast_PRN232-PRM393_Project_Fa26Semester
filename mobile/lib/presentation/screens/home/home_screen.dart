@@ -1,9 +1,9 @@
-// OmniCast - Home Screen
-// Inspired by the Next.js OmniCastHomeExperience:
-// Broadcast Network 4K Bar, 25-Channel Quick Strip, Hero Live Carousel,
-// Up-Next countdown strip, Featured Channels, and 19-Category Grid.
+// OmniCast - Home Screen (Modern Minimalist Redesign)
+// Clean, high-end streaming layout inspired by modern streaming apps (Apple TV+, Netflix).
+// Removes visual clutter, redundant banners, and conflicting filters.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -19,7 +19,6 @@ import '../../../core/utils/category_utils.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
-import '../../widgets/hero_program_card.dart';
 import '../../widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,31 +28,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
-  String _scheduleFilter = 'all';
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-
-    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
     _loadData();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -74,303 +59,107 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return OfflineBanner(
       child: Scaffold(
-        backgroundColor: const Color(0xFF070B12),
+        backgroundColor: const Color(0xFF080B11),
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           color: const Color(0xFF00E5FF),
-          backgroundColor: const Color(0xFF090F1A),
+          backgroundColor: const Color(0xFF0E1422),
           child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // ── CYBER APP BAR ──────────────────────────────────────
+              // ── MINIMAL SLEEK APP BAR ─────────────────────────────
               SliverAppBar(
                 floating: true,
                 snap: true,
-                backgroundColor: const Color(0xFF090F1A),
+                backgroundColor: const Color(0xFF080B11),
                 surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                titleSpacing: 16,
                 title: Row(
                   children: [
-                    const OmniCastBrandLogo(size: 32),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'OmniCast',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
-                          ),
+                    const OmniCastBrandLogo(size: 26),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'OmniCast',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3), width: 0.6),
+                      ),
+                      child: const Text(
+                        'TV',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
                         ),
-                        Row(
-                          children: [
-                            AnimatedBuilder(
-                              animation: _pulseAnimation,
-                              builder: (context, _) => Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF00E5FF).withValues(
-                                    alpha: _pulseAnimation.value,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            const Text(
-                              'BROADCAST 4K UHD',
-                              style: TextStyle(
-                                color: Color(0xFF00E5FF),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                fontFamily: 'monospace',
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
                 actions: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => context.push('/live'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E0A10),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFFFF2A55).withValues(alpha: 0.6),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF2A55).withValues(alpha: 0.25),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedBuilder(
-                            animation: _pulseAnimation,
-                            builder: (context, _) => Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF2A55).withValues(alpha: _pulseAnimation.value),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          const Text(
-                            'LIVE',
-                            style: TextStyle(
-                              color: Color(0xFFFF2A55),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'monospace',
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.search_rounded,
-                      color: Color(0xFFCBD5E1),
-                    ),
+                    tooltip: 'Tìm kiếm',
+                    icon: const Icon(Icons.search_rounded, color: Color(0xFFCBD5E1), size: 22),
                     onPressed: () => context.push('/search'),
                   ),
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: NotificationBellAction(),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.person_outline_rounded,
-                      color: Color(0xFFCBD5E1),
-                    ),
-                    onPressed: () => context.push('/profile'),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-              ),
-
-              // ── VTVGo-STYLE 25 CHANNELS HORIZONTAL STRIP ───────────
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 60,
-                  margin: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: BlocBuilder<ChannelsBloc, ChannelsState>(
-                    builder: (context, state) {
-                      final channels =
-                          state is ChannelsLoaded ? state.channels : [];
-                      if (channels.isEmpty) return const SizedBox.shrink();
-
-                      return ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: channels.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final ch = channels[index];
-                          final numStr =
-                              (index + 1).toString().padLeft(2, '0');
-
-                          return Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () => context.push('/channel/${ch.id}'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0B1320),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: ch.isLive
-                                        ? const Color(0xFF991B1B)
-                                        : const Color(0xFF16253C),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    ChannelLogo(
-                                      channel: ch,
-                                      size: 32,
-                                      showLiveIndicator: false,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'CH #$numStr',
-                                          style: const TextStyle(
-                                            color: Color(0xFF64748B),
-                                            fontSize: 9,
-                                            fontFamily: 'monospace',
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          ch.name,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (ch.isLive) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFEF4444),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, authState) {
+                      final isStaffOrAdmin = authState is Authenticated && authState.user.isStaffOrAdmin;
+                      if (!isStaffOrAdmin) return const SizedBox.shrink();
+                      return IconButton(
+                        tooltip: 'Live Studio',
+                        icon: const Icon(Icons.podcasts_rounded, color: Color(0xFFEF4444), size: 21),
+                        onPressed: () => context.push('/studio/live'),
                       );
                     },
                   ),
-                ),
+                  IconButton(
+                    tooltip: 'Tài khoản',
+                    icon: const Icon(Icons.person_outline_rounded, color: Color(0xFFCBD5E1), size: 22),
+                    onPressed: () => context.push('/profile'),
+                  ),
+                  const SizedBox(width: 6),
+                ],
               ),
 
-              // ── LIVE STUDIO QUICK-ACCESS BANNER (Staff/Admin only)
-              // ─────────────────────────────────────────────────────
-              // A persistent, animated entry point that surfaces the
-              // Live Studio control surface right on the Home tab for
-              // operators. Hidden for VIEWER role.
+              // ── SPOTLIGHT FEATURED HERO ───────────────────────────
               SliverToBoxAdapter(
-                child: BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, authState) {
-                    final isStaffOrAdmin = authState is Authenticated &&
-                        authState.user.isStaffOrAdmin;
-                    if (!isStaffOrAdmin) {
-                      return const SizedBox.shrink();
+                child: BlocBuilder<ProgramsBloc, ProgramsState>(
+                  builder: (context, state) {
+                    if (state is ProgramsLoaded && state.programs.isNotEmpty) {
+                      final heroEvent = state.programs.first;
+                      return _SpotlightHero(event: heroEvent);
                     }
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                      child: _LiveStudioQuickAccessBanner(
-                        onTap: () => context.push('/studio/live'),
-                        pulse: _pulseAnimation,
-                      ),
-                    );
+                    return const SizedBox.shrink();
                   },
                 ),
               ),
 
-              // ── HERO: LIVE NOW SECTION ─────────────────────────────
+              // ── ĐANG PHÁT TRỰC TIẾP (LIVE NOW RAIL) ───────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: _sectionHeader(
-                    icon: Icons.radio_button_checked,
-                    iconColor: const Color(0xFFEF4444),
-                    title: 'ĐANG PHÁT TRỰC TIẾP',
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _LiveCountBadge(onTap: () => context.push('/live')),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: () => context.push('/live'),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Tất cả',
-                                style: TextStyle(
-                                  color: Color(0xFF00E5FF),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: Color(0xFF00E5FF),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                  child: _SectionHeader(
+                    title: 'Đang phát sóng',
+                    actionLabel: 'Tất cả',
+                    onAction: () => context.push('/live'),
+                    trailingBadge: const _LiveBadgeCounter(),
                   ),
                 ),
               ),
@@ -379,202 +168,76 @@ class _HomeScreenState extends State<HomeScreen>
                 child: BlocBuilder<ProgramsBloc, ProgramsState>(
                   builder: (context, state) {
                     if (state is ProgramsLoading) {
-                      return const _LoadingRail(height: 320);
+                      return const SizedBox(
+                        height: 190,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+                        ),
+                      );
                     }
-                    if (state is ProgramsLoaded && state.isLiveNow) {
-                      if (state.programs.isEmpty) {
-                        return _emptyState(
-                          icon: Icons.tv_off_rounded,
-                          text: 'Hiện không có chương trình nào đang phát.',
-                        );
-                      }
-                      return _liveRail(state.programs);
+                    if (state is ProgramsLoaded && state.programs.isNotEmpty) {
+                      return SizedBox(
+                        height: 195,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: state.programs.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final event = state.programs[index];
+                            return _LiveRailCard(event: event);
+                          },
+                        ),
+                      );
                     }
-                    return const SizedBox(height: 320);
+                    return _emptyState('Hiện không có luồng phát sóng trực tiếp nào.');
                   },
                 ),
               ),
 
-              // ── LỊCH PHÁT SÓNG LIVESTREAM & KHUNG GIỜ VÀNG ─────────
+              // ── KÊNH TRUYỀN HÌNH (CHANNELS RAIL) ──────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionHeader(
-                        icon: Icons.calendar_month_rounded,
-                        iconColor: const Color(0xFF00E5FF),
-                        title: 'LỊCH LIVESTREAM & GIỜ VÀNG',
-                        trailing: TextButton.icon(
-                          onPressed: () => context.go('/epg'),
-                          icon: const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 18,
-                            color: Color(0xFF00E5FF),
-                          ),
-                          label: const Text(
-                            'Xem Lịch EPG',
-                            style: TextStyle(
-                              color: Color(0xFF00E5FF),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildScheduleFilterChip('all', 'Tất cả'),
-                            const SizedBox(width: 8),
-                            _buildScheduleFilterChip('live', 'Đang Live', isLiveDot: true),
-                            const SizedBox(width: 8),
-                            _buildScheduleFilterChip('prime', 'Giờ Vàng (20h-23h)'),
-                            const SizedBox(width: 8),
-                            _buildScheduleFilterChip('today', 'Hôm nay'),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: _SectionHeader(
+                    title: 'Kênh truyền hình',
+                    actionLabel: 'Xem 25 kênh',
+                    onAction: () => context.go('/channels'),
                   ),
                 ),
               ),
 
               SliverToBoxAdapter(
-                child: BlocBuilder<ProgramsBloc, ProgramsState>(
+                child: BlocBuilder<ChannelsBloc, ChannelsState>(
                   builder: (context, state) {
-                    final allItems = <LiveEventModel>[];
-                    if (state is ProgramsLoaded) {
-                      allItems.addAll(state.liveEvents);
-                      if (allItems.isEmpty) {
-                        allItems.addAll(state.programs);
-                      }
-                    }
-
-                    final filtered = allItems.where((p) {
-                      if (_scheduleFilter == 'live') {
-                        return p.isLive;
-                      } else if (_scheduleFilter == 'prime') {
-                        final h = p.scheduledAt.hour;
-                        return h >= 20 && h <= 23;
-                      } else if (_scheduleFilter == 'today') {
-                        final now = DateTime.now();
-                        final sched = p.scheduledAt;
-                        return sched.year == now.year &&
-                            sched.month == now.month &&
-                            sched.day == now.day;
-                      }
-                      return true;
-                    }).toList();
-
-                    filtered.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-
-                    if (filtered.isEmpty) {
-                      return _emptyState(
-                        icon: Icons.event_available_rounded,
-                        text: 'Không có chương trình phù hợp bộ lọc lịch phát sóng.',
-                      );
-                    }
-                    return _scheduleRail(filtered.take(12).toList());
-                  },
-                ),
-              ),
-
-              // ── KÊNH NỔI BẬT (FEATURED CHANNELS) ────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: _sectionHeader(
-                    icon: Icons.star_rounded,
-                    iconColor: const Color(0xFFFBBF24),
-                    title: 'KÊNH TRUYỀN HÌNH NỔI BẬT',
-                    trailing: TextButton.icon(
-                      onPressed: () => context.go('/channels'),
-                      icon: const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: Color(0xFF00E5FF),
-                      ),
-                      label: const Text(
-                        'Xem 25 Kênh',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: BlocBuilder<ChannelsBloc, ChannelsState>(
-                  builder: (context, state) {
-                    if (state is ChannelsLoading) {
-                      return const SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 180,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF00E5FF),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    if (state is ChannelsLoaded) {
-                      final list = state.channels.take(8).toList();
-                      return SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 1.6,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final channel = list[index];
-                            return _FeaturedChannelCard(channel: channel);
+                    if (state is ChannelsLoaded && state.channels.isNotEmpty) {
+                      return SizedBox(
+                        height: 84,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: state.channels.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final channel = state.channels[index];
+                            return _ChannelPill(channel: channel);
                           },
-                          childCount: list.length,
                         ),
                       );
                     }
-                    return const SliverToBoxAdapter(child: SizedBox());
+                    return const SizedBox(height: 84);
                   },
                 ),
               ),
 
-              // ── KHO BẢN GHI CLOUD DVR & VOD ─────────────────────────
+              // ── KHO BẢN GHI VOD & DVR ──────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: _sectionHeader(
-                    icon: Icons.video_library_rounded,
-                    iconColor: const Color(0xFF38BDF8),
-                    title: 'KHO BẢN GHI CLOUD DVR & VOD',
-                    trailing: TextButton.icon(
-                      onPressed: () => context.push('/recordings'),
-                      icon: const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: Color(0xFF00E5FF),
-                      ),
-                      label: const Text(
-                        'Xem tất cả',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
+                  child: _SectionHeader(
+                    title: 'Bản ghi VOD & Catch-up',
+                    actionLabel: 'Xem thêm',
+                    onAction: () => context.push('/recordings'),
                   ),
                 ),
               ),
@@ -582,97 +245,72 @@ class _HomeScreenState extends State<HomeScreen>
               SliverToBoxAdapter(
                 child: BlocBuilder<RecordingsBloc, RecordingsState>(
                   builder: (context, state) {
-                    if (state is RecordingsLoading && state.previous.isEmpty) {
-                      return const _LoadingRail(height: 200);
-                    }
                     final list = state is RecordingsLoaded
                         ? state.recordings
                         : (state is RecordingsLoading ? state.previous : <RecordingModel>[]);
-                    if (list.isEmpty) {
-                      return _emptyState(
-                        icon: Icons.video_library_outlined,
-                        text: 'Chưa có bản ghi nào sẵn sàng.',
+                    if (list.isNotEmpty) {
+                      return SizedBox(
+                        height: 185,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: list.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final recording = list[index];
+                            return _RecordingCard(recording: recording);
+                          },
+                        ),
                       );
                     }
-                    return _recordingsRail(list.take(8).toList());
+                    return _emptyState('Chưa có bản ghi nào sẵn sàng.');
                   },
                 ),
               ),
 
-              // ── LỊCH KHUNG GIỜ VÀNG EPG PREVIEW BANNER ──────────────
+              // ── KHÁM PHÁ CHUYÊN MỤC (CATEGORIES) ───────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: _buildEpgPrimeTimeBanner(context),
-                ),
-              ),
-
-              // ── DANH MỤC TRUYỀN HÌNH (19 CATEGORIES) ───────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
-                  child: _sectionHeader(
-                    icon: Icons.layers_rounded,
-                    iconColor: const Color(0xFF38BDF8),
-                    title: '19 CHUYÊN MỤC ĐẶC SẮC',
-                    trailing: TextButton(
-                      onPressed: () => context.push('/categories'),
-                      child: const Text(
-                        'Tất cả',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                  child: _SectionHeader(
+                    title: 'Khám phá chuyên mục',
+                    actionLabel: 'Tất cả',
+                    onAction: () => context.push('/categories'),
                   ),
                 ),
               ),
 
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: BlocBuilder<ChannelsBloc, ChannelsState>(
+              SliverToBoxAdapter(
+                child: BlocBuilder<ChannelsBloc, ChannelsState>(
                   builder: (context, state) {
-                    if (state is CategoriesLoaded) {
-                      return SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.9,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
+                    if (state is CategoriesLoaded && state.categories.isNotEmpty) {
+                      return SizedBox(
+                        height: 40,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: state.categories.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
                             final cat = state.categories[index];
                             final info = getCategoryInfo(cat.category);
-                            return _CategoryTile(
+                            return _CategoryChip(
                               label: info.label,
                               icon: info.icon,
-                              color: info.color,
                               onTap: () => context.push(
                                 '/category/${Uri.encodeComponent(cat.category)}',
                               ),
                             );
                           },
-                          childCount: state.categories.length,
                         ),
                       );
                     }
-                    // Show loading or static grid as fallback
-                    return const SliverToBoxAdapter(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF00E5FF),
-                        ),
-                      ),
-                    );
+                    return const SizedBox(height: 40);
                   },
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         ),
@@ -680,431 +318,129 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _sectionHeader({
-    required String title,
-    IconData? icon,
-    Color? iconColor,
-    Widget? trailing,
-  }) {
+  Widget _emptyState(String text) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1523),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Components & Subwidgets
+// ─────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Widget? trailingBadge;
+
+  const _SectionHeader({
+    required this.title,
+    this.actionLabel,
+    this.onAction,
+    this.trailingBadge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (icon != null) ...[
-          Icon(icon, color: iconColor ?? const Color(0xFF00E5FF), size: 16),
-          const SizedBox(width: 8),
-        ],
         Text(
           title,
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
+            color: Color(0xFFF1F5F9),
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
           ),
         ),
+        if (trailingBadge != null) ...[
+          const SizedBox(width: 8),
+          trailingBadge!,
+        ],
         const Spacer(),
-        if (trailing != null) trailing,
-      ],
-    );
-  }
-
-  Widget _liveRail(List<LiveEventModel> programs) {
-    return SizedBox(
-      height: 320,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: programs.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final p = programs[index];
-          return SizedBox(
-            width: 290,
-            child: HeroProgramCard(
-              program: HeroProgramData(
-                id: p.id,
-                title: p.title,
-                startTime: p.scheduledAt,
-                endTime: p.endTime,
-                isLive: p.isLive,
-                thumbnailUrl: p.thumbnailUrl,
-                category: (p.tags.isNotEmpty ? p.tags.first : null),
-                channelName: p.channel?.name,
-                channelLogo: p.channel,
-                viewerCount: p.viewerCount,
-              ),
-              onTap: () => context.push('/live/${p.id}', extra: p),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildScheduleFilterChip(String filterId, String label, {bool isLiveDot = false}) {
-    final isSelected = _scheduleFilter == filterId;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _scheduleFilter = filterId;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-              : const Color(0xFF0B1320),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF00E5FF)
-                : const Color(0xFF1E293B),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLiveDot) ...[
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(right: 6),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _scheduleRail(List<LiveEventModel> events) {
-    return SizedBox(
-      height: 155,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: events.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final p = events[index];
-          final start = p.scheduledAt;
-          final durationSecs = (p.duration != null && p.duration! > 0) ? p.duration! : 3600;
-          final end = p.endedAt ?? start.add(Duration(seconds: durationSecs));
-          final timeStr = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-          final isPrime = start.hour >= 20 && start.hour <= 23;
-
-          return GestureDetector(
+        if (actionLabel != null && onAction != null)
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
             onTap: () {
-              if (p.isLive) {
-                context.push('/live/${p.id}');
-              } else {
-                context.push('/program/${p.id}');
-              }
+              HapticFeedback.lightImpact();
+              onAction!();
             },
-            child: Container(
-              width: 240,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0B1320), Color(0xFF070B12)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: p.isLive
-                      ? const Color(0xFFEF4444).withValues(alpha: 0.5)
-                      : (isPrime ? const Color(0xFFF59E0B).withValues(alpha: 0.4) : const Color(0xFF1E293B)),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: p.isLive
-                              ? const Color(0xFFEF4444).withValues(alpha: 0.2)
-                              : (isPrime
-                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
-                                  : const Color(0xFF00E5FF).withValues(alpha: 0.15)),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: p.isLive
-                                ? const Color(0xFFEF4444)
-                                : (isPrime ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          p.isLive ? 'ĐANG LIVE' : (isPrime ? 'GIỜ VÀNG' : 'SẮP PHÁT'),
-                          style: TextStyle(
-                            color: p.isLive
-                                ? const Color(0xFFEF4444)
-                                : (isPrime ? const Color(0xFFF59E0B) : const Color(0xFF00E5FF)),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        timeStr,
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
                   Text(
-                    p.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    actionLabel!,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
+                      color: Color(0xFF00E5FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (p.channel != null) ...[
-                        ChannelLogo(
-                          channel: p.channel,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          p.channel?.name ?? 'OmniCast Live',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.play_circle_fill_rounded,
-                        color: Color(0xFF00E5FF),
-                        size: 20,
-                      ),
-                    ],
-                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF00E5FF)),
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _emptyState({required IconData icon, required String text}) {
-    return Container(
-      height: 140,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF090F1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF162338)),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFF475569), size: 32),
-            const SizedBox(height: 8),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _recordingsRail(List<RecordingModel> recordings) {
-    return SizedBox(
-      height: 205,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: recordings.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final item = recordings[index];
-          return _RecordingRailCard(recording: item);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEpgPrimeTimeBanner(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF09111F), Color(0xFF0D1B30), Color(0xFF09111F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF1E3A5F)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.calendar_month_rounded, color: Color(0xFF00E5FF), size: 18),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'LỊCH PHÁT SÓNG ĐIỆN TỬ & CATCH-UP 7 NGÀY',
-                  style: TextStyle(
-                    color: Color(0xFF00E5FF),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-            ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Khung Giờ Vàng Toàn Hệ Thống',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Lịch phát sóng đồng bộ trực tiếp từ Backend API với thời lượng linh hoạt tự do theo từng chương trình phát sóng.',
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 11,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.go('/epg'),
-              icon: const Icon(Icons.calendar_today_rounded, size: 16),
-              label: const Text(
-                'Xem Lịch Phát Sóng EPG',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00E5FF),
-                foregroundColor: const Color(0xFF070B12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _LoadingRail extends StatelessWidget {
-  final double height;
-  const _LoadingRail({required this.height});
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        height: height,
-        child: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
-        ),
-      );
-}
-
-class _LiveCountBadge extends StatelessWidget {
-  final VoidCallback? onTap;
-
-  const _LiveCountBadge({this.onTap});
+class _LiveBadgeCounter extends StatelessWidget {
+  const _LiveBadgeCounter();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProgramsBloc, ProgramsState>(
       builder: (context, state) {
-        final count = (state is ProgramsLoaded && state.isLiveNow)
-            ? state.programs.length
-            : 0;
+        final count = (state is ProgramsLoaded) ? state.programs.length : 0;
+        if (count == 0) return const SizedBox.shrink();
 
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF450A0A),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF991B1B)),
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35), width: 0.6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 3,
-                    backgroundColor: Color(0xFFEF4444),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '$count TRỰC TIẾP',
-                    style: const TextStyle(
-                      color: Color(0xFFF87171),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: const TextStyle(
+                  color: Color(0xFFF87171),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -1112,37 +448,352 @@ class _LiveCountBadge extends StatelessWidget {
   }
 }
 
-class _FeaturedChannelCard extends StatelessWidget {
-  final ChannelModel channel;
+class _SpotlightHero extends StatelessWidget {
+  final LiveEventModel event;
 
-  const _FeaturedChannelCard({required this.channel});
+  const _SpotlightHero({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1523),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1AFFFFFF), width: 0.8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background image
+            if (event.thumbnailUrl != null && event.thumbnailUrl!.isNotEmpty)
+              CachedNetworkImage(
+                imageUrl: event.thumbnailUrl!,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF0F1523)),
+                placeholder: (_, __) => const ColoredBox(color: Color(0xFF0F1523)),
+              )
+            else
+              const ColoredBox(color: Color(0xFF0F1523)),
+
+            // Gradient vignette
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.85),
+                    ],
+                    stops: const [0.3, 0.65, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Top Badges
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(radius: 2.5, backgroundColor: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'TRỰC TIẾP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.remove_red_eye_outlined, size: 11, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${event.viewerCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Bottom Information & CTA
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (event.channel != null) ...[
+                    Row(
+                      children: [
+                        ChannelLogo(channel: event.channel, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          event.channel!.name,
+                          style: const TextStyle(
+                            color: Color(0xFF00E5FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  Text(
+                    event.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/live/${event.id}', extra: event);
+                        },
+                        icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                        label: const Text('Xem ngay'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00E5FF),
+                          foregroundColor: const Color(0xFF080B11),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: () => context.push('/program/${event.id}'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0x33FFFFFF), width: 0.8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        child: const Text('Chi tiết'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveRailCard extends StatelessWidget {
+  final LiveEventModel event;
+
+  const _LiveRailCard({required this.event});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/channel/${channel.id}'),
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/live/${event.id}', extra: event);
+        },
         child: Container(
-          padding: const EdgeInsets.all(10),
+          width: 220,
           decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thumbnail 16:9
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (event.thumbnailUrl != null && event.thumbnailUrl!.isNotEmpty)
+                      CachedNetworkImage(
+                        imageUrl: event.thumbnailUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF131B2E)),
+                        placeholder: (_, __) => const ColoredBox(color: Color(0xFF131B2E)),
+                      )
+                    else
+                      const ColoredBox(color: Color(0xFF131B2E)),
+
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text(
+                          'LIVE',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.remove_red_eye_outlined, size: 9, color: Colors.white),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${event.viewerCount}',
+                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Title and channel info
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFF1F5F9),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      event.channel?.name ?? 'OmniCast',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChannelPill extends StatelessWidget {
+  final ChannelModel channel;
+
+  const _ChannelPill({required this.channel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/channel/${channel.id}');
+        },
+        child: Container(
+          width: 140,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: channel.isLive
-                  ? const Color(0xFF991B1B)
-                  : const Color(0xFF16253C),
+                  ? const Color(0xFFEF4444).withValues(alpha: 0.35)
+                  : const Color(0x14FFFFFF),
+              width: 0.8,
             ),
           ),
           child: Row(
             children: [
-              ChannelLogo(
-                channel: channel,
-                size: 42,
-                showLiveIndicator: false,
-              ),
-              const SizedBox(width: 10),
+              ChannelLogo(channel: channel, size: 36, showLiveIndicator: false),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1152,19 +803,19 @@ class _FeaturedChannelCard extends StatelessWidget {
                       channel.name,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      channel.categoryDisplayName.toUpperCase(),
+                      channel.categoryDisplayName,
                       style: const TextStyle(
-                        color: Color(0xFF00E5FF),
+                        color: Color(0xFF64748B),
                         fontSize: 9,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1172,23 +823,6 @@ class _FeaturedChannelCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (channel.isLive)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF450A0A),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'LIVE',
-                    style: TextStyle(
-                      color: Color(0xFFF87171),
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -1197,94 +831,34 @@ class _FeaturedChannelCard extends StatelessWidget {
   }
 }
 
-class _CategoryTile extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _CategoryTile({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF16253C)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RecordingRailCard extends StatelessWidget {
+class _RecordingCard extends StatelessWidget {
   final RecordingModel recording;
 
-  const _RecordingRailCard({required this.recording});
+  const _RecordingCard({required this.recording});
 
   @override
   Widget build(BuildContext context) {
-    final qualityStr = recording.quality ?? 'HD';
     final durationMin = recording.duration > 0 ? recording.duration ~/ 60 : 45;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/recording/${recording.id}'),
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/recording/${recording.id}');
+        },
         child: Container(
-          width: 140,
+          width: 130,
           decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF16253C)),
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Poster / Thumbnail
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,
@@ -1293,79 +867,32 @@ class _RecordingRailCard extends StatelessWidget {
                       CachedNetworkImage(
                         imageUrl: recording.thumbnailUrl!,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) =>
-                            const ColoredBox(color: Color(0xFF121E30)),
-                        errorWidget: (_, __, ___) =>
-                            const ColoredBox(color: Color(0xFF121E30)),
+                        placeholder: (_, __) => const ColoredBox(color: Color(0xFF131B2E)),
+                        errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF131B2E)),
                       )
                     else
-                      const ColoredBox(color: Color(0xFF121E30)),
+                      const ColoredBox(color: Color(0xFF131B2E)),
+
                     Positioned(
-                      top: 6,
-                      left: 6,
+                      bottom: 5,
+                      right: 5,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          qualityStr,
-                          style: const TextStyle(
-                            color: Color(0xFF070B12),
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1.5,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
                           '${durationMin}p',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Color(0xFF00E5FF),
-                          size: 20,
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              // Meta
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(7),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1374,7 +901,7 @@ class _RecordingRailCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF00E5FF),
                         fontSize: 9,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1383,9 +910,9 @@ class _RecordingRailCard extends StatelessWidget {
                     Text(
                       recording.title,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFFF1F5F9),
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1401,24 +928,15 @@ class _RecordingRailCard extends StatelessWidget {
   }
 }
 
-// ============================================================
-// Live Studio quick-access banner (Staff/Admin only)
-// ============================================================
-//
-// Persistent entry point on the Home tab that drops the user
-// straight into the Live Studio control surface. Includes a
-// pulsing red "LIVE" indicator to visually associate it with
-// broadcast operations, plus three capability chips so the
-// operator knows what they can do once inside (Curated, Self-
-// Record, Catalog).
-
-class _LiveStudioQuickAccessBanner extends StatelessWidget {
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
   final VoidCallback onTap;
-  final Animation<double> pulse;
 
-  const _LiveStudioQuickAccessBanner({
+  const _CategoryChip({
+    required this.label,
+    required this.icon,
     required this.onTap,
-    required this.pulse,
   });
 
   @override
@@ -1426,202 +944,33 @@ class _LiveStudioQuickAccessBanner extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Ink(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1A0A12), Color(0xFF0B1320)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFFF2A55).withValues(alpha: 0.45),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF2A55).withValues(alpha: 0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: const Color(0xFF00E5FF)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFCBD5E1),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-            child: Row(
-              children: [
-                // Pulsing live dot + icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF2A55).withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFF2A55).withValues(alpha: 0.6),
-                      width: 1,
-                    ),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedBuilder(
-                        animation: pulse,
-                        builder: (_, __) => Opacity(
-                          opacity: pulse.value,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF2A55)
-                                  .withValues(alpha: 0.25),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.podcasts_rounded,
-                        color: Color(0xFFFF2A55),
-                        size: 22,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Title + chips
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          AnimatedBuilder(
-                            animation: pulse,
-                            builder: (_, __) => Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF2A55)
-                                    .withValues(alpha: pulse.value),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          const Text(
-                            'STAFF CONTROL',
-                            style: TextStyle(
-                              color: Color(0xFFFF2A55),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'monospace',
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B1320),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFF00E5FF)
-                                    .withValues(alpha: 0.5),
-                                width: 0.6,
-                              ),
-                            ),
-                            child: const Text(
-                              'LIVE STUDIO',
-                              style: TextStyle(
-                                color: Color(0xFF00E5FF),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'monospace',
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Phát sóng trực tiếp & tự ghi hình',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      // Capability chips
-                      const Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          _CapabilityChip(
-                            label: 'Curated',
-                            color: Color(0xFF00E5FF),
-                          ),
-                          _CapabilityChip(
-                            label: 'Self-Record',
-                            color: Color(0xFFF59E0B),
-                          ),
-                          _CapabilityChip(
-                            label: 'Catalog',
-                            color: Color(0xFF22C55E),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Color(0xFFFF2A55),
-                  size: 14,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CapabilityChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _CapabilityChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: color.withValues(alpha: 0.45),
-          width: 0.6,
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          fontFamily: 'monospace',
-          letterSpacing: 0.4,
         ),
       ),
     );
