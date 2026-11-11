@@ -114,6 +114,17 @@ void main() {
 
       expect(streamReply, isNotEmpty);
       expect(streamReply, contains('Bitrate'));
+
+      final channelReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Khám phá các kênh truyền hình nổi bật trên OmniCast',
+      );
+
+      expect(channelReply, isNotEmpty);
+      expect(channelReply, contains('CÁC KÊNH TRUYỀN HÌNH NỔI BẬT'));
+      expect(channelReply, contains('VTV3 HD'));
+      expect(channelReply, contains('Kênh TV'));
+      expect(channelReply.contains('GÓI THÀNH VIÊN VIP'), isFalse);
     });
 
     test('chatWithAssistant returns playful and warm replies for casual conversation', () async {

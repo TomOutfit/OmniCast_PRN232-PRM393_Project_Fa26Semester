@@ -704,19 +704,55 @@ Rất vui được gặp bạn! Mình luôn sẵn sàng đồng hành cùng bạ
 ${currentProgramTitle != null ? '📌 *Đang gắn với chương trình:* **$currentProgramTitle**\n\n' : ''}Hôm nay tụi mình cùng bàn về nội dung gì hay bạn đang có câu hỏi gì vui vui nè?$geminiNote''';
     }
 
-    // 3. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
-    if (lower.contains('omnicast') ||
-        lower.contains('ứng dụng') ||
-        lower.contains('nền tảng') ||
-        lower.contains('vip') ||
-        lower.contains('gói cước') ||
-        lower.contains('gói thành viên') ||
-        lower.contains('đăng ký gói') ||
-        lower.contains('thanh toán') ||
-        lower.contains('payos') ||
-        lower.contains('nạp tiền') ||
-        lower.contains('mua gói') ||
-        lower.contains('bảng giá')) {
+    // 3. Khám phá các kênh truyền hình nổi bật trên OmniCast
+    final isChannelDiscovery = (lower.contains('kênh') ||
+            lower.contains('channel') ||
+            lower.contains('danh sách kênh') ||
+            lower.contains('kênh nổi bật') ||
+            lower.contains('kênh truyền hình') ||
+            lower.contains('khám phá kênh') ||
+            lower.contains('các kênh')) &&
+        !lower.contains('vip') &&
+        !lower.contains('thanh toán') &&
+        !lower.contains('nâng cấp') &&
+        !lower.contains('mua gói');
+
+    if (isChannelDiscovery) {
+      return '''Dạ có ngay nè bạn ơi! Đài truyền hình OmniCast hiện phát sóng trực tiếp hơn 25 kênh truyền hình độ nét cao Full HD / 4K với các nhóm nội dung nổi bật nhất:
+
+📺 **CÁC KÊNH TRUYỀN HÌNH NỔI BẬT TRÊN OMNICAST:**
+• ⚽ **Nhóm Kênh Thể Thao (Sports):**
+  - **VTV3 HD & K+ Sport 1:** Trực tiếp các trận cầu tâm điểm Ngoại Hạng Anh, V-League, Cúp C1 với luồng WebRTC WHEP siêu trễ thấp (< 350ms).
+  - **Omni Sport Arena:** Bình luận thể thao chuyên sâu, thể thao điện tử (Esports) và highlight bàn thắng.
+• 🎬 **Nhóm Kênh Phim Truyện (Cinema):**
+  - **Omni Cinema HD & CineMax Action:** Bom tấn Hollywood, phim hành động 4K và series phim châu Á đặc sắc với âm thanh vòm sống động.
+  - **Phim Việt Giờ Vàng:** Các bộ phim truyền hình giờ vàng được yêu thích nhất.
+• 🎶 **Nhóm Kênh Âm Nhạc & Giải Trí (Music & Lifestyle):**
+  - **Omni Music 4K:** Không gian hòa nhạc, liveshow trực tiếp và các giai điệu acoustic chillout du dương.
+  - **Music Box & V-Pop Stage:** Nơi hội tụ các nghệ sĩ trẻ và các bảng xếp hạng âm nhạc thịnh hành.
+• 📡 **Nhóm Kênh Khoa Giáo & Tin Tức (Discovery & News):**
+  - **Discovery Tech & Tin Tức 24/7:** Điểm tin thời sự, xu hướng Trí Tuệ Nhân Tạo AI và công nghệ số 2026.
+
+💡 *Cách xem ngay:*
+👉 Bạn chỉ cần bấm vào tab **"Kênh TV"** ở thanh điều hướng dưới đáy màn hình để lướt xem trực tiếp, đổi kênh tức thì và xem lịch phát sóng của từng kênh nha!$geminiNote''';
+    }
+
+    // 4. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS VietQR
+    final isVipPayment = (lower.contains('vip') ||
+            lower.contains('gói cước') ||
+            lower.contains('gói thành viên') ||
+            lower.contains('đăng ký gói') ||
+            lower.contains('nâng cấp gói') ||
+            lower.contains('mua gói') ||
+            lower.contains('bảng giá') ||
+            lower.contains('thanh toán') ||
+            lower.contains('payos') ||
+            lower.contains('nạp tiền') ||
+            lower.contains('giá gói')) &&
+        !lower.contains('kênh') &&
+        !lower.contains('khám phá');
+
+    if (isVipPayment) {
       return '''Về GÓI THÀNH VIÊN VIP và cổng thanh toán trên OmniCast nè:
 
 Lên VIP thì xem sướng hơn hẳn bạn ơi:
