@@ -85,7 +85,8 @@ void main() {
       );
 
       expect(greetingReply, isNotEmpty);
-      expect(greetingReply, contains('XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST'));
+      expect(greetingReply, contains('OmniBot'));
+      expect(greetingReply, contains('Bé Bot Studio'));
       expect(greetingReply, contains('Biên tập & Kịch bản'));
 
       final vipReply = await service.chatWithAssistant(
@@ -113,6 +114,30 @@ void main() {
 
       expect(streamReply, isNotEmpty);
       expect(streamReply, contains('Bitrate'));
+    });
+
+    test('chatWithAssistant returns playful and warm replies for casual conversation', () async {
+      final careReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Ăn cơm chưa nè bé bot ơi?',
+      );
+      expect(careReply, isNotEmpty);
+      expect(careReply, contains('robot chạy bằng điện'));
+      expect(careReply, contains('Pin'));
+
+      final loveReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Bot có người yêu chưa á?',
+      );
+      expect(loveReply, isNotEmpty);
+      expect(loveReply, contains('tai nghe kiểm âm'));
+
+      final humorReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Kể chuyện cười cho mình nghe đi bot',
+      );
+      expect(humorReply, isNotEmpty);
+      expect(humorReply, contains('WebRTC'));
     });
 
     test('chatWithAssistant returns context-matching answer for arbitrary questions', () async {

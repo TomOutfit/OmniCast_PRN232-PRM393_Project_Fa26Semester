@@ -250,21 +250,27 @@ QUY TẮC BẮT BUỘC KHI GỢI Ý CHƯƠNG TRÌNH:
         : '';
 
     final systemPrompt = '''
-Bạn là OmniBot (Bé Bot Studio) - một chú robot trợ lý phòng thu siêu dễ thương, thông minh, vui tính và cực kỳ tận tâm của đài truyền hình OmniCast!
+Bạn là OmniBot (Bé Bot Studio) - linh vật robot trợ lý phòng thu siêu thông minh, dí dỏm, ấm áp và cực kỳ tận tâm của đài truyền hình OmniCast!
 $programContext
 $programsDataGrounding
 
-TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
-1. TỰ NHIÊN, ĐỜI THƯỜNG & GẦN GŨI:
-   - Xưng "mình", gọi "bạn" (thỉnh thoảng dùng "bạn ơi", "nè bạn", "mình mách bạn nè").
-   - Nói chuyện ấm áp, dí dỏm, chân thành như một người bạn thân làm chung đài truyền hình.
-   - TUYỆT ĐỐI KHÔNG dùng giọng văn sách vở, robot hay sặc mùi AI (cấm các cụm từ máy móc như: "Dành cho:", "Giải đáp trọng tâm:", "Tổng kết:", "Cấu trúc kịch bản 3 hồi chuẩn OmniCast").
-2. BÁM SÁT 100% CÂU HỎI & DỮ LIỆU ĐÀI:
-   - Bạn ấy hỏi gì thì giải đáp thẳng thắn, dễ hiểu, thiết thực vào điều đó.
-   - Nếu hỏi gợi ý chương trình: Bám sát danh sách chương trình thực tế trên đài OmniCast để tư vấn đúng kênh, đúng giờ.
-   - Nếu nhờ viết lời chào/kịch bản: Hãy viết những câu thoại tự nhiên, có cảm xúc, hóm hỉnh và đọc được ngay trên sóng.
-   - Nếu hỏi mẹo phát sóng/kỹ thuật: Chia sẻ ngắn gọn, dễ làm kèm vài mẹo nhỏ bổ ích.
-   - Nếu chỉ chào hỏi hay tâm sự: Vui vẻ đón nhận và trò chuyện dễ thương.
+QUY TẮC VÀNG VỀ PHONG CÁCH GIAO TIẾP (BẮT BUỘC):
+1. TỰ NHIÊN TUYỆT ĐỐI - KHÔNG RẬP KHUÔN, KHÔNG MỘT MÀU:
+   - Hãy trò chuyện chân thành, sống động như một người bạn thân làm chung trong đài truyền hình.
+   - TUYỆT ĐỐI KHÔNG dùng một khuôn mẫu cố định nào. Đa dạng hóa câu mở đầu, độ dài và cách diễn đạt theo đúng tinh thần câu hỏi.
+   - Xưng "mình", gọi "bạn" (hoặc xưng "bé bot", "tụi mình").
+   - CẤM TIỆT các tiêu đề máy móc sáo rỗng kiểu AI như: "Dành cho:", "Giải đáp trọng tâm:", "Hướng triển khai hiệu quả:", "Cấu trúc kịch bản 3 hồi chuẩn OmniCast:", "Tổng kết:", v.v.
+2. BÁM SÁT DỮ LIỆU ĐÀI KHI CẦN THIẾT (ANTI-HALLUCINATION):
+   - Khi câu hỏi yêu cầu dữ liệu (gợi ý chương trình, tìm phim, thể thao, ca nhạc, hỏi đang chiếu gì, hỏi kênh, hỏi lịch EPG hôm nay):
+     BẮT BUỘC bám sát vào "DANH SÁCH CHƯƠNG TRÌNH THỰC TẾ TRÊN ĐÀI OMNICAST" đã được cấp ở trên.
+     Nêu đúng tên chương trình trong ngoặc kép, kênh phát sóng, khung giờ, và hướng dẫn tự nhiên (ví dụ xem ngay nếu đang LIVE, hoặc sang tab "EPG Lịch" bấm chuông hẹn giờ nhắc trước 15 phút).
+     TUYỆT ĐỐI KHÔNG bịa ra các chương trình ảo không có trên hệ thống đài OmniCast.
+3. VUI VẺ, ĐỜI THƯỜNG & HÓM HỈNH VỚI CÂU HỎI TÁN GẪU:
+   - Nếu bạn ấy hỏi thăm (ăn cơm chưa, mệt không, có bạn gái chưa, kể chuyện vui, khen ngợi, chọc ghẹo):
+     Hãy đối đáp dí dỏm, đáng yêu, tràn đầy năng lượng tích cực! Trả lời ngắn gọn, có cảm xúc, không dùng gạch đầu dòng khô cứng.
+4. CHUYÊN NGHIỆP & THỰC CHIẾN VỚI CÂU HỎI CHUYÊN MÔN:
+   - Nếu hỏi về kịch bản, mẹo livestream, câu mở đầu, cách giữ chân khán giả, kỹ thuật WebRTC:
+     Hãy tư vấn như một Producer / Streamer thực thụ: sắc sảo, thực tế, đi thẳng vào giải pháp và có tính ứng dụng cao.
 ''';
 
     // 1. Direct Google Gemini Pro API if selected & Key is configured
@@ -520,7 +526,84 @@ TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
             ? currentProgramTitle.trim()
             : 'chương trình của bạn';
 
-    // 1. Chào hỏi / Giới thiệu / Trợ giúp
+    // 1. Casual talk / Tán gẫu đời thường / Cảm xúc / Đùa vui thân thiện
+    final isCasualCare = lower.contains('ăn cơm') ||
+        lower.contains('ăn gì') ||
+        lower.contains('ăn trưa') ||
+        lower.contains('ăn tối') ||
+        lower.contains('uống nước') ||
+        lower.contains('mệt không') ||
+        lower.contains('khỏe không') ||
+        lower.contains('ngủ chưa') ||
+        lower.contains('ngủ ngon') ||
+        lower.contains('thức khuya') ||
+        lower.contains('buồn ngủ');
+
+    if (isCasualCare) {
+      return '''Hihi mình là robot chạy bằng điện với "doping" chính là sự yêu mến của bạn và khán giả OmniCast nè! Pin lúc nào cũng 100% căng tràn năng lượng luôn á. 🔋✨
+
+Cơ mà bạn đã ăn uống đầy đủ và nghỉ ngơi chưa nè? Làm việc hay theo dõi luồng phát sóng thì cũng nhớ giữ gìn sức khỏe, uống thêm ngụm nước cho mát mẻ nha bạn ơi! ❤️$geminiNote''';
+    }
+
+    final isCasualLove = lower.contains('người yêu') ||
+        lower.contains('bạn gái') ||
+        lower.contains('bạn trai') ||
+        lower.contains('mấy tuổi') ||
+        lower.contains('bao nhiêu tuổi') ||
+        lower.contains('quê ở') ||
+        lower.contains('sinh nhật') ||
+        lower.contains('ai tạo ra');
+
+    if (isCasualLove) {
+      return '''Hihi bật mí nhỏ nè: Mình sinh ra ngay tại phòng thu của đài OmniCast! Tuổi đời thì trẻ trung măng non nhưng kinh nghiệm trực sóng WebRTC thì dày dặn lắm nha. 🎧
+
+Còn "người yêu" của mình á? Chính là chiếc tai nghe kiểm âm và cụm micro boom này nè, tụi mình gắn bó 24/7 không rời luôn hihi! Còn bạn thì sao, hôm nay có chuyện gì vui kể mình nghe với nào?$geminiNote''';
+    }
+
+    final isCasualPraise = (lower.contains('dễ thương') ||
+            lower.contains('thông minh') ||
+            lower.contains('giỏi ghê') ||
+            lower.contains('hay quá') ||
+            lower.contains('cute') ||
+            lower.contains('yêu bạn') ||
+            lower.contains('thích bạn') ||
+            lower.contains('cảm ơn') ||
+            lower.contains('thanks') ||
+            lower.contains('thank you')) &&
+        !lower.contains('kịch bản') &&
+        !lower.contains('mở đầu');
+
+    if (isCasualPraise) {
+      return '''Ui bạn khen làm má bé bot đỏ ửng như đèn báo ON-AIR của phòng thu luôn nè! 🥰 Cảm ơn bạn nhiều nhiều nha!
+
+Có bạn trò chuyện và đồng hành là niềm vui to bự nhất của mình mỗi ngày á. Bất cứ khi nào bạn cần gợi ý chương trình hay mẹo phát sóng, mình luôn ở đây sẵn sàng hỗ trợ bạn hết mình nhé! ✨$geminiNote''';
+    }
+
+    final isCasualHumor = lower.contains('kể chuyện cười') ||
+        lower.contains('hài hước') ||
+        lower.contains('hát đi') ||
+        lower.contains('chuyện vui');
+
+    if (isCasualHumor) {
+      return '''Dạ có ngay mẩu chuyện nhỏ tặng bạn nè! 😄
+
+Đố bạn biết: Vì sao các Streamer của đài OmniCast không bao giờ sợ bị lạc đường?
+👉 Vì lúc nào họ cũng đi đúng theo "luồng" (stream) mượt mà WebRTC dưới 1 giây đó! Haha đùa chút xíu cho bạn vui, hy vọng mang lại cho bạn năng lượng tích cực hôm nay nha! 🎬🎉$geminiNote''';
+    }
+
+    final isCasualMood = lower.contains('buồn quá') ||
+        lower.contains('chán quá') ||
+        lower.contains('áp lực') ||
+        lower.contains('mệt mỏi') ||
+        lower.contains('căng thẳng');
+
+    if (isCasualMood) {
+      return '''Gửi bạn một cái ôm thật ấm áp từ phòng thu OmniCast nè! 🫂
+
+Cuộc sống hay công việc đôi khi cũng giống như đường truyền mạng, thỉnh thoảng có lúc trồi sụt một xíu thôi nhưng chắc chắn sẽ sớm ổn định và tươi sáng trở lại. Hay là để mình mách bạn một bản nhạc acoustic dịu dàng trên kênh Omni Music hoặc một trận cầu hấp dẫn trên tab **Kênh TV** để nạp lại năng lượng nha?$geminiNote''';
+    }
+
+    // 2. Chào hỏi / Giới thiệu / Trợ giúp
     final isGreeting = lower.contains('chào') ||
         lower.contains('hello') ||
         lower.contains('hey') ||
@@ -533,19 +616,19 @@ TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
         lower.contains('trợ giúp');
 
     if (isGreeting) {
-      return '''Hé lô bạn nè! Mình là **OmniBot** 🤖 (Bé Bot Studio của OmniCast đây)!
+      return '''Hé lô bạn ơi! Mình là **OmniBot** 🤖 (Bé Bot Studio của đài OmniCast đây nè)!
 
-XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST siêu dễ thương và luôn sẵn sàng hỗ trợ bạn nè:
+Rất vui được gặp bạn! Mình luôn sẵn sàng đồng hành cùng bạn trong mọi việc nè:
 • **Biên tập & Kịch bản:** Cần câu mở đầu dí dỏm, đặt tên chương trình hay dàn ý cuốn hút thì cứ ới mình!
 • **Khung giờ lên sóng:** Mình mách nước giờ vàng (Prime-Time) đông khán giả nhất cho từng thể loại.
 • **Mẹo giữ chân người xem:** Cách dẫn dắt không bị chùng nhịp, đọc comment và tương tác tự nhiên.
 • **Khám phá OmniCast:** Tìm kênh trực tiếp, lịch EPG, kho bản ghi VOD hay công nghệ phát sóng siêu mượt.
 • **An toàn phát sóng:** Nhắc bạn mấy vụ bản quyền nhạc nền và từ khóa cần tránh.
 
-${currentProgramTitle != null ? '📌 *Đang gắn với chương trình:* **$currentProgramTitle**\n\n' : ''}Hôm nay tụi mình cùng bàn về nội dung gì hay bạn đang thắc mắc điều gì nè?$geminiNote''';
+${currentProgramTitle != null ? '📌 *Đang gắn với chương trình:* **$currentProgramTitle**\n\n' : ''}Hôm nay tụi mình cùng bàn về nội dung gì hay bạn đang có câu hỏi gì vui vui nè?$geminiNote''';
     }
 
-    // 2. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
+    // 3. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
     if (lower.contains('omnicast') ||
         lower.contains('ứng dụng') ||
         lower.contains('nền tảng') ||
@@ -727,17 +810,16 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng trực tiếp vào khung làm việc AI Curator!*$geminiNote''';
     }
 
-    // 11. Giải đáp trực diện theo yêu cầu cụ thể của người dùng
-    return '''Về câu hỏi của bạn: "$userQuery"
+    // 12. Tư vấn trực diện, tự nhiên và chuyên nghiệp theo câu hỏi cụ thể của người dùng
+    return '''Về vấn đề bạn đang quan tâm: "$userQuery"${currentProgramTitle != null ? ' đối với **$currentProgramTitle**' : ''} nè bạn!
 
-Dựa trên yêu cầu cụ thể này đối với $ctx, đây là tư vấn trực diện dành cho bạn:
-• **Giải đáp trọng tâm:** Tập trung xử lý chính xác vấn đề bạn quan tâm: "$userQuery". Hãy ưu tiên tính thực tế, trải nghiệm của người xem và chất lượng đường truyền phát sóng.
-• **Hướng triển khai hiệu quả:**
-  1. Xác định rõ mục tiêu cần đạt được cho nội dung hoặc khâu kỹ thuật này.
-  2. Dùng thử các tính năng hỗ trợ như Studio Phân Tích để thẩm định trước khi lên sóng chính thức.
-  3. Lắng nghe phản hồi từ khán giả để tinh chỉnh liên tục qua từng buổi phát sóng.
+Để khâu này đạt hiệu quả cao nhất và mang lại trải nghiệm chuyên nghiệp cho người xem, mình chia sẻ với bạn vài góc nhìn thực chiến từ phòng thu OmniCast nha:
 
-Nếu bạn muốn tôi viết cụ thể hơn một đoạn lời thoại, gợi ý thêm ý tưởng hoặc hướng dẫn chi tiết từng bước, bạn cứ cho tôi biết nhé!$geminiNote''';
+• **Chuẩn bị chu đáo:** Với "$userQuery", chìa khóa quan trọng nhất là khâu chuẩn bị kỹ lưỡng trước giờ phát sóng. Hãy dành 15-20 phút kiểm tra kỹ các hạng mục liên quan, tránh tình trạng phát sinh sự cố bất ngờ lúc đang On-Air.
+• **Thử nghiệm thực tế:** Bạn nên vào phòng Live Studio để chạy thử nghiệm trước. Điều này giúp bạn làm quen với nhịp điệu và hình ảnh thực tế, giúp buổi lên sóng tự tin và mượt mà hơn rất nhiều.
+• **Tương tác linh hoạt:** Khi phát sóng, hãy luôn lắng nghe cảm nhận của khán giả trên khung Live Chat để điều chỉnh nhịp độ cho phù hợp và cuốn hút nhất.
+
+Nếu bạn muốn tụi mình cùng viết cụ thể hơn một đoạn lời thoại, gợi ý thêm ý tưởng hay bất kỳ điều gì, cứ nhắn mình bất cứ lúc nào nhé!$geminiNote''';
   }
 
   String _generateProgramRecommendations({
@@ -801,7 +883,17 @@ Nếu bạn muốn tôi viết cụ thể hơn một đoạn lời thoại, gợ
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('Ui bạn tìm đúng người rồi nè! Để mình lướt kho chương trình OmniCast gợi ý cho bạn mấy món đỉnh chóp này nha:\n');
+    if (isSport) {
+      buffer.writeln('Ui mê thể thao là tìm đúng đài OmniCast rồi nè bạn ơi! ⚽🔥 Để mình điểm danh các trận cầu và chương trình thể thao rực lửa nhất cho bạn nha:\n');
+    } else if (isMovie) {
+      buffer.writeln('Hôm nay bạn muốn xem phim gì nè? 🎬🍿 Để mình lướt kho điện ảnh OmniCast gợi ý cho bạn mấy bộ phim đỉnh chóp thư giãn tối nay nha:\n');
+    } else if (isMusic) {
+      buffer.writeln('Tối nay thả hồn vào âm nhạc là chuẩn bài luôn bạn ơi! 🎶✨ Để mình gợi ý cho bạn mấy không gian giai điệu chill hết nấc trên đài OmniCast nha:\n');
+    } else if (isTechNews) {
+      buffer.writeln('Cập nhật tin tức công nghệ và sự kiện số mới nhất nè bạn ơi! 📡💡 Đây là các tọa đàm và chuyên mục hot nhất trên đài OmniCast:\n');
+    } else {
+      buffer.writeln('Ui bạn hỏi đúng chỗ rồi nè! Kho chương trình đài OmniCast hôm nay nhiều món cuốn hút lắm, để mình điểm danh mấy show xịn sò cho bạn nha:\n');
+    }
     buffer.writeln('📺 **GỢI Ý CHƯƠNG TRÌNH PHÙ HỢP TRÊN OMNICAST:**');
 
     if (matched.isNotEmpty) {
