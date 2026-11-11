@@ -61,6 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return OfflineBanner(
       child: Scaffold(
         backgroundColor: const Color(0xFF080B11),
+        floatingActionButton: _buildAiAssistantFab(context),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           color: const Color(0xFF00E5FF),
@@ -115,10 +117,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.search_rounded, color: Color(0xFFCBD5E1), size: 22),
                     onPressed: () => context.push('/search'),
                   ),
-                  IconButton(
-                    tooltip: 'Trợ lý AI Chatbot (Gemini Pro)',
-                    icon: const Icon(Icons.smart_toy_rounded, color: Color(0xFF00E5FF), size: 21),
-                    onPressed: () => AICuratorChatbotSheet.show(context),
+                  // Highlighted AI Chatbot Pill Button in AppBar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          AICuratorChatbotSheet.show(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFF00E5FF), width: 1.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.smart_toy_rounded, color: Color(0xFF00E5FF), size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                'AI CHAT',
+                                style: TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -142,6 +183,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 6),
                 ],
+              ),
+
+              // ── QUICK AI PROMPT CAPSULE (TOP UNMISSABLE ACCESS) ───
+              const SliverToBoxAdapter(
+                child: _AiQuickPromptBar(),
               ),
 
               // ── SPOTLIGHT FEATURED HERO ───────────────────────────
@@ -340,6 +386,91 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Text(
           text,
           style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiAssistantFab(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0E1A38), Color(0xFF082238)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFF00E5FF), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.38),
+            blurRadius: 18,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            AICuratorChatbotSheet.show(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.smart_toy_rounded,
+                    color: Color(0xFF00E5FF),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Hỏi AI Gemini',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(
+                      color: Color(0xFF080B11),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1124,4 +1255,110 @@ class _AiCuratorHomeBanner extends StatelessWidget {
     );
   }
 }
+
+class _AiQuickPromptBar extends StatelessWidget {
+  const _AiQuickPromptBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            AICuratorChatbotSheet.show(context);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D1728), Color(0xFF081C2E)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x3800E5FF), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF00E5FF), size: 16),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Trợ lý AI OmniCast (Gemini 1.5 Pro)',
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Hỏi lịch chiếu, phân tích EPG & kịch bản phát sóng...',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.forum_rounded, size: 12, color: Color(0xFF080B11)),
+                      SizedBox(width: 4),
+                      Text(
+                        'HỎI AI',
+                        style: TextStyle(
+                          color: Color(0xFF080B11),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
