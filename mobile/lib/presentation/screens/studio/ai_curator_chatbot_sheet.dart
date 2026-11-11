@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
@@ -174,27 +175,49 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
 
     if (widget.onApplyToCurator != null) {
       widget.onApplyToCurator!(title, desc);
-    }
-
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.black, size: 20),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Đã nạp gợi ý từ AI Chatbot vào kịch bản AI Curator thành công!',
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.black, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Đã nạp gợi ý từ AI Chatbot vào kịch bản AI Curator thành công!',
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: Color(0xFF00E5FF),
+          duration: Duration(seconds: 3),
         ),
-        backgroundColor: Color(0xFF00E5FF),
-        duration: Duration(seconds: 3),
-      ),
-    );
+      );
+    } else {
+      Navigator.pop(context);
+      try {
+        context.push('/ai-curator');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.black, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Đang chuyển sang AI Curator Studio để thẩm định kịch bản!',
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color(0xFF00E5FF),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } catch (_) {}
+    }
   }
 
   @override
@@ -538,11 +561,12 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
 
   Widget _buildQuickPrompts() {
     final prompts = [
-      '🎬 Gợi ý 3 câu mở đầu vui vẻ cho mình',
-      '⏰ Tối nay mấy giờ lên sóng đông người xem nhất?',
-      '⚡ Mẹo giữ chân người xem livestream không lướt qua',
-      '🛡️ Kiểm duyệt từ ngữ và bản quyền an toàn',
-      '📺 Hôm nay OmniCast có kênh gì hay ho để xem?',
+      '🎬 Gợi ý 3 câu mở đầu (Hook 30s) giữ chân người xem',
+      '⏰ Khung giờ vàng phát sóng (Prime-Time EPG) tối nay',
+      '⚡ Mẹo giữ chân người xem & tăng tương tác phòng Live',
+      '🛡️ Kiểm duyệt từ ngữ & an toàn bản quyền phát sóng',
+      '💎 Gợi ý kích thích tặng quà Super Chat & VietQR PayOS',
+      '📺 Khám phá các kênh truyền hình nổi bật trên OmniCast',
     ];
 
     return Container(
