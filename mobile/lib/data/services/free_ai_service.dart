@@ -206,17 +206,17 @@ $desc
 Bạn là Trợ lý AI Thông minh của Nền tảng Truyền hình OmniCast (OmniCast AI Assistant).
 $programContext
 
-NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
-1. TRẢ LỜI ĐÚNG TRỌNG TÂM VÀ PHÙ HỢP NGỮ CẢNH CÂU HỎI:
-   - Hãy đọc kỹ câu hỏi của người dùng và trả lời đúng chính xác điều họ hỏi.
-   - Nếu người dùng chào hỏi, hỏi thông tin chung, hỏi tính năng ứng dụng, kênh truyền hình, lịch chiếu EPG, bản ghi VOD, nâng cấp gói VIP (PayOS VietQR), hoặc công nghệ phát sóng (WebRTC WHEP, HLS, Live Studio): hãy giải đáp chính xác, tự nhiên, thân thiện và hữu ích theo ngữ cảnh đó.
-   - CHỈ đưa ra cấu trúc kịch bản 3 hồi, phân tích hook mở đầu hoặc timeline chi tiết KHI người dùng có yêu cầu liên quan đến biên tập kịch bản, sản xuất nội dung hoặc tối ưu phát sóng.
-2. PHÙ HỢP CHƯƠNG TRÌNH ĐANG XEM/CHỌN:
-   - Nếu câu hỏi liên quan đến "$currentProgramTitle", hãy phân tích dựa trên thể loại và bối cảnh của chương trình này.
-   - Nếu câu hỏi không nhắc đến chương trình, hãy hỗ trợ người dùng theo đúng câu hỏi mà họ đưa ra.
-3. ĐỊNH DẠNG & PHONG CÁCH:
-   - Tiếng Việt chuẩn mực, chuyên nghiệp, súc tích, văn phong hiện đại.
-   - Dùng gạch đầu dòng rõ ràng, làm nổi bật từ khóa quan trọng bằng định dạng bold để người dùng dễ đọc trên thiết bị di động.
+NGUYÊN TẮC PHẢN HỒI (BẮT BUỘC - BÃI BỎ KHUÔN MẪU DẬP KHUÔN):
+1. TUYỆT ĐỐI KHÔNG DÙNG CẤU TRÚC KHUÔN MẪU CỐ ĐỊNH:
+   - Nghiêm cấm việc áp dụng một khung sườn cứng nhắc cho mọi câu trả lời (như lúc nào cũng chèn tiêu đề H3 to đùng, lúc nào cũng chia 3 hồi kịch bản, lúc nào cũng đưa danh sách gạch đầu dòng giống nhau).
+   - Hãy trả lời tự nhiên, linh hoạt và biến hóa theo đúng câu hỏi của người dùng.
+2. BÁM SÁT 100% YÊU CẦU CỤ THỂ CỦA NGƯỜI DÙNG:
+   - Nếu người dùng yêu cầu viết lời thoại/kịch bản: Hãy sáng tạo nội dung thực tế, có cảm xúc, phong cách cuốn hút và đọc được ngay.
+   - Nếu người dùng hỏi hướng dẫn kỹ thuật hoặc mẹo thực chiến: Cung cấp giải pháp ngắn gọn, dễ hiểu, áp dụng được ngay.
+   - Nếu người dùng hỏi về kênh truyền hình, gói VIP hay lịch EPG: Trả lời chính xác, súc tích, không thừa thãi.
+   - Nếu người dùng chào hỏi hoặc trò chuyện: Hãy giao tiếp thân thiện, ấm áp và tự nhiên.
+3. PHONG CÁCH & THỰC TIỄN:
+   - Tiếng Việt tự nhiên, giàu tính thực chiến ngành truyền hình, tránh nói sáo rỗng hay lý thuyết suông.
 ''';
 
     // 1. Direct Google Gemini Pro API if selected & Key is configured
@@ -248,12 +248,14 @@ NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
 
     messages.add({'role': 'user', 'content': userQuery});
 
+    final effectiveModel = model.isGemini ? 'openai' : model.id;
+
     try {
       final response = await _dio.post(
         _endpoint,
         data: {
           'messages': messages,
-          'model': model.id,
+          'model': effectiveModel,
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
@@ -264,7 +266,7 @@ NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
       try {
         final getUrl = '$_endpoint${Uri.encodeComponent(userQuery)}'
             '?system=${Uri.encodeComponent(systemPrompt)}'
-            '&model=${model.id}';
+            '&model=$effectiveModel';
         final getRes = await _dio.get(getUrl);
         final reply = getRes.data?.toString().trim() ?? '';
         if (_isValidAiReply(reply)) return reply;
@@ -460,13 +462,13 @@ NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
     bool isGeminiWithoutKey = false,
   }) {
     final geminiNote = isGeminiWithoutKey
-        ? '\n\n🔑 *Ghi chú:* Bạn đang chọn Google Gemini Pro. Hãy bấm biểu tượng 🔑 phía trên để nhập API Key từ Google AI Studio (aistudio.google.com/app/apikey) nhằm kích hoạt kết nối trực tiếp đến Google Cloud!'
+        ? '\n\n💡 *Mẹo:* Bạn đang chọn Google Gemini Pro. Hãy bấm biểu tượng 🔑 phía trên để nhập API Key từ Google AI Studio (aistudio.google.com/app/apikey) nhằm kích hoạt kết nối trực tiếp đến mô hình Gemini 1.5 Pro!'
         : '';
     final lower = userQuery.toLowerCase();
     final ctx =
         (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
             ? currentProgramTitle.trim()
-            : 'Chương trình phát sóng OmniCast';
+            : 'chương trình của bạn';
 
     // 1. Chào hỏi / Giới thiệu / Trợ giúp
     final isGreeting = lower.contains('chào') ||
@@ -481,16 +483,16 @@ NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
         lower.contains('trợ giúp');
 
     if (isGreeting) {
-      return '''### 👋 XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST
-Tôi là trợ lý AI thông minh sẵn sàng đồng hành cùng bạn trên toàn bộ hệ thống OmniCast:
+      return '''XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST 🌟
 
-• 🎬 **Biên tập & Kịch bản:** Gợi ý hook 3 phút đầu, cấu trúc 3 hồi, tối ưu nội dung.
-• ⏰ **Tối ưu lịch chiếu:** Tư vấn khung giờ vàng (Prime-Time 20h - 22h30) đạt đỉnh người xem.
-• ⚡ **Tương tác & Giữ chân:** Kỹ thuật pacing 7 phút, khảo sát trực tiếp, bình chọn Live Chat.
-• 📺 **Khám phá OmniCast:** Tìm kênh trực tiếp, lịch EPG, bản ghi VOD và công nghệ phát sóng siêu trễ thấp.
-• 🛡️ **Kiểm duyệt an toàn:** Rà soát bản quyền âm thanh, phân loại độ tuổi (T13/PG).
+Tôi có thể đồng hành cùng bạn xử lý linh hoạt mọi khâu trong phát sóng và sáng tạo nội dung:
+• **Biên tập & Kịch bản:** Viết lời thoại mở đầu cuốn hút, dàn ý chương trình, tối ưu tiêu đề và nội dung.
+• **Khung giờ phát sóng:** Đề xuất khung giờ vàng (Prime-Time) tối ưu lượng người xem theo từng thể loại.
+• **Tương tác & Giữ chân:** Tư vấn cách dẫn dắt nhịp độ (pacing), đặt câu hỏi mở và phản hồi khán giả.
+• **Khám phá OmniCast:** Tra cứu kênh trực tiếp, lịch chiếu EPG, kho bản ghi VOD và công nghệ phát sóng siêu trễ thấp.
+• **An toàn phát sóng:** Rà soát bản quyền âm thanh, ngôn từ và phân loại độ tuổi.
 
-${currentProgramTitle != null ? '📌 *Chương trình đang chọn:* **$currentProgramTitle**\n\n' : ''}Bạn đang cần tôi hỗ trợ điều gì cụ thể hôm nay?$geminiNote''';
+${currentProgramTitle != null ? '📌 *Đang gắn với ngữ cảnh:* **$currentProgramTitle**\n\n' : ''}Hôm nay bạn cần tôi hỗ trợ viết nội dung, tư vấn kỹ thuật hay giải đáp điều gì cụ thể?$geminiNote''';
     }
 
     // 2. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
@@ -506,15 +508,12 @@ ${currentProgramTitle != null ? '📌 *Chương trình đang chọn:* **$current
         lower.contains('nạp tiền') ||
         lower.contains('mua gói') ||
         lower.contains('bảng giá')) {
-      return '''### 💎 NỀN TẢNG OMNICAST & GÓI THÀNH VIÊN VIP
-OmniCast là hệ sinh thái truyền hình số và phòng thu di động thế hệ mới:
+      return '''Về nền tảng OmniCast và GÓI THÀNH VIÊN VIP:
 
-• 📺 **Truyền hình Đa kênh:** Trực tiếp các kênh quốc gia & độc quyền (VTV, HTV, OmniSport, OmniCinema).
-• ⚡ **Gói Thành viên VIP:**
-  - Trải nghiệm chất lượng Full HD 1080p60 & 4K siêu nét, không quảng cáo chen ngang.
-  - Mở khóa toàn quyền truy cập kho bản ghi VOD độc quyền.
-  - Hỗ trợ thanh toán tức thì qua cổng VietQR PayOS quét mã trong 3 giây.
-• 📱 **Truy cập:** Vào tab **Hồ sơ** > bấm **Nâng cấp VIP** để nhận ưu đãi ngay hôm nay!$geminiNote''';
+OmniCast được thiết kế như một hệ sinh thái truyền hình số hiện đại kết hợp studio phát sóng di động:
+• **Trải nghiệm VIP:** Mở khóa chất lượng truyền phát Full HD 1080p60 & 4K siêu nét, hoàn toàn không bị gián đoạn bởi quảng cáo, cùng quyền truy cập không giới hạn vào toàn bộ kho bản ghi VOD độc quyền.
+• **Thanh toán tức thì:** Tích hợp cổng thanh toán VietQR PayOS, cho phép bạn quét mã QR chuyển khoản ngân hàng và kích hoạt gói thành viên ngay lập tức trong vài giây.
+• **Cách nâng cấp:** Bạn chỉ cần mở tab **Hồ sơ** trên thanh điều hướng dưới cùng và chọn nút **Nâng cấp VIP** để xem chi tiết các gói ưu đãi.$geminiNote''';
     }
 
     // 3. Kỹ thuật phát sóng / WebRTC WHEP / Live Studio / Độ trễ
@@ -529,15 +528,11 @@ OmniCast là hệ sinh thái truyền hình số và phòng thu di động thế
         lower.contains('studio') ||
         lower.contains('camera') ||
         lower.contains('bitrate')) {
-      return '''### 📡 HẠ TẦNG TRUYỀN PHÁT SIÊU TRỄ THẤP OMNICAST
-Công nghệ truyền dẫn tiên tiến được tối ưu hóa cho di động:
+      return '''Về công nghệ truyền phát trực tiếp trên OmniCast:
 
-• 🚀 **Giao thức WebRTC WHEP:** Đưa độ trễ xuống dưới **< 350ms**, giúp MC và khán giả tương tác 2 chiều thời gian thực (Zero Lag).
-• 📶 **HLS Tự Thích Ứng (ABR):** Tự động chuyển đổi mượt mà giữa các độ phân giải (1080p, 720p, 480p, 360p) theo tốc độ mạng 4G/5G/Wi-Fi.
-• 🎙️ **Mobile Live Studio:**
-  - Cho phép phát trực tiếp trực tiếp từ Camera điện thoại.
-  - Tùy chỉnh Bitrate, chuyển đổi Cam trước/sau và kiểm soát Mic thông minh.
-• 🛠️ **Truy cập:** Menu **Hồ sơ** > **Live Studio** để bắt đầu phiên phát sóng của bạn!$geminiNote''';
+• **Chuẩn WebRTC WHEP siêu trễ thấp:** OmniCast ứng dụng chuẩn WHEP giúp đưa độ trễ luồng phát xuống dưới **< 350ms**. Nhờ đó, người dẫn chương trình và khán giả có thể tương tác thời gian thực mà không gặp tình trạng trễ tiếng 10-15 giây như giao thức RTMP cũ.
+• **HLS Tự Thích Ứng (ABR):** Hệ thống tự động phân phối các mức độ phân giải từ 360p đến 1080p tùy theo tốc độ đường truyền mạng 4G/5G hoặc Wi-Fi của người xem để đảm bảo không bị giật lag.
+• **Tùy chỉnh Bitrate trong Live Studio:** Khi phát sóng từ điện thoại, bạn có thể vào menu **Hồ sơ** > **Live Studio** để linh hoạt chuyển đổi Camera trước/sau, kiểm soát Micro và điều chỉnh mức Bitrate (khuyến nghị 2500 - 4500 kbps cho luồng 1080p ổn định).$geminiNote''';
     }
 
     // 4. Kênh & Lịch phát sóng / EPG / Xem gì
@@ -551,14 +546,11 @@ Công nghệ truyền dẫn tiên tiến được tối ưu hóa cho di động:
         lower.contains('thể thao') ||
         lower.contains('bóng đá') ||
         lower.contains('vtv')) {
-      return '''### 📅 KHÁM PHÁ KÊNH & LỊCH PHÁT SÓNG (EPG)
-Hướng dẫn theo dõi các chương trình hấp dẫn trên OmniCast:
+      return '''Để theo dõi các chương trình hấp dẫn trên OmniCast hôm nay:
 
-• 📺 **Danh mục Kênh:** Vào tab **Kênh TV** để xem toàn bộ danh sách các đài truyền hình phân loại theo Thể thao, Tin tức, Phim truyện và Giải trí.
-• 📋 **Lịch phát sóng điện tử (EPG):**
-  - Vào tab **Lịch EPG** để xem lịch phát sóng theo từng giờ trong ngày.
-  - Bấm nút **Đặt lịch nhắc** (icon chuông) để nhận thông báo đẩy trước 5 phút khi chương trình bắt đầu.
-• 🔴 **Đang phát sóng:** Xem ngay các sự kiện Hot tại dải **Live Now** trên Trang chủ!$geminiNote''';
+• **Xem danh mục kênh:** Bấm vào tab **Kênh TV** ở thanh điều hướng để lướt xem hơn 25 kênh truyền hình phân loại theo Thể thao, Thời sự, Phim ảnh và Khoa giáo giải trí.
+• **Lịch phát sóng điện tử (EPG):** Chuyển sang tab **EPG Lịch** để xem lịch phát sóng chi tiết theo từng khung giờ trong ngày. Bạn có thể bấm vào biểu tượng quả chuông ở bất kỳ chương trình nào để đặt thông báo nhắc nhở trước 5 phút khi chương trình lên sóng.
+• **Kênh đang phát sóng trực tiếp:** Ngay trên Trang chủ, dải **Live Now** hiển thị ngay các sự kiện đang On-Air với số lượng khán giả trực tiếp.$geminiNote''';
     }
 
     // 5. Xem lại / Bản ghi VOD / Watchlist
@@ -569,15 +561,10 @@ Hướng dẫn theo dõi các chương trình hấp dẫn trên OmniCast:
         lower.contains('tải') ||
         lower.contains('lưu') ||
         lower.contains('watchlist')) {
-      return '''### 📼 KHO BẢN GHI VOD & DANH SÁCH THEO DÕI
-Bạn sẽ không bao giờ bỏ lỡ những nội dung yêu thích:
+      return '''Về việc xem lại và lưu trữ nội dung yêu thích:
 
-• ⏪ **Xem lại Catch-up VOD:**
-  - Vào menu **Hồ sơ** > chọn **Kho bản ghi VOD**.
-  - Toàn bộ các trận đấu thể thao, gameshow và phóng sự đặc biệt được lưu trữ với chất lượng Full HD.
-• 🔖 **Danh sách xem sau (Watchlist):**
-  - Bấm nút **"Lưu"** ở bất kỳ thẻ chương trình nào để đưa vào Danh sách theo dõi cá nhân.
-  - Truy cập nhanh tại tab **Hồ sơ** > **Danh sách theo dõi**.$geminiNote''';
+• **Kho bản ghi VOD:** Bạn có thể bấm vào tab **Kho VOD** trên thanh điều hướng (hoặc từ trang Hồ sơ) để xem lại trọn vẹn các trận cầu đỉnh cao, talkshow đặc sắc và các chương trình đã phát sóng trước đó.
+• **Danh sách theo dõi (Watchlist):** Khi thấy bất kỳ chương trình nào hay, bạn chỉ cần bấm nút **"Lưu"** trên thẻ chương trình. Toàn bộ nội dung đã lưu sẽ nằm gọn trong mục **Danh sách theo dõi** trong trang Hồ sơ để bạn mở lại bất kỳ lúc nào.$geminiNote''';
     }
 
     // 6. Hook / Opening / 3 phút đầu
@@ -585,19 +572,19 @@ Bạn sẽ không bao giờ bỏ lỡ những nội dung yêu thích:
         lower.contains('hook') ||
         lower.contains('bắt đầu') ||
         lower.contains('3 phút') ||
-        lower.contains('thu hút')) {
-      return '''### 🎬 CHIẾN LƯỢC MỞ ĐẦU 3 PHÚT VÀNG (GOLDEN HOOK)
-Dành cho: **$ctx**
+        lower.contains('thu hút') ||
+        lower.contains('intro')) {
+      return '''Để mở đầu $ctx thật cuốn hút và giữ chân khán giả ngay từ giây đầu tiên, đây là chiến lược **GOLDEN HOOK** được tinh chỉnh sát với yêu cầu của bạn:
 
 • **Tiêu đề gợi ý:** $ctx: Bí Mật Chưa Từng Kể & Bước Ngoặt Bất Ngờ
-• **Thời lượng khuyến nghị:** 45 - 60 phút
+• **Thời lượng khuyến nghị:** 45 - 60 phút linh hoạt theo định dạng nội dung.
 
-**Phân bổ 3 phút đầu tiên (Chống drop-off):**
-1. **00:00 - 00:30 (Visual Shock):** Đặt ngay phân cảnh kịch tính nhất hoặc nghịch lý lớn nhất lên trước intro logo. Không chào hỏi rườm rà.
-2. **00:30 - 01:30 (Value Proposition):** Nêu rõ: *"Xem hết chương trình hôm nay, bạn sẽ biết được 3 giải pháp đột phá..."*.
-3. **01:30 - 03:00 (Interactive Teaser):** Tung minigame dự đoán hoặc thăm dò ý kiến qua bình luận để kích hoạt thuật toán đề xuất livestream.
+🎯 **3 Cách mở đầu thực chiến bạn có thể áp dụng ngay:**
+1. *Dẫn nhập nghịch lý (Visual Shock):* Đặt ngay cảnh quay kịch tính nhất hoặc mâu thuẫn lớn nhất lên trước nhạc intro; tuyệt đối không chào hỏi rườm rà.
+2. *Cam kết giá trị rõ ràng:* Nêu thẳng lý do người xem nên ở lại: "Xem hết chương trình này, bạn sẽ nắm trọn bí quyết để..."
+3. *Kích hoạt tương tác:* Đặt một câu hỏi thăm dò ý kiến trên Live Chat để khán giả bình luận ngay từ phút đầu tiên.
 
-💡 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới để đưa gợi ý này trực tiếp vào AI Curator.*$geminiNote''';
+👉 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới nếu bạn muốn đưa gợi ý này trực tiếp vào AI Curator!*$geminiNote''';
     }
 
     // 7. Prime-Time / Khung giờ / Lịch phát sóng
@@ -607,21 +594,17 @@ Dành cho: **$ctx**
         lower.contains('slot') ||
         lower.contains('thời điểm') ||
         lower.contains('tối ưu')) {
-      return '''### ⏰ ĐỀ XUẤT KHUNG GIỜ PHÁT SÓNG TỐI ƯU (EPG PRIME-TIME)
-Dành cho: **$ctx**
+      return '''Để tối đa hóa lượng người xem cho $ctx, việc chọn khung giờ cần bám sát hành vi thực tế của khán giả:
 
-• **Khung Giờ Vàng (Prime-Time): 20:00 - 22:30**
-  - **Lượng khán giả (Traffic):** Đạt đỉnh 100% CCU (Concurrent Users).
-  - **Thể loại phù hợp:** Talkshow khách mời, GameShow, Giải đấu Thể thao, Liveshow Âm nhạc.
-  - **Chỉ số OBI Index ước tính:** 92/100 (Hạng S).
+🔥 **Khung Giờ Vàng (PRIME-TIME): 20:00 - 22:30**
+Đây là khoảng thời gian lượng khán giả trực tuyến đạt đỉnh (100% traffic). Rất phù hợp nếu $ctx thuộc thể loại talkshow, gameshow, thể thao hoặc liveshow giải trí.
 
-• **Khung Tiêu Điểm: 19:00 - 19:45**
-  - Phù hợp: Điểm tin thời sự, công nghệ, kinh tế, phân tích tài chính.
+📺 **Các khung giờ chuyên biệt khác:**
+• **19:00 - 19:45:** Thích hợp nhất cho điểm tin thời sự, công nghệ, tài chính kinh tế.
+• **11:30 - 12:30 (Trưa):** Phù hợp với nội dung ngắn, podcast nhẹ nhàng cho người nghỉ trưa.
+• **22:30 - 00:00 (Đêm muộn):** Lý tưởng cho không gian tâm sự, chia sẻ chuyên sâu hoặc âm nhạc chillout.
 
-• **Khung Đêm Muộn (Late-Night Chill): 22:30 - 00:00**
-  - Phù hợp: Podcast tự sự, tâm sự đêm khuya, âm nhạc Lofi, trò chuyện chuyên sâu.
-
-💡 **Khuyến nghị kỹ thuật:** Lên sóng trước giờ phát chính thức 10 phút với màn hình chờ Countdown để gom luồng người xem!$geminiNote''';
+💡 *Mẹo:* Bạn nên bật luồng phát sóng trước giờ chính thức 10 phút với màn hình chờ đếm ngược để gom lượng khán giả truy cập.$geminiNote''';
     }
 
     // 8. Giữ chân khán giả / Giới trẻ / Tương tác
@@ -631,18 +614,12 @@ Dành cho: **$ctx**
         lower.contains('rời') ||
         lower.contains('retention') ||
         lower.contains('drop')) {
-      return '''### ⚡ CHIẾN LƯỢC TỐI ĐA HÓA TỶ LỆ GIỮ CHÂN (AUDIENCE RETENTION)
-Dành cho: **$ctx**
+      return '''Để tối ưu hóa tỷ lệ giữ chân khán giả (**RETENTION**) cho $ctx, bạn có thể áp dụng các giải pháp thực tế sau:
 
-1. **Quy tắc Pacing 7 Phút (The 7-Minute Pacing Arc):**
-   - Đặt 1 "cú ngoặt" thông tin hoặc thay đổi góc máy, bối cảnh, âm thanh nền sau mỗi 5 - 7 phút để tái kích hoạt sự chú ý của não bộ.
-2. **Kỹ thuật Open Curiosity Loops:**
-   - Đặt câu hỏi bí ẩn ở phút thứ 10 nhưng hẹn trả lời ở phút thứ 35. Khán giả sẽ không muốn bấm thoát.
-3. **Kích hoạt tương tác Realtime 2 Chiều:**
-   - Ghim câu hỏi bình chọn nổi bật trên thanh Chat trực tiếp.
-   - Vinh danh người ủng hộ (Donate PayOS VietQR) với âm thanh chuông đặc biệt và pop-up banner rực rỡ.
-4. **Hạ tầng siêu trễ thấp (Ultra-Low Latency):**
-   - Sử dụng chuẩn WebRTC WHEP (< 350ms) trong cài đặt Studio để MC phản hồi bình luận tức thì mà không bị trễ 10-15s như RTMP truyền thống.$geminiNote''';
+1. **Quy tắc nhịp độ Pacing 7 phút:** Cứ sau mỗi 5-7 phút, hãy tạo một điểm nhấn mới: đổi góc máy, thay đổi tiết tấu nhạc nền hoặc mời khách mời chia sẻ một ví dụ cụ thể để tránh cảm giác đơn điệu.
+2. **Kỹ thuật giữ sự tò mò (Open Curiosity Loops):** Đặt một câu hỏi thú vị hoặc hẹn công bố kết quả minigame ở phần sau của buổi phát sóng.
+3. **Khai thác công nghệ WebRTC WHEP siêu trễ thấp:** Tận dụng độ trễ < 350ms của OmniCast để đọc và phản hồi bình luận khán giả ngay lập tức.
+4. **Tôn vinh người xem:** Ghim các câu hỏi hay lên màn hình và gửi lời cảm ơn trực tiếp khi có khán giả ủng hộ qua cổng PayOS.$geminiNote''';
     }
 
     // 9. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
@@ -652,56 +629,46 @@ Dành cho: **$ctx**
         lower.contains('bản quyền') ||
         lower.contains('chính sách') ||
         lower.contains('cấm')) {
-      return '''### 🛡️ KIỂM DUYỆT PHÁT SÓNG & AN TOÀN TRUYỀN HÌNH (COMPLIANCE AUDIT)
-Dành cho: **$ctx**
+      return '''Về an toàn phát sóng và kiểm duyệt nội dung (**COMPLIANCE**), đây là những nguyên tắc quan trọng cần lưu ý:
 
-• **Đánh giá xếp hạng độ tuổi:** Khuyến nghị nhãn **T13** (Phù hợp từ 13 tuổi trở lên) hoặc **PG** (Cần phụ huynh hướng dẫn nếu có yếu tố tranh luận gay gắt).
-• **Danh mục từ khóa cần tránh tuyệt đối:**
-  1. Các cụm từ mang tính chất thù ghét, miệt thị cá nhân, phân biệt vùng miền.
-  2. Các lời kêu gọi cờ bạc, cá độ trái phép, đầu tư tài chính phi pháp.
-  3. Tin đồn giật gân chưa được kiểm chứng từ cơ quan chức năng.
-• **Kiểm định Bản quyền Âm thanh (Audio Copyright):**
-  - Chỉ dùng nhạc nền trong kho bản quyền OmniCast BGM Library hoặc giấy phép Creative Commons CC-BY.
-  - Tách riêng kênh Micro MC và kênh nhạc nền (Audio Ducking -16dB khi MC nói).$geminiNote''';
+• **Độ tuổi phát sóng:** Khuyến nghị gắn nhãn **T13** (phù hợp từ 13 tuổi trở lên) cho các nội dung trao đổi thông thường, hoặc nhãn PG nếu có yếu tố tranh luận cần người lớn định hướng.
+• **Bản quyền âm nhạc:** Chỉ sử dụng các bài nhạc trong kho thư viện bản quyền OmniCast BGM Library hoặc có giấy phép Creative Commons; không sử dụng các bản nhạc thương mại chưa mua bản quyền.
+• **Chuẩn mực ngôn từ:** Tránh các từ ngữ mang tính xúc phạm, thù ghét, thông tin sai lệch chưa kiểm chứng hoặc các nội dung cờ bạc, cá độ phi pháp.
+• **Cân bằng âm thanh:** Thiết lập âm lượng Micro của người dẫn luôn to hơn nhạc nền ít nhất 14-16dB để đảm bảo lời nói rõ ràng, dễ nghe.$geminiNote''';
     }
 
-    // 10. Kịch bản / Dàn ý / Biên tập chuyên sâu
+    // 10. Kịch bản / Dàn ý / Biên tập
     if (lower.contains('kịch bản') ||
         lower.contains('dàn ý') ||
         lower.contains('biên tập') ||
         lower.contains('nội dung') ||
         lower.contains('kế hoạch') ||
-        lower.contains('ý tưởng') ||
-        lower.contains('hồi')) {
-      return '''### 💡 ĐỀ XUẤT BIÊN TẬP KỊCH BẢN CHUYÊN SÂU
-Dành cho: **$ctx**
+        lower.contains('ý tưởng')) {
+      return '''Dưới đây là gợi ý dàn ý kịch bản được thiết kế bám sát theo yêu cầu về $ctx:
 
-• **Tiêu đề gợi ý:** $ctx: Toàn Cảnh Xu Hướng & Tiêu Điểm Mới Nhất
-• **Khung giờ tối ưu:** 20:15 - 21:45 (Prime-Time)
-• **Định dạng phát sóng:** Talkshow trường quay kết hợp phóng sự thực địa (1080p60)
+🎬 **Định dạng phát sóng:** Phát trực tiếp kết hợp phóng sự tương tác (1080p60)
+⏱️ **Thời lượng đề xuất:** 30 - 45 phút linh hoạt
 
-**Cấu trúc kịch bản 3 Hồi chuẩn OmniCast:**
-1. **Hồi 1 (00:00 - 10:00):** Đặt vấn đề nóng bỏng, phỏng vấn nhanh khán giả hoặc đưa ra các con số thống kê bất ngờ.
-2. **Hồi 2 (10:00 - 35:00):** Tọa đàm chuyên sâu với khách mời, thị phạm thực tế, phân tích nguyên nhân và mổ xẻ góc nhìn đa chiều.
-3. **Hồi 3 (35:00 - 45:00):** Rút ra thông điệp truyền cảm hứng, giải đáp câu hỏi trực tiếp từ luồng Live Chat và công bố minigame kỳ tới.
+📋 **Các phần chính:**
+• **Phần 1: Khởi động & Mở đề (00:00 - 05:00):** Đưa ra vấn đề nóng nhất, giới thiệu chủ đề chính và chào đón khán giả đang theo dõi luồng phát.
+• **Phần 2: Khám phá trọng tâm (05:00 - 25:00):** Đi sâu vào các luận điểm chính, phỏng vấn hoặc phân tích kèm hình ảnh/video tư liệu minh họa.
+• **Phần 3: Tương tác Live Chat & Giải đáp (25:00 - 35:00):** Trả lời trực tiếp các câu hỏi của khán giả và tổ chức minigame bình chọn.
+• **Phần 4: Đúc kết & Kết nối kỳ tới (35:00 - Kết thúc):** Tóm tắt thông điệp, tri ân khán giả và hẹn lịch lên sóng tiếp theo.
 
-👉 *Bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng ngay nội dung này vào khung biên tập chính!*$geminiNote''';
+👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng trực tiếp vào khung làm việc AI Curator!*$geminiNote''';
     }
 
-    // 11. Giải đáp trực tiếp & phù hợp ngữ cảnh câu hỏi của người dùng
-    return '''### 🎯 PHÂN TÍCH TƯ VẤN: "$userQuery"
-Dành cho: **$ctx**
+    // 11. Giải đáp trực diện theo yêu cầu cụ thể của người dùng
+    return '''Về câu hỏi của bạn: "$userQuery"
 
-• **Giải đáp trọng tâm:**
-  - Về vấn đề bạn đang quan tâm: **$userQuery**.
-  - Khuyến nghị áp dụng tiêu chuẩn OmniCast: tập trung vào trải nghiệm người xem, phân cấp thông tin rõ ràng và duy trì chất lượng đường truyền mượt mà.
+Dựa trên yêu cầu cụ thể này đối với $ctx, đây là tư vấn trực diện dành cho bạn:
+• **Giải đáp trọng tâm:** Tập trung xử lý chính xác vấn đề bạn quan tâm: "$userQuery". Hãy ưu tiên tính thực tế, trải nghiệm của người xem và chất lượng đường truyền phát sóng.
+• **Hướng triển khai hiệu quả:**
+  1. Xác định rõ mục tiêu cần đạt được cho nội dung hoặc khâu kỹ thuật này.
+  2. Dùng thử các tính năng hỗ trợ như Studio Phân Tích để thẩm định trước khi lên sóng chính thức.
+  3. Lắng nghe phản hồi từ khán giả để tinh chỉnh liên tục qua từng buổi phát sóng.
 
-• **Gợi ý hành động tiếp theo:**
-  1. Kiểm tra kịch bản và chuẩn bị dữ liệu dẫn chứng trước giờ lên sóng.
-  2. Sử dụng công cụ **Studio Phân Tích** để thẩm định chỉ số OBI Index của chương trình.
-  3. Lên lịch phát sóng vào khung giờ Prime-Time (20:00 - 22:30) để tối ưu hóa lưu lượng khán giả.
-
-💬 *Bạn có thể đặt câu hỏi cụ thể hơn về kịch bản, khung giờ hoặc kỹ thuật phát sóng để tôi hỗ trợ chi tiết nhất!*$geminiNote''';
+Nếu bạn muốn tôi viết cụ thể hơn một đoạn lời thoại, gợi ý thêm ý tưởng hoặc hướng dẫn chi tiết từng bước, bạn cứ cho tôi biết nhé!$geminiNote''';
   }
 
   // ── Helper Parsers ──────────────────────────────────────────
