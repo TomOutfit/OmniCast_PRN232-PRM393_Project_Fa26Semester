@@ -151,10 +151,11 @@ class _FeaturedCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x1FFFFFFF), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -414,8 +415,16 @@ class _PageIndicator extends StatelessWidget {
         width: isActive ? 24 : 8,
         height: 8,
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : AppColors.dark600,
+          color: isActive ? const Color(0xFF00E5FF) : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(4),
+          boxShadow: isActive
+              ? [
+                  const BoxShadow(
+                    color: Color(0x6600E5FF),
+                    blurRadius: 6,
+                  ),
+                ]
+              : null,
         ),
       ),
     );

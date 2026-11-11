@@ -19,14 +19,16 @@ class AppColors {
   static const Color accentCyan = Color(0xFF22D3EE);    // cool teal accent
   static const Color accentGold = Color(0xFFFCD34D);    // highlight / featured
 
-  /* ── Surfaces (deep-navy streaming palette) ─────────────────────────── */
-  static const Color bg = Color(0xFF0F131D);             // page background
-  static const Color surface = Color(0xFF141826);        // card base
-  static const Color surfaceRaised = Color(0xFF1A1F30);  // raised card / input
+  /* ── Surfaces (deep-navy & obsidian streaming palette) ──────────────── */
+  static const Color bg = Color(0xFF070B12);             // page background (Obsidian)
+  static const Color surface = Color(0xFF0B1320);        // card base
+  static const Color surfaceRaised = Color(0xFF0F172A);  // raised card / input
+  static const Color surfaceContainer = Color(0xFF131D31);
 
   /* ── Borders (white-on-dark, alpha-encoded) ─────────────────────────── */
-  static const Color border = Color(0x14FFFFFF);         // rgba(255,255,255,.08)
-  static const Color borderStrong = Color(0x24FFFFFF);   // rgba(255,255,255,.14)
+  static const Color border = Color(0x1FFFFFFF);         // rgba(255,255,255,.12)
+  static const Color borderStrong = Color(0x2EFFFFFF);   // rgba(255,255,255,.18)
+  static const Color borderGlow = Color(0x4D00E5FF);     // rgba(0,229,255,.30)
 
   /* ── Text scale (cool neutral on navy) ──────────────────────────────── */
   static const Color text = Color(0xFFF1F5F9);           // primary
@@ -250,69 +252,70 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.stitchSurfaceContainer,
+        color: const Color(0xFF0F172A),
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppColors.rLg),
-          side: const BorderSide(color: AppColors.stitchOutlineVariant, width: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x1FFFFFFF), width: 1.0),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.stitchPrimaryContainer,
-          foregroundColor: AppColors.stitchOnPrimaryContainer,
-          elevation: 0,
+          backgroundColor: const Color(0xFF00E5FF),
+          foregroundColor: const Color(0xFF070B12),
+          elevation: 6,
+          shadowColor: const Color(0x6600E5FF),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rXl),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
             fontSize: 14,
             fontFamily: AppFonts.display,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             letterSpacing: -0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.stitchOnSurface,
+          foregroundColor: const Color(0xFF00E5FF),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          side: const BorderSide(color: AppColors.stitchOutlineVariant),
+          side: const BorderSide(color: Color(0x4D00E5FF), width: 1.2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.rXl),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.stitchPrimaryContainer,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          foregroundColor: const Color(0xFF00E5FF),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.stitchSurfaceContainerLow,
+        fillColor: const Color(0xFF0F172A),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rXl),
-          borderSide: const BorderSide(color: AppColors.stitchOutlineVariant),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0x1FFFFFFF)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rXl),
-          borderSide: const BorderSide(color: AppColors.stitchOutlineVariant),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0x1FFFFFFF)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rXl),
-          borderSide: const BorderSide(color: AppColors.stitchPrimaryContainer, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.stitchError),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.rXl),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.stitchError, width: 1.5),
         ),
         contentPadding:

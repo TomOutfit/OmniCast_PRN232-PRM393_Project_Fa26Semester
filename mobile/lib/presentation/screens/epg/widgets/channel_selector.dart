@@ -27,11 +27,12 @@ class ChannelSelector extends StatelessWidget {
     return Container(
       height: 80,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.dark900,
+      decoration: const BoxDecoration(
+        color: Color(0xFF070B12),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.dark700.withValues(alpha: 0.5),
+            color: Color(0x1FFFFFFF),
+            width: 1,
           ),
         ),
       ),
@@ -78,12 +79,20 @@ class _AllChannelsChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.dark800,
+          color: isSelected ? const Color(0xFF00E5FF) : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.dark700,
-            width: 1.5,
+            color: isSelected ? const Color(0xFF00E5FF) : const Color(0x1FFFFFFF),
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  const BoxShadow(
+                    color: Color(0x4D00E5FF),
+                    blurRadius: 8,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -91,15 +100,15 @@ class _AllChannelsChip extends StatelessWidget {
             Icon(
               Icons.grid_view_rounded,
               size: 24,
-              color: isSelected ? Colors.white : AppColors.dark400,
+              color: isSelected ? const Color(0xFF070B12) : const Color(0xFF94A3B8),
             ),
             const SizedBox(height: 4),
             Text(
               'Tất cả',
               style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.dark400,
+                color: isSelected ? const Color(0xFF070B12) : const Color(0xFF94A3B8),
                 fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
               ),
             ),
           ],
@@ -129,12 +138,24 @@ class _ChannelChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.dark800,
+          color: isSelected
+              ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
+              : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.dark700,
-            width: 1.5,
+            color: isSelected
+                ? const Color(0xFF00E5FF)
+                : const Color(0x1FFFFFFF),
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  const BoxShadow(
+                    color: Color(0x3300E5FF),
+                    blurRadius: 8,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -221,12 +242,22 @@ class ChannelSelectorCompact extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8),
               width: 56,
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.dark800,
+                color: isSelected
+                    ? const Color(0xFF00E5FF).withValues(alpha: 0.2)
+                    : const Color(0xFF0F172A),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.dark700,
-                  width: 1.5,
+                  color: isSelected ? const Color(0xFF00E5FF) : const Color(0x1FFFFFFF),
+                  width: 1,
                 ),
+                boxShadow: isSelected
+                    ? [
+                        const BoxShadow(
+                          color: Color(0x3300E5FF),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
               ),
               child: Center(
                 child: ChannelLogoCompact(
