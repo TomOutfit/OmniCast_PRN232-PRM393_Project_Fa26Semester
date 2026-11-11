@@ -1319,19 +1319,26 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           _onTapReaction(type);
         },
         child: Container(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: const Color(0x1F00E5FF),
-              width: 0.8,
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           alignment: Alignment.center,
           child: Text(
             emoji,
-            style: const TextStyle(fontSize: 26),
+            style: const TextStyle(fontSize: 24),
           ),
         ),
       ),
@@ -1400,14 +1407,21 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   context.pushReplacement('/live/${ev.id}', extra: ev);
                 },
                 child: Container(
-                  width: 160,
+                  width: 170,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0B1320),
-                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0x2900E5FF),
-                      width: 0.8,
+                      color: Colors.white.withValues(alpha: 0.1),
+                      width: 1,
                     ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x66000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
