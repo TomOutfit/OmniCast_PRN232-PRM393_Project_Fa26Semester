@@ -83,7 +83,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   // posts to the backend, so the player counter doesn't lag.
   int _localLikeDelta = 0;
 
-  bool _hasJoinedLobby = false;
+  bool _hasJoinedLobby = true;
   String? _broadcasterAnnouncement;
   final List<StreamSubscription> _socketSubscriptions = [];
 
@@ -490,7 +490,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF070B12),
+      backgroundColor: const Color(0xFF080B11),
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         color: _accent,
@@ -530,16 +530,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1500),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _warn.withValues(alpha: 0.6), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: _warn.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: _warn.withValues(alpha: 0.4), width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +549,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                     color: _warn,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                    letterSpacing: 0.8,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -778,10 +771,14 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF0B1320),
+      backgroundColor: const Color(0xFF080B11),
       elevation: 0,
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, thickness: 0.5, color: Color(0x14FFFFFF)),
+      ),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
       ),
       title: Row(
@@ -791,12 +788,6 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             decoration: BoxDecoration(
               color: _danger,
               borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: _danger.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                ),
-              ],
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -821,8 +812,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Outfit',
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1033,35 +1023,25 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1E1504), Color(0xFF0F172A)],
-          ),
+          color: const Color(0xFF0F1523),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _gold.withValues(alpha: 0.6),
-            width: 1.2,
+            color: const Color(0x14FFFFFF),
+            width: 0.8,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _gold.withValues(alpha: 0.12),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_gold, Color(0xFFEF4444)],
-                ),
+              decoration: BoxDecoration(
+                color: _gold.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
+                border: Border.all(color: _gold.withValues(alpha: 0.4), width: 0.8),
               ),
               child: const Icon(
                 Icons.volunteer_activism_rounded,
-                color: Colors.white,
+                color: _gold,
                 size: 16,
               ),
             ),
@@ -1073,27 +1053,28 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   Row(
                     children: [
                       const Text(
-                        'ỦNG HỘ STREAMER (SUPER CHAT)',
+                        'ỦNG HỘ STREAMER',
                         style: TextStyle(
                           color: _gold,
                           fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF10B981),
-                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1A10B981),
+                          borderRadius: const BorderRadius.all(Radius.circular(4)),
+                          border: Border.all(color: const Color(0x4D10B981), width: 0.5),
                         ),
                         child: const Text(
                           'MÔ PHỎNG 0đ',
                           style: TextStyle(
-                            color: Colors.black,
+                            color: Color(0xFF10B981),
                             fontSize: 9,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -1103,7 +1084,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   Text(
                     _myBalance > 0 || _streamerBalance > 0
                         ? 'Ví bạn: $_myBalanceđ · Quỹ nhận: $_streamerBalanceđ'
-                        : 'Trải nghiệm tặng quà giả lập an toàn · KHÔNG mất tiền thật',
+                        : 'Tặng quà giả lập an toàn qua PayOS · Không mất tiền thật',
                     style: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 11,
@@ -1113,10 +1094,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: _gold,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Row(
                 children: [
@@ -1189,18 +1170,9 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF261D08), Color(0xFF140D04)],
-        ),
+        color: const Color(0xFF0F1523),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _gold, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: _gold.withValues(alpha: 0.25),
-            blurRadius: 14,
-            spreadRadius: 1,
-          ),
-        ],
+        border: Border.all(color: _gold.withValues(alpha: 0.5), width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1261,7 +1233,6 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                       color: _gold,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
-                      fontFamily: 'JetBrainsMono',
                     ),
                   ),
                   const Text(
@@ -1294,7 +1265,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: const Color(0x14FFFFFF)),
             ),
             child: Text(
               sc.message,
@@ -1319,26 +1290,19 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
           _onTapReaction(type);
         },
         child: Container(
-          height: 52,
+          height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF0F1523),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-              width: 1,
+              color: const Color(0x14FFFFFF),
+              width: 0.8,
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x40000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           alignment: Alignment.center,
           child: Text(
             emoji,
-            style: const TextStyle(fontSize: 24),
+            style: const TextStyle(fontSize: 22),
           ),
         ),
       ),
@@ -1360,9 +1324,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                 style: TextStyle(
                   color: _danger,
                   fontSize: 11,
-                  fontFamily: 'JetBrainsMono',
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+                  letterSpacing: 0.8,
                 ),
               ),
               const Spacer(),
@@ -1401,7 +1364,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
             itemBuilder: (context, index) {
               final ev = _otherLiveEvents[index];
               return InkWell(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   HapticFeedback.lightImpact();
                   context.pushReplacement('/live/${ev.id}', extra: ev);
@@ -1409,19 +1372,12 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                 child: Container(
                   width: 170,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFF0F1523),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      width: 1,
+                      color: const Color(0x14FFFFFF),
+                      width: 0.8,
                     ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x66000000),
-                        blurRadius: 10,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -1437,19 +1393,19 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                                 imageUrl: ev.thumbnailUrl!,
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) =>
-                                    Container(color: const Color(0xFF0F172A)),
+                                    Container(color: const Color(0xFF0F1523)),
                               )
                             else
-                              Container(color: const Color(0xFF0F172A)),
+                              Container(color: const Color(0xFF0F1523)),
                             Positioned(
-                              top: 4,
-                              left: 4,
+                              top: 6,
+                              left: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: _danger,
-                                  borderRadius: BorderRadius.circular(3),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'LIVE',
@@ -1461,14 +1417,14 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                               ),
                             ),
                             Positioned(
-                              top: 4,
-                              right: 4,
+                              top: 6,
+                              right: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(3),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   '${_formatViewers(ev.viewerCount)} xem',
@@ -1483,7 +1439,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1493,17 +1449,18 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
                               ev.channel?.name ?? 'Kênh',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF94A3B8),
-                                fontSize: 9,
+                                fontSize: 10,
                               ),
                             ),
                           ],
@@ -1543,9 +1500,8 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                 style: const TextStyle(
                   color: _accent,
                   fontSize: 11,
-                  fontFamily: 'JetBrainsMono',
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
@@ -1572,10 +1528,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B1320),
+            color: const Color(0xFF0F1523),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0x1F00E5FF),
+              color: const Color(0x14FFFFFF),
               width: 0.8,
             ),
           ),
@@ -1589,8 +1545,7 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
                   style: const TextStyle(
                     color: _accent,
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Outfit',
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

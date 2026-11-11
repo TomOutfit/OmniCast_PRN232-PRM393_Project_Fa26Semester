@@ -39,3 +39,4 @@ Inspired by **Apple TV+**, **Netflix**, and **Impaktfull UI**:
    - Never use emojis as functional icons (use MaterialIcons or Lucide SVG).
    - Never use fake metric counters or telemetry graphs on authentication or profile screens.
    - Never use loud neon glow or dual-layer box shadows that reduce readability.
+

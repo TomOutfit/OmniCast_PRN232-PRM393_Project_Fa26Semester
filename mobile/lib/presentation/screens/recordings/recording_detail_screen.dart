@@ -4,6 +4,7 @@
 // Cyber-Dark Broadcast System styling with HEVC 4K telemetry and similar rail.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -125,7 +126,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Telemetry Badges
+                      // Quality & Category Badges
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -134,21 +135,20 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0x2600E5FF),
+                              color: const Color(0x1A00E5FF),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: const Color(0xFF00E5FF),
+                                color: const Color(0x4D00E5FF),
                                 width: 0.8,
                               ),
                             ),
                             child: const Text(
-                              'VOD ARCHIVE',
+                              'VOD BẢN GHI',
                               style: TextStyle(
                                 color: Color(0xFF00E5FF),
                                 fontSize: 10,
-                                fontFamily: 'JetBrainsMono',
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -156,10 +156,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0F172A),
+                              color: const Color(0xFF0F1523),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: const Color(0x3300E5FF),
+                                color: const Color(0x14FFFFFF),
                                 width: 0.6,
                               ),
                             ),
@@ -168,7 +168,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
-                                fontFamily: 'JetBrainsMono',
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -178,10 +177,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
+                                color: const Color(0xFF0F1523),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: const Color(0x1F00E5FF),
+                                  color: const Color(0x14FFFFFF),
                                   width: 0.6,
                                 ),
                               ),
@@ -190,7 +189,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                 style: const TextStyle(
                                   color: Color(0xFF94A3B8),
                                   fontSize: 10,
-                                  fontFamily: 'JetBrainsMono',
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -212,7 +210,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                 style: TextStyle(
                                   color: AppColors.error,
                                   fontSize: 10,
-                                  fontFamily: 'JetBrainsMono',
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -245,7 +242,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          fontFamily: 'Outfit',
                           height: 1.3,
                         ),
                       ),
@@ -259,10 +255,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0B1320),
+                              color: const Color(0xFF0F1523),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0x1F00E5FF),
+                                color: const Color(0x14FFFFFF),
                                 width: 0.8,
                               ),
                             ),
@@ -275,7 +271,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: const Color(0x4D00E5FF),
+                                        color: const Color(0x14FFFFFF),
                                         width: 1,
                                       ),
                                     ),
@@ -284,7 +280,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                         imageUrl: r.channel!.logoUrl!,
                                         fit: BoxFit.cover,
                                         placeholder: (_, __) =>
-                                            const ColoredBox(color: Color(0xFF0F172A)),
+                                            const ColoredBox(color: Color(0xFF0F1523)),
                                         errorWidget: (_, __, ___) =>
                                             const Icon(Icons.tv, color: Color(0xFF00E5FF)),
                                       ),
@@ -295,10 +291,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF0F172A),
+                                      color: const Color(0xFF0F1523),
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: const Color(0x4D00E5FF),
+                                        color: const Color(0x14FFFFFF),
                                         width: 1,
                                       ),
                                     ),
@@ -319,7 +315,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                           color: Colors.white,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
-                                          fontFamily: 'Outfit',
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -328,7 +323,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                         style: const TextStyle(
                                           color: Color(0xFF94A3B8),
                                           fontSize: 11,
-                                          fontFamily: 'JetBrainsMono',
                                         ),
                                       ),
                                     ],
@@ -337,9 +331,9 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0x1F00E5FF),
+                                    color: const Color(0x1A00E5FF),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0x4D00E5FF), width: 0.8),
+                                    border: Border.all(color: const Color(0x3300E5FF), width: 0.8),
                                   ),
                                   child: const Text(
                                     'Kênh',
@@ -356,13 +350,13 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                         ),
                       const SizedBox(height: 16),
 
-                      // Cyber Stats Row
+                      // Stats Row
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B1320),
+                          color: const Color(0xFF0F1523),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+                          border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -372,19 +366,19 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                               value: _formatCount(r.viewCount),
                               label: 'LƯỢT XEM',
                             ),
-                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
+                            Container(width: 1, height: 28, color: const Color(0x14FFFFFF)),
                             _StatColumn(
                               icon: Icons.thumb_up_alt_rounded,
                               value: _formatCount(r.likeCount),
                               label: 'THÍCH',
                             ),
-                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
+                            Container(width: 1, height: 28, color: const Color(0x14FFFFFF)),
                             _StatColumn(
                               icon: Icons.chat_bubble_outline_rounded,
                               value: _formatCount(r.commentCount),
                               label: 'BÌNH LUẬN',
                             ),
-                            Container(width: 1, height: 28, color: const Color(0x1A00E5FF)),
+                            Container(width: 1, height: 28, color: const Color(0x14FFFFFF)),
                             _StatColumn(
                               icon: Icons.share_rounded,
                               value: _formatCount(r.shareCount),
@@ -401,6 +395,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           Expanded(
                             child: InkWell(
                               onTap: () {
+                                HapticFeedback.selectionClick();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Đã lưu vào danh sách xem lại'),
@@ -411,9 +406,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                               child: Container(
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF00E5FF), Color(0xFF0072FF)],
-                                  ),
+                                  color: const Color(0xFF00E5FF),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Row(
@@ -426,7 +419,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                       style: TextStyle(
                                         color: Colors.black,
                                         fontWeight: FontWeight.w800,
-                                        fontFamily: 'Outfit',
                                         fontSize: 12,
                                         letterSpacing: 0.5,
                                       ),
@@ -440,6 +432,7 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           Expanded(
                             child: InkWell(
                               onTap: () {
+                                HapticFeedback.selectionClick();
                                 ShareHelper.shareRecording(r);
                                 _trackShare(r.id);
                               },
@@ -447,10 +440,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                               child: Container(
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0F172A),
+                                  color: const Color(0xFF0F1523),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(0x3300E5FF),
+                                    color: const Color(0x14FFFFFF),
                                     width: 1,
                                   ),
                                 ),
@@ -464,7 +457,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                       style: TextStyle(
                                         color: Color(0xFF00E5FF),
                                         fontWeight: FontWeight.w700,
-                                        fontFamily: 'Outfit',
                                         fontSize: 12,
                                         letterSpacing: 0.5,
                                       ),
@@ -484,9 +476,8 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                         style: TextStyle(
                           color: Color(0xFF00E5FF),
                           fontSize: 12,
-                          fontFamily: 'JetBrainsMono',
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -494,9 +485,9 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0B1320),
+                          color: const Color(0xFF0F1523),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+                          border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
                         ),
                         child: Text(
                           r.description ?? 'Nội dung lưu trữ chất lượng cao từ đài truyền hình OmniCast.',
@@ -516,9 +507,8 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           style: TextStyle(
                             color: Color(0xFF00E5FF),
                             fontSize: 12,
-                            fontFamily: 'JetBrainsMono',
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -531,10 +521,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0F172A),
+                                  color: const Color(0xFF0F1523),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: const Color(0x1F00E5FF),
+                                    color: const Color(0x14FFFFFF),
                                     width: 0.8,
                                   ),
                                 ),
@@ -543,7 +533,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                   style: const TextStyle(
                                     color: Color(0xFF94A3B8),
                                     fontSize: 11,
-                                    fontFamily: 'JetBrainsMono',
                                   ),
                                 ),
                               ),
@@ -552,11 +541,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                         const SizedBox(height: 20),
                       ],
 
-                      // Catalog v2.1 — licensing & attribution card.
-                      // Surfaces the full source/credit line and the
-                      // license tag (CC0, PEXELS_LICENSE, …) so the
-                      // attribution that overlays the player is never
-                      // the only place a viewer sees the credit.
                       if (r.license != null ||
                           r.sourceAttribution != null ||
                           r.thumbnailAttribution != null) ...[
@@ -565,9 +549,8 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           style: TextStyle(
                             color: Color(0xFF00E5FF),
                             fontSize: 12,
-                            fontFamily: 'JetBrainsMono',
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -575,10 +558,10 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0B1320),
+                            color: const Color(0xFF0F1523),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0x1F00E5FF),
+                              color: const Color(0x14FFFFFF),
                               width: 0.8,
                             ),
                           ),
@@ -602,7 +585,6 @@ class _RecordingDetailViewState extends State<_RecordingDetailView> {
                                           color: Colors.white,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          fontFamily: 'JetBrainsMono',
                                         ),
                                       ),
                                     ],
@@ -781,7 +763,7 @@ class _SourceBadge extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
+          color: const Color(0x3300E5FF),
           width: 0.6,
         ),
       ),
@@ -790,9 +772,8 @@ class _SourceBadge extends StatelessWidget {
         style: const TextStyle(
           color: Color(0xFF00E5FF),
           fontSize: 9,
-          fontFamily: 'JetBrainsMono',
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.0,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -812,7 +793,7 @@ class _AttributionCaption extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: Colors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -828,7 +809,6 @@ class _AttributionCaption extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 9,
-                fontFamily: 'JetBrainsMono',
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -867,7 +847,6 @@ class _StatColumn extends StatelessWidget {
             color: Colors.white,
             fontSize: 13,
             fontWeight: FontWeight.w800,
-            fontFamily: 'Outfit',
           ),
         ),
         const SizedBox(height: 2),
@@ -876,7 +855,6 @@ class _StatColumn extends StatelessWidget {
           style: const TextStyle(
             color: Color(0xFF94A3B8),
             fontSize: 9,
-            fontFamily: 'JetBrainsMono',
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -913,9 +891,8 @@ class _SimilarRail extends StatelessWidget {
             style: TextStyle(
               color: Color(0xFF00E5FF),
               fontSize: 12,
-              fontFamily: 'JetBrainsMono',
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
             ),
           ),
         ),
@@ -948,14 +925,17 @@ class _SimilarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/recording/${recording.id}'),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        context.push('/recording/${recording.id}');
+      },
       child: Container(
         width: 220,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0B1320),
+          color: const Color(0xFF0F1523),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x1F00E5FF), width: 0.8),
+          border: Border.all(color: const Color(0x14FFFFFF), width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -974,9 +954,9 @@ class _SimilarCard extends StatelessWidget {
                             imageUrl: recording.thumbnailUrl!,
                             fit: BoxFit.cover,
                             placeholder: (_, __) =>
-                                const ColoredBox(color: Color(0xFF0F172A)),
+                                const ColoredBox(color: Color(0xFF0F1523)),
                             errorWidget: (_, __, ___) => const ColoredBox(
-                              color: Color(0xFF0F172A),
+                              color: Color(0xFF0F1523),
                               child: Icon(
                                 Icons.play_circle_outline,
                                 color: Color(0xFF00E5FF),
@@ -985,7 +965,7 @@ class _SimilarCard extends StatelessWidget {
                             ),
                           )
                         : const ColoredBox(
-                            color: Color(0xFF0F172A),
+                            color: Color(0xFF0F1523),
                             child: Icon(
                               Icons.play_circle_outline,
                               color: Color(0xFF00E5FF),
@@ -1004,14 +984,13 @@ class _SimilarCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0x3300E5FF), width: 0.5),
+                        border: Border.all(color: const Color(0x14FFFFFF), width: 0.5),
                       ),
                       child: Text(
                         recording.formattedDuration,
                         style: const TextStyle(
                           color: Color(0xFF00E5FF),
                           fontSize: 9,
-                          fontFamily: 'JetBrainsMono',
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1042,7 +1021,6 @@ class _SimilarCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Color(0xFF94A3B8),
                           fontSize: 10,
-                          fontFamily: 'JetBrainsMono',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

@@ -24,3 +24,4 @@ OmniCast is an enterprise-grade, low-latency live broadcast streaming and catch-
 - Modern minimalist, cinema-grade UI inspired by Apple TV+ and Netflix.
 - Deep obsidian and slate palette (`#080B11`, `#0F1523`) with high contrast white text and cyan/rose accents.
 - Zero fake metrics or clutter on user-facing operational screens.
+
