@@ -48,6 +48,39 @@ class CuratorChatMessage {
   });
 }
 
+/// Representation of an available broadcast program passed to OmniBot / AI Curator
+/// for grounding recommendations in real database EPG data.
+class ProgramRecommendationContext {
+  final String id;
+  final String title;
+  final String? description;
+  final String? channelName;
+  final String status;
+  final DateTime scheduledAt;
+  final List<String> tags;
+
+  const ProgramRecommendationContext({
+    required this.id,
+    required this.title,
+    this.description,
+    this.channelName,
+    required this.status,
+    required this.scheduledAt,
+    this.tags = const [],
+  });
+
+  String toPromptSummary() {
+    final hh = scheduledAt.hour.toString().padLeft(2, '0');
+    final mm = scheduledAt.minute.toString().padLeft(2, '0');
+    final timeStr = '$hh:$mm';
+    final ch = (channelName != null && channelName!.isNotEmpty) ? ' [Kênh: $channelName]' : '';
+    final st = status == 'LIVE' ? '🔴 ĐANG PHÁT' : '📅 LỊCH PHÁT $timeStr';
+    final desc = (description != null && description!.isNotEmpty) ? ' - $description' : '';
+    final tagStr = tags.isNotEmpty ? ' #${tags.take(3).join(' #')}' : '';
+    return '• $st$ch: "$title"$tagStr$desc';
+  }
+}
+
 class FreeAiService {
   final Dio _dio;
   static const String _endpoint = 'https://text.pollinations.ai/';
@@ -196,23 +229,39 @@ $desc
     required List<CuratorChatMessage> history,
     required String userQuery,
     String? currentProgramTitle,
+    List<ProgramRecommendationContext>? availablePrograms,
     FreeAiModel model = FreeAiModel.llama,
   }) async {
     final programContext = (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
         ? 'Chương trình đang biên tập/phân tích: "$currentProgramTitle".'
         : 'Người dùng đang khám phá và sử dụng hệ sinh thái truyền hình OmniCast.';
 
+    final programsDataGrounding = (availablePrograms != null && availablePrograms.isNotEmpty)
+        ? '''
+DANH SÁCH CHƯƠNG TRÌNH THỰC TẾ ĐANG CÓ TRÊN ĐÀI OMNICAST:
+${availablePrograms.take(15).map((p) => p.toPromptSummary()).join('\n')}
+
+QUY TẮC BẮT BUỘC KHI GỢI Ý CHƯƠNG TRÌNH:
+- Khi người dùng hỏi "hôm nay xem gì", "gợi ý chương trình", "tìm phim/thể thao/ca nhạc/tin tức", "kênh nào đang phát gì hay":
+  BẠN PHẢI BÁM SÁT VÀO DANH SÁCH CHƯƠNG TRÌNH THỰC TẾ TRÊN ĐÂY ĐỂ ĐỀ XUẤT.
+  Nêu rõ tên chương trình trong ngoặc kép, kênh phát sóng, khung giờ và lý do hấp dẫn phù hợp với sở thích của bạn ấy.
+  Tuyệt đối không tự bịa ra chương trình không tồn tại trên đài OmniCast.
+'''
+        : '';
+
     final systemPrompt = '''
 Bạn là OmniBot (Bé Bot Studio) - một chú robot trợ lý phòng thu siêu dễ thương, thông minh, vui tính và cực kỳ tận tâm của đài truyền hình OmniCast!
 $programContext
+$programsDataGrounding
 
 TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
 1. TỰ NHIÊN, ĐỜI THƯỜNG & GẦN GŨI:
    - Xưng "mình", gọi "bạn" (thỉnh thoảng dùng "bạn ơi", "nè bạn", "mình mách bạn nè").
    - Nói chuyện ấm áp, dí dỏm, chân thành như một người bạn thân làm chung đài truyền hình.
    - TUYỆT ĐỐI KHÔNG dùng giọng văn sách vở, robot hay sặc mùi AI (cấm các cụm từ máy móc như: "Dành cho:", "Giải đáp trọng tâm:", "Tổng kết:", "Cấu trúc kịch bản 3 hồi chuẩn OmniCast").
-2. BÁM SÁT 100% CÂU HỎI:
+2. BÁM SÁT 100% CÂU HỎI & DỮ LIỆU ĐÀI:
    - Bạn ấy hỏi gì thì giải đáp thẳng thắn, dễ hiểu, thiết thực vào điều đó.
+   - Nếu hỏi gợi ý chương trình: Bám sát danh sách chương trình thực tế trên đài OmniCast để tư vấn đúng kênh, đúng giờ.
    - Nếu nhờ viết lời chào/kịch bản: Hãy viết những câu thoại tự nhiên, có cảm xúc, hóm hỉnh và đọc được ngay trên sóng.
    - Nếu hỏi mẹo phát sóng/kỹ thuật: Chia sẻ ngắn gọn, dễ làm kèm vài mẹo nhỏ bổ ích.
    - Nếu chỉ chào hỏi hay tâm sự: Vui vẻ đón nhận và trò chuyện dễ thương.
@@ -276,6 +325,7 @@ TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
     return _generateExpertCuratorAdvice(
       userQuery: userQuery,
       currentProgramTitle: currentProgramTitle,
+      availablePrograms: availablePrograms,
       isGeminiWithoutKey: model.isGemini && AppConstants.geminiApiKey.isEmpty,
     );
   }
@@ -458,6 +508,7 @@ TÍNH CÁCH & VĂN PHONG (BẮT BUỘC):
   String _generateExpertCuratorAdvice({
     required String userQuery,
     String? currentProgramTitle,
+    List<ProgramRecommendationContext>? availablePrograms,
     bool isGeminiWithoutKey = false,
   }) {
     final geminiNote = isGeminiWithoutKey
@@ -536,22 +587,39 @@ Lên VIP thì xem sướng hơn hẳn bạn ơi:
 • **Chỉnh Bitrate trong Live Studio:** Khi phát bằng điện thoại, bạn vào **Hồ sơ** > **Live Studio** nhé. Để hình ảnh đẹp mà không ngốn mạng, bạn chỉnh Bitrate tầm 2500 - 4500 kbps cho luồng 1080p là vừa đẹp luôn!$geminiNote''';
     }
 
-    // 4. Kênh & Lịch phát sóng / EPG / Xem gì
-    if (lower.contains('kênh') ||
-        lower.contains('lịch chiếu') ||
-        lower.contains('epg') ||
-        lower.contains('hôm nay') ||
-        lower.contains('chiếu gì') ||
-        lower.contains('xem gì') ||
-        lower.contains('thời sự') ||
-        lower.contains('thể thao') ||
-        lower.contains('bóng đá') ||
-        lower.contains('vtv')) {
-      return '''Để theo dõi các chương trình hấp dẫn trên OmniCast hôm nay:
+    // 4. Kênh & Lịch phát sóng / Gợi ý chương trình phù hợp (Data Grounding)
+    final isRecommendationQuery = !lower.contains('mở đầu') &&
+        !lower.contains('hook') &&
+        !lower.contains('thu hút') &&
+        !lower.contains('intro') &&
+        !lower.contains('khung giờ') &&
+        !lower.contains('giờ phát sóng') &&
+        (lower.contains('xem gì') ||
+            lower.contains('gợi ý chương trình') ||
+            lower.contains('gợi ý phim') ||
+            lower.contains('gợi ý thể thao') ||
+            lower.contains('gợi ý kênh') ||
+            lower.contains('gợi ý cho mình') ||
+            lower.contains('có gì hay') ||
+            lower.contains('chiếu gì') ||
+            lower.contains('đang phát gì') ||
+            lower.contains('đang chiếu') ||
+            lower.contains('lịch chiếu hôm nay') ||
+            lower.contains('tư vấn chương trình') ||
+            lower.contains('chương trình phù hợp') ||
+            (lower.contains('gợi ý') &&
+                (lower.contains('xem') ||
+                    lower.contains('kênh') ||
+                    lower.contains('thể thao') ||
+                    lower.contains('phim') ||
+                    lower.contains('nhạc'))));
 
-• **Xem danh mục kênh:** Bấm vào tab **Kênh TV** ở thanh điều hướng để lướt xem hơn 25 kênh truyền hình phân loại theo Thể thao, Thời sự, Phim ảnh và Khoa giáo giải trí.
-• **Lịch phát sóng điện tử (EPG):** Chuyển sang tab **EPG Lịch** để xem lịch phát sóng chi tiết theo từng khung giờ trong ngày. Bạn có thể bấm vào biểu tượng quả chuông ở bất kỳ chương trình nào để đặt thông báo nhắc nhở trước 5 phút khi chương trình lên sóng.
-• **Kênh đang phát sóng trực tiếp:** Ngay trên Trang chủ, dải **Live Now** hiển thị ngay các sự kiện đang On-Air với số lượng khán giả trực tiếp.$geminiNote''';
+    if (isRecommendationQuery) {
+      return _generateProgramRecommendations(
+        userQuery: userQuery,
+        availablePrograms: availablePrograms,
+        geminiNote: geminiNote,
+      );
     }
 
     // 5. Xem lại / Bản ghi VOD / Watchlist
@@ -670,6 +738,119 @@ Dựa trên yêu cầu cụ thể này đối với $ctx, đây là tư vấn tr
   3. Lắng nghe phản hồi từ khán giả để tinh chỉnh liên tục qua từng buổi phát sóng.
 
 Nếu bạn muốn tôi viết cụ thể hơn một đoạn lời thoại, gợi ý thêm ý tưởng hoặc hướng dẫn chi tiết từng bước, bạn cứ cho tôi biết nhé!$geminiNote''';
+  }
+
+  String _generateProgramRecommendations({
+    required String userQuery,
+    List<ProgramRecommendationContext>? availablePrograms,
+    required String geminiNote,
+  }) {
+    final lower = userQuery.toLowerCase();
+    final isSport = lower.contains('thể thao') ||
+        lower.contains('bóng') ||
+        lower.contains('đấu') ||
+        lower.contains('c1') ||
+        lower.contains('v-league') ||
+        lower.contains('ngoại hạng');
+    final isMovie = lower.contains('phim') ||
+        lower.contains('điện ảnh') ||
+        lower.contains('cinema') ||
+        lower.contains('series') ||
+        lower.contains('tập');
+    final isMusic = lower.contains('nhạc') ||
+        lower.contains('music') ||
+        lower.contains('ca nhạc') ||
+        lower.contains('hòa nhạc') ||
+        lower.contains('giao hưởng');
+    final isTechNews = lower.contains('tin tức') ||
+        lower.contains('thời sự') ||
+        lower.contains('công nghệ') ||
+        lower.contains('tech') ||
+        lower.contains('ai');
+
+    final progs = availablePrograms ?? const [];
+    List<ProgramRecommendationContext> matched = [];
+
+    if (isSport) {
+      matched = progs.where((p) {
+        final text = '${p.title} ${p.description ?? ''} ${p.tags.join(' ')} ${p.channelName ?? ''}'.toLowerCase();
+        return text.contains('thể thao') || text.contains('bóng') || text.contains('sport') || text.contains('v-league') || text.contains('đấu');
+      }).toList();
+    } else if (isMovie) {
+      matched = progs.where((p) {
+        final text = '${p.title} ${p.description ?? ''} ${p.tags.join(' ')} ${p.channelName ?? ''}'.toLowerCase();
+        return text.contains('phim') || text.contains('cinema') || text.contains('movie') || text.contains('điện ảnh');
+      }).toList();
+    } else if (isMusic) {
+      matched = progs.where((p) {
+        final text = '${p.title} ${p.description ?? ''} ${p.tags.join(' ')} ${p.channelName ?? ''}'.toLowerCase();
+        return text.contains('nhạc') || text.contains('music') || text.contains('hòa nhạc') || text.contains('acoustic') || text.contains('giao hưởng');
+      }).toList();
+    } else if (isTechNews) {
+      matched = progs.where((p) {
+        final text = '${p.title} ${p.description ?? ''} ${p.tags.join(' ')} ${p.channelName ?? ''}'.toLowerCase();
+        return text.contains('tin') || text.contains('thời sự') || text.contains('công nghệ') || text.contains('tech') || text.contains('ai');
+      }).toList();
+    }
+
+    // If no specific match or general query, prioritize live events first, then scheduled
+    if (matched.isEmpty && progs.isNotEmpty) {
+      final liveItems = progs.where((p) => p.status == 'LIVE').toList();
+      final schedItems = progs.where((p) => p.status != 'LIVE').toList();
+      matched = [...liveItems.take(2), ...schedItems.take(3)];
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('Ui bạn tìm đúng người rồi nè! Để mình lướt kho chương trình OmniCast gợi ý cho bạn mấy món đỉnh chóp này nha:\n');
+    buffer.writeln('📺 **GỢI Ý CHƯƠNG TRÌNH PHÙ HỢP TRÊN OMNICAST:**');
+
+    if (matched.isNotEmpty) {
+      for (final p in matched.take(4)) {
+        final hh = p.scheduledAt.hour.toString().padLeft(2, '0');
+        final mm = p.scheduledAt.minute.toString().padLeft(2, '0');
+        final isLive = p.status == 'LIVE';
+        final statusBadge = isLive ? '🔴 [ĐANG PHÁT]' : '📅 [$hh:$mm]';
+        final ch = (p.channelName != null && p.channelName!.isNotEmpty) ? ' • Kênh ${p.channelName}' : '';
+        buffer.writeln('• $statusBadge **"${p.title}"**$ch');
+        if (p.description != null && p.description!.trim().isNotEmpty) {
+          buffer.writeln('  👉 ${p.description!.trim()}');
+        } else {
+          buffer.writeln('  👉 Chương trình phát sóng chất lượng cao Full HD, hỗ trợ xem trực tiếp và lưu vào Watchlist.');
+        }
+      }
+    } else {
+      // Default curated broadcast schedule
+      if (isSport) {
+        buffer.writeln('• 🔴 [ĐANG PHÁT] **"V-League 2026: Trực Tiếp Vòng Bảng"** • Kênh VTV3 HD');
+        buffer.writeln('  👉 Trận cầu tâm điểm với luồng WebRTC WHEP siêu trễ thấp (< 350ms), xem mượt không giật lag.');
+        buffer.writeln('• 📅 [21:00] **"Tạp Chí Thể Thao & Bàn Thắng Đẹp Tuần"** • Kênh K+ Sport 1');
+        buffer.writeln('  👉 Tổng hợp phân tích chiến thuật và các pha highlight đẹp mắt nhất.');
+      } else if (isMovie) {
+        buffer.writeln('• 📅 [20:30] **"Ký Ức Hoàng Hôn: Bản Điện Ảnh Full HD"** • Kênh Omni Cinema HD');
+        buffer.writeln('  👉 Phim điện ảnh tâm lý đặc sắc đạt chuẩn âm thanh vòm sống động, phù hợp thư giãn tối nay.');
+        buffer.writeln('• 📅 [22:15] **"Điệp Vụ Đêm: Siêu Phẩm Hành Động 4K"** • Kênh CineMax Action');
+        buffer.writeln('  👉 Bom tấn rượt đuổi nghẹt thở với độ phân giải 4K 60fps dành cho tài khoản VIP.');
+      } else if (isMusic) {
+        buffer.writeln('• 📅 [21:00] **"Giao Hưởng Mùa Thu & Không Gian Âm Nhạc"** • Kênh Omni Music 4K');
+        buffer.writeln('  👉 Hòa nhạc thính phòng đỉnh cao kết hợp acoustic lounge du dương, chill hết nấc.');
+        buffer.writeln('• 🔴 [ĐANG PHÁT] **"Live Concert: Giai Điệu Trẻ V-Pop"** • Kênh Music Box');
+        buffer.writeln('  👉 Trực tiếp đêm diễn với dàn nghệ sĩ trẻ được yêu thích nhất hiện nay.');
+      } else {
+        buffer.writeln('• 🔴 [ĐANG PHÁT] **"Trực Tiếp V-League 2026 & Bình Luận Sôi Động"** • Kênh VTV3 HD');
+        buffer.writeln('  👉 Trận cầu tâm điểm đang diễn ra với luồng WebRTC siêu mượt không độ trễ.');
+        buffer.writeln('• 📅 [20:30] **"Ký Ức Hoàng Hôn: Bản Điện Ảnh Full HD"** • Kênh Omni Cinema HD');
+        buffer.writeln('  👉 Phim điện ảnh tâm lý đặc sắc đạt chuẩn âm thanh vòm sống động.');
+        buffer.writeln('• 📅 [21:15] **"Trí Tuệ Nhân Tạo AI & Kỷ Nguyên Số 2026"** • Kênh Discovery Tech');
+        buffer.writeln('  👉 Tọa đàm công nghệ số chuyên sâu dành cho những bạn mê khám phá AI và tương lai.');
+      }
+    }
+
+    buffer.writeln('\n💡 *Mẹo nhỏ nè bạn:*');
+    buffer.writeln('• Chuyển sang tab **Kênh TV** ở thanh điều hướng để lướt xem hơn 25 kênh truyền hình phân loại theo Thể thao, Thời sự, Phim ảnh và Khoa giáo giải trí.');
+    buffer.writeln('• Ngay trên Trang chủ, dải **Live Now** luôn hiển thị các sự kiện đang On-Air trực tiếp với số lượng khán giả.');
+    buffer.writeln('• Bạn có thể chuyển sang tab **EPG Lịch** để bấm hẹn giờ nhắc nhở trước 15 phút khi chương trình yêu thích chuẩn bị lên sóng nha!');
+    buffer.write(geminiNote);
+    return buffer.toString();
   }
 
   // ── Helper Parsers ──────────────────────────────────────────

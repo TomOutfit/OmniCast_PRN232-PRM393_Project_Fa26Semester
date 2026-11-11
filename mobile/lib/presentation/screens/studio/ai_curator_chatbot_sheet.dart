@@ -12,6 +12,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
+import '../../../data/models/program_model.dart';
+import '../../../data/repositories/programs_repository.dart';
 import '../../widgets/gemini_key_dialog.dart';
 import '../../widgets/studio_bot_avatar.dart';
 import '../../../data/services/free_ai_service.dart';
@@ -63,11 +65,13 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
 
   bool _isTyping = false;
   final List<CuratorChatMessage> _messages = [];
+  List<ProgramRecommendationContext> _availablePrograms = [];
 
   @override
   void initState() {
     super.initState();
     _loadGeminiKey();
+    _loadAvailablePrograms();
     // Welcome message from OmniBot Studio Assistant
     _messages.add(
       CuratorChatMessage(
@@ -78,6 +82,35 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
         timestamp: DateTime.now(),
       ),
     );
+  }
+
+  Future<void> _loadAvailablePrograms() async {
+    try {
+      if (!getIt.isRegistered<ProgramsRepository>()) return;
+      final repo = getIt<ProgramsRepository>();
+      final liveList = await repo.getLiveNow().catchError((_) => <LiveEventModel>[]);
+      final page = await repo.getPrograms(page: 1, limit: 30).catchError((_) => ProgramsPage(items: <LiveEventModel>[], total: 0, page: 1, limit: 30, totalPages: 1));
+
+      final combined = <LiveEventModel>[...liveList, ...page.items];
+      final uniqueMap = <String, LiveEventModel>{};
+      for (final p in combined) {
+        uniqueMap[p.id] = p;
+      }
+
+      if (mounted) {
+        setState(() {
+          _availablePrograms = uniqueMap.values.map((p) => ProgramRecommendationContext(
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            channelName: p.channel?.name,
+            status: p.status,
+            scheduledAt: p.scheduledAt,
+            tags: p.tags,
+          )).toList(growable: false);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadGeminiKey() async {
@@ -137,6 +170,7 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
       history: historyBefore,
       userQuery: query,
       currentProgramTitle: widget.currentTitle,
+      availablePrograms: _availablePrograms,
       model: _selectedModel,
     );
 

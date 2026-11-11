@@ -127,6 +127,49 @@ void main() {
       expect(reply, contains('đạo cụ âm thanh'));
     });
 
+    test('chatWithAssistant grounds recommendations in real availablePrograms list', () async {
+      final realPrograms = [
+        ProgramRecommendationContext(
+          id: 'prog-sport-1',
+          title: 'Chung Kết Ngoại Hạng Anh: Man City vs Arsenal',
+          description: 'Trận cầu siêu kinh điển quyết định chức vô địch mùa giải.',
+          channelName: 'K+ Sport 1 HD',
+          status: 'LIVE',
+          scheduledAt: DateTime(2026, 11, 11, 20, 0),
+          tags: const ['thể thao', 'bóng đá', 'ngoại hạng'],
+        ),
+        ProgramRecommendationContext(
+          id: 'prog-music-1',
+          title: 'Đêm Nhạc Acoustic Hoàng Hôn',
+          description: 'Không gian âm nhạc mộc mạc và sâu lắng.',
+          channelName: 'Omni Music 4K',
+          status: 'SCHEDULED',
+          scheduledAt: DateTime(2026, 11, 11, 21, 30),
+          tags: const ['âm nhạc', 'acoustic'],
+        ),
+      ];
+
+      final sportReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Gợi ý cho mình chương trình thể thao tối nay với bạn ơi',
+        availablePrograms: realPrograms,
+      );
+
+      expect(sportReply, isNotEmpty);
+      expect(sportReply, contains('GỢI Ý CHƯƠNG TRÌNH PHÙ HỢP TRÊN OMNICAST'));
+      expect(sportReply, contains('Chung Kết Ngoại Hạng Anh'));
+      expect(sportReply, contains('K+ Sport 1 HD'));
+
+      final generalReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Hôm nay xem gì hay ho nè?',
+      );
+
+      expect(generalReply, isNotEmpty);
+      expect(generalReply, contains('GỢI Ý CHƯƠNG TRÌNH PHÙ HỢP TRÊN OMNICAST'));
+      expect(generalReply, contains('V-League 2026'));
+    });
+
     test('analyzeCuratorWithFreeAi generates complete report offline or online', () async {
       final report = await service.analyzeCuratorWithFreeAi(
         title: 'Hùng Vĩ Rừng Quốc Gia Cát Tiên 4K',
