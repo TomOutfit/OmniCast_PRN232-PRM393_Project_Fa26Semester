@@ -20,6 +20,7 @@ import '../../widgets/offline_banner.dart';
 import '../../widgets/channel_logo.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/notification_bell.dart';
+import '../studio/ai_curator_chatbot_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -114,6 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.search_rounded, color: Color(0xFFCBD5E1), size: 22),
                     onPressed: () => context.push('/search'),
                   ),
+                  IconButton(
+                    tooltip: 'Trợ lý AI Chatbot (Gemini Pro)',
+                    icon: const Icon(Icons.smart_toy_rounded, color: Color(0xFF00E5FF), size: 21),
+                    onPressed: () => AICuratorChatbotSheet.show(context),
+                  ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: NotificationBellAction(),
@@ -194,6 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+
+              // ── AI CURATOR & CHATBOT SPOTLIGHT ───────────────────
+              const SliverToBoxAdapter(child: _AiCuratorHomeBanner()),
 
               // ── KÊNH TRUYỀN HÌNH (CHANNELS RAIL) ──────────────────
               SliverToBoxAdapter(
@@ -976,3 +985,143 @@ class _CategoryChip extends StatelessWidget {
     );
   }
 }
+
+class _AiCuratorHomeBanner extends StatelessWidget {
+  const _AiCuratorHomeBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F172A), Color(0xFF0B132B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: const Color(0x2800E5FF), width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3), width: 0.8),
+                  ),
+                  child: const Icon(Icons.smart_toy_rounded, color: Color(0xFF00E5FF), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'AI CURATOR & CHATBOT',
+                            style: TextStyle(
+                              color: Color(0xFF00E5FF),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4), width: 0.6),
+                            ),
+                            child: const Text(
+                              'GEMINI 1.5 PRO',
+                              style: TextStyle(
+                                color: Color(0xFF38BDF8),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Hỏi đáp phát sóng, gợi ý lịch chiếu & phân tích EPG',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      context.push('/ai-curator');
+                    },
+                    icon: const Icon(Icons.analytics_outlined, size: 15, color: Color(0xFFCBD5E1)),
+                    label: const Text(
+                      'Studio Phân Tích',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFCBD5E1)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0x28FFFFFF)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      AICuratorChatbotSheet.show(context);
+                    },
+                    icon: const Icon(Icons.forum_rounded, size: 15, color: Color(0xFF080B11)),
+                    label: const Text(
+                      'Hỏi AI Ngay',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF080B11)),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E5FF),
+                      foregroundColor: const Color(0xFF080B11),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

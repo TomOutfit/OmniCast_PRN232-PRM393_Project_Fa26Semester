@@ -198,28 +198,26 @@ $desc
     String? currentProgramTitle,
     FreeAiModel model = FreeAiModel.llama,
   }) async {
+    final programContext = (currentProgramTitle != null && currentProgramTitle.trim().isNotEmpty)
+        ? 'Chương trình đang biên tập/phân tích: "$currentProgramTitle".'
+        : 'Người dùng đang duyệt hệ sinh thái truyền hình OmniCast.';
+
     final systemPrompt = '''
-Bạn là Trợ lý AI Biên tập Truyền hình OmniCast (AI Curator Assistant).
-Bạn cố vấn kịch bản, đề xuất khung giờ vàng (Prime-Time), phân tích giữ chân người xem và kiểm duyệt an toàn nội dung.
-${currentProgramTitle != null ? 'Ngữ cảnh chương trình hiện tại: "$currentProgramTitle".' : ''}
-Trả lời bằng tiếng Việt chuyên nghiệp, ngắn gọn, súc tích, định dạng gạch đầu dòng rõ ràng để dễ áp dụng.
-Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời lượng tối ưu.
+Bạn là Trợ lý AI Thông minh của Nền tảng Truyền hình OmniCast (OmniCast AI Assistant).
+$programContext
+
+NGUYÊN TẮC TRẢ LỜI CỐT LÕI (BẮT BUỘC):
+1. TRẢ LỜI ĐÚNG TRỌNG TÂM VÀ PHÙ HỢP NGỮ CẢNH CÂU HỎI:
+   - Hãy đọc kỹ câu hỏi của người dùng và trả lời đúng chính xác điều họ hỏi.
+   - Nếu người dùng chào hỏi, hỏi thông tin chung, hỏi tính năng ứng dụng, kênh truyền hình, lịch chiếu EPG, bản ghi VOD, nâng cấp gói VIP (PayOS VietQR), hoặc công nghệ phát sóng (WebRTC WHEP, HLS, Live Studio): hãy giải đáp chính xác, tự nhiên, thân thiện và hữu ích theo ngữ cảnh đó.
+   - CHỈ đưa ra cấu trúc kịch bản 3 hồi, phân tích hook mở đầu hoặc timeline chi tiết KHI người dùng có yêu cầu liên quan đến biên tập kịch bản, sản xuất nội dung hoặc tối ưu phát sóng.
+2. PHÙ HỢP CHƯƠNG TRÌNH ĐANG XEM/CHỌN:
+   - Nếu câu hỏi liên quan đến "$currentProgramTitle", hãy phân tích dựa trên thể loại và bối cảnh của chương trình này.
+   - Nếu câu hỏi không nhắc đến chương trình, hãy hỗ trợ người dùng theo đúng câu hỏi mà họ đưa ra.
+3. ĐỊNH DẠNG & PHONG CÁCH:
+   - Tiếng Việt chuẩn mực, chuyên nghiệp, súc tích, văn phong hiện đại.
+   - Dùng gạch đầu dòng rõ ràng, làm nổi bật từ khóa quan trọng bằng định dạng bold để người dùng dễ đọc trên thiết bị di động.
 ''';
-
-    final messages = <Map<String, String>>[
-      {'role': 'system', 'content': systemPrompt},
-    ];
-
-    // Add recent history (up to last 6 messages)
-    final recent = history.length > 6 ? history.sublist(history.length - 6) : history;
-    for (final m in recent) {
-      messages.add({
-        'role': m.isUser ? 'user' : 'assistant',
-        'content': m.text,
-      });
-    }
-
-    messages.add({'role': 'user', 'content': userQuery});
 
     // 1. Direct Google Gemini Pro API if selected & Key is configured
     if (model.isGemini && AppConstants.geminiApiKey.isNotEmpty) {
@@ -233,6 +231,22 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
         return geminiReply;
       }
     }
+
+    final messages = <Map<String, String>>[
+      {'role': 'system', 'content': systemPrompt},
+    ];
+
+    // Add recent history (up to last 6 messages)
+    final recent = history.length > 6 ? history.sublist(history.length - 6) : history;
+    for (final m in recent) {
+      if (m.text.trim().isEmpty) continue;
+      messages.add({
+        'role': m.isUser ? 'user' : 'assistant',
+        'content': m.text,
+      });
+    }
+
+    messages.add({'role': 'user', 'content': userQuery});
 
     try {
       final response = await _dio.post(
@@ -330,22 +344,65 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
     if (apiKey.isEmpty) return null;
 
     final contents = <Map<String, dynamic>>[];
-    final recent =
-        history.length > 8 ? history.sublist(history.length - 8) : history;
+
+    // Gemini API requires alternating roles starting with 'user'.
+    // 1. Filter out initial non-user greeting
+    final meaningful = <CuratorChatMessage>[];
+    for (final m in history) {
+      if (m.text.trim().isEmpty) continue;
+      if (meaningful.isEmpty && !m.isUser) continue;
+      meaningful.add(m);
+    }
+
+    final recent = meaningful.length > 10
+        ? meaningful.sublist(meaningful.length - 10)
+        : meaningful;
+
     for (final m in recent) {
+      final role = m.isUser ? 'user' : 'model';
+      if (contents.isNotEmpty && contents.last['role'] == role) {
+        final parts = contents.last['parts'] as List;
+        final oldText = parts.first['text'] as String;
+        parts.first['text'] = '$oldText\n\n${m.text}';
+      } else {
+        contents.add({
+          'role': role,
+          'parts': [
+            {'text': m.text}
+          ],
+        });
+      }
+    }
+
+    // Append current user query
+    if (contents.isNotEmpty && contents.last['role'] == 'user') {
+      final parts = contents.last['parts'] as List;
+      final oldText = parts.first['text'] as String;
+      if (oldText != userQuery) {
+        parts.first['text'] = '$oldText\n\n$userQuery';
+      }
+    } else {
       contents.add({
-        'role': m.isUser ? 'user' : 'model',
+        'role': 'user',
         'parts': [
-          {'text': m.text}
+          {'text': userQuery}
         ],
       });
     }
-    contents.add({
-      'role': 'user',
-      'parts': [
-        {'text': userQuery}
-      ],
-    });
+
+    // Ensure first turn is 'user'
+    while (contents.isNotEmpty && contents.first['role'] != 'user') {
+      contents.removeAt(0);
+    }
+
+    if (contents.isEmpty) {
+      contents.add({
+        'role': 'user',
+        'parts': [
+          {'text': userQuery}
+        ],
+      });
+    }
 
     final url =
         'https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey';
@@ -411,7 +468,119 @@ Khi gợi ý kịch bản, hãy cung cấp tiêu đề ngắn gọn và thời l
             ? currentProgramTitle.trim()
             : 'Chương trình phát sóng OmniCast';
 
-    // 1. Hook / Opening / 3 phút đầu
+    // 1. Chào hỏi / Giới thiệu / Trợ giúp
+    final isGreeting = lower.contains('chào') ||
+        lower.contains('hello') ||
+        lower.contains('hey') ||
+        lower.startsWith('hi ') ||
+        lower == 'hi' ||
+        lower.contains(' hi ') ||
+        lower.contains('bạn là ai') ||
+        lower.contains('bạn tên gì') ||
+        lower.contains('giúp gì') ||
+        lower.contains('trợ giúp');
+
+    if (isGreeting) {
+      return '''### 👋 XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST
+Tôi là trợ lý AI thông minh sẵn sàng đồng hành cùng bạn trên toàn bộ hệ thống OmniCast:
+
+• 🎬 **Biên tập & Kịch bản:** Gợi ý hook 3 phút đầu, cấu trúc 3 hồi, tối ưu nội dung.
+• ⏰ **Tối ưu lịch chiếu:** Tư vấn khung giờ vàng (Prime-Time 20h - 22h30) đạt đỉnh người xem.
+• ⚡ **Tương tác & Giữ chân:** Kỹ thuật pacing 7 phút, khảo sát trực tiếp, bình chọn Live Chat.
+• 📺 **Khám phá OmniCast:** Tìm kênh trực tiếp, lịch EPG, bản ghi VOD và công nghệ phát sóng siêu trễ thấp.
+• 🛡️ **Kiểm duyệt an toàn:** Rà soát bản quyền âm thanh, phân loại độ tuổi (T13/PG).
+
+${currentProgramTitle != null ? '📌 *Chương trình đang chọn:* **$currentProgramTitle**\n\n' : ''}Bạn đang cần tôi hỗ trợ điều gì cụ thể hôm nay?$geminiNote''';
+    }
+
+    // 2. Nền tảng OmniCast / Tài khoản VIP / Thanh toán PayOS
+    if (lower.contains('omnicast') ||
+        lower.contains('ứng dụng') ||
+        lower.contains('nền tảng') ||
+        lower.contains('vip') ||
+        lower.contains('gói cước') ||
+        lower.contains('gói thành viên') ||
+        lower.contains('đăng ký gói') ||
+        lower.contains('thanh toán') ||
+        lower.contains('payos') ||
+        lower.contains('nạp tiền') ||
+        lower.contains('mua gói') ||
+        lower.contains('bảng giá')) {
+      return '''### 💎 NỀN TẢNG OMNICAST & GÓI THÀNH VIÊN VIP
+OmniCast là hệ sinh thái truyền hình số và phòng thu di động thế hệ mới:
+
+• 📺 **Truyền hình Đa kênh:** Trực tiếp các kênh quốc gia & độc quyền (VTV, HTV, OmniSport, OmniCinema).
+• ⚡ **Gói Thành viên VIP:**
+  - Trải nghiệm chất lượng Full HD 1080p60 & 4K siêu nét, không quảng cáo chen ngang.
+  - Mở khóa toàn quyền truy cập kho bản ghi VOD độc quyền.
+  - Hỗ trợ thanh toán tức thì qua cổng VietQR PayOS quét mã trong 3 giây.
+• 📱 **Truy cập:** Vào tab **Hồ sơ** > bấm **Nâng cấp VIP** để nhận ưu đãi ngay hôm nay!$geminiNote''';
+    }
+
+    // 3. Kỹ thuật phát sóng / WebRTC WHEP / Live Studio / Độ trễ
+    if (lower.contains('webrtc') ||
+        lower.contains('whep') ||
+        lower.contains('hls') ||
+        lower.contains('độ trễ') ||
+        lower.contains('trễ') ||
+        lower.contains('lag') ||
+        lower.contains('latency') ||
+        lower.contains('livestream') ||
+        lower.contains('studio') ||
+        lower.contains('camera') ||
+        lower.contains('bitrate')) {
+      return '''### 📡 HẠ TẦNG TRUYỀN PHÁT SIÊU TRỄ THẤP OMNICAST
+Công nghệ truyền dẫn tiên tiến được tối ưu hóa cho di động:
+
+• 🚀 **Giao thức WebRTC WHEP:** Đưa độ trễ xuống dưới **< 350ms**, giúp MC và khán giả tương tác 2 chiều thời gian thực (Zero Lag).
+• 📶 **HLS Tự Thích Ứng (ABR):** Tự động chuyển đổi mượt mà giữa các độ phân giải (1080p, 720p, 480p, 360p) theo tốc độ mạng 4G/5G/Wi-Fi.
+• 🎙️ **Mobile Live Studio:**
+  - Cho phép phát trực tiếp trực tiếp từ Camera điện thoại.
+  - Tùy chỉnh Bitrate, chuyển đổi Cam trước/sau và kiểm soát Mic thông minh.
+• 🛠️ **Truy cập:** Menu **Hồ sơ** > **Live Studio** để bắt đầu phiên phát sóng của bạn!$geminiNote''';
+    }
+
+    // 4. Kênh & Lịch phát sóng / EPG / Xem gì
+    if (lower.contains('kênh') ||
+        lower.contains('lịch chiếu') ||
+        lower.contains('epg') ||
+        lower.contains('hôm nay') ||
+        lower.contains('chiếu gì') ||
+        lower.contains('xem gì') ||
+        lower.contains('thời sự') ||
+        lower.contains('thể thao') ||
+        lower.contains('bóng đá') ||
+        lower.contains('vtv')) {
+      return '''### 📅 KHÁM PHÁ KÊNH & LỊCH PHÁT SÓNG (EPG)
+Hướng dẫn theo dõi các chương trình hấp dẫn trên OmniCast:
+
+• 📺 **Danh mục Kênh:** Vào tab **Kênh TV** để xem toàn bộ danh sách các đài truyền hình phân loại theo Thể thao, Tin tức, Phim truyện và Giải trí.
+• 📋 **Lịch phát sóng điện tử (EPG):**
+  - Vào tab **Lịch EPG** để xem lịch phát sóng theo từng giờ trong ngày.
+  - Bấm nút **Đặt lịch nhắc** (icon chuông) để nhận thông báo đẩy trước 5 phút khi chương trình bắt đầu.
+• 🔴 **Đang phát sóng:** Xem ngay các sự kiện Hot tại dải **Live Now** trên Trang chủ!$geminiNote''';
+    }
+
+    // 5. Xem lại / Bản ghi VOD / Watchlist
+    if (lower.contains('xem lại') ||
+        lower.contains('vod') ||
+        lower.contains('bản ghi') ||
+        lower.contains('recordings') ||
+        lower.contains('tải') ||
+        lower.contains('lưu') ||
+        lower.contains('watchlist')) {
+      return '''### 📼 KHO BẢN GHI VOD & DANH SÁCH THEO DÕI
+Bạn sẽ không bao giờ bỏ lỡ những nội dung yêu thích:
+
+• ⏪ **Xem lại Catch-up VOD:**
+  - Vào menu **Hồ sơ** > chọn **Kho bản ghi VOD**.
+  - Toàn bộ các trận đấu thể thao, gameshow và phóng sự đặc biệt được lưu trữ với chất lượng Full HD.
+• 🔖 **Danh sách xem sau (Watchlist):**
+  - Bấm nút **"Lưu"** ở bất kỳ thẻ chương trình nào để đưa vào Danh sách theo dõi cá nhân.
+  - Truy cập nhanh tại tab **Hồ sơ** > **Danh sách theo dõi**.$geminiNote''';
+    }
+
+    // 6. Hook / Opening / 3 phút đầu
     if (lower.contains('mở đầu') ||
         lower.contains('hook') ||
         lower.contains('bắt đầu') ||
@@ -431,7 +600,7 @@ Dành cho: **$ctx**
 💡 *Bấm nút **"NẠP VÀO KỊCH BẢN"** bên dưới để đưa gợi ý này trực tiếp vào AI Curator.*$geminiNote''';
     }
 
-    // 2. Prime-Time / Khung giờ / Lịch phát sóng
+    // 7. Prime-Time / Khung giờ / Lịch phát sóng
     if (lower.contains('giờ') ||
         lower.contains('khung') ||
         lower.contains('lịch') ||
@@ -455,7 +624,7 @@ Dành cho: **$ctx**
 💡 **Khuyến nghị kỹ thuật:** Lên sóng trước giờ phát chính thức 10 phút với màn hình chờ Countdown để gom luồng người xem!$geminiNote''';
     }
 
-    // 3. Giữ chân khán giả / Giới trẻ / Tương tác
+    // 8. Giữ chân khán giả / Giới trẻ / Tương tác
     if (lower.contains('giữ chân') ||
         lower.contains('tương tác') ||
         lower.contains('trẻ') ||
@@ -476,7 +645,7 @@ Dành cho: **$ctx**
    - Sử dụng chuẩn WebRTC WHEP (< 350ms) trong cài đặt Studio để MC phản hồi bình luận tức thì mà không bị trễ 10-15s như RTMP truyền thống.$geminiNote''';
     }
 
-    // 4. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
+    // 9. Kiểm duyệt / Từ ngữ / An toàn / Bản quyền
     if (lower.contains('kiểm duyệt') ||
         lower.contains('an toàn') ||
         lower.contains('từ ngữ') ||
@@ -496,8 +665,15 @@ Dành cho: **$ctx**
   - Tách riêng kênh Micro MC và kênh nhạc nền (Audio Ducking -16dB khi MC nói).$geminiNote''';
     }
 
-    // 5. Ý tưởng tổng quát / Brainstorming chung
-    return '''### 💡 ĐỀ XUẤT BIÊN TẬP CHUYÊN SÂU TỪ AI CURATOR
+    // 10. Kịch bản / Dàn ý / Biên tập chuyên sâu
+    if (lower.contains('kịch bản') ||
+        lower.contains('dàn ý') ||
+        lower.contains('biên tập') ||
+        lower.contains('nội dung') ||
+        lower.contains('kế hoạch') ||
+        lower.contains('ý tưởng') ||
+        lower.contains('hồi')) {
+      return '''### 💡 ĐỀ XUẤT BIÊN TẬP KỊCH BẢN CHUYÊN SÂU
 Dành cho: **$ctx**
 
 • **Tiêu đề gợi ý:** $ctx: Toàn Cảnh Xu Hướng & Tiêu Điểm Mới Nhất
@@ -509,7 +685,23 @@ Dành cho: **$ctx**
 2. **Hồi 2 (10:00 - 35:00):** Tọa đàm chuyên sâu với khách mời, thị phạm thực tế, phân tích nguyên nhân và mổ xẻ góc nhìn đa chiều.
 3. **Hồi 3 (35:00 - 45:00):** Rút ra thông điệp truyền cảm hứng, giải đáp câu hỏi trực tiếp từ luồng Live Chat và công bố minigame kỳ tới.
 
-👉 *Bạn có thể bấm **"NẠP VÀO KỊCH BẢN"** để áp dụng ngay nội dung này vào khung biên tập chính!*$geminiNote''';
+👉 *Bấm **"NẠP VÀO KỊCH BẢN"** bên dưới để áp dụng ngay nội dung này vào khung biên tập chính!*$geminiNote''';
+    }
+
+    // 11. Giải đáp trực tiếp & phù hợp ngữ cảnh câu hỏi của người dùng
+    return '''### 🎯 PHÂN TÍCH TƯ VẤN: "$userQuery"
+Dành cho: **$ctx**
+
+• **Giải đáp trọng tâm:**
+  - Về vấn đề bạn đang quan tâm: **$userQuery**.
+  - Khuyến nghị áp dụng tiêu chuẩn OmniCast: tập trung vào trải nghiệm người xem, phân cấp thông tin rõ ràng và duy trì chất lượng đường truyền mượt mà.
+
+• **Gợi ý hành động tiếp theo:**
+  1. Kiểm tra kịch bản và chuẩn bị dữ liệu dẫn chứng trước giờ lên sóng.
+  2. Sử dụng công cụ **Studio Phân Tích** để thẩm định chỉ số OBI Index của chương trình.
+  3. Lên lịch phát sóng vào khung giờ Prime-Time (20:00 - 22:30) để tối ưu hóa lưu lượng khán giả.
+
+💬 *Bạn có thể đặt câu hỏi cụ thể hơn về kịch bản, khung giờ hoặc kỹ thuật phát sóng để tôi hỗ trợ chi tiết nhất!*$geminiNote''';
   }
 
   // ── Helper Parsers ──────────────────────────────────────────

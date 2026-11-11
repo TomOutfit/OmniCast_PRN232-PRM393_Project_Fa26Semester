@@ -123,6 +123,8 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
       timestamp: DateTime.now(),
     );
 
+    final historyBefore = List<CuratorChatMessage>.from(_messages);
+
     setState(() {
       _messages.add(userMsg);
       _isTyping = true;
@@ -130,7 +132,7 @@ class _AICuratorChatbotSheetState extends State<AICuratorChatbotSheet> {
     _scrollToBottom();
 
     final reply = await _aiService.chatWithAssistant(
-      history: _messages,
+      history: historyBefore,
       userQuery: query,
       currentProgramTitle: widget.currentTitle,
       model: _selectedModel,

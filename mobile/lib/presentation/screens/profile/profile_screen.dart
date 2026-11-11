@@ -12,6 +12,7 @@ import '../../widgets/brand_logo.dart';
 import '../../../logic/auth/auth_bloc.dart';
 import '../../navigation/app_router.dart';
 import '../../widgets/payment/subscription_payment_sheet.dart';
+import '../studio/ai_curator_chatbot_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -34,6 +35,15 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.smart_toy_rounded,
+              color: Color(0xFF00E5FF),
+              size: 21,
+            ),
+            tooltip: 'Trợ lý AI Chatbot (Gemini Pro)',
+            onPressed: () => AICuratorChatbotSheet.show(context),
+          ),
           IconButton(
             icon: const Icon(
               Icons.settings_outlined,
@@ -169,18 +179,27 @@ class ProfileScreen extends StatelessWidget {
                           const Divider(color: Color(0x14FFFFFF), height: 1),
                         ],
 
-                        // Staff/Admin AI Curator Studio (Role 1 & 3)
-                        if (user.isStaff || user.isAdmin) ...[
-                          _buildModernMenuItem(
-                            icon: Icons.auto_awesome_rounded,
-                            iconColor: const Color(0xFFA855F7),
-                            title: 'AI Curator Studio',
-                            subtitle: 'Biên tập & thẩm định chương trình bằng AI',
-                            highlight: !user.isAdmin,
-                            onTap: () => context.push('/ai-curator'),
-                          ),
-                          const Divider(color: Color(0x14FFFFFF), height: 1),
-                        ],
+                        // Trợ lý AI Chatbot (Gemini Pro) - Cho mọi người dùng
+                        _buildModernMenuItem(
+                          icon: Icons.smart_toy_rounded,
+                          iconColor: const Color(0xFF00E5FF),
+                          title: 'Trợ lý AI Chatbot (Gemini Pro)',
+                          subtitle: 'Hỏi đáp phát sóng, gợi ý lịch chiếu & phân tích EPG',
+                          highlight: true,
+                          onTap: () => AICuratorChatbotSheet.show(context),
+                        ),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
+
+                        // AI Curator Studio - Cho phép khám phá thẩm định chương trình
+                        _buildModernMenuItem(
+                          icon: Icons.auto_awesome_rounded,
+                          iconColor: const Color(0xFFA855F7),
+                          title: 'AI Curator Studio',
+                          subtitle: 'Biên tập, chọn chương trình & thẩm định bằng AI',
+                          highlight: false,
+                          onTap: () => context.push('/ai-curator'),
+                        ),
+                        const Divider(color: Color(0x14FFFFFF), height: 1),
 
                         // Staff/Admin Live Studio (Role 1 & 3) — go
                         // live / stop live / self-record / browse

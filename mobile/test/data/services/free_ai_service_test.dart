@@ -78,6 +78,55 @@ void main() {
       expect(reply.contains('Free limit reached'), isFalse);
     });
 
+    test('chatWithAssistant returns contextual greeting and OmniCast features', () async {
+      final greetingReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Xin chào, bạn có thể giúp gì cho tôi?',
+      );
+
+      expect(greetingReply, isNotEmpty);
+      expect(greetingReply, contains('XIN CHÀO BẠN! TÔI LÀ TRỢ LÝ AI OMNICAST'));
+      expect(greetingReply, contains('Biên tập & Kịch bản'));
+
+      final vipReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Làm thế nào để nâng cấp gói thành viên VIP qua PayOS?',
+      );
+
+      expect(vipReply, isNotEmpty);
+      expect(vipReply, contains('GÓI THÀNH VIÊN VIP'));
+      expect(vipReply, contains('VietQR PayOS'));
+
+      final techReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Công nghệ WebRTC WHEP và độ trễ phát sóng là gì?',
+      );
+
+      expect(techReply, isNotEmpty);
+      expect(techReply, contains('WebRTC WHEP'));
+      expect(techReply, contains('< 350ms'));
+
+      final streamReply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Làm sao để điều chỉnh thông số bitrate khi phát livestream?',
+      );
+
+      expect(streamReply, isNotEmpty);
+      expect(streamReply, contains('Bitrate'));
+    });
+
+    test('chatWithAssistant returns context-matching answer for arbitrary questions', () async {
+      final reply = await service.chatWithAssistant(
+        history: const [],
+        userQuery: 'Làm sao để chuẩn bị đạo cụ âm thanh cho buổi quay?',
+        currentProgramTitle: 'Chương trình Thực địa',
+      );
+
+      expect(reply, isNotEmpty);
+      expect(reply, contains('Chương trình Thực địa'));
+      expect(reply, contains('đạo cụ âm thanh'));
+    });
+
     test('analyzeCuratorWithFreeAi generates complete report offline or online', () async {
       final report = await service.analyzeCuratorWithFreeAi(
         title: 'Hùng Vĩ Rừng Quốc Gia Cát Tiên 4K',
